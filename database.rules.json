@@ -1,0 +1,31 @@
+{
+  "rules": {
+    "events_index": {
+      ".read": "auth != null",
+      ".write": "auth != null"
+    },
+    "events": {
+      "$eventId": {
+        ".write": "auth != null",
+        "settings": {
+          ".read": "true",
+          ".write": "auth != null"
+        },
+        "requests": {
+          ".read": "true",
+          "$requestId": {
+            ".write": "true",
+            ".validate": "newData.hasChildren(['title', 'artist', 'timestamp', 'status'])"
+          }
+        }
+      }
+    },
+    "autocomplete_songs": {
+      ".read": "true",
+      ".write": "true",
+      "$songId": {
+        ".validate": "newData.hasChildren(['title', 'artist'])"
+      }
+    }
+  }
+}
