@@ -318,14 +318,44 @@ export default function PublicView() {
           </div>
         )}
         
-        <div>
-          <span className="badge badge-playing" style={{ marginBottom: '6px' }}>En Vivo ⚡</span>
-          <h1 className="glow-text-primary" style={{ fontSize: '1.8rem', color: 'var(--text-primary)' }}>
-            {eventSettings.title}
-          </h1>
-          <p style={{ fontSize: '0.9rem', color: 'var(--text-secondary)', marginTop: '4px' }}>
-            DJ en cabina: <strong style={{ color: 'var(--secondary-color)' }}>{eventSettings.djName}</strong>
-          </p>
+        <div style={{ width: '100%' }}>
+          <span className="badge badge-playing" style={{ marginBottom: '8px' }}>En Vivo ⚡</span>
+          
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', marginBottom: '12px' }}>
+            <span style={{ fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--text-secondary)', fontWeight: '600' }}>
+              Evento
+            </span>
+            <h1 className="glow-text-primary" style={{ fontSize: '1.6rem', color: 'var(--text-primary)', margin: 0, lineHeight: '1.3' }}>
+              {eventSettings.title}
+            </h1>
+          </div>
+
+          <div style={{ 
+            display: 'flex', 
+            justifyContent: 'center', 
+            alignItems: 'center', 
+            gap: '16px', 
+            flexWrap: 'wrap', 
+            fontSize: '0.85rem', 
+            color: 'var(--text-secondary)',
+            borderTop: '1px solid var(--surface-border)',
+            paddingTop: '12px',
+            width: '100%'
+          }}>
+            <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+              🎧 <strong>DJ:</strong> <span style={{ color: 'var(--secondary-color)', fontWeight: '600' }}>{eventSettings.djName}</span>
+            </span>
+            {eventSettings.date && (
+              <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                📅 <strong>Fecha:</strong> <span style={{ color: 'var(--text-primary)', fontWeight: '600' }}>
+                  {(() => {
+                    const parts = eventSettings.date.split('-');
+                    return parts.length === 3 ? `${parts[2]}/${parts[1]}/${parts[0]}` : eventSettings.date;
+                  })()}
+                </span>
+              </span>
+            )}
+          </div>
         </div>
       </header>
 
