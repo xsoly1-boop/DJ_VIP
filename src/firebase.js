@@ -15,7 +15,8 @@ import {
   set as realSet, 
   update as realUpdate, 
   remove as realRemove,
-  off as realOff
+  off as realOff,
+  get as realGet
 } from 'firebase/database';
 import {
   getStorage,
@@ -430,6 +431,19 @@ export const remove = async (dbRef) => {
     return realRemove(dbRef);
   }
   return set(dbRef, null);
+};
+
+export const get = async (dbRef) => {
+  if (!dbRef.isMockRef) {
+    return realGet(dbRef);
+  }
+  const path = dbRef.path;
+  const dbData = getLocalData();
+  const val = getValueFromPath(dbData, path);
+  return {
+    exists: () => val !== null && val !== undefined,
+    val: () => val
+  };
 };
 
 // --- STORAGE ---

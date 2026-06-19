@@ -21,7 +21,8 @@ import {
   storageRef,
   firebaseConfig,
   syncChannel,
-  MOCK_ACCOUNTS
+  MOCK_ACCOUNTS,
+  get
 } from '../firebase';
 
 const FirebaseContext = createContext(null);
@@ -238,11 +239,11 @@ export const FirebaseProvider = ({ children }) => {
     return () => unsubscribe();
   }, [currentEventId, effectiveReadPath, userBasePath]);
 
-  // 4. Escuchar catálogo de autocompletado (tanto DJ como Público)
+  // 4. Cargar catálogo de autocompletado una vez al cambiar de ruta efectiva (sin escucha real-time para escalabilidad)
   useEffect(() => {
     if (!effectiveReadPath) return;
     const autocompleteRef = ref(database, `${effectiveReadPath}/autocomplete_songs`);
-    const unsubscribe = onValue(autocompleteRef, (snapshot) => {
+    get(autocompleteRef).then((snapshot) => {
       if (snapshot.exists()) {
         const val = snapshot.val();
         const list = Object.keys(val).map(key => ({ id: key, ...val[key] }));
@@ -250,8 +251,10 @@ export const FirebaseProvider = ({ children }) => {
       } else {
         setAutocompleteSongs([]);
       }
+    }).catch((err) => {
+      console.error("Error al cargar autocompletado:", err);
+      setAutocompleteSongs([]);
     });
-    return () => unsubscribe();
   }, [effectiveReadPath]);
 
   // 5. Escuchar índice de eventos (scope por usuario)
@@ -350,6 +353,18 @@ export const FirebaseProvider = ({ children }) => {
     // Auto-alimentar la base de datos de autocompletado en tiempo real
     try {
       await checkAndAddToAutocomplete(title, artist, genre, targetUid);
+      // Anexar la canción localmente para evitar consultas de red inmediatas
+      const cleanTitle = title.trim().toLowerCase();
+      const cleanArtist = artist.trim().toLowerCase();
+      const exists = (autocompleteSongs || []).some(
+        song => song.title.toLowerCase() === cleanTitle && song.artist.toLowerCase() === cleanArtist
+      );
+      if (!exists) {
+        setAutocompleteSongs(prev => [
+          ...prev,
+          { id: result.key, title: title.trim(), artist: artist.trim(), genre: genre || 'Personalizado' }
+        ]);
+      }
     } catch (e) {
       console.warn("No se pudo agregar a autocompletado:", e);
     }
@@ -409,7 +424,13 @@ export const FirebaseProvider = ({ children }) => {
         artist: artist.trim(),
         genre: genre ? genre.trim() : 'Personalizado'
       };
-      await push(autocompleteRef, newSong);
+      const result = await push(autocompleteRef, newSong);
+      
+      // Sincronizar el estado local para que el DJ también lo vea reflejado de inmediato
+      setAutocompleteSongs(prev => [
+        ...prev,
+        { id: result.key, ...newSong }
+      ]);
     }
   };
 
