@@ -5,17 +5,11 @@
    ========================================== */
 :root {
   /* Default Branding Colors */
-  --primary-h: 262;
-  --primary-s: 83%;
-  --primary-l: 58%;
-  --primary-color: hsl(var(--primary-h), var(--primary-s), var(--primary-l));
-  --primary-glow: hsla(var(--primary-h), var(--primary-s), var(--primary-l), 0.35);
+  --primary-color: #7c3aed;
+  --primary-glow: color-mix(in srgb, var(--primary-color) 35%, transparent);
 
-  --secondary-h: 190;
-  --secondary-s: 90%;
-  --secondary-l: 50%;
-  --secondary-color: hsl(var(--secondary-h), var(--secondary-s), var(--secondary-l));
-  --secondary-glow: hsla(var(--secondary-h), var(--secondary-s), var(--secondary-l), 0.35);
+  --secondary-color: #06b6d4;
+  --secondary-glow: color-mix(in srgb, var(--secondary-color) 35%, transparent);
 
   /* Status Colors */
   --success-color: hsl(142, 70%, 45%);
@@ -65,8 +59,8 @@ body {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   background-image: 
-    radial-gradient(circle at 10% 20%, hsla(var(--primary-h), var(--primary-s), var(--primary-l), 0.08) 0%, transparent 40%),
-    radial-gradient(circle at 90% 80%, hsla(var(--secondary-h), var(--secondary-s), var(--secondary-l), 0.08) 0%, transparent 40%);
+    radial-gradient(circle at 10% 20%, color-mix(in srgb, var(--primary-color) 8%, transparent) 0%, transparent 40%),
+    radial-gradient(circle at 90% 80%, color-mix(in srgb, var(--secondary-color) 8%, transparent) 0%, transparent 40%);
   background-attachment: fixed;
 }
 
@@ -110,7 +104,7 @@ input, button, select, textarea {
 .glass-card-hover:hover {
   transform: translateY(-4px);
   border-color: rgba(255, 255, 255, 0.15);
-  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.7), 0 0 20px hsla(var(--primary-h), var(--primary-s), var(--primary-l), 0.1);
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.7), 0 0 20px color-mix(in srgb, var(--primary-color) 10%, transparent);
 }
 
 .glow-text-primary {
@@ -144,13 +138,13 @@ input, button, select, textarea {
 }
 
 .btn-primary {
-  background: linear-gradient(135deg, var(--primary-color), hsl(var(--primary-h), var(--primary-s), calc(var(--primary-l) - 8%)));
+  background: linear-gradient(135deg, var(--primary-color), color-mix(in srgb, var(--primary-color) 80%, black));
   color: #fff;
   box-shadow: 0 4px 15px var(--primary-glow);
 }
 .btn-primary:hover {
   transform: translateY(-2px);
-  box-shadow: 0 6px 20px hsla(var(--primary-h), var(--primary-s), var(--primary-l), 0.5);
+  box-shadow: 0 6px 20px color-mix(in srgb, var(--primary-color) 50%, transparent);
   filter: brightness(1.1);
 }
 .btn-primary:active {
@@ -253,7 +247,7 @@ input, button, select, textarea {
     box-shadow: 0 0 15px var(--primary-glow);
   }
   50% {
-    box-shadow: 0 0 30px hsla(var(--primary-h), var(--primary-s), var(--primary-l), 0.6);
+    box-shadow: 0 0 30px var(--primary-glow);
   }
 }
 

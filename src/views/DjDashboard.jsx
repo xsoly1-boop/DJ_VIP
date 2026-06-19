@@ -762,8 +762,8 @@ export default function DjDashboard() {
                           <span style={{ fontWeight: '700', fontSize: '1.05rem', color: 'var(--text-primary)' }}>{req.title}</span>
                           {req.status === 'pending'   && <span className="badge badge-pending">En espera</span>}
                           {req.status === 'accepted'  && <span className="badge badge-accepted">Aceptada</span>}
-                          {req.status === 'playing'   && <span className="badge badge-playing animate-pulse-glow">Sonando ahora 🎵</span>}
-                          {req.status === 'rejected'  && <span className="badge badge-rejected">Declinada</span>}
+                          {req.status === 'playing'   && <span className="badge badge-playing animate-pulse-glow">En Reproducción 🎵</span>}
+                          {req.status === 'rejected'  && <span className="badge badge-rejected">Rechazada</span>}
                         </div>
                         <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
                           {req.artist} • <span style={{ color: 'var(--secondary-color)' }}>{req.genre}</span>
@@ -1148,11 +1148,9 @@ export default function DjDashboard() {
                                 <button title={isArchived ? 'Desarchivar' : 'Archivar'} className="btn btn-secondary" style={{ padding: '6px 10px', fontSize: '0.75rem' }} onClick={() => { archiveEvent(ev.id, !isArchived); showToast(isArchived ? `📂 Evento desarchivado` : `🗄️ Evento archivado`); }}>
                                   <Layers size={13} />
                                 </button>
-                                {ev.id !== 'default-event' && (
-                                  <button title="Eliminar evento" className="btn btn-secondary" style={{ padding: '6px 10px', fontSize: '0.75rem', borderColor: 'rgba(239,68,68,0.3)', color: 'var(--danger-color)' }} onClick={() => setDeletingEventId(ev.id)}>
-                                    <Trash2 size={13} />
-                                  </button>
-                                )}
+                                <button title={ev.id === 'default-event' ? "Restablecer evento por defecto" : "Eliminar evento"} className="btn btn-secondary" style={{ padding: '6px 10px', fontSize: '0.75rem', borderColor: 'rgba(239,68,68,0.3)', color: 'var(--danger-color)' }} onClick={() => setDeletingEventId(ev.id)}>
+                                  <Trash2 size={13} />
+                                </button>
                               </div>
                             )}
                           </div>
@@ -1160,11 +1158,15 @@ export default function DjDashboard() {
                           {/* Confirmación de eliminación inline */}
                           {isDeleting && (
                             <div style={{ background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.3)', borderRadius: 'var(--radius-sm)', padding: '12px 16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px' }}>
-                              <span style={{ fontSize: '0.85rem', color: 'var(--danger-color)', fontWeight: '600' }}>⚠️ ¿Eliminar "<strong>{ev.title}</strong>" permanentemente?</span>
+                              <span style={{ fontSize: '0.85rem', color: 'var(--danger-color)', fontWeight: '600' }}>
+                                {ev.id === 'default-event' 
+                                  ? '⚠️ ¿Restablecer el evento por defecto a su estado original?' 
+                                  : <>⚠️ ¿Eliminar "<strong>{ev.title}</strong>" permanentemente?</>}
+                              </span>
                               <div style={{ display: 'flex', gap: '8px' }}>
                                 <button className="btn btn-secondary" style={{ padding: '5px 12px', fontSize: '0.8rem' }} onClick={() => setDeletingEventId(null)}>Cancelar</button>
                                 <button style={{ padding: '5px 12px', fontSize: '0.8rem', background: 'rgba(239,68,68,0.15)', border: '1px solid rgba(239,68,68,0.4)', color: 'var(--danger-color)', borderRadius: 'var(--radius-sm)', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }} onClick={() => handleDeleteEvent(ev.id)}>
-                                  <Trash2 size={13} /> Eliminar
+                                  <Trash2 size={13} /> {ev.id === 'default-event' ? 'Restablecer' : 'Eliminar'}
                                 </button>
                               </div>
                             </div>

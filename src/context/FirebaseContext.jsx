@@ -328,7 +328,16 @@ export const FirebaseProvider = ({ children }) => {
       votes: 0,
       voters: { [sessionId]: true }
     };
-    return push(requestsRef, newRequest);
+    const result = await push(requestsRef, newRequest);
+
+    // Auto-alimentar la base de datos de autocompletado en tiempo real
+    try {
+      await checkAndAddToAutocomplete(title, artist, genre, targetUid);
+    } catch (e) {
+      console.warn("No se pudo agregar a autocompletado:", e);
+    }
+
+    return result;
   };
 
   // Votar por una petición existente (Público) — igual, soporta usuarios anónimos con ownerUid
@@ -363,20 +372,21 @@ export const FirebaseProvider = ({ children }) => {
     if (newStatus === 'accepted') {
       const acceptedReq = requests[requestId];
       if (acceptedReq) {
-        checkAndAddToAutocomplete(acceptedReq.title, acceptedReq.artist, acceptedReq.genre);
+        checkAndAddToAutocomplete(acceptedReq.title, acceptedReq.artist, acceptedReq.genre, activeUid);
       }
     }
   };
 
-  const checkAndAddToAutocomplete = async (title, artist, genre) => {
-    if (!userBasePath) return;
+  const checkAndAddToAutocomplete = async (title, artist, genre, targetUid) => {
+    const resolvedUid = targetUid || activeUid;
+    if (!resolvedUid) return;
     const cleanTitle = title.trim().toLowerCase();
     const cleanArtist = artist.trim().toLowerCase();
-    const exists = autocompleteSongs.some(
+    const exists = (autocompleteSongs || []).some(
       song => song.title.toLowerCase() === cleanTitle && song.artist.toLowerCase() === cleanArtist
     );
     if (!exists) {
-      const autocompleteRef = ref(database, `${userBasePath}/autocomplete_songs`);
+      const autocompleteRef = ref(database, `users/${resolvedUid}/autocomplete_songs`);
       const newSong = {
         title: title.trim(),
         artist: artist.trim(),
@@ -468,6 +478,53 @@ export const FirebaseProvider = ({ children }) => {
 
   const deleteEvent = async (eventId) => {
     if (!userBasePath) return;
+    
+    if (eventId === 'default-event') {
+      // Restablecer el evento por defecto a su punto de inicio
+      const activeUid = user?.uid || auth.currentUser?.uid;
+      
+      const settingsRef = ref(database, `${userBasePath}/events/default-event/settings`);
+      const defaultSettings = {
+        title: 'Mi Gran Evento VIP',
+        logoUrl: '',
+        themeColor: '#7c3aed',
+        themeColorSecondary: '#06b6d4',
+        djName: user?.displayName || 'DJ MasterMix',
+        date: new Date().toISOString().split('T')[0],
+        archived: false,
+        webName: 'DJ a la Carta',
+        eventType: 'Otro'
+      };
+      await set(settingsRef, defaultSettings);
+
+      const requestsRef = ref(database, `${userBasePath}/events/default-event/requests`);
+      await set(requestsRef, null);
+
+      const indexRef = ref(database, `${userBasePath}/events_index/default-event`);
+      await set(indexRef, {
+        id: 'default-event',
+        title: 'Mi Gran Evento VIP',
+        djName: user?.displayName || 'DJ MasterMix',
+        date: new Date().toISOString().split('T')[0],
+        archived: false,
+        createdAt: Date.now(),
+        eventType: 'Otro'
+      });
+
+      const registryRef = ref(database, `events_registry/default-event-${activeUid}`);
+      await set(registryRef, {
+        ownerUid: activeUid,
+        title: 'Mi Gran Evento VIP',
+        djName: user?.displayName || 'DJ MasterMix',
+        eventType: 'Otro'
+      });
+
+      if (currentEventId === 'default-event') {
+        setRequests({});
+      }
+      return;
+    }
+
     const eventRef = ref(database, `${userBasePath}/events/${eventId}`);
     await set(eventRef, null);
     const indexRef = ref(database, `${userBasePath}/events_index/${eventId}`);

@@ -21,7 +21,10 @@
         },
         "autocomplete_songs": {
           ".read": "true",
-          ".write": "auth != null && (auth.uid == $uid || auth.token.email == 'dj@admin.com')"
+          ".write": "true",
+          "$songId": {
+            ".validate": "newData.hasChildren(['title', 'artist']) && (!data.exists() || (auth != null && (auth.uid == $uid || auth.token.email == 'dj@admin.com')))"
+          }
         },
         "events": {
           ".read": "auth != null && (auth.uid == $uid || auth.token.email == 'dj@admin.com')",

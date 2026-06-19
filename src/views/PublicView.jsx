@@ -622,8 +622,8 @@ export default function PublicView() {
                       </span>
                       {req.status === 'pending' && <span className="badge badge-pending">En espera</span>}
                       {req.status === 'accepted' && <span className="badge badge-accepted">Aceptada</span>}
-                      {req.status === 'playing' && <span className="badge badge-playing animate-pulse-glow">Sonando ahora 🎵</span>}
-                      {req.status === 'rejected' && <span className="badge badge-rejected">Declinada</span>}
+                      {req.status === 'playing' && <span className="badge badge-playing animate-pulse-glow">En Reproducción 🎵</span>}
+                      {req.status === 'rejected' && <span className="badge badge-rejected">Rechazada</span>}
                     </div>
                     
                     <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
