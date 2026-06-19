@@ -44,6 +44,8 @@ export default function DjDashboard() {
   const [djNameInput, setDjNameInput] = useState(eventSettings.djName);
   const [primaryColor, setPrimaryColor] = useState(eventSettings.themeColor || '#7c3aed');
   const [secondaryColor, setSecondaryColor] = useState(eventSettings.themeColorSecondary || '#06b6d4');
+  // URL de producción (Vercel) configurable — soluciona el bug de QR en Electron
+  const [productionUrl, setProductionUrl] = useState(eventSettings.productionUrl || import.meta.env.VITE_PUBLIC_URL || '');
   
   // Alertas / Audio / Notificaciones
   const [soundEnabled, setSoundEnabled] = useState(true);
@@ -62,6 +64,7 @@ export default function DjDashboard() {
     setDjNameInput(eventSettings.djName);
     setPrimaryColor(eventSettings.themeColor || '#7c3aed');
     setSecondaryColor(eventSettings.themeColorSecondary || '#06b6d4');
+    setProductionUrl(eventSettings.productionUrl || import.meta.env.VITE_PUBLIC_URL || '');
   }, [eventSettings, currentEventId]);
 
   // Sintetizador de audio premium con la Web Audio API (Soporta múltiples tonos)
@@ -205,12 +208,17 @@ export default function DjDashboard() {
   // Guardar configuraciones de Marca Blanca
   const handleSaveBranding = async (e) => {
     e.preventDefault();
+    if (productionUrl && !productionUrl.startsWith('http')) {
+      showToast("⚠️ La URL debe comenzar con https://");
+      return;
+    }
     try {
       await updateEventSettings({
         title: titleInput,
         djName: djNameInput,
         themeColor: primaryColor,
-        themeColorSecondary: secondaryColor
+        themeColorSecondary: secondaryColor,
+        productionUrl: productionUrl.trim().replace(/\/$/, '') // quitar slash final
       });
       showToast("💾 Configuración de marca guardada");
     } catch (err) {
@@ -259,7 +267,12 @@ export default function DjDashboard() {
   };
 
   // Enlace público del evento
-  const publicEventUrl = `${window.location.origin}/?event=${currentEventId}`;
+  // BUGFIX: En Electron compilado, window.location.origin es "file://" — usamos la URL de Vercel guardada
+  const baseUrl = eventSettings.productionUrl || productionUrl || 
+    (window.location.protocol !== 'file:' ? window.location.origin : '');
+  const publicEventUrl = baseUrl 
+    ? `${baseUrl}/?event=${currentEventId}` 
+    : `/?event=${currentEventId}`;
 
   // Filtrar y ordenar peticiones
   const sortedRequests = Object.keys(requests)
@@ -791,6 +804,26 @@ export default function DjDashboard() {
                       </p>
                     </div>
                   </div>
+                </div>
+
+                {/* Fila: URL de Producción (Vercel) — necesaria para QR en Electron */}
+                <div className="form-group" style={{ borderBottom: '1px solid rgba(255,255,255,0.05)', paddingBottom: '20px' }}>
+                  <label className="form-label" style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    🔗 URL de Producción (Vercel)
+                    <span style={{ fontSize: '0.7rem', color: 'var(--warning-color)', background: 'rgba(245,158,11,0.1)', padding: '2px 6px', borderRadius: '4px', fontWeight: '700' }}>REQUERIDA PARA QR</span>
+                  </label>
+                  <input
+                    type="url"
+                    className="input-field"
+                    placeholder="https://mi-app.vercel.app"
+                    value={productionUrl}
+                    onChange={(e) => setProductionUrl(e.target.value)}
+                  />
+                  <p style={{ fontSize: '0.75rem', color: productionUrl ? 'var(--success-color)' : 'var(--warning-color)', marginTop: '6px' }}>
+                    {productionUrl 
+                      ? `✅ QR generará: ${productionUrl}/?event=${currentEventId}` 
+                      : '⚠️ Sin URL configurada el QR no funcionará en la app de escritorio. Ingresa tu URL de Vercel.'}
+                  </p>
                 </div>
 
                 {/* Fila: Títulos */}
