@@ -620,9 +620,12 @@ export default function DjDashboard() {
               <button className="btn btn-secondary" onClick={downloadQR} style={{ width: '100%', padding: '10px' }}>
                 <Download size={14} /><span>Descargar QR PNG (1500px)</span>
               </button>
-              <a href={publicEventUrl} target="_blank" rel="noreferrer"
-                style={{ fontSize: '0.8rem', color: 'var(--secondary-color)', textDecoration: 'none', wordBreak: 'break-all' }}>
+              <a href={publicEventUrl} target="_blank" rel="noreferrer" className="btn btn-primary" style={{ width: '100%', padding: '10px', textDecoration: 'none', justifyContent: 'center' }}>
+                <ExternalLink size={14} /><span>Abrir Panel del Público</span>
               </a>
+              <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', wordBreak: 'break-all', marginTop: '4px' }}>
+                {publicEventUrl}
+              </div>
             </div>
           </div>
         </aside>
