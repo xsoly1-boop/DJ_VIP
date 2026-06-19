@@ -158,10 +158,10 @@ export const FirebaseProvider = ({ children }) => {
     return () => unsubscribe();
   }, [currentEventId, effectiveReadPath]);
 
-  // 4. Escuchar catálogo de autocompletado (solo DJ autenticado)
+  // 4. Escuchar catálogo de autocompletado (tanto DJ como Público)
   useEffect(() => {
-    if (!userBasePath) return;
-    const autocompleteRef = ref(database, `${userBasePath}/autocomplete_songs`);
+    if (!effectiveReadPath) return;
+    const autocompleteRef = ref(database, `${effectiveReadPath}/autocomplete_songs`);
     const unsubscribe = onValue(autocompleteRef, (snapshot) => {
       if (snapshot.exists()) {
         const val = snapshot.val();
@@ -172,7 +172,7 @@ export const FirebaseProvider = ({ children }) => {
       }
     });
     return () => unsubscribe();
-  }, [userBasePath]);
+  }, [effectiveReadPath]);
 
   // 5. Escuchar índice de eventos (scope por usuario)
   useEffect(() => {

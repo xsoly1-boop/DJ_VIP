@@ -4,7 +4,7 @@
     "events_registry": {
       "$eventId": {
         ".read": "true",
-        ".write": "auth != null"
+        ".write": "auth != null && (!data.exists() || data.child('ownerUid').val() == auth.uid || auth.token.email == 'dj@admin.com')"
       }
     },
 
@@ -20,7 +20,7 @@
           ".write": "auth != null && (auth.uid == $uid || auth.token.email == 'dj@admin.com')"
         },
         "autocomplete_songs": {
-          ".read": "auth != null && (auth.uid == $uid || auth.token.email == 'dj@admin.com')",
+          ".read": "true",
           ".write": "auth != null && (auth.uid == $uid || auth.token.email == 'dj@admin.com')"
         },
         "events": {

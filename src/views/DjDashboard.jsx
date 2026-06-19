@@ -218,8 +218,10 @@ export default function DjDashboard() {
     const PADDING = 60; // zona de silencio en px
     const serializer = new XMLSerializer();
     const svgXml = serializer.serializeToString(svgElement);
-    const svgBlob = new Blob([svgXml], { type: 'image/svg+xml;charset=utf-8' });
-    const svgUrl = URL.createObjectURL(svgBlob);
+    
+    // Codificar en Base64 para máxima compatibilidad con el elemento Image
+    const svgBase64 = btoa(unescape(encodeURIComponent(svgXml)));
+    const svgDataUrl = `data:image/svg+xml;base64,${svgBase64}`;
 
     const img = new Image();
     img.onload = () => {
@@ -236,8 +238,6 @@ export default function DjDashboard() {
       const drawSize = SIZE - PADDING * 2;
       ctx.drawImage(img, PADDING, PADDING, drawSize, drawSize);
 
-      URL.revokeObjectURL(svgUrl);
-
       canvas.toBlob((blob) => {
         const pngUrl = URL.createObjectURL(blob);
         const link = document.createElement('a');
@@ -250,8 +250,26 @@ export default function DjDashboard() {
         showToast('⬇️ QR de alta calidad (1500px) descargado');
       }, 'image/png', 1.0);
     };
-    img.onerror = () => { URL.revokeObjectURL(svgUrl); showToast('❌ Error al generar el PNG'); };
-    img.src = svgUrl;
+    img.onerror = () => { showToast('❌ Error al generar el PNG'); };
+    img.src = svgDataUrl;
+  };
+
+  const downloadQRSvg = () => {
+    const svgElement = document.getElementById('qr-code-svg');
+    if (!svgElement) { showToast('❌ No se encontró el código QR'); return; }
+
+    const serializer = new XMLSerializer();
+    const svgXml = serializer.serializeToString(svgElement);
+    const svgBlob = new Blob([svgXml], { type: 'image/svg+xml;charset=utf-8' });
+    const svgUrl = URL.createObjectURL(svgBlob);
+    const link = document.createElement('a');
+    link.href = svgUrl;
+    link.download = `QR-${eventSettings.title || 'evento'}.svg`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(svgUrl);
+    showToast('⬇️ Código QR (SVG) descargado');
   };
 
   // Subir Logotipo local
@@ -451,7 +469,9 @@ export default function DjDashboard() {
   const baseUrl = eventSettings.productionUrl || productionUrl || 
     (window.location.protocol !== 'file:' ? window.location.origin : '');
   const effectiveUid = impersonatingUid || user?.uid;
-  const uniqueEventKey = effectiveUid ? `default-event-${effectiveUid}` : currentEventId;
+  const uniqueEventKey = currentEventId === 'default-event' && effectiveUid 
+    ? `default-event-${effectiveUid}` 
+    : currentEventId;
   const publicEventUrl = baseUrl 
     ? `${baseUrl}/?event=${uniqueEventKey}` 
     : `/?event=${uniqueEventKey}`;
@@ -704,6 +724,9 @@ export default function DjDashboard() {
             <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
               <button className="btn btn-secondary" onClick={downloadQR} style={{ width: '100%', padding: '10px' }}>
                 <Download size={14} /><span>Descargar QR PNG (1500px)</span>
+              </button>
+              <button className="btn btn-secondary" onClick={downloadQRSvg} style={{ width: '100%', padding: '10px' }}>
+                <Download size={14} /><span>Descargar QR SVG (Vectorial)</span>
               </button>
               <a href={publicEventUrl} target="_blank" rel="noreferrer" className="btn btn-primary" style={{ width: '100%', padding: '10px', textDecoration: 'none', justifyContent: 'center' }}>
                 <ExternalLink size={14} /><span>Abrir Panel del Público</span>
