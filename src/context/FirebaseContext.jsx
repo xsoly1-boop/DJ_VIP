@@ -550,12 +550,37 @@ export const FirebaseProvider = ({ children }) => {
     }
 
     // --- FIREBASE REAL ---
+    // Traductor de códigos de error de Firebase Auth al español
+    const translateFirebaseAuthError = (err) => {
+      const code = err?.code || '';
+      const translations = {
+        'auth/email-already-in-use':    'Ya existe una cuenta registrada con ese correo electrónico.',
+        'auth/invalid-email':           'El formato del correo electrónico no es válido.',
+        'auth/weak-password':           'La contraseña es muy débil. Usa al menos 6 caracteres.',
+        'auth/too-many-requests':       'Demasiados intentos. Espera unos minutos e inténtalo de nuevo.',
+        'auth/network-request-failed':  'Error de red. Verifica tu conexión a Internet.',
+        'auth/operation-not-allowed':   'La creación de usuarios con email/contraseña no está habilitada en Firebase Console.',
+        'auth/invalid-api-key':         'API Key de Firebase inválida. Revisa tu configuración.',
+        'auth/app-deleted':             'Error interno de configuración. Recarga la página.',
+        'auth/user-disabled':           'Esta cuenta ha sido deshabilitada.',
+      };
+      return translations[code] || `Error de Firebase (${code || 'desconocido'}): ${err.message || ''}`;
+    };
+
     // Crear app secundaria temporal para no cerrar sesión del admin
     const tempAppName = `TempApp_${Date.now()}`;
     const tempApp = initializeApp(firebaseConfig, tempAppName);
     try {
       const tempAuth = getAuth(tempApp);
-      const userCredential = await firebaseCreateUser(tempAuth, email, password);
+
+      let userCredential;
+      try {
+        userCredential = await firebaseCreateUser(tempAuth, email, password);
+      } catch (authErr) {
+        // Traducir el error de Auth antes de propagarlo
+        throw new Error(translateFirebaseAuthError(authErr));
+      }
+
       const newUser = userCredential.user;
 
       // Crear datos iniciales del nuevo DJ en RTDB
@@ -593,7 +618,7 @@ export const FirebaseProvider = ({ children }) => {
 
       return { uid: newUid, email, displayName: displayName || email.split('@')[0] };
     } finally {
-      // Eliminar app temporal para liberar recursos
+      // Eliminar app temporal para liberar recursos (siempre se ejecuta)
       await deleteApp(tempApp);
     }
   };
