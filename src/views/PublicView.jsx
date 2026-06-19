@@ -43,7 +43,8 @@ export default function PublicView() {
       'Rock en Español',
       'Salsa / Bachata',
       'Electrónica / Circuit',
-      'Ska / Reggae'
+      'Ska / Reggae',
+      'Kpop'
     ];
 
     // Contar frecuencia de cada género en peticiones reales

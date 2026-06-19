@@ -58,29 +58,35 @@ if (!isMockMode) {
   storage = {};
 }
 
-export { auth, database, storage, isMockMode };
+// Canal para sincronizar pestañas locales en tiempo real
+const syncChannel = isMockMode ? new BroadcastChannel('firebase-rtdb-sync') : null;
+
+export { auth, database, storage, isMockMode, firebaseConfig, syncChannel };
 
 // -------------------------------------------------------------
 // 2. MOCK FIREBASE — IMPLEMENTACIÓN CON LOCALSTORAGE Y BROADCASTCHANNEL
 //    Arquitectura: users/{uid}/events/{eventId}/...
 // -------------------------------------------------------------
 
-// Canal para sincronizar pestañas locales en tiempo real
-const syncChannel = isMockMode ? new BroadcastChannel('firebase-rtdb-sync') : null;
-
-// Cuentas de prueba disponibles en modo mock
-// { email, password, uid, displayName, isAdmin }
-export const MOCK_ACCOUNTS = [
+// Cuentas de prueba disponibles en modo mock (cargadas dinámicamente)
+const DEFAULT_MOCK_ACCOUNTS = [
   { email: 'dj@admin.com', password: 'admin123', uid: 'uid-admin-master', displayName: 'DJ Administrador Master', isAdmin: true },
   { email: 'dj1@dj.com',   password: 'dj123',    uid: 'uid-dj1',          displayName: 'DJ MasterMix', isAdmin: false },
   { email: 'dj2@dj.com',   password: 'dj456',    uid: 'uid-dj2',          displayName: 'DJ Neon Vibes', isAdmin: false },
 ];
 
+const savedAccounts = localStorage.getItem('mock_accounts');
+if (!savedAccounts) {
+  localStorage.setItem('mock_accounts', JSON.stringify(DEFAULT_MOCK_ACCOUNTS));
+}
+
+export const MOCK_ACCOUNTS = savedAccounts ? JSON.parse(savedAccounts) : DEFAULT_MOCK_ACCOUNTS;
+
 // Email del administrador master (sin importar si es real o mock)
 export const MASTER_ADMIN_EMAIL = 'dj@admin.com';
 
 // Semilla inicial de canciones para autocompletado
-const INITIAL_AUTOCOMPLETE = [
+export const INITIAL_AUTOCOMPLETE = [
   { id: '1', title: 'Ella Baila Sola', artist: 'Eslabon Armado x Peso Pluma', genre: 'Regional Mexicano' },
   { id: '2', title: 'La Bebé (Remix)', artist: 'Yng Lvcas x Peso Pluma', genre: 'Reggaetón' },
   { id: '3', title: 'Gatita', artist: 'Bellakath', genre: 'Reggaetón' },
@@ -90,7 +96,11 @@ const INITIAL_AUTOCOMPLETE = [
   { id: '7', title: 'Rayando el Sol', artist: 'Maná', genre: 'Rock en Español' },
   { id: '8', title: 'Adiós Amor', artist: 'Christian Nodal', genre: 'Regional Mexicano' },
   { id: '9', title: 'Música Ligera', artist: 'Soda Stereo', genre: 'Rock en Español' },
-  { id: '10', title: 'Quevedo: Bzrp Music Sessions, Vol. 52', artist: 'Bizarrap x Quevedo', genre: 'Urban/Electro' }
+  { id: '10', title: 'Quevedo: Bzrp Music Sessions, Vol. 52', artist: 'Bizarrap x Quevedo', genre: 'Urban/Electro' },
+  { id: '11', title: 'How You Like That', artist: 'Blackpink', genre: 'Kpop' },
+  { id: '12', title: 'Dynamite', artist: 'BTS', genre: 'Kpop' },
+  { id: '13', title: 'On The Ground', artist: 'Rose', genre: 'Kpop' },
+  { id: '14', title: 'Antifragile', artist: 'Le sserafim', genre: 'Kpop' }
 ];
 
 // Construir datos iniciales para un usuario DJ dado

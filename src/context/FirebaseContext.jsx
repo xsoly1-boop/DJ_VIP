@@ -1,4 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import { initializeApp, getApps, deleteApp } from 'firebase/app';
+import { getAuth, createUserWithEmailAndPassword as firebaseCreateUser } from 'firebase/auth';
 import { 
   auth, 
   database, 
@@ -16,7 +18,10 @@ import {
   push,
   uploadBytes,
   getDownloadURL,
-  storageRef
+  storageRef,
+  firebaseConfig,
+  syncChannel,
+  MOCK_ACCOUNTS
 } from '../firebase';
 
 const FirebaseContext = createContext(null);
@@ -486,6 +491,113 @@ export const FirebaseProvider = ({ children }) => {
     }
   };
 
+  // Crear nueva cuenta DJ (solo Admin Master)
+  // En modo real: usa una app secundaria temporal para no cerrar la sesión del admin.
+  // En modo mock: persiste la cuenta nueva en MOCK_ACCOUNTS (localStorage).
+  const createDjAccount = async (email, password, displayName) => {
+    if (!isAdminMaster) {
+      throw new Error('Solo el Administrador Master puede crear cuentas.');
+    }
+
+    if (isMockMode) {
+      // Verificar que no exista ya
+      const allAccounts = JSON.parse(localStorage.getItem('mock_accounts') || '[]');
+      if (allAccounts.find(a => a.email === email)) {
+        throw new Error('Ya existe una cuenta con ese correo electrónico.');
+      }
+
+      const newUid = 'uid-' + Date.now() + '-' + Math.random().toString(36).substr(2, 6);
+      const newAccount = { email, password, uid: newUid, displayName: displayName || email.split('@')[0], isAdmin: false };
+      
+      const updatedAccounts = [...allAccounts, newAccount];
+      localStorage.setItem('mock_accounts', JSON.stringify(updatedAccounts));
+
+      // Crear datos iniciales del DJ en la base de datos mock
+      const dbData = JSON.parse(localStorage.getItem('mock_rtdb_v2') || '{}');
+      if (!dbData.users) dbData.users = {};
+      const now = Date.now();
+      dbData.users[newUid] = {
+        events_index: {
+          'default-event': {
+            id: 'default-event', title: 'Mi Gran Evento VIP',
+            djName: displayName || email.split('@')[0],
+            date: new Date().toISOString().split('T')[0],
+            archived: false, createdAt: now
+          }
+        },
+        events: {
+          'default-event': {
+            settings: {
+              title: 'Mi Gran Evento VIP', logoUrl: '',
+              themeColor: '#7c3aed', themeColorSecondary: '#06b6d4',
+              djName: displayName || email.split('@')[0]
+            },
+            requests: {}
+          }
+        },
+        autocomplete_songs: {}
+      };
+      if (!dbData.events_registry) dbData.events_registry = {};
+      dbData.events_registry['default-event-' + newUid] = {
+        ownerUid: newUid, title: 'Mi Gran Evento VIP', djName: displayName || email.split('@')[0]
+      };
+      localStorage.setItem('mock_rtdb_v2', JSON.stringify(dbData));
+
+      // Notificar a todos los listeners que la BD cambió
+      if (syncChannel) syncChannel.postMessage({ type: 'DB_UPDATE' });
+
+      return { uid: newUid, email, displayName: newAccount.displayName };
+    }
+
+    // --- FIREBASE REAL ---
+    // Crear app secundaria temporal para no cerrar sesión del admin
+    const tempAppName = `TempApp_${Date.now()}`;
+    const tempApp = initializeApp(firebaseConfig, tempAppName);
+    try {
+      const tempAuth = getAuth(tempApp);
+      const userCredential = await firebaseCreateUser(tempAuth, email, password);
+      const newUser = userCredential.user;
+
+      // Crear datos iniciales del nuevo DJ en RTDB
+      const newUid = newUser.uid;
+      const userRef = ref(database, `users/${newUid}`);
+      const now = Date.now();
+      await set(userRef, {
+        events_index: {
+          'default-event': {
+            id: 'default-event', title: 'Mi Gran Evento VIP',
+            djName: displayName || email.split('@')[0],
+            date: new Date().toISOString().split('T')[0],
+            archived: false, createdAt: now
+          }
+        },
+        events: {
+          'default-event': {
+            settings: {
+              title: 'Mi Gran Evento VIP', logoUrl: '',
+              themeColor: '#7c3aed', themeColorSecondary: '#06b6d4',
+              djName: displayName || email.split('@')[0]
+            },
+            requests: {}
+          }
+        },
+        autocomplete_songs: {}
+      });
+
+      // Registrar en registry público
+      const registryRef = ref(database, `events_registry/default-event-${newUid}`);
+      await set(registryRef, {
+        ownerUid: newUid, title: 'Mi Gran Evento VIP',
+        djName: displayName || email.split('@')[0]
+      });
+
+      return { uid: newUid, email, displayName: displayName || email.split('@')[0] };
+    } finally {
+      // Eliminar app temporal para liberar recursos
+      await deleteApp(tempApp);
+    }
+  };
+
   return (
     <FirebaseContext.Provider value={{
       user,
@@ -514,7 +626,8 @@ export const FirebaseProvider = ({ children }) => {
       deleteEvent,
       archiveEvent,
       updateEventMetadata,
-      clearHistoryWithOptions
+      clearHistoryWithOptions,
+      createDjAccount
     }}>
       {children}
     </FirebaseContext.Provider>

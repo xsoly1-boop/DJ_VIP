@@ -1,11 +1,12 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useFirebase } from '../context/FirebaseContext';
+import { MOCK_ACCOUNTS, MASTER_ADMIN_EMAIL } from '../firebase';
 import { QRCodeSVG } from 'qrcode.react';
 import { 
   Music, LogOut, Settings, Calendar, Download, RefreshCw, 
   Trash2, Plus, Play, Check, X, Bell, BellOff, Volume2, 
   Sparkles, Sliders, Users, Layers, ShieldCheck,
-  Link, AlertTriangle, ShieldAlert, ArrowLeft, UserCog, Edit
+  Link, AlertTriangle, ShieldAlert, ArrowLeft, UserCog, Edit, UserPlus, Mail, Lock, User
 } from 'lucide-react';
 
 export default function DjDashboard() {
@@ -30,7 +31,8 @@ export default function DjDashboard() {
     archiveEvent,
     updateEventMetadata,
     clearHistoryWithOptions,
-    autocompleteSongs
+    autocompleteSongs,
+    createDjAccount
   } = useFirebase();
 
   // Estados Locales
@@ -71,6 +73,15 @@ export default function DjDashboard() {
   const [clearOptionAutocomplete, setClearOptionAutocomplete] = useState(false);
   const [clearErrorMsg, setClearErrorMsg] = useState('');
   const [clearingHistory, setClearingHistory] = useState(false);
+
+  // Panel Admin: Agregar DJ
+  const [showAddDjForm, setShowAddDjForm] = useState(false);
+  const [newDjEmail, setNewDjEmail] = useState('');
+  const [newDjPassword, setNewDjPassword] = useState('');
+  const [newDjDisplayName, setNewDjDisplayName] = useState('');
+  const [addDjLoading, setAddDjLoading] = useState(false);
+  const [addDjError, setAddDjError] = useState('');
+  const [addDjSuccess, setAddDjSuccess] = useState('');
 
   // Alertas / Audio / Notificaciones
   const [soundEnabled, setSoundEnabled] = useState(true);
@@ -346,6 +357,32 @@ export default function DjDashboard() {
     }
   };
 
+  // Crear nueva cuenta DJ desde el Panel Admin
+  const handleCreateDjAccount = async (e) => {
+    e.preventDefault();
+    setAddDjError('');
+    setAddDjSuccess('');
+    if (!newDjEmail.trim() || !newDjPassword.trim()) {
+      setAddDjError('⚠️ Email y contraseña son obligatorios.');
+      return;
+    }
+    if (newDjPassword.length < 6) {
+      setAddDjError('⚠️ La contraseña debe tener al menos 6 caracteres.');
+      return;
+    }
+    setAddDjLoading(true);
+    try {
+      const result = await createDjAccount(newDjEmail.trim(), newDjPassword, newDjDisplayName.trim());
+      setAddDjSuccess(`✅ Cuenta creada: ${result.displayName} (${result.email})`);
+      setNewDjEmail(''); setNewDjPassword(''); setNewDjDisplayName('');
+      showToast(`🎧 Nuevo DJ registrado: ${result.displayName}`);
+    } catch (err) {
+      setAddDjError(`❌ ${err.message || 'Error al crear la cuenta.'}`);
+    } finally {
+      setAddDjLoading(false);
+    }
+  };
+
   // Enlace público del evento
   const baseUrl = eventSettings.productionUrl || productionUrl || 
     (window.location.protocol !== 'file:' ? window.location.origin : '');
@@ -379,14 +416,22 @@ export default function DjDashboard() {
     
     // Obtener nombres de eventos y el djName común
     const eventTitles = events.map(e => e.title);
-    // Intentar buscar el nombre de DJ en la configuración de la cuenta del mock o en los eventos
+    // Intentar buscar el nombre de DJ y email en las cuentas mock o en los eventos
     let djName = 'DJ Sin Nombre';
+    let email = '';
+
     if (uid === 'uid-admin-master') {
       djName = 'Administrador';
+      email = MASTER_ADMIN_EMAIL || 'dj@admin.com';
     } else {
-      const match = MOCK_ACCOUNTS.find(a => a.uid === uid);
+      // Leer MOCK_ACCOUNTS directamente desde localStorage (puede haberse actualizado)
+      const allAccounts = (() => {
+        try { return JSON.parse(localStorage.getItem('mock_accounts') || '[]'); } catch { return []; }
+      })();
+      const match = allAccounts.find(a => a.uid === uid) || MOCK_ACCOUNTS.find(a => a.uid === uid);
       if (match) {
         djName = match.displayName;
+        email = match.email;
       } else if (events.length > 0) {
         djName = events[0].djName;
       }
@@ -395,7 +440,7 @@ export default function DjDashboard() {
     const requestsCount = Object.values(userData?.events || {}).reduce((sum, ev) => {
       return sum + Object.keys(ev?.requests || {}).length;
     }, 0);
-    return { uid, eventsCount, requestsCount, djName, eventTitles };
+    return { uid, eventsCount, requestsCount, djName, eventTitles, email };
   });
 
   return (
@@ -969,13 +1014,100 @@ export default function DjDashboard() {
                 Acceso total a todas las cuentas de DJ registradas en la plataforma. Solo visible para <strong style={{ color: 'var(--warning-color)' }}>dj@admin.com</strong>.
               </p>
 
+              {/* === SECCIÓN: AGREGAR NUEVO DJ === */}
+              <div style={{ marginBottom: '28px', border: '1px solid rgba(124,58,237,0.2)', borderRadius: 'var(--radius-md)', overflow: 'hidden' }}>
+                <div
+                  style={{ padding: '14px 20px', background: 'rgba(124,58,237,0.06)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer' }}
+                  onClick={() => { setShowAddDjForm(v => !v); setAddDjError(''); setAddDjSuccess(''); }}
+                >
+                  <span style={{ fontWeight: '700', fontSize: '0.95rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <UserPlus size={16} color="var(--primary-color)" /> Agregar Nuevo DJ a la Plataforma
+                  </span>
+                  <span style={{ color: 'var(--text-muted)', fontSize: '0.8rem' }}>{showAddDjForm ? '▲ Cerrar' : '▼ Abrir'}</span>
+                </div>
+
+                {showAddDjForm && (
+                  <form onSubmit={handleCreateDjAccount} style={{ padding: '20px', display: 'flex', flexDirection: 'column', gap: '14px' }}>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '14px' }}>
+                      <div className="form-group">
+                        <label className="form-label" style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+                          <User size={13} /> Nombre del DJ
+                        </label>
+                        <input
+                          type="text" className="input-field"
+                          placeholder="ej. DJ Neon" value={newDjDisplayName}
+                          onChange={(e) => { setNewDjDisplayName(e.target.value); setAddDjError(''); setAddDjSuccess(''); }}
+                        />
+                      </div>
+                      <div className="form-group">
+                        <label className="form-label" style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+                          <Mail size={13} /> Correo Electrónico
+                        </label>
+                        <input
+                          type="email" className="input-field"
+                          placeholder="dj@ejemplo.com" value={newDjEmail}
+                          onChange={(e) => { setNewDjEmail(e.target.value); setAddDjError(''); setAddDjSuccess(''); }}
+                          required
+                        />
+                      </div>
+                      <div className="form-group">
+                        <label className="form-label" style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+                          <Lock size={13} /> Contraseña (mín. 6 caracteres)
+                        </label>
+                        <input
+                          type="password" className="input-field"
+                          placeholder="contraseña segura" value={newDjPassword}
+                          onChange={(e) => { setNewDjPassword(e.target.value); setAddDjError(''); setAddDjSuccess(''); }}
+                          required minLength={6}
+                        />
+                      </div>
+                    </div>
+
+                    {addDjError && (
+                      <p style={{ color: 'var(--danger-color)', fontSize: '0.82rem', background: 'rgba(239,68,68,0.06)', padding: '8px 12px', borderRadius: 'var(--radius-sm)', border: '1px solid rgba(239,68,68,0.2)' }}>
+                        {addDjError}
+                      </p>
+                    )}
+                    {addDjSuccess && (
+                      <p style={{ color: 'var(--success-color)', fontSize: '0.82rem', background: 'rgba(16,185,129,0.06)', padding: '8px 12px', borderRadius: 'var(--radius-sm)', border: '1px solid rgba(16,185,129,0.2)' }}>
+                        {addDjSuccess}
+                      </p>
+                    )}
+
+                    <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+                      <button type="submit" className="btn btn-primary"
+                        disabled={addDjLoading}
+                        style={{ padding: '10px 20px', display: 'flex', alignItems: 'center', gap: '7px' }}>
+                        {addDjLoading ? <><RefreshCw size={14} className="animate-spin" /> Creando...</> : <><UserPlus size={14} /> Crear Cuenta DJ</>}
+                      </button>
+                      <button type="button" className="btn btn-secondary"
+                        onClick={() => { setNewDjEmail(''); setNewDjPassword(''); setNewDjDisplayName(''); setAddDjError(''); setAddDjSuccess(''); }}
+                        style={{ padding: '10px 16px' }}>
+                        Limpiar
+                      </button>
+                    </div>
+
+                    {isMock && (
+                      <p style={{ fontSize: '0.72rem', color: 'var(--warning-color)', opacity: 0.8 }}>
+                        ⚠️ Modo Local: La cuenta se guarda en localStorage. Recarga la página para verla en la lista.
+                      </p>
+                    )}
+                  </form>
+                )}
+              </div>
+
+              {/* === SECCIÓN: LISTA DE USUARIOS === */}
+              <h4 style={{ fontSize: '0.9rem', color: 'var(--text-secondary)', marginBottom: '14px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <Users size={14} /> Usuarios Registrados en Firebase ({adminUsersList.length})
+              </h4>
+
               {adminUsersList.length === 0 ? (
                 <div style={{ padding: '40px', textAlign: 'center', color: 'var(--text-muted)' }}>
                   No hay usuarios registrados en la base de datos.
                 </div>
               ) : (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                  {adminUsersList.map(({ uid, eventsCount, requestsCount, djName, eventTitles }) => (
+                  {adminUsersList.map(({ uid, eventsCount, requestsCount, djName, eventTitles, email }) => (
                     <div key={uid} className="glass-panel animate-slide-in" style={{
                       padding: '20px 24px', borderRadius: 'var(--radius-md)',
                       display: 'flex', flexDirection: 'column', gap: '14px',
@@ -990,8 +1122,13 @@ export default function DjDashboard() {
                             <strong style={{ fontSize: '1.05rem', color: 'var(--text-primary)' }}>
                               {uid === 'uid-admin-master' ? '👑 Administrador Master' : djName}
                             </strong>
-                            <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginTop: '2px' }}>
-                              UID: <code style={{ fontSize: '0.75rem', background: 'rgba(255,255,255,0.06)', padding: '1px 6px', borderRadius: '4px' }}>{uid}</code>
+                            {email && (
+                              <p style={{ fontSize: '0.78rem', color: 'var(--secondary-color)', marginTop: '1px', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                <Mail size={11} /> {email}
+                              </p>
+                            )}
+                            <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '2px' }}>
+                              UID: <code style={{ fontSize: '0.7rem', background: 'rgba(255,255,255,0.06)', padding: '1px 6px', borderRadius: '4px' }}>{uid}</code>
                             </p>
                           </div>
                         </div>
@@ -1045,13 +1182,9 @@ export default function DjDashboard() {
                     <AlertTriangle size={13} /> Cuentas de Prueba (Modo Mock)
                   </h5>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                    {[
-                      { email: 'dj@admin.com', password: 'admin123', role: '👑 Admin Master' },
-                      { email: 'dj1@dj.com',   password: 'dj123',    role: '🎧 DJ MasterMix' },
-                      { email: 'dj2@dj.com',   password: 'dj456',    role: '🎧 DJ Neon Vibes' },
-                    ].map(a => (
-                      <div key={a.email} style={{ display: 'flex', gap: '12px', fontSize: '0.8rem', alignItems: 'center' }}>
-                        <span style={{ color: 'var(--text-muted)', minWidth: '120px' }}>{a.role}</span>
+                    {MOCK_ACCOUNTS.map(a => (
+                      <div key={a.email} style={{ display: 'flex', gap: '12px', fontSize: '0.8rem', alignItems: 'center', flexWrap: 'wrap' }}>
+                        <span style={{ color: 'var(--text-muted)', minWidth: '120px' }}>{a.isAdmin ? '👑 Admin Master' : '🎧 ' + a.displayName}</span>
                         <code style={{ background: 'rgba(255,255,255,0.06)', padding: '2px 8px', borderRadius: '4px', color: 'var(--secondary-color)' }}>{a.email}</code>
                         <code style={{ background: 'rgba(255,255,255,0.06)', padding: '2px 8px', borderRadius: '4px', color: 'var(--text-secondary)' }}>{a.password}</code>
                       </div>
