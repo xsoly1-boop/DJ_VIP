@@ -139,17 +139,21 @@ const getLocalData = () => {
 
 const initFreshMockDB = () => {
   const db = { users: {}, events_registry: {} };
-  MOCK_ACCOUNTS.filter(a => !a.isAdmin).forEach(a => {
+  MOCK_ACCOUNTS.forEach(a => {
     db.users[a.uid] = buildInitialUserData(a.uid);
     // Registrar el evento demo de cada DJ en el registry público
-    db.events_registry['default-event'] = {
-      ownerUid: a.uid,      // último DJ en el loop — en demo sólo hay 1 evento compartido de prueba
+    db.events_registry['default-event-' + a.uid] = {
+      ownerUid: a.uid,
       title: 'Mi Gran Evento VIP',
-      djName: 'DJ MasterMix'
+      djName: a.displayName
     };
   });
-  // Admin master no tiene eventos propios, solo acceso global
-  db.users['uid-admin-master'] = { events_index: {}, events: {}, autocomplete_songs: {} };
+  // También registrar 'default-event' apuntando al primer DJ (para compatibilidad)
+  db.events_registry['default-event'] = {
+    ownerUid: MOCK_ACCOUNTS[1]?.uid || MOCK_ACCOUNTS[0].uid,
+    title: 'Mi Gran Evento VIP',
+    djName: 'DJ MasterMix'
+  };
   localStorage.setItem('mock_rtdb_v2', JSON.stringify(db));
   return db;
 };

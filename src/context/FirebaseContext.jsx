@@ -93,13 +93,16 @@ export const FirebaseProvider = ({ children }) => {
     return () => unsubscribe();
   }, [currentEventId, activeUid]);
 
-  // El basePath del propietario del evento — funciona para DJ autenticado Y para público anónimo
+  // Ruta de lectura efectiva para settings/requests:
+  // - DJ autenticado → userBasePath (su propio nodo, siempre correcto)
+  // - Público anónimo → ownerBasePath (resuelto desde events_registry)
   const ownerBasePath = eventOwnerUid ? `users/${eventOwnerUid}` : null;
+  const effectiveReadPath = userBasePath || ownerBasePath;
 
-  // Escuchar configuraciones del evento activo usando ownerBasePath (DJ + público anónimo)
+  // Escuchar configuraciones del evento activo
   useEffect(() => {
-    if (!ownerBasePath) return;
-    const settingsRef = ref(database, `${ownerBasePath}/events/${currentEventId}/settings`);
+    if (!effectiveReadPath) return;
+    const settingsRef = ref(database, `${effectiveReadPath}/events/${currentEventId}/settings`);
     const unsubscribe = onValue(settingsRef, (snapshot) => {
       if (snapshot.exists()) {
         const data = snapshot.val();
@@ -123,12 +126,12 @@ export const FirebaseProvider = ({ children }) => {
       }
     });
     return () => unsubscribe();
-  }, [currentEventId, ownerBasePath]);
+  }, [currentEventId, effectiveReadPath]);
 
-  // 3. Escuchar peticiones de canciones en tiempo real (DJ + público anónimo)
+  // 3. Escuchar peticiones de canciones en tiempo real
   useEffect(() => {
-    if (!ownerBasePath) return;
-    const requestsRef = ref(database, `${ownerBasePath}/events/${currentEventId}/requests`);
+    if (!effectiveReadPath) return;
+    const requestsRef = ref(database, `${effectiveReadPath}/events/${currentEventId}/requests`);
     const unsubscribe = onValue(requestsRef, (snapshot) => {
       if (snapshot.exists()) {
         setRequests(snapshot.val());
@@ -137,7 +140,7 @@ export const FirebaseProvider = ({ children }) => {
       }
     });
     return () => unsubscribe();
-  }, [currentEventId, ownerBasePath]);
+  }, [currentEventId, effectiveReadPath]);
 
   // 4. Escuchar catálogo de autocompletado (solo DJ autenticado)
   useEffect(() => {
