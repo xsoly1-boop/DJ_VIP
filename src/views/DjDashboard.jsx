@@ -200,8 +200,15 @@ export default function DjDashboard() {
       });
       showToast("💾 Configuración de marca guardada");
     } catch (err) {
-      console.error(err);
-      showToast("Error al guardar configuraciones");
+      console.error('Error guardando configuración:', err);
+      const msg = err?.message || '';
+      if (msg.includes('PERMISSION_DENIED') || msg.includes('permission')) {
+        showToast('⛔ Sin permiso en Firebase. Actualiza las reglas de la BD.');
+      } else if (msg.includes('sesión') || msg.includes('session')) {
+        showToast('🔒 Sin sesión activa. Cierra sesión y vuelve a entrar.');
+      } else {
+        showToast(`❌ Error: ${msg.slice(0, 60)}`);
+      }
     }
   };
 
@@ -219,8 +226,15 @@ export default function DjDashboard() {
       await updateEventSettings({ logoUrl: logoUrlInput.trim() });
       showToast('✅ URL de logo guardada correctamente');
     } catch (err) {
-      console.error(err);
-      showToast('Error al guardar la URL del logo');
+      console.error('Error guardando logo URL:', err);
+      const msg = err?.message || '';
+      if (msg.includes('PERMISSION_DENIED') || msg.includes('permission')) {
+        showToast('⛔ Sin permiso en Firebase. Actualiza las reglas de la BD en la consola.');
+      } else if (msg.includes('sesión') || msg.includes('session')) {
+        showToast('🔒 Sin sesión activa. Cierra sesión y vuelve a entrar.');
+      } else {
+        showToast(`❌ Error: ${msg.slice(0, 60)}`);
+      }
     }
   };
 

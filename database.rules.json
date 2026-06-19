@@ -1,9 +1,46 @@
 {
   "rules": {
-    "events_index": {
-      ".read": "auth != null",
-      ".write": "auth != null"
+    // Registro público de eventos → quién es el dueño de cada evento
+    "events_registry": {
+      "$eventId": {
+        ".read": "true",
+        ".write": "auth != null"
+      }
     },
+
+    // Datos por usuario (nueva arquitectura multi-usuario)
+    "users": {
+      "$uid": {
+        // Cada DJ solo puede leer/escribir SUS propios datos
+        "events_index": {
+          ".read": "auth != null && auth.uid == $uid",
+          ".write": "auth != null && auth.uid == $uid"
+        },
+        "autocomplete_songs": {
+          ".read": "auth != null && auth.uid == $uid",
+          ".write": "auth != null && auth.uid == $uid"
+        },
+        "events": {
+          "$eventId": {
+            // El DJ dueño puede escribir settings
+            "settings": {
+              ".read": "true",
+              ".write": "auth != null && auth.uid == $uid"
+            },
+            // Las peticiones son públicas (el público envía sin auth)
+            "requests": {
+              ".read": "true",
+              "$requestId": {
+                ".write": "true",
+                ".validate": "newData.hasChildren(['title', 'artist', 'timestamp', 'status'])"
+              }
+            }
+          }
+        }
+      }
+    },
+
+    // Rutas antiguas — mantener compatibilidad hacia atrás
     "events": {
       "$eventId": {
         ".write": "auth != null",
@@ -20,12 +57,13 @@
         }
       }
     },
+    "events_index": {
+      ".read": "auth != null",
+      ".write": "auth != null"
+    },
     "autocomplete_songs": {
       ".read": "true",
-      ".write": "true",
-      "$songId": {
-        ".validate": "newData.hasChildren(['title', 'artist'])"
-      }
+      ".write": "true"
     }
   }
 }
