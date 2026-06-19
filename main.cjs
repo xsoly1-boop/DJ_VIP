@@ -14,18 +14,22 @@ function createWindow() {
     webPreferences: {
       nodeIntegration: false,
       contextIsolation: true,
-      preload: path.join(__dirname, 'preload.cjs')
+      // Ruta robusta al preload: funciona tanto en dev como en DMG distribuido
+      preload: path.join(app.isPackaged ? path.dirname(app.getAppPath()) : __dirname, 'preload.cjs')
     }
   });
 
   // Determinar si corre en desarrollo o producción
-  const isDev = process.env.ELECTRON_DEV === 'true';
+  const isDev = process.env.ELECTRON_DEV === 'true' || !app.isPackaged;
 
   if (isDev) {
     mainWindow.loadURL('http://localhost:5173');
     mainWindow.webContents.openDevTools();
   } else {
-    mainWindow.loadURL(`file://${path.join(__dirname, 'dist', 'index.html')}`);
+    // app.getAppPath() resuelve correctamente dentro del .app empaquetado
+    // independientemente de la arquitectura (universal, arm64 o x64)
+    const indexPath = path.join(app.getAppPath(), 'dist', 'index.html');
+    mainWindow.loadFile(indexPath);
   }
 
   // Configurar menú básico para macOS

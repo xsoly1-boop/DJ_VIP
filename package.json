@@ -37,8 +37,10 @@
   "build": {
     "appId": "com.dj.interactive.platform",
     "productName": "DJ Control Panel",
+    "copyright": "Copyright © 2026 DJ a la Carta",
     "directories": {
-      "output": "dist-desktop"
+      "output": "dist-desktop",
+      "buildResources": "build-resources"
     },
     "files": [
       "dist/**/*",
@@ -49,8 +51,38 @@
     "mac": {
       "category": "public.app-category.entertainment",
       "target": [
-        "dmg"
-      ]
+        {
+          "target": "dmg",
+          "arch": [
+            "universal"
+          ]
+        }
+      ],
+      "hardenedRuntime": false,
+      "gatekeeperAssess": false,
+      "identity": null,
+      "type": "distribution"
+    },
+    "dmg": {
+      "title": "DJ Control Panel ${version}",
+      "iconSize": 100,
+      "contents": [
+        {
+          "x": 380,
+          "y": 280,
+          "type": "link",
+          "path": "/Applications"
+        },
+        {
+          "x": 120,
+          "y": 280,
+          "type": "file"
+        }
+      ],
+      "window": {
+        "width": 500,
+        "height": 400
+      }
     }
   },
   "description": "Esta plataforma conecta al público de un evento musical con el DJ en tiempo real, permitiendo enviar peticiones de canciones, votar por temas populares de la audiencia, aprender de forma dinámica de los gustos musicales (autocompletado evolutivo) y personalizar visualmente la cabina con marca blanca.",

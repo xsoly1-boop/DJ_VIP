@@ -1,156 +1,249 @@
 #!/bin/bash
 
 # ==============================================================================
-# SCRIPT DE COMPILACIÓN NATIVA PARA MACBOOK (DJ CONTROL PANEL)
-# Diseñado para usuarios con conocimientos básicos.
+# SCRIPT DE COMPILACIÓN UNIVERSAL PARA MACOS — DJ CONTROL PANEL
+# Compatible con Intel (x64) y Apple Silicon (arm64) — DMG Distribuible
 # ==============================================================================
+
+set -euo pipefail   # Abortar en cualquier error inesperado
+
+# Colores
+RED='\033[1;31m'; GREEN='\033[1;32m'; YELLOW='\033[1;33m'
+CYAN='\033[1;36m'; PURPLE='\033[1;35m'; RESET='\033[0m'
 
 # Limpiar pantalla y mostrar banner
 clear
-echo -e "\033[1;35m==================================================================\033[0m"
-echo -e "\033[1;36m       💿 PLATAFORMA INTERACTIVA DJ - COMPILADOR MACBOOK 💿       \033[0m"
-echo -e "\033[1;35m==================================================================\033[0m"
-echo -e "Este asistente preparará el instalador nativo (.dmg) para tu Mac."
+echo -e "${PURPLE}===================================================================${RESET}"
+echo -e "${CYAN}      💿 DJ A LA CARTA — COMPILADOR UNIVERSAL PARA MACOS 💿      ${RESET}"
+echo -e "${PURPLE}===================================================================${RESET}"
+echo -e "  Genera un instalador .dmg compatible con ${GREEN}Intel y Apple Silicon${RESET}"
+echo -e "  Funciona en cualquier Mac sin necesidad de Developer ID."
 echo ""
 
-# 1. Verificar si Node.js está instalado
-echo -e "\033[1;34m[1/5] Verificando entorno de software...\033[0m"
-if ! command -v node &> /dev/null
-then
-    echo -e "\033[1;31m⚠️ Error: Node.js no está instalado en este sistema.\033[0m"
-    echo "Para compilar la aplicación, necesitas Node.js."
-    echo "Por favor, descárgalo e instálalo desde: https://nodejs.org/ (Versión LTS recomendada)"
-    echo "Una vez instalado, vuelve a ejecutar este script."
-    read -p "Presiona Enter para salir..."
+# -----------------------------------------------------------------------
+# 0. Verificar que se ejecuta desde la raíz del proyecto
+# -----------------------------------------------------------------------
+if [ ! -f "package.json" ]; then
+    echo -e "${RED}❌ Error: Ejecuta este script desde la carpeta raíz del proyecto.${RESET}"
+    echo "   Ej: cd 'DJ_a la Carta2.0' && bash build-macos.sh"
     exit 1
-else
-    NODE_VER=$(node -v)
-    NPM_VER=$(npm -v)
-    echo -e "✅ Node.js detectado: \033[1;32m$NODE_VER\033[0m"
-    echo -e "✅ NPM detectado: \033[1;32m$NPM_VER\033[0m"
 fi
+
+# -----------------------------------------------------------------------
+# 1. Verificar dependencias del sistema
+# -----------------------------------------------------------------------
+echo -e "${CYAN}[1/6] Verificando entorno del sistema...${RESET}"
+
+# Node.js
+if ! command -v node &> /dev/null; then
+    echo -e "${RED}❌ Node.js no está instalado.${RESET}"
+    echo "   Descárgalo desde: https://nodejs.org/ (versión LTS)"
+    exit 1
+fi
+NODE_VER=$(node -v)
+NPM_VER=$(npm -v)
+echo -e "  ✅ Node.js ${GREEN}${NODE_VER}${RESET}  |  npm ${GREEN}${NPM_VER}${RESET}"
+
+# Detectar arquitectura del Mac
+ARCH=$(uname -m)
+if [ "$ARCH" = "arm64" ]; then
+    echo -e "  ✅ Chip detectado: ${GREEN}Apple Silicon (M1/M2/M3/M4)${RESET}"
+else
+    echo -e "  ✅ Chip detectado: ${GREEN}Intel x86_64${RESET}"
+fi
+
+# Verificar Rosetta 2 si es Apple Silicon (necesaria para builds universales)
+if [ "$ARCH" = "arm64" ]; then
+    if ! /usr/bin/pgrep -q oahd; then
+        echo -e "  ${YELLOW}⚠️  Instalando Rosetta 2 para builds universales...${RESET}"
+        softwareupdate --install-rosetta --agree-to-license 2>/dev/null || true
+    fi
+fi
+
 echo ""
 
-# 2. Verificar archivo .env y variables críticas
-echo -e "\033[1;34m[2/5] Verificando configuración de credenciales (.env)...\033[0m"
+# -----------------------------------------------------------------------
+# 2. Verificar y cargar archivo .env
+# -----------------------------------------------------------------------
+echo -e "${CYAN}[2/6] Verificando configuración (.env)...${RESET}"
 
 if [ ! -f ".env" ]; then
-    echo -e "\033[1;31m❌ Error: No se encontró el archivo .env en esta carpeta.\033[0m"
-    echo "Por favor crea el archivo .env con tus credenciales de Firebase."
-    read -p "Presiona Enter para salir..."
-    exit 1
-fi
-
-# Leer variables del .env (ignorar comentarios y líneas vacías)
-while IFS='=' read -r key value; do
-    [[ "$key" =~ ^#.*$ || -z "$key" ]] && continue
-    value="${value%%#*}"   # Quitar comentarios inline
-    value="${value%"${value##*[![:space:]]}"}"  # Trim trailing whitespace
-    export "$key=$value"
-done < .env
-
-# Verificar Firebase API Key
-if [ -z "$VITE_FIREBASE_API_KEY" ]; then
-    echo -e "\033[1;31m❌ VITE_FIREBASE_API_KEY no está configurada en .env\033[0m"
-    echo "La app arrancará en modo LOCAL sin Firebase (sin subida de logos real)."
-    read -p "¿Deseas continuar de todas formas? [s/N]: " CONT
-    if [[ "$CONT" != "s" && "$CONT" != "S" ]]; then exit 1; fi
-else
-    echo -e "✅ Firebase API Key detectada"
-fi
-
-# Verificar Firebase Storage para logos
-if [ -z "$VITE_FIREBASE_STORAGE_BUCKET" ]; then
-    echo -e "\033[1;33m⚠️  VITE_FIREBASE_STORAGE_BUCKET no configurado — la subida de logos no funcionará.\033[0m"
-else
-    echo -e "✅ Firebase Storage detectado: \033[1;32m$VITE_FIREBASE_STORAGE_BUCKET\033[0m"
-fi
-
-# Verificar URL de Vercel para el QR
-if [ -z "$VITE_PUBLIC_URL" ]; then
-    echo ""
-    echo -e "\033[1;33m╔══════════════════════════════════════════════════════════════╗\033[0m"
-    echo -e "\033[1;33m║  ⚠️  ADVERTENCIA: URL de Vercel no configurada               ║\033[0m"
-    echo -e "\033[1;33m║     El código QR de la app compilada NO FUNCIONARÁ           ║\033[0m"
-    echo -e "\033[1;33m╚══════════════════════════════════════════════════════════════╝\033[0m"
-    echo ""
-    read -p "   Ingresa tu URL de Vercel (ej: https://mi-app.vercel.app) o Enter para omitir: " MANUAL_URL
-    if [ -n "$MANUAL_URL" ]; then
-        # Agregar o actualizar VITE_PUBLIC_URL en .env
-        if grep -q "VITE_PUBLIC_URL" .env; then
-            sed -i '' "s|VITE_PUBLIC_URL=.*|VITE_PUBLIC_URL=$MANUAL_URL|" .env
-        else
-            echo "VITE_PUBLIC_URL=$MANUAL_URL" >> .env
-        fi
-        export VITE_PUBLIC_URL="$MANUAL_URL"
-        echo -e "   ✅ URL configurada y guardada en .env: \033[1;32m$VITE_PUBLIC_URL\033[0m"
+    echo -e "${YELLOW}⚠️  No se encontró .env — la app compilará en modo LOCAL (sin Firebase).${RESET}"
+    echo -e "   Puedes crear el .env con tus credenciales de Firebase antes de compilar."
+    read -p "   ¿Continuar en modo local? [S/n]: " CONT_LOCAL
+    if [[ "${CONT_LOCAL,,}" == "n" ]]; then
+        echo "Crea el archivo .env con tus credenciales y vuelve a ejecutar el script."
+        exit 1
     fi
 else
-    echo -e "✅ URL de Vercel (QR): \033[1;32m$VITE_PUBLIC_URL\033[0m"
+    # Cargar variables del .env de forma segura (ignorar comentarios y líneas vacías)
+    while IFS='=' read -r key value; do
+        [[ "$key" =~ ^[[:space:]]*#.*$ || -z "${key// }" ]] && continue
+        value="${value%%#*}"                                  # Quitar comentarios inline
+        value="${value#"${value%%[![:space:]]*}"}"            # Trim leading spaces
+        value="${value%"${value##*[![:space:]]}"}"            # Trim trailing spaces
+        value="${value%\"}"                                   # Quitar comillas dobles finales
+        value="${value#\"}"                                   # Quitar comillas dobles iniciales
+        value="${value%\'}"                                   # Quitar comillas simples finales
+        value="${value#\'}"                                   # Quitar comillas simples iniciales
+        [[ -n "$key" ]] && export "${key}=${value}"
+    done < .env
+
+    # Verificar Firebase API Key
+    if [ -z "${VITE_FIREBASE_API_KEY:-}" ]; then
+        echo -e "  ${YELLOW}⚠️  VITE_FIREBASE_API_KEY no configurada — modo LOCAL sin Firebase.${RESET}"
+    else
+        echo -e "  ✅ Firebase API Key detectada"
+    fi
+
+    if [ -z "${VITE_FIREBASE_STORAGE_BUCKET:-}" ]; then
+        echo -e "  ${YELLOW}⚠️  VITE_FIREBASE_STORAGE_BUCKET no configurado — logos locales sólo.${RESET}"
+    else
+        echo -e "  ✅ Firebase Storage: ${GREEN}${VITE_FIREBASE_STORAGE_BUCKET}${RESET}"
+    fi
+fi
+
+# URL de producción para el QR
+if [ -z "${VITE_PUBLIC_URL:-}" ]; then
+    echo ""
+    echo -e "  ${YELLOW}⚠️  VITE_PUBLIC_URL no configurada — el QR no apuntará a tu sitio.${RESET}"
+    read -p "  Ingresa tu URL de Vercel (ej: https://mi-app.vercel.app) o Enter para omitir: " MANUAL_URL
+    if [ -n "${MANUAL_URL:-}" ]; then
+        MANUAL_URL="${MANUAL_URL%/}"   # Quitar slash final
+        if grep -q "VITE_PUBLIC_URL" .env 2>/dev/null; then
+            sed -i '' "s|VITE_PUBLIC_URL=.*|VITE_PUBLIC_URL=${MANUAL_URL}|" .env
+        else
+            echo "VITE_PUBLIC_URL=${MANUAL_URL}" >> .env
+        fi
+        export VITE_PUBLIC_URL="${MANUAL_URL}"
+        echo -e "  ✅ URL guardada: ${GREEN}${VITE_PUBLIC_URL}${RESET}"
+    fi
+else
+    echo -e "  ✅ URL de Vercel (QR): ${GREEN}${VITE_PUBLIC_URL}${RESET}"
 fi
 
 echo ""
-echo -e "\033[1;35m╔══════════════════════════════════════════════════════════════╗\033[0m"
-echo -e "\033[1;35m║          RESUMEN DE CONFIGURACIÓN PRE-COMPILACIÓN            ║\033[0m"
-echo -e "\033[1;35m╚══════════════════════════════════════════════════════════════╝\033[0m"
-echo -e "🔥 Firebase Proyecto : \033[1;36m${VITE_FIREBASE_PROJECT_ID:-⚠️  No configurado}\033[0m"
-echo -e "🌐 URL de Vercel (QR): \033[1;36m${VITE_PUBLIC_URL:-⚠️  Sin configurar — el QR no apuntará a tu sitio}\033[0m"
-echo -e "💾 Storage Logos     : \033[1;36m${VITE_FIREBASE_STORAGE_BUCKET:-⚠️  No configurado}\033[0m"
+echo -e "${PURPLE}┌─────────────────────────────────────────────────────────┐${RESET}"
+echo -e "${PURPLE}│           RESUMEN PRE-COMPILACIÓN                       │${RESET}"
+echo -e "${PURPLE}└─────────────────────────────────────────────────────────┘${RESET}"
+echo -e "  🔥 Firebase Proyecto  : ${CYAN}${VITE_FIREBASE_PROJECT_ID:-⚠️  No configurado}${RESET}"
+echo -e "  🌐 URL Vercel (QR)    : ${CYAN}${VITE_PUBLIC_URL:-⚠️  Sin configurar}${RESET}"
+echo -e "  💾 Storage Logos      : ${CYAN}${VITE_FIREBASE_STORAGE_BUCKET:-⚠️  No configurado}${RESET}"
+echo -e "  🖥️  Arquitectura target : ${CYAN}Universal (Intel + Apple Silicon)${RESET}"
 echo ""
-read -p "¿Todo se ve correcto? Presiona Enter para compilar o Ctrl+C para cancelar..."
-echo ""
-
-# 3. Instalar dependencias del proyecto
-echo -e "\033[1;34m[3/5] Instalando módulos y dependencias de escritorio...\033[0m"
-npm install
-if [ $? -ne 0 ]; then
-    echo -e "\033[1;31m❌ Error al instalar dependencias. Revisa tu conexión a internet.\033[0m"
-    read -p "Presiona Enter para salir..."
-    exit 1
-fi
-echo -e "✅ Dependencias instaladas con éxito."
+read -p "¿Todo se ve correcto? Presiona Enter para compilar o Ctrl+C para cancelar... "
 echo ""
 
-# 4. Compilar el frontend web (Vite inyecta las variables VITE_ del .env)
-echo -e "\033[1;34m[4/5] Compilando frontend web (inyectando credenciales y URL de Vercel)...\033[0m"
+# -----------------------------------------------------------------------
+# 3. Limpiar builds anteriores
+# -----------------------------------------------------------------------
+echo -e "${CYAN}[3/6] Limpiando compilaciones anteriores...${RESET}"
+rm -rf dist dist-desktop
+echo -e "  ✅ Carpetas dist/ y dist-desktop/ eliminadas"
+echo ""
+
+# -----------------------------------------------------------------------
+# 4. Instalar dependencias
+# -----------------------------------------------------------------------
+echo -e "${CYAN}[4/6] Instalando dependencias del proyecto...${RESET}"
+npm install --prefer-offline 2>&1 || npm install
+echo -e "  ✅ Dependencias instaladas"
+echo ""
+
+# -----------------------------------------------------------------------
+# 5. Compilar el frontend web con Vite
+# -----------------------------------------------------------------------
+echo -e "${CYAN}[5/6] Compilando frontend (React + Vite)...${RESET}"
 npm run build
-if [ $? -ne 0 ]; then
-    echo -e "\033[1;31m❌ Error durante la compilación de Vite.\033[0m"
-    read -p "Presiona [Enter] para salir..."
+echo -e "  ✅ Frontend compilado correctamente"
+echo ""
+
+# -----------------------------------------------------------------------
+# 6. Empaquetar con Electron Builder — DMG Universal
+#    --mac            → empaqueta para macOS
+#    --universal      → combina arm64 + x64 en un binario universal
+#    CSC_IDENTITY_AUTO_DISCOVERY=false → deshabilita búsqueda de cert. de Apple
+#    CSC_LINK=""      → sin certificado = firma ad-hoc (funciona sin Developer ID)
+# -----------------------------------------------------------------------
+echo -e "${CYAN}[6/6] Empaquetando DMG Universal (arm64 + x64)...${RESET}"
+echo -e "  ${YELLOW}ℹ️  Esto puede tardar varios minutos en la primera vez.${RESET}"
+echo ""
+
+CSC_IDENTITY_AUTO_DISCOVERY=false \
+CSC_LINK="" \
+npx electron-builder --mac --universal --publish never
+
+BUILD_EXIT=$?
+
+if [ $BUILD_EXIT -ne 0 ]; then
+    echo ""
+    echo -e "${RED}❌ Error durante el empaquetado de Electron.${RESET}"
+    echo -e "   Posibles causas:"
+    echo -e "   • Falta espacio en disco (se necesitan ~2 GB libres)"
+    echo -e "   • Sin conexión a internet para descargar electron binaries"
+    echo -e "   • Intenta: ${YELLOW}npm cache clean --force${RESET} y vuelve a ejecutar"
     exit 1
 fi
-echo -e "✅ Frontend compilado con URL: \033[1;32m${VITE_PUBLIC_URL:-no configurada}\033[0m"
+
 echo ""
 
-# 5. Empaquetar con Electron Builder
-echo -e "\033[1;34m[5/5] Empaquetando aplicación nativa de macOS (.dmg)...\033[0m"
-npx electron-builder --mac
-if [ $? -ne 0 ]; then
-    echo -e "\033[1;31m❌ Error durante el proceso de empaquetado de Electron.\033[0m"
-    read -p "Presiona [Enter] para salir..."
-    exit 1
+# -----------------------------------------------------------------------
+# Localizar el DMG generado dinámicamente
+# -----------------------------------------------------------------------
+DMG_FILE=$(find dist-desktop -name "*.dmg" 2>/dev/null | head -1)
+
+# -----------------------------------------------------------------------
+# Firma ad-hoc local (para que macOS Gatekeeper no rechace en primera apertura)
+# Esto NO requiere Developer ID — permite que se abra en cualquier Mac con
+# clic derecho → Abrir, o deshabilitando temporalmente Gatekeeper.
+# -----------------------------------------------------------------------
+if [ -n "${DMG_FILE:-}" ] && command -v codesign &> /dev/null; then
+    echo -e "  🔏 Aplicando firma ad-hoc al DMG..."
+    # Montar temporalmente el DMG para firmar la .app
+    APP_DIR=$(find dist-desktop -name "*.app" -maxdepth 4 2>/dev/null | head -1)
+    if [ -n "${APP_DIR:-}" ]; then
+        codesign --force --deep --sign - "${APP_DIR}" 2>/dev/null && \
+            echo -e "  ✅ Firma ad-hoc aplicada a la app" || \
+            echo -e "  ${YELLOW}⚠️  Firma ad-hoc omitida (continúa sin firmar — usar clic derecho → Abrir)${RESET}"
+    fi
 fi
+
+# -----------------------------------------------------------------------
+# Mostrar resultado final
+# -----------------------------------------------------------------------
+echo ""
+echo -e "${PURPLE}===================================================================${RESET}"
+echo -e "${GREEN}       🎉 ¡COMPILACIÓN EXITOSA! EL INSTALADOR ESTÁ LISTO 🎉       ${RESET}"
+echo -e "${PURPLE}===================================================================${RESET}"
+
+if [ -n "${DMG_FILE:-}" ]; then
+    DMG_SIZE=$(du -sh "${DMG_FILE}" 2>/dev/null | cut -f1)
+    echo -e "  📦 Archivo DMG  : ${CYAN}${DMG_FILE}${RESET}"
+    echo -e "  📏 Tamaño       : ${CYAN}${DMG_SIZE}${RESET}"
+else
+    echo -e "  📁 Revisa la carpeta: ${CYAN}dist-desktop/${RESET}"
+fi
+
+echo ""
+echo -e "${YELLOW}  ┌─────────────────────────────────────────────────────────┐${RESET}"
+echo -e "${YELLOW}  │  CÓMO INSTALAR EN OTRO MAC (sin Developer ID)           │${RESET}"
+echo -e "${YELLOW}  │                                                         │${RESET}"
+echo -e "${YELLOW}  │  1. Copia el .dmg al otro Mac (USB, AirDrop, Drive)    │${RESET}"
+echo -e "${YELLOW}  │  2. Doble clic para abrir el .dmg                      │${RESET}"
+echo -e "${YELLOW}  │  3. Arrastra 'DJ Control Panel' a Aplicaciones         │${RESET}"
+echo -e "${YELLOW}  │  4. Primera apertura: clic derecho → 'Abrir'           │${RESET}"
+echo -e "${YELLOW}  │     (solo la primera vez, para omitir Gatekeeper)      │${RESET}"
+echo -e "${YELLOW}  │  5. ¡Listo! Ya funciona en cualquier Mac               │${RESET}"
+echo -e "${YELLOW}  └─────────────────────────────────────────────────────────┘${RESET}"
+echo ""
+echo -e "  🔗 URL Vercel embebida en el QR: ${GREEN}${VITE_PUBLIC_URL:-⚠️ No configurada}${RESET}"
+echo ""
+echo -e "  ${CYAN}📌 Tip: El DMG universal funciona tanto en Intel como en Apple Silicon.${RESET}"
+echo -e "  ${CYAN}   Si cambias la URL de Vercel, vuelve a compilar o actualiza desde${RESET}"
+echo -e "  ${CYAN}   el panel: Personalizar Marca → URL Producción → Guardar.${RESET}"
 echo ""
 
-# 6. Mostrar éxito y abrir la carpeta contenedora
-echo -e "\033[1;35m==================================================================\033[0m"
-echo -e "\033[1;32m       🎉 ¡COMPILACIÓN EXITOSA! EL INSTALADOR ESTÁ LISTO 🎉       \033[0m"
-echo -e "\033[1;35m==================================================================\033[0m"
-echo -e "Tu instalador de macOS (.dmg) se encuentra en:"
-echo -e "\033[1;36m📁 dist-desktop/DJ Control Panel-1.0.0.dmg\033[0m"
-echo ""
-echo -e "URL de Vercel embebida en el QR: \033[1;32m${VITE_PUBLIC_URL:-⚠️ No configurada}\033[0m"
-echo ""
-echo "Instrucciones de instalación:"
-echo "1. Haz doble clic sobre 'DJ Control Panel-1.0.0.dmg'."
-echo "2. Arrastra el ícono de 'DJ Control Panel' a tu carpeta de Aplicaciones."
-echo "3. Abre la aplicación desde Launchpad o tu carpeta de Aplicaciones."
-echo ""
-echo -e "\033[1;33m📌 Tip: Si cambias la URL de Vercel en el futuro, vuelve a compilar.\033[0m"
-echo -e "\033[1;33m   También puedes actualizar la URL desde el panel: Personalizar Marca → Guardar.\033[0m"
-echo ""
-
-# Intentar abrir la carpeta en Finder automáticamente
+# Abrir carpeta en Finder
 if command -v open &> /dev/null; then
     open dist-desktop
 fi
