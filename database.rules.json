@@ -8,10 +8,10 @@
       }
     },
 
-    // Datos por usuario (nueva arquitectura multi-usuario)
+    // Datos por usuario (arquitectura multi-usuario)
     "users": {
       "$uid": {
-        // Cada DJ solo puede leer/escribir SUS propios datos
+        // Cada DJ solo puede leer/escribir SUS propios datos de index y canciones
         "events_index": {
           ".read": "auth != null && auth.uid == $uid",
           ".write": "auth != null && auth.uid == $uid"
@@ -22,12 +22,16 @@
         },
         "events": {
           "$eventId": {
-            // El DJ dueño puede escribir settings
+            // El DJ dueño del evento puede leer y escribir TODO en el evento
+            ".read": "auth != null && auth.uid == $uid",
+            ".write": "auth != null && auth.uid == $uid",
+            
+            // El público general (sin estar autenticado) puede leer la configuración del evento
             "settings": {
-              ".read": "true",
-              ".write": "auth != null && auth.uid == $uid"
+              ".read": "true"
             },
-            // Las peticiones son públicas (el público envía sin auth)
+            
+            // El público general puede leer solicitudes y enviar/votar de forma anónima
             "requests": {
               ".read": "true",
               "$requestId": {
@@ -40,7 +44,7 @@
       }
     },
 
-    // Rutas antiguas — mantener compatibilidad hacia atrás
+    // Rutas antiguas para mantener compatibilidad hacia atrás
     "events": {
       "$eventId": {
         ".write": "auth != null",

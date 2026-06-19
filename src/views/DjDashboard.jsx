@@ -278,8 +278,13 @@ export default function DjDashboard() {
       setNewEventDate(new Date().toISOString().split('T')[0]);
       setActiveTab('requests');
     } catch (err) {
-      console.error(err);
-      showToast("Error al crear evento");
+      console.error('Error al crear evento:', err);
+      const msg = err?.message || '';
+      if (msg.includes('PERMISSION_DENIED') || msg.includes('permission')) {
+        showToast('⛔ Sin permiso en Firebase. Actualiza las reglas de la BD.');
+      } else {
+        showToast(`❌ Error al crear evento: ${msg.slice(0, 60)}`);
+      }
     }
   };
 
