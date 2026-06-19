@@ -357,30 +357,133 @@ export const FirebaseProvider = ({ children }) => {
     await update(indexRef, { archived: archivedState });
   };
 
-  // Borrar TODO el historial del usuario actual con verificación de contraseña
-  const clearAllHistoryWithPassword = async (password) => {
-    // Re-autenticar al usuario: lanza error si la contraseña es incorrecta
-    await reauthenticateUser(password);
-
+  const updateEventMetadata = async (eventId, title, djName, date) => {
     if (!userBasePath) return;
 
-    // Borrar eventos
-    const eventsRef = ref(database, `${userBasePath}/events`);
-    await set(eventsRef, null);
+    // Actualizar index
+    const indexRef = ref(database, `${userBasePath}/events_index/${eventId}`);
+    await update(indexRef, {
+      title,
+      djName: djName || 'DJ MasterMix',
+      date
+    });
 
-    // Borrar índice
-    const indexRef = ref(database, `${userBasePath}/events_index`);
-    await set(indexRef, null);
+    // Actualizar settings
+    const settingsRef = ref(database, `${userBasePath}/events/${eventId}/settings`);
+    await update(settingsRef, {
+      title,
+      djName: djName || 'DJ MasterMix',
+      date
+    });
 
-    // Borrar autocompletado
-    const autocompleteRef = ref(database, `${userBasePath}/autocomplete_songs`);
-    await set(autocompleteRef, null);
+    // Actualizar registro público si existe
+    const registryRef = ref(database, `events_registry/${eventId}`);
+    await update(registryRef, {
+      title,
+      djName: djName || 'DJ MasterMix'
+    });
+  };
 
-    // Reset estado local
-    setRequests({});
-    setEventsList([]);
-    setAutocompleteSongs([]);
-    setCurrentEventId('default-event');
+  // Borrar historial de forma granular y opcional
+  const clearHistoryWithOptions = async (options) => {
+    if (!userBasePath) throw new Error('No hay sesión activa.');
+
+    // 1. Borrado de canciones (peticiones) del evento activo
+    if (options.songs) {
+      const requestsRef = ref(database, `${userBasePath}/events/${currentEventId}/requests`);
+      await set(requestsRef, null);
+      setRequests({});
+    }
+
+    // 2. Borrado de géneros (resetea a "Personalizado" en peticiones y autocompletado)
+    if (options.genres) {
+      if (requests && Object.keys(requests).length > 0) {
+        const updatedRequests = {};
+        Object.keys(requests).forEach(key => {
+          updatedRequests[`${key}/genre`] = 'Personalizado';
+        });
+        const requestsRef = ref(database, `${userBasePath}/events/${currentEventId}/requests`);
+        await update(requestsRef, updatedRequests);
+      }
+      if (autocompleteSongs && autocompleteSongs.length > 0) {
+        const updatedAutocomplete = {};
+        autocompleteSongs.forEach(song => {
+          updatedAutocomplete[`${song.id}/genre`] = 'Personalizado';
+        });
+        const autocompleteRef = ref(database, `${userBasePath}/autocomplete_songs`);
+        await update(autocompleteRef, updatedAutocomplete);
+      }
+    }
+
+    // 3. Borrado de artistas (resetea a "Artista no especificado" en peticiones y autocompletado)
+    if (options.artists) {
+      if (requests && Object.keys(requests).length > 0) {
+        const updatedRequests = {};
+        Object.keys(requests).forEach(key => {
+          updatedRequests[`${key}/artist`] = 'Artista no especificado';
+        });
+        const requestsRef = ref(database, `${userBasePath}/events/${currentEventId}/requests`);
+        await update(requestsRef, updatedRequests);
+      }
+      if (autocompleteSongs && autocompleteSongs.length > 0) {
+        const updatedAutocomplete = {};
+        autocompleteSongs.forEach(song => {
+          updatedAutocomplete[`${song.id}/artist`] = 'Artista no especificado';
+        });
+        const autocompleteRef = ref(database, `${userBasePath}/autocomplete_songs`);
+        await update(autocompleteRef, updatedAutocomplete);
+      }
+    }
+
+    // 4. Borrado de calendario (eventos del DJ exceptuando el default)
+    if (options.calendar) {
+      const indexRef = ref(database, `${userBasePath}/events_index`);
+      await set(indexRef, null);
+      
+      const eventsRef = ref(database, `${userBasePath}/events`);
+      await set(eventsRef, null);
+
+      // Re-crear evento default-event de inicio
+      const defaultEventRef = ref(database, `${userBasePath}/events/default-event`);
+      await set(defaultEventRef, {
+        settings: {
+          title: 'Mi Gran Evento VIP',
+          logoUrl: '',
+          themeColor: '#7c3aed',
+          themeColorSecondary: '#06b6d4',
+          djName: user?.displayName || 'DJ MasterMix',
+          date: new Date().toISOString().split('T')[0],
+          archived: false
+        },
+        requests: {}
+      });
+
+      const defaultIndexRef = ref(database, `${userBasePath}/events_index/default-event`);
+      await set(defaultIndexRef, {
+        id: 'default-event',
+        title: 'Mi Gran Evento VIP',
+        djName: user?.displayName || 'DJ MasterMix',
+        date: new Date().toISOString().split('T')[0],
+        archived: false,
+        createdAt: Date.now()
+      });
+
+      setCurrentEventId('default-event');
+      setEventsList([{
+        id: 'default-event',
+        title: 'Mi Gran Evento VIP',
+        djName: user?.displayName || 'DJ MasterMix',
+        date: new Date().toISOString().split('T')[0],
+        archived: false
+      }]);
+    }
+
+    // 5. Borrado de base de datos de autocompletado
+    if (options.autocomplete) {
+      const autocompleteRef = ref(database, `${userBasePath}/autocomplete_songs`);
+      await set(autocompleteRef, null);
+      setAutocompleteSongs([]);
+    }
   };
 
   return (
@@ -410,7 +513,8 @@ export const FirebaseProvider = ({ children }) => {
       createNewEvent,
       deleteEvent,
       archiveEvent,
-      clearAllHistoryWithPassword
+      updateEventMetadata,
+      clearHistoryWithOptions
     }}>
       {children}
     </FirebaseContext.Provider>

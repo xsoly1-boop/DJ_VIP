@@ -5,7 +5,7 @@ import {
   Music, LogOut, Settings, Calendar, Download, RefreshCw, 
   Trash2, Plus, Play, Check, X, Bell, BellOff, Volume2, 
   Sparkles, Sliders, Users, Layers, ShieldCheck,
-  Link, AlertTriangle, ShieldAlert, ArrowLeft, UserCog
+  Link, AlertTriangle, ShieldAlert, ArrowLeft, UserCog, Edit
 } from 'lucide-react';
 
 export default function DjDashboard() {
@@ -28,7 +28,8 @@ export default function DjDashboard() {
     eventsList,
     deleteEvent,
     archiveEvent,
-    clearAllHistoryWithPassword,
+    updateEventMetadata,
+    clearHistoryWithOptions,
     autocompleteSongs
   } = useFirebase();
 
@@ -44,6 +45,13 @@ export default function DjDashboard() {
   const [newEventDate, setNewEventDate] = useState(() => new Date().toISOString().split('T')[0]);
   const [showArchived, setShowArchived] = useState(false);
 
+  // Modal Edición de Eventos
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [editEventId, setEditEventId] = useState('');
+  const [editEventTitle, setEditEventTitle] = useState('');
+  const [editEventDj, setEditEventDj] = useState('');
+  const [editEventDate, setEditEventDate] = useState('');
+
   // Branding temporal
   const [titleInput, setTitleInput] = useState(eventSettings.title);
   const [djNameInput, setDjNameInput] = useState(eventSettings.djName);
@@ -53,10 +61,15 @@ export default function DjDashboard() {
   // Logo solo por URL externa
   const [logoUrlInput, setLogoUrlInput] = useState(eventSettings.logoUrl || '');
   
-  // Modal Borrar Historial
+  // Modal Borrar Historial Opcional con palabra clave
   const [showClearModal, setShowClearModal] = useState(false);
-  const [clearPassword, setClearPassword] = useState('');
-  const [clearPasswordError, setClearPasswordError] = useState('');
+  const [clearWordConfirm, setClearWordConfirm] = useState('');
+  const [clearOptionSongs, setClearOptionSongs] = useState(false);
+  const [clearOptionGenres, setClearOptionGenres] = useState(false);
+  const [clearOptionArtists, setClearOptionArtists] = useState(false);
+  const [clearOptionCalendar, setClearOptionCalendar] = useState(false);
+  const [clearOptionAutocomplete, setClearOptionAutocomplete] = useState(false);
+  const [clearErrorMsg, setClearErrorMsg] = useState('');
   const [clearingHistory, setClearingHistory] = useState(false);
 
   // Alertas / Audio / Notificaciones
@@ -238,26 +251,45 @@ export default function DjDashboard() {
     }
   };
 
-  // Borrar todo el historial con validación de contraseña real
+  // Borrado de historial opcional con palabra clave "clear"
   const handleClearHistory = async () => {
-    setClearPasswordError('');
-    if (!clearPassword.trim()) {
-      setClearPasswordError('❌ Debes ingresar tu contraseña para confirmar.');
+    setClearErrorMsg('');
+    
+    // Validar palabra clave
+    if (clearWordConfirm.trim().toLowerCase() !== 'clear') {
+      setClearErrorMsg('❌ Debes escribir exactamente "clear" para confirmar la acción.');
       return;
     }
+
+    // Validar que al menos una opción esté seleccionada
+    const hasSelectedOption = clearOptionSongs || clearOptionGenres || clearOptionArtists || clearOptionCalendar || clearOptionAutocomplete;
+    if (!hasSelectedOption) {
+      setClearErrorMsg('⚠️ Selecciona al menos una sección para eliminar.');
+      return;
+    }
+
     setClearingHistory(true);
     try {
-      await clearAllHistoryWithPassword(clearPassword);
-      showToast('🗑️ Historial completo eliminado permanentemente');
+      await clearHistoryWithOptions({
+        songs: clearOptionSongs,
+        genres: clearOptionGenres,
+        artists: clearOptionArtists,
+        calendar: clearOptionCalendar,
+        autocomplete: clearOptionAutocomplete
+      });
+      showToast('🗑️ Datos seleccionados eliminados correctamente');
+      
+      // Cerrar y resetear modal
       setShowClearModal(false);
-      setClearPassword('');
+      setClearWordConfirm('');
+      setClearOptionSongs(false);
+      setClearOptionGenres(false);
+      setClearOptionArtists(false);
+      setClearOptionCalendar(false);
+      setClearOptionAutocomplete(false);
     } catch (err) {
       console.error(err);
-      if (err.message?.includes('wrong-password') || err.message?.includes('invalid-credential')) {
-        setClearPasswordError('❌ Contraseña incorrecta. Verifica e intenta de nuevo.');
-      } else {
-        setClearPasswordError('❌ Error al verificar contraseña. Intenta de nuevo.');
-      }
+      setClearErrorMsg(`❌ Error: ${err.message || 'Intenta de nuevo.'}`);
     } finally {
       setClearingHistory(false);
     }
@@ -285,6 +317,32 @@ export default function DjDashboard() {
       } else {
         showToast(`❌ Error al crear evento: ${msg.slice(0, 60)}`);
       }
+    }
+  };
+
+  // Abrir el modal de edición precargado
+  const openEditModal = (ev) => {
+    setEditEventId(ev.id);
+    setEditEventTitle(ev.title);
+    setEditEventDj(ev.djName || '');
+    setEditEventDate(ev.date || '');
+    setShowEditModal(true);
+  };
+
+  // Guardar la edición de metadatos del evento
+  const handleEditEventSave = async (e) => {
+    e.preventDefault();
+    if (!editEventTitle.trim()) {
+      showToast("⚠️ El título del evento no puede estar vacío");
+      return;
+    }
+    try {
+      await updateEventMetadata(editEventId, editEventTitle, editEventDj, editEventDate);
+      showToast(`📝 Evento "${editEventTitle}" actualizado correctamente`);
+      setShowEditModal(false);
+    } catch (err) {
+      console.error(err);
+      showToast("❌ Error al actualizar el evento");
     }
   };
 
@@ -316,11 +374,28 @@ export default function DjDashboard() {
   // Construir lista de usuarios para el panel admin
   const adminUsersList = Object.keys(allUsersData).map(uid => {
     const userData = allUsersData[uid];
-    const eventsCount = userData?.events_index ? Object.keys(userData.events_index).length : 0;
+    const events = userData?.events_index ? Object.values(userData.events_index) : [];
+    const eventsCount = events.length;
+    
+    // Obtener nombres de eventos y el djName común
+    const eventTitles = events.map(e => e.title);
+    // Intentar buscar el nombre de DJ en la configuración de la cuenta del mock o en los eventos
+    let djName = 'DJ Sin Nombre';
+    if (uid === 'uid-admin-master') {
+      djName = 'Administrador';
+    } else {
+      const match = MOCK_ACCOUNTS.find(a => a.uid === uid);
+      if (match) {
+        djName = match.displayName;
+      } else if (events.length > 0) {
+        djName = events[0].djName;
+      }
+    }
+    
     const requestsCount = Object.values(userData?.events || {}).reduce((sum, ev) => {
       return sum + Object.keys(ev?.requests || {}).length;
     }, 0);
-    return { uid, eventsCount, requestsCount };
+    return { uid, eventsCount, requestsCount, djName, eventTitles };
   });
 
   return (
@@ -836,6 +911,11 @@ export default function DjDashboard() {
                                 Seleccionar
                               </button>
                             )}
+                            <button onClick={() => openEditModal(ev)}
+                              className="btn btn-secondary" style={{ padding: '6px 10px', fontSize: '0.8rem', height: '32px', color: 'var(--secondary-color)' }}
+                              title="Editar Evento">
+                              <Edit size={14} />
+                            </button>
                             <button onClick={async () => { const s = !ev.archived; await archiveEvent(ev.id, s); showToast(s ? `📁 Archivado: ${ev.title}` : `📂 Restaurado: ${ev.title}`); }}
                               className="btn btn-secondary" style={{ padding: '6px 10px', fontSize: '0.8rem', height: '32px', color: ev.archived ? 'var(--success-color)' : 'var(--warning-color)' }}
                               title={ev.archived ? "Desarchivar" : "Archivar"}>
@@ -895,42 +975,63 @@ export default function DjDashboard() {
                 </div>
               ) : (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                  {adminUsersList.map(({ uid, eventsCount, requestsCount }) => (
-                    <div key={uid} className="glass-panel" style={{
-                      padding: '16px 20px', borderRadius: 'var(--radius-md)',
-                      display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-                      gap: '16px', flexWrap: 'wrap',
+                  {adminUsersList.map(({ uid, eventsCount, requestsCount, djName, eventTitles }) => (
+                    <div key={uid} className="glass-panel animate-slide-in" style={{
+                      padding: '20px 24px', borderRadius: 'var(--radius-md)',
+                      display: 'flex', flexDirection: 'column', gap: '14px',
                       border: uid === 'uid-admin-master' ? '1px solid rgba(245,158,11,0.25)' : undefined
                     }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '14px', flex: 1 }}>
-                        <div className="flex-center" style={{ width: '42px', height: '42px', borderRadius: 'var(--radius-full)', background: uid === 'uid-admin-master' ? 'rgba(245,158,11,0.12)' : 'rgba(124, 58, 237, 0.1)', border: uid === 'uid-admin-master' ? '1px solid rgba(245,158,11,0.3)' : '1px solid rgba(124,58,237,0.2)' }}>
-                          {uid === 'uid-admin-master' ? <ShieldCheck size={18} color="var(--warning-color)" /> : <Users size={18} color="var(--primary-color)" />}
-                        </div>
-                        <div>
-                          <strong style={{ fontSize: '0.95rem', color: 'var(--text-primary)' }}>
-                            {uid === 'uid-admin-master' ? '👑 Administrador Master' : `DJ — ${uid}`}
-                          </strong>
-                          <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginTop: '2px' }}>
-                            UID: <code style={{ fontSize: '0.75rem', background: 'rgba(255,255,255,0.06)', padding: '1px 6px', borderRadius: '4px' }}>{uid}</code>
-                          </p>
-                          <div style={{ display: 'flex', gap: '12px', marginTop: '4px' }}>
-                            <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
-                              📅 <strong style={{ color: 'var(--primary-color)' }}>{eventsCount}</strong> evento{eventsCount !== 1 ? 's' : ''}
-                            </span>
-                            <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
-                              🎵 <strong style={{ color: 'var(--secondary-color)' }}>{requestsCount}</strong> petición{requestsCount !== 1 ? 'es' : ''}
-                            </span>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '16px', flexWrap: 'wrap' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '14px', flex: 1 }}>
+                          <div className="flex-center" style={{ width: '44px', height: '44px', borderRadius: 'var(--radius-full)', background: uid === 'uid-admin-master' ? 'rgba(245,158,11,0.12)' : 'rgba(124, 58, 237, 0.1)', border: uid === 'uid-admin-master' ? '1px solid rgba(245,158,11,0.3)' : '1px solid rgba(124,58,237,0.2)' }}>
+                            {uid === 'uid-admin-master' ? <ShieldCheck size={20} color="var(--warning-color)" /> : <Users size={20} color="var(--primary-color)" />}
+                          </div>
+                          <div>
+                            <strong style={{ fontSize: '1.05rem', color: 'var(--text-primary)' }}>
+                              {uid === 'uid-admin-master' ? '👑 Administrador Master' : djName}
+                            </strong>
+                            <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginTop: '2px' }}>
+                              UID: <code style={{ fontSize: '0.75rem', background: 'rgba(255,255,255,0.06)', padding: '1px 6px', borderRadius: '4px' }}>{uid}</code>
+                            </p>
                           </div>
                         </div>
+
+                        <div style={{ display: 'flex', gap: '16px', alignItems: 'center' }}>
+                          <div style={{ textAlign: 'right' }}>
+                            <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)', display: 'block' }}>
+                              Eventos: <strong style={{ color: 'var(--primary-color)' }}>{eventsCount}</strong>
+                            </span>
+                            <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)', display: 'block' }}>
+                              Peticiones: <strong style={{ color: 'var(--secondary-color)' }}>{requestsCount}</strong>
+                            </span>
+                          </div>
+
+                          {uid !== 'uid-admin-master' && (
+                            <button
+                              onClick={() => { impersonateUser(uid); setActiveTab('requests'); showToast(`👁️ Viendo panel de ${djName}`); }}
+                              className="btn btn-secondary"
+                              style={{ padding: '8px 16px', fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: '6px', border: '1px solid rgba(124,58,237,0.3)' }}
+                            >
+                              <UserCog size={14} /> Ver Panel
+                            </button>
+                          )}
+                        </div>
                       </div>
-                      {uid !== 'uid-admin-master' && (
-                        <button
-                          onClick={() => { impersonateUser(uid); setActiveTab('requests'); showToast(`👁️ Viendo panel de ${uid}`); }}
-                          className="btn btn-secondary"
-                          style={{ padding: '8px 16px', fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: '6px', border: '1px solid rgba(124,58,237,0.3)' }}
-                        >
-                          <UserCog size={14} /> Ver Panel
-                        </button>
+
+                      {/* Mostrar los títulos de los eventos creados por este DJ */}
+                      {uid !== 'uid-admin-master' && eventTitles.length > 0 && (
+                        <div style={{ borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: '10px' }}>
+                          <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', display: 'block', marginBottom: '6px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                            Eventos en actividad:
+                          </span>
+                          <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                            {eventTitles.map((title, idx) => (
+                              <span key={idx} style={{ fontSize: '0.75rem', background: 'rgba(124, 58, 237, 0.08)', border: '1px solid rgba(124, 58, 237, 0.15)', color: 'var(--text-primary)', padding: '3px 8px', borderRadius: '4px' }}>
+                                🗓️ {title}
+                              </span>
+                            ))}
+                          </div>
+                        </div>
                       )}
                     </div>
                   ))}
@@ -963,64 +1064,183 @@ export default function DjDashboard() {
         </main>
       </div>
 
-      {/* MODAL: BORRAR TODO EL HISTORIAL */}
+      {/* MODAL: BORRAR HISTORIAL SELECCIONADO */}
       {showClearModal && (
         <div style={{ position: 'fixed', inset: 0, zIndex: 2000, background: 'rgba(0,0,0,0.85)', backdropFilter: 'blur(8px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}>
-          <div className="glass-panel" style={{ maxWidth: '480px', width: '100%', padding: '32px', borderRadius: 'var(--radius-lg)', border: '1px solid rgba(239,68,68,0.3)', boxShadow: '0 0 40px rgba(239,68,68,0.15)', display: 'flex', flexDirection: 'column', gap: '20px' }}>
+          <div className="glass-panel" style={{ maxWidth: '520px', width: '100%', padding: '32px', borderRadius: 'var(--radius-lg)', border: '1px solid rgba(239,68,68,0.3)', boxShadow: '0 0 40px rgba(239,68,68,0.15)', display: 'flex', flexDirection: 'column', gap: '20px' }}>
             
             <div style={{ textAlign: 'center' }}>
-              <div style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: '72px', height: '72px', borderRadius: 'var(--radius-full)', background: 'rgba(239,68,68,0.1)', border: '2px solid rgba(239,68,68,0.3)', marginBottom: '16px' }}>
+              <div style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: '72px', height: '72px', borderRadius: 'var(--radius-full)', background: 'rgba(239,68,68,0.1)', border: '2px solid rgba(239,68,68,0.3)', marginBottom: '12px' }}>
                 <AlertTriangle size={36} color="var(--danger-color)" />
               </div>
-              <h2 style={{ fontSize: '1.4rem', color: 'var(--danger-color)', marginBottom: '8px' }}>⚠️ Acción Destructiva</h2>
-              <p style={{ fontSize: '0.9rem', color: 'var(--text-secondary)', lineHeight: '1.6' }}>
-                Estás a punto de <strong style={{ color: 'var(--danger-color)' }}>eliminar permanentemente</strong> todo el historial de tu cuenta:
-              </p>
-              <ul style={{ textAlign: 'left', marginTop: '12px', display: 'inline-block', fontSize: '0.85rem', color: 'var(--text-muted)', lineHeight: '2' }}>
-                <li>🗑️ Todas las peticiones de canciones</li>
-                <li>🗑️ Todos los eventos del calendario</li>
-                <li>🗑️ El historial de géneros aprendidos</li>
-                <li>🗑️ La base de datos de autocompletado</li>
-              </ul>
-              <p style={{ marginTop: '12px', fontSize: '0.85rem', color: 'var(--danger-color)', fontWeight: '600' }}>
-                Esta acción NO SE PUEDE DESHACER.
+              <h2 style={{ fontSize: '1.4rem', color: 'var(--danger-color)', marginBottom: '8px' }}>⚠️ Borrado de Historial</h2>
+              <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', lineHeight: '1.5' }}>
+                Selecciona los elementos que deseas <strong style={{ color: 'var(--danger-color)' }}>eliminar permanentemente</strong> de tu cuenta.
               </p>
             </div>
 
+            {/* Checkboxes de opciones */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', background: 'rgba(255,255,255,0.02)', padding: '16px', borderRadius: 'var(--radius-md)', border: '1px solid rgba(255,255,255,0.06)' }}>
+              
+              <label style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer', userSelect: 'none', fontSize: '0.9rem' }}>
+                <input
+                  type="checkbox"
+                  checked={clearOptionSongs}
+                  onChange={(e) => { setClearOptionSongs(e.target.checked); setClearErrorMsg(''); }}
+                  style={{ width: '18px', height: '18px', accentColor: 'var(--danger-color)' }}
+                />
+                <span>🗑️ Todas las peticiones de canciones</span>
+              </label>
+
+              <label style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer', userSelect: 'none', fontSize: '0.9rem' }}>
+                <input
+                  type="checkbox"
+                  checked={clearOptionGenres}
+                  onChange={(e) => { setClearOptionGenres(e.target.checked); setClearErrorMsg(''); }}
+                  style={{ width: '18px', height: '18px', accentColor: 'var(--danger-color)' }}
+                />
+                <span>🗑️ Historial de géneros aprendidos</span>
+              </label>
+
+              <label style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer', userSelect: 'none', fontSize: '0.9rem' }}>
+                <input
+                  type="checkbox"
+                  checked={clearOptionArtists}
+                  onChange={(e) => { setClearOptionArtists(e.target.checked); setClearErrorMsg(''); }}
+                  style={{ width: '18px', height: '18px', accentColor: 'var(--danger-color)' }}
+                />
+                <span>🗑️ Historial de artistas registrados</span>
+              </label>
+
+              <label style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer', userSelect: 'none', fontSize: '0.9rem' }}>
+                <input
+                  type="checkbox"
+                  checked={clearOptionCalendar}
+                  onChange={(e) => { setClearOptionCalendar(e.target.checked); setClearErrorMsg(''); }}
+                  style={{ width: '18px', height: '18px', accentColor: 'var(--danger-color)' }}
+                />
+                <span>🗑️ Calendario y todos los eventos creados</span>
+              </label>
+
+              <label style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer', userSelect: 'none', fontSize: '0.9rem' }}>
+                <input
+                  type="checkbox"
+                  checked={clearOptionAutocomplete}
+                  onChange={(e) => { setClearOptionAutocomplete(e.target.checked); setClearErrorMsg(''); }}
+                  style={{ width: '18px', height: '18px', accentColor: 'var(--danger-color)' }}
+                />
+                <span>🗑️ Catálogo de autocompletado</span>
+              </label>
+
+            </div>
+
             <div className="form-group">
-              <label className="form-label" style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                <ShieldAlert size={14} /> Confirma tu contraseña de cuenta
+              <label className="form-label" style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.85rem' }}>
+                <ShieldAlert size={14} /> Para confirmar, escribe la palabra clave <strong style={{ color: 'var(--danger-color)' }}>clear</strong>
               </label>
               <input
-                type="password"
+                type="text"
                 className="input-field"
-                placeholder="Ingresa tu contraseña..."
-                value={clearPassword}
-                onChange={(e) => { setClearPassword(e.target.value); setClearPasswordError(''); }}
+                placeholder='Escribe "clear" aquí...'
+                value={clearWordConfirm}
+                onChange={(e) => { setClearWordConfirm(e.target.value); setClearErrorMsg(''); }}
                 onKeyDown={(e) => e.key === 'Enter' && handleClearHistory()}
-                style={{ borderColor: clearPasswordError ? 'var(--danger-color)' : undefined }}
+                style={{ borderColor: clearErrorMsg ? 'var(--danger-color)' : undefined }}
                 autoFocus
               />
-              {clearPasswordError && (
-                <p style={{ color: 'var(--danger-color)', fontSize: '0.8rem', marginTop: '6px' }}>{clearPasswordError}</p>
+              {clearErrorMsg && (
+                <p style={{ color: 'var(--danger-color)', fontSize: '0.8rem', marginTop: '6px' }}>{clearErrorMsg}</p>
               )}
             </div>
 
             <div style={{ display: 'flex', gap: '12px' }}>
               <button className="btn btn-secondary" style={{ flex: 1 }}
-                onClick={() => { setShowClearModal(false); setClearPassword(''); setClearPasswordError(''); }}
+                onClick={() => {
+                  setShowClearModal(false);
+                  setClearWordConfirm('');
+                  setClearOptionSongs(false);
+                  setClearOptionGenres(false);
+                  setClearOptionArtists(false);
+                  setClearOptionCalendar(false);
+                  setClearOptionAutocomplete(false);
+                  setClearErrorMsg('');
+                }}
                 disabled={clearingHistory}>
                 Cancelar
               </button>
               <button className="btn btn-danger" style={{ flex: 1, background: 'rgba(239,68,68,0.15)', border: '1px solid rgba(239,68,68,0.4)', color: 'var(--danger-color)' }}
-                onClick={handleClearHistory} disabled={clearingHistory || !clearPassword.trim()}>
+                onClick={handleClearHistory} disabled={clearingHistory || !clearWordConfirm.trim()}>
                 {clearingHistory ? (
                   <><RefreshCw size={14} className="animate-spin" /> Borrando...</>
                 ) : (
-                  <><Trash2 size={14} /> Sí, Borrar Todo</>
+                  <><Trash2 size={14} /> Ejecutar Borrado</>
                 )}
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL: EDITAR EVENTO */}
+      {showEditModal && (
+        <div style={{ position: 'fixed', inset: 0, zIndex: 2000, background: 'rgba(0,0,0,0.85)', backdropFilter: 'blur(8px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}>
+          <div className="glass-panel" style={{ maxWidth: '480px', width: '100%', padding: '32px', borderRadius: 'var(--radius-lg)', border: '1px solid rgba(255,255,255,0.08)', display: 'flex', flexDirection: 'column', gap: '20px' }}>
+            
+            <div style={{ textAlign: 'center' }}>
+              <h2 style={{ fontSize: '1.25rem', color: 'var(--text-primary)', marginBottom: '4px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
+                <Edit size={20} color="var(--secondary-color)" />
+                Editar Detalles del Evento
+              </h2>
+              <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
+                Modifica los metadatos del evento <strong>{editEventId}</strong>
+              </p>
+            </div>
+
+            <form onSubmit={handleEditEventSave} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+              <div className="form-group">
+                <label className="form-label">Título del Evento</label>
+                <input
+                  type="text"
+                  className="input-field"
+                  value={editEventTitle}
+                  onChange={(e) => setEditEventTitle(e.target.value)}
+                  required
+                />
+              </div>
+
+              <div className="form-group">
+                <label className="form-label">DJ Residente</label>
+                <input
+                  type="text"
+                  className="input-field"
+                  value={editEventDj}
+                  onChange={(e) => setEditEventDj(e.target.value)}
+                  placeholder="ej. DJ MasterMix"
+                />
+              </div>
+
+              <div className="form-group">
+                <label className="form-label">Fecha del Evento</label>
+                <input
+                  type="date"
+                  className="input-field"
+                  value={editEventDate}
+                  onChange={(e) => setEditEventDate(e.target.value)}
+                  required
+                />
+              </div>
+
+              <div style={{ display: 'flex', gap: '12px', marginTop: '8px' }}>
+                <button type="button" className="btn btn-secondary" style={{ flex: 1 }}
+                  onClick={() => { setShowEditModal(false); }}>
+                  Cancelar
+                </button>
+                <button type="submit" className="btn btn-primary" style={{ flex: 1 }}>
+                  Guardar Cambios 💾
+                </button>
+              </div>
+            </form>
+
           </div>
         </div>
       )}
