@@ -70,10 +70,36 @@ export const FirebaseProvider = ({ children }) => {
     return () => unsubscribe();
   }, []);
 
-  // 2. Escuchar configuraciones del evento activo (scope por usuario)
+  // Estado para el owner del evento actual (para la vista pública)
+  const [eventOwnerUid, setEventOwnerUid] = useState(null);
+
+  // Resolver el ownerUid del evento actual desde el registro público (para la vista pública anónima)
   useEffect(() => {
-    if (!userBasePath) return;
-    const settingsRef = ref(database, `${userBasePath}/events/${currentEventId}/settings`);
+    if (activeUid) {
+      // DJ autenticado: el owner es él mismo
+      setEventOwnerUid(activeUid);
+      return;
+    }
+    // Usuario anónimo (público): buscar en el registro
+    const registryRef = ref(database, `events_registry/${currentEventId}`);
+    const unsubscribe = onValue(registryRef, (snapshot) => {
+      if (snapshot.exists()) {
+        setEventOwnerUid(snapshot.val().ownerUid);
+      } else {
+        // Fallback: intentar con el evento por defecto del primer DJ conocido (modo mock demo)
+        setEventOwnerUid(null);
+      }
+    });
+    return () => unsubscribe();
+  }, [currentEventId, activeUid]);
+
+  // El basePath del propietario del evento — funciona para DJ autenticado Y para público anónimo
+  const ownerBasePath = eventOwnerUid ? `users/${eventOwnerUid}` : null;
+
+  // Escuchar configuraciones del evento activo usando ownerBasePath (DJ + público anónimo)
+  useEffect(() => {
+    if (!ownerBasePath) return;
+    const settingsRef = ref(database, `${ownerBasePath}/events/${currentEventId}/settings`);
     const unsubscribe = onValue(settingsRef, (snapshot) => {
       if (snapshot.exists()) {
         const data = snapshot.val();
@@ -87,7 +113,6 @@ export const FirebaseProvider = ({ children }) => {
           document.documentElement.style.setProperty('--secondary-glow', `${data.themeColorSecondary}55`);
         }
       } else {
-        // Evento no existe aún, resetear a defaults
         setEventSettings({
           title: 'Mi Gran Evento VIP',
           logoUrl: '',
@@ -98,12 +123,12 @@ export const FirebaseProvider = ({ children }) => {
       }
     });
     return () => unsubscribe();
-  }, [currentEventId, userBasePath]);
+  }, [currentEventId, ownerBasePath]);
 
-  // 3. Escuchar peticiones de canciones en tiempo real (scope por usuario)
+  // 3. Escuchar peticiones de canciones en tiempo real (DJ + público anónimo)
   useEffect(() => {
-    if (!userBasePath) return;
-    const requestsRef = ref(database, `${userBasePath}/events/${currentEventId}/requests`);
+    if (!ownerBasePath) return;
+    const requestsRef = ref(database, `${ownerBasePath}/events/${currentEventId}/requests`);
     const unsubscribe = onValue(requestsRef, (snapshot) => {
       if (snapshot.exists()) {
         setRequests(snapshot.val());
@@ -112,9 +137,9 @@ export const FirebaseProvider = ({ children }) => {
       }
     });
     return () => unsubscribe();
-  }, [currentEventId, userBasePath]);
+  }, [currentEventId, ownerBasePath]);
 
-  // 4. Escuchar catálogo de autocompletado (scope por usuario)
+  // 4. Escuchar catálogo de autocompletado (solo DJ autenticado)
   useEffect(() => {
     if (!userBasePath) return;
     const autocompleteRef = ref(database, `${userBasePath}/autocomplete_songs`);
@@ -183,10 +208,15 @@ export const FirebaseProvider = ({ children }) => {
     setCurrentEventId('default-event');
   };
 
-  // Crear una nueva petición (Público)
-  const addRequest = async (title, artist, genre, sessionId) => {
-    if (!userBasePath) return;
-    const requestsRef = ref(database, `${userBasePath}/events/${currentEventId}/requests`);
+  // Crear una nueva petición (Público) — funciona TANTO para usuarios autenticados como anónimos.
+  // El público no tiene sesión, por eso buscamos el ownerUid del evento en el registro público.
+  const addRequest = async (title, artist, genre, sessionId, eventOwnerUid) => {
+    // ownerUid puede venir del caller (PublicView lo pasa) o del usuario autenticado (DJ usando su propia vista)
+    const targetUid = eventOwnerUid || activeUid;
+    if (!targetUid) {
+      throw new Error('No se pudo identificar al propietario del evento.');
+    }
+    const requestsRef = ref(database, `users/${targetUid}/events/${currentEventId}/requests`);
     const newRequest = {
       title,
       artist,
@@ -199,10 +229,11 @@ export const FirebaseProvider = ({ children }) => {
     return push(requestsRef, newRequest);
   };
 
-  // Votar por una petición existente (Público)
-  const voteRequest = async (requestId, sessionId, hasVoted) => {
-    if (!userBasePath) return;
-    const requestRef = ref(database, `${userBasePath}/events/${currentEventId}/requests/${requestId}`);
+  // Votar por una petición existente (Público) — igual, soporta usuarios anónimos con ownerUid
+  const voteRequest = async (requestId, sessionId, hasVoted, eventOwnerUid) => {
+    const targetUid = eventOwnerUid || activeUid;
+    if (!targetUid) return;
+    const requestRef = ref(database, `users/${targetUid}/events/${currentEventId}/requests/${requestId}`);
     const reqData = requests[requestId];
     if (!reqData) return;
 
@@ -250,9 +281,11 @@ export const FirebaseProvider = ({ children }) => {
     }
   };
 
-  // Actualizar configuraciones del evento (DJ)
+  // Actualizar configuraciones del evento (DJ) — lanza error si no hay sesión activa
   const updateEventSettings = async (newSettings) => {
-    if (!userBasePath) return;
+    if (!userBasePath) {
+      throw new Error('No hay sesión activa. Por favor inicia sesión nuevamente.');
+    }
     const settingsRef = ref(database, `${userBasePath}/events/${currentEventId}/settings`);
     return update(settingsRef, newSettings);
   };
@@ -286,6 +319,7 @@ export const FirebaseProvider = ({ children }) => {
     };
     await set(eventRef, initialEvent);
 
+    // Índice privado del usuario
     const indexRef = ref(database, `${userBasePath}/events_index/${eventId}`);
     await set(indexRef, {
       id: eventId,
@@ -295,6 +329,10 @@ export const FirebaseProvider = ({ children }) => {
       archived: false,
       createdAt: Date.now()
     });
+
+    // Registro público: permite que la vista pública encuentre al propietario del evento
+    const registryRef = ref(database, `events_registry/${eventId}`);
+    await set(registryRef, { ownerUid: activeUid, title, djName: djName || 'DJ MasterMix' });
 
     setCurrentEventId(eventId);
   };
@@ -349,6 +387,7 @@ export const FirebaseProvider = ({ children }) => {
       isMock: isMockMode,
       isAdminMaster,
       impersonatingUid,
+      eventOwnerUid,
       currentEventId,
       eventSettings,
       requests,

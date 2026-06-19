@@ -20,7 +20,8 @@ export default function PublicView() {
     requests, 
     autocompleteSongs, 
     addRequest, 
-    voteRequest 
+    voteRequest,
+    eventOwnerUid
   } = useFirebase();
 
   const sessionId = getSessionId();
@@ -203,7 +204,8 @@ export default function PublicView() {
         cleanTitle || 'Tema no especificado',
         cleanArtist || 'Artista no especificado',
         finalGenre || 'Personalizado',
-        sessionId
+        sessionId,
+        eventOwnerUid
       );
 
       // Guardar marca de tiempo para el cooldown
@@ -550,7 +552,7 @@ export default function PublicView() {
                         showToast('El evento ha finalizado y ya no se puede votar.');
                         return;
                       }
-                      voteRequest(req.id, sessionId, req.hasVoted);
+                      voteRequest(req.id, sessionId, req.hasVoted, eventOwnerUid);
                     }}
                     disabled={eventSettings.archived}
                     style={{

@@ -127,18 +127,34 @@ const buildInitialUserData = (uid) => {
 const getLocalData = () => {
   const raw = localStorage.getItem('mock_rtdb_v2');
   if (!raw) {
-    // Primera ejecución: inicializar con datos de demo para los DJs de prueba
-    const db = { users: {} };
-    MOCK_ACCOUNTS.filter(a => !a.isAdmin).forEach(a => {
-      db.users[a.uid] = buildInitialUserData(a.uid);
-    });
-    // Admin master no tiene eventos propios, solo acceso global
-    db.users['uid-admin-master'] = { events_index: {}, events: {}, autocomplete_songs: {} };
-    localStorage.setItem('mock_rtdb_v2', JSON.stringify(db));
-    return db;
+    return initFreshMockDB();
   }
-  return JSON.parse(raw);
+  const parsed = JSON.parse(raw);
+  // Si no tiene events_registry es una versión antigua → reinicializar
+  if (!parsed.events_registry) {
+    return initFreshMockDB();
+  }
+  return parsed;
 };
+
+const initFreshMockDB = () => {
+  const db = { users: {}, events_registry: {} };
+  MOCK_ACCOUNTS.filter(a => !a.isAdmin).forEach(a => {
+    db.users[a.uid] = buildInitialUserData(a.uid);
+    // Registrar el evento demo de cada DJ en el registry público
+    db.events_registry['default-event'] = {
+      ownerUid: a.uid,      // último DJ en el loop — en demo sólo hay 1 evento compartido de prueba
+      title: 'Mi Gran Evento VIP',
+      djName: 'DJ MasterMix'
+    };
+  });
+  // Admin master no tiene eventos propios, solo acceso global
+  db.users['uid-admin-master'] = { events_index: {}, events: {}, autocomplete_songs: {} };
+  localStorage.setItem('mock_rtdb_v2', JSON.stringify(db));
+  return db;
+};
+
+
 
 const setLocalData = (data) => {
   localStorage.setItem('mock_rtdb_v2', JSON.stringify(data));
@@ -148,10 +164,25 @@ const setLocalData = (data) => {
 };
 
 // Restaurar sesión de Auth simulada
+// Valida que el uid guardado corresponda a una cuenta conocida (evita sesiones viejas con uid obsoleto)
 if (isMockMode) {
   const savedUser = localStorage.getItem('mock_auth_user');
   if (savedUser) {
-    auth.currentUser = JSON.parse(savedUser);
+    try {
+      const parsed = JSON.parse(savedUser);
+      const isKnownAccount = MOCK_ACCOUNTS.some(a => a.uid === parsed.uid);
+      if (isKnownAccount) {
+        auth.currentUser = parsed;
+      } else {
+        // Uid obsoleto (de versión anterior del código) → limpiar sesión
+        console.warn('⚠️ Sesión mock con uid obsoleto detectada. Limpiando...');
+        localStorage.removeItem('mock_auth_user');
+        localStorage.removeItem('mock_auth_password');
+      }
+    } catch (e) {
+      localStorage.removeItem('mock_auth_user');
+      localStorage.removeItem('mock_auth_password');
+    }
   }
 }
 
