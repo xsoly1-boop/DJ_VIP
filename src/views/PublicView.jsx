@@ -16,13 +16,22 @@ const COOLDOWN_TIME_MS = 120000; // 2 minutos de cooldown para anti-spam
 
 export default function PublicView() {
   const { 
-    eventSettings, 
+    eventSettings: rawEventSettings, 
     requests, 
     autocompleteSongs, 
     addRequest, 
     voteRequest,
     eventOwnerUid
   } = useFirebase();
+
+  const eventSettings = rawEventSettings || {
+    title: 'Mi Gran Evento VIP',
+    djName: 'DJ MasterMix',
+    logoUrl: '',
+    themeColor: '#7c3aed',
+    themeColorSecondary: '#06b6d4',
+    archived: false
+  };
 
   const sessionId = getSessionId();
 
@@ -51,16 +60,16 @@ export default function PublicView() {
     const frequencyMap = {};
 
     // Aprender de las canciones del autocompletado (historial global)
-    autocompleteSongs.forEach(song => {
-      if (song.genre && song.genre.trim() && song.genre !== 'Personalizado') {
+    (autocompleteSongs || []).forEach(song => {
+      if (song && song.genre && song.genre.trim() && song.genre !== 'Personalizado') {
         const g = song.genre.trim();
         frequencyMap[g] = (frequencyMap[g] || 0) + 1;
       }
     });
 
     // Aprender de las peticiones del evento actual (peso mayor = más reciente)
-    Object.values(requests).forEach(req => {
-      if (req.genre && req.genre.trim() && req.genre !== 'Personalizado') {
+    Object.values(requests || {}).forEach(req => {
+      if (req && req.genre && req.genre.trim() && req.genre !== 'Personalizado') {
         const g = req.genre.trim();
         frequencyMap[g] = (frequencyMap[g] || 0) + 3; // más peso porque es petición real
       }
@@ -228,11 +237,13 @@ export default function PublicView() {
   };
 
   // Convertir peticiones en array y ordenar por popularidad (votos) o fecha
-  const requestList = Object.keys(requests).map(key => ({
-    id: key,
-    ...requests[key],
-    hasVoted: requests[key].voters ? !!requests[key].voters[sessionId] : false
-  })).sort((a, b) => {
+  const requestList = Object.keys(requests || {})
+    .filter(key => requests[key] !== null && typeof requests[key] === 'object')
+    .map(key => ({
+      id: key,
+      ...requests[key],
+      hasVoted: requests[key].voters ? !!requests[key].voters[sessionId] : false
+    })).sort((a, b) => {
     // Si hay una en reproducción, va primero
     if (a.status === 'playing' && b.status !== 'playing') return -1;
     if (b.status === 'playing' && a.status !== 'playing') return 1;
