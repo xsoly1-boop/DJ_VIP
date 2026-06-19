@@ -10,20 +10,22 @@
 
     // Datos por usuario (arquitectura multi-usuario)
     "users": {
+      // El administrador master puede listar/leer todas las cuentas de usuario
+      ".read": "auth != null && auth.token.email == 'dj@admin.com'",
+      ".write": "auth != null && auth.token.email == 'dj@admin.com'",
+      
       "$uid": {
-        // Cada DJ solo puede leer/escribir SUS propios datos de index y canciones
         "events_index": {
-          ".read": "auth != null && auth.uid == $uid",
-          ".write": "auth != null && auth.uid == $uid"
+          ".read": "auth != null && (auth.uid == $uid || auth.token.email == 'dj@admin.com')",
+          ".write": "auth != null && (auth.uid == $uid || auth.token.email == 'dj@admin.com')"
         },
         "autocomplete_songs": {
-          ".read": "auth != null && auth.uid == $uid",
-          ".write": "auth != null && auth.uid == $uid"
+          ".read": "auth != null && (auth.uid == $uid || auth.token.email == 'dj@admin.com')",
+          ".write": "auth != null && (auth.uid == $uid || auth.token.email == 'dj@admin.com')"
         },
         "events": {
-          // El DJ dueño de la cuenta puede leer y escribir la carpeta completa de eventos (permite borrar todo el historial)
-          ".read": "auth != null && auth.uid == $uid",
-          ".write": "auth != null && auth.uid == $uid",
+          ".read": "auth != null && (auth.uid == $uid || auth.token.email == 'dj@admin.com')",
+          ".write": "auth != null && (auth.uid == $uid || auth.token.email == 'dj@admin.com')",
           
           "$eventId": {
             // El público general (sin estar autenticado) puede leer la configuración del evento
