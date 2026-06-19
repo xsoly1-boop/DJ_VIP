@@ -4,7 +4,8 @@ import { QRCodeSVG } from 'qrcode.react';
 import { 
   Music, LogOut, Settings, Calendar, Download, RefreshCw, 
   Trash2, Plus, Play, Check, X, Bell, BellOff, Volume2, 
-  Upload, Sparkles, Sliders, Users, Layers, ShieldCheck
+  Upload, Sparkles, Sliders, Users, Layers, ShieldCheck,
+  Link, AlertTriangle, ShieldAlert
 } from 'lucide-react';
 
 export default function DjDashboard() {
@@ -22,7 +23,9 @@ export default function DjDashboard() {
     isMock,
     eventsList,
     deleteEvent,
-    archiveEvent
+    archiveEvent,
+    clearAllHistory,
+    autocompleteSongs
   } = useFirebase();
 
   // Estados Locales
@@ -46,7 +49,16 @@ export default function DjDashboard() {
   const [secondaryColor, setSecondaryColor] = useState(eventSettings.themeColorSecondary || '#06b6d4');
   // URL de producción (Vercel) configurable — soluciona el bug de QR en Electron
   const [productionUrl, setProductionUrl] = useState(eventSettings.productionUrl || import.meta.env.VITE_PUBLIC_URL || '');
+  // URL externa para logo (sin necesidad de subir al hosting)
+  const [logoUrlInput, setLogoUrlInput] = useState(eventSettings.logoUrl || '');
+  const [logoUrlMode, setLogoUrlMode] = useState('upload'); // 'upload' | 'url'
   
+  // Modal Borrar Historial
+  const [showClearModal, setShowClearModal] = useState(false);
+  const [clearPassword, setClearPassword] = useState('');
+  const [clearPasswordError, setClearPasswordError] = useState('');
+  const [clearingHistory, setClearingHistory] = useState(false);
+
   // Alertas / Audio / Notificaciones
   const [soundEnabled, setSoundEnabled] = useState(true);
   const [selectedTone, setSelectedTone] = useState(() => {
@@ -65,6 +77,11 @@ export default function DjDashboard() {
     setPrimaryColor(eventSettings.themeColor || '#7c3aed');
     setSecondaryColor(eventSettings.themeColorSecondary || '#06b6d4');
     setProductionUrl(eventSettings.productionUrl || import.meta.env.VITE_PUBLIC_URL || '');
+    setLogoUrlInput(eventSettings.logoUrl || '');
+    // Si ya tiene una URL de logo guardada, poner en modo URL por defecto
+    if (eventSettings.logoUrl && eventSettings.logoUrl.startsWith('http')) {
+      setLogoUrlMode('url');
+    }
   }, [eventSettings, currentEventId]);
 
   // Sintetizador de audio premium con la Web Audio API (Soporta múltiples tonos)
@@ -224,6 +241,52 @@ export default function DjDashboard() {
     } catch (err) {
       console.error(err);
       showToast("Error al guardar configuraciones");
+    }
+  };
+
+  // Guardar URL externa de logo sin subir archivo
+  const handleSaveLogoUrl = async () => {
+    if (!logoUrlInput.trim()) {
+      showToast('⚠️ Ingresa una URL válida para el logo');
+      return;
+    }
+    if (!logoUrlInput.startsWith('http')) {
+      showToast('⚠️ La URL del logo debe comenzar con https://');
+      return;
+    }
+    try {
+      await updateEventSettings({ logoUrl: logoUrlInput.trim() });
+      showToast('✅ URL de logo guardada correctamente');
+    } catch (err) {
+      console.error(err);
+      showToast('Error al guardar la URL del logo');
+    }
+  };
+
+  // Verificar contraseña y ejecutar borrado total del historial
+  const handleClearHistory = async () => {
+    setClearPasswordError('');
+    // Contraseña del usuario actual (en modo mock es admin123, en Firebase usa la del DJ)
+    const expectedPassword = isMock ? 'admin123' : null;
+    if (isMock && clearPassword !== expectedPassword) {
+      setClearPasswordError('❌ Contraseña incorrecta. Inicia sesión y verifica tu contraseña.');
+      return;
+    }
+    if (!isMock && !clearPassword.trim()) {
+      setClearPasswordError('❌ Debes ingresar tu contraseña para confirmar.');
+      return;
+    }
+    setClearingHistory(true);
+    try {
+      await clearAllHistory();
+      showToast('🗑️ Historial completo eliminado permanentemente');
+      setShowClearModal(false);
+      setClearPassword('');
+    } catch (err) {
+      console.error(err);
+      showToast('Error al borrar el historial');
+    } finally {
+      setClearingHistory(false);
     }
   };
 
@@ -752,6 +815,49 @@ export default function DjDashboard() {
                   ))
                 )}
               </div>
+              {/* Géneros aprendidos — tabla rápida */}
+              {(() => {
+                const genreCount = {};
+                Object.values(requests).forEach(r => {
+                  if (r.genre && r.genre !== 'Personalizado') {
+                    genreCount[r.genre] = (genreCount[r.genre] || 0) + 1;
+                  }
+                });
+                autocompleteSongs.forEach(s => {
+                  if (s.genre && s.genre !== 'Personalizado') {
+                    genreCount[s.genre] = (genreCount[s.genre] || 0) + 1;
+                  }
+                });
+                const sorted = Object.entries(genreCount).sort((a,b) => b[1]-a[1]);
+                if (sorted.length === 0) return null;
+                return (
+                  <div style={{ marginTop: '24px', borderTop: '1px solid var(--surface-border)', paddingTop: '20px' }}>
+                    <h4 style={{ fontSize: '0.9rem', color: 'var(--text-secondary)', marginBottom: '12px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                      <Sparkles size={14} color="var(--secondary-color)" />
+                      Géneros más pedidos (aprendidos del público)
+                    </h4>
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+                      {sorted.map(([genre, count]) => (
+                        <span key={genre} style={{
+                          padding: '5px 12px',
+                          borderRadius: 'var(--radius-full)',
+                          background: 'rgba(6, 182, 212, 0.08)',
+                          border: '1px solid rgba(6, 182, 212, 0.2)',
+                          color: 'var(--secondary-color)',
+                          fontSize: '0.8rem',
+                          fontWeight: '600',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '6px'
+                        }}>
+                          {genre}
+                          <span style={{ background: 'rgba(6,182,212,0.2)', borderRadius: '10px', padding: '1px 7px', fontSize: '0.7rem', fontWeight: '800' }}>{count}</span>
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                );
+              })()}
             </div>
           )}
 
@@ -768,7 +874,47 @@ export default function DjDashboard() {
                 {/* Fila: Logo */}
                 <div className="form-group" style={{ borderBottom: '1px solid rgba(255,255,255,0.05)', paddingBottom: '20px' }}>
                   <label className="form-label">Logotipo Personalizado</label>
+
+                  {/* Toggle modo */}
+                  <div style={{ display: 'flex', gap: '8px', marginBottom: '16px', marginTop: '8px' }}>
+                    <button
+                      type="button"
+                      onClick={() => setLogoUrlMode('upload')}
+                      style={{
+                        padding: '6px 14px',
+                        fontSize: '0.8rem',
+                        fontWeight: '600',
+                        border: 'none',
+                        borderRadius: 'var(--radius-sm)',
+                        cursor: 'pointer',
+                        background: logoUrlMode === 'upload' ? 'var(--primary-color)' : 'rgba(255,255,255,0.05)',
+                        color: logoUrlMode === 'upload' ? '#fff' : 'var(--text-secondary)'
+                      }}
+                    >
+                      <Upload size={13} style={{ marginRight: '4px', verticalAlign: 'middle' }} />
+                      Subir archivo
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setLogoUrlMode('url')}
+                      style={{
+                        padding: '6px 14px',
+                        fontSize: '0.8rem',
+                        fontWeight: '600',
+                        border: 'none',
+                        borderRadius: 'var(--radius-sm)',
+                        cursor: 'pointer',
+                        background: logoUrlMode === 'url' ? 'var(--primary-color)' : 'rgba(255,255,255,0.05)',
+                        color: logoUrlMode === 'url' ? '#fff' : 'var(--text-secondary)'
+                      }}
+                    >
+                      <Link size={13} style={{ marginRight: '4px', verticalAlign: 'middle' }} />
+                      Usar URL externa
+                    </button>
+                  </div>
+
                   <div style={{ display: 'flex', alignItems: 'center', gap: '20px', marginTop: '8px' }}>
+                    {/* Vista previa del logo */}
                     <div style={{
                       width: '80px',
                       height: '80px',
@@ -778,30 +924,61 @@ export default function DjDashboard() {
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
-                      overflow: 'hidden'
+                      overflow: 'hidden',
+                      flexShrink: 0
                     }}>
-                      {eventSettings.logoUrl ? (
-                        <img src={eventSettings.logoUrl} alt="Logo" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
+                      {(eventSettings.logoUrl || logoUrlInput) ? (
+                        <img src={logoUrlMode === 'url' && logoUrlInput ? logoUrlInput : eventSettings.logoUrl} alt="Logo" style={{ width: '100%', height: '100%', objectFit: 'contain' }} onError={(e) => { e.target.style.display='none'; }} />
                       ) : (
                         <Music size={24} color="var(--text-muted)" />
                       )}
                     </div>
                     
-                    <div>
-                      <input 
-                        type="file" 
-                        id="logo-upload" 
-                        accept="image/*" 
-                        onChange={handleLogoUpload} 
-                        style={{ display: 'none' }}
-                      />
-                      <label htmlFor="logo-upload" className="btn btn-secondary" style={{ cursor: 'pointer' }}>
-                        <Upload size={14} />
-                        <span>Subir Imagen</span>
-                      </label>
-                      <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '8px' }}>
-                        Recomendado: Fondo transparente PNG, máx. 2MB.
-                      </p>
+                    {/* Opciones segun modo */}
+                    <div style={{ flex: 1 }}>
+                      {logoUrlMode === 'upload' ? (
+                        <>
+                          <input 
+                            type="file" 
+                            id="logo-upload" 
+                            accept="image/*" 
+                            onChange={handleLogoUpload} 
+                            style={{ display: 'none' }}
+                          />
+                          <label htmlFor="logo-upload" className="btn btn-secondary" style={{ cursor: 'pointer', display: 'inline-flex', gap: '8px', alignItems: 'center', marginBottom: '8px' }}>
+                            <Upload size={14} />
+                            <span>Subir Imagen</span>
+                          </label>
+                          <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '4px' }}>
+                            Recomendado: Fondo transparente PNG, máx. 2MB.
+                          </p>
+                        </>
+                      ) : (
+                        <>
+                          <div style={{ display: 'flex', gap: '8px', alignItems: 'center', marginBottom: '8px' }}>
+                            <input
+                              type="url"
+                              className="input-field"
+                              placeholder="https://ejemplo.com/mi-logo.png"
+                              value={logoUrlInput}
+                              onChange={(e) => setLogoUrlInput(e.target.value)}
+                              style={{ flex: 1 }}
+                            />
+                            <button
+                              type="button"
+                              className="btn btn-secondary"
+                              onClick={handleSaveLogoUrl}
+                              style={{ whiteSpace: 'nowrap', padding: '8px 14px' }}
+                            >
+                              <Link size={13} style={{ marginRight: '4px' }} />
+                              Aplicar URL
+                            </button>
+                          </div>
+                          <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+                            🔗 Pega la URL directa de tu logo (Imgur, Cloudinary, GitHub, etc.)
+                          </p>
+                        </>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -1118,10 +1295,158 @@ export default function DjDashboard() {
                 </div>
               </div>
 
+            {/* Zona peligrosa: Borrar todo el historial */}
+            <div style={{
+              marginTop: '30px',
+              borderTop: '1px solid rgba(239,68,68,0.2)',
+              paddingTop: '24px',
+              background: 'rgba(239,68,68,0.02)',
+              borderRadius: 'var(--radius-md)',
+              padding: '20px',
+              border: '1px dashed rgba(239,68,68,0.25)'
+            }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px' }}>
+                <div>
+                  <h4 style={{ fontSize: '0.95rem', color: 'var(--danger-color)', display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px' }}>
+                    <AlertTriangle size={16} />
+                    Zona Peligrosa
+                  </h4>
+                  <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', lineHeight: '1.5' }}>
+                    Elimina permanentemente <strong>todas las peticiones, eventos e historial aprendido</strong>. Requiere tu contraseña de administrador.
+                  </p>
+                </div>
+                <button
+                  onClick={() => setShowClearModal(true)}
+                  style={{
+                    padding: '10px 18px',
+                    background: 'rgba(239,68,68,0.08)',
+                    border: '1px solid rgba(239,68,68,0.35)',
+                    borderRadius: 'var(--radius-md)',
+                    color: 'var(--danger-color)',
+                    fontWeight: '700',
+                    fontSize: '0.85rem',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '8px',
+                    whiteSpace: 'nowrap',
+                    transition: 'all 0.2s'
+                  }}
+                  onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(239,68,68,0.18)'; e.currentTarget.style.boxShadow = '0 0 15px rgba(239,68,68,0.2)'; }}
+                  onMouseLeave={(e) => { e.currentTarget.style.background = 'rgba(239,68,68,0.08)'; e.currentTarget.style.boxShadow = 'none'; }}
+                >
+                  <Trash2 size={15} />
+                  🗑️ Borrar Todo el Historial
+                </button>
+              </div>
+            </div>
+
             </div>
           )}
         </main>
       </div>
+
+      {/* MODAL: BORRAR TODO EL HISTORIAL */}
+      {showClearModal && (
+        <div style={{
+          position: 'fixed',
+          inset: 0,
+          zIndex: 2000,
+          background: 'rgba(0,0,0,0.85)',
+          backdropFilter: 'blur(8px)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          padding: '20px'
+        }}>
+          <div className="glass-panel" style={{
+            maxWidth: '480px',
+            width: '100%',
+            padding: '32px',
+            borderRadius: 'var(--radius-lg)',
+            border: '1px solid rgba(239, 68, 68, 0.3)',
+            boxShadow: '0 0 40px rgba(239,68,68,0.15)',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '20px'
+          }}>
+            {/* Icono de advertencia */}
+            <div style={{ textAlign: 'center' }}>
+              <div style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                width: '72px',
+                height: '72px',
+                borderRadius: 'var(--radius-full)',
+                background: 'rgba(239,68,68,0.1)',
+                border: '2px solid rgba(239,68,68,0.3)',
+                marginBottom: '16px'
+              }}>
+                <AlertTriangle size={36} color="var(--danger-color)" />
+              </div>
+              <h2 style={{ fontSize: '1.4rem', color: 'var(--danger-color)', marginBottom: '8px' }}>⚠️ Acción Destructiva</h2>
+              <p style={{ fontSize: '0.9rem', color: 'var(--text-secondary)', lineHeight: '1.6' }}>
+                Estás a punto de <strong style={{ color: 'var(--danger-color)' }}>eliminar permanentemente</strong> todo el historial:
+              </p>
+              <ul style={{ textAlign: 'left', marginTop: '12px', display: 'inline-block', fontSize: '0.85rem', color: 'var(--text-muted)', lineHeight: '2' }}>
+                <li>🗑️ Todas las peticiones de canciones</li>
+                <li>🗑️ Todos los eventos del calendario</li>
+                <li>🗑️ El historial de géneros aprendidos</li>
+                <li>🗑️ La base de datos de autocompletado</li>
+              </ul>
+              <p style={{ marginTop: '12px', fontSize: '0.85rem', color: 'var(--danger-color)', fontWeight: '600' }}>
+                Esta acción NO SE PUEDE DESHACER.
+              </p>
+            </div>
+
+            {/* Campo de contraseña */}
+            <div className="form-group">
+              <label className="form-label" style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <ShieldAlert size={14} />
+                Confirma tu contraseña de administrador
+              </label>
+              <input
+                type="password"
+                className="input-field"
+                placeholder="Ingresa tu contraseña..."
+                value={clearPassword}
+                onChange={(e) => { setClearPassword(e.target.value); setClearPasswordError(''); }}
+                onKeyDown={(e) => e.key === 'Enter' && handleClearHistory()}
+                style={{ borderColor: clearPasswordError ? 'var(--danger-color)' : undefined }}
+                autoFocus
+              />
+              {clearPasswordError && (
+                <p style={{ color: 'var(--danger-color)', fontSize: '0.8rem', marginTop: '6px' }}>{clearPasswordError}</p>
+              )}
+            </div>
+
+            {/* Botones */}
+            <div style={{ display: 'flex', gap: '12px' }}>
+              <button
+                className="btn btn-secondary"
+                style={{ flex: 1 }}
+                onClick={() => { setShowClearModal(false); setClearPassword(''); setClearPasswordError(''); }}
+                disabled={clearingHistory}
+              >
+                Cancelar
+              </button>
+              <button
+                className="btn btn-danger"
+                style={{ flex: 1, background: 'rgba(239,68,68,0.15)', border: '1px solid rgba(239,68,68,0.4)', color: 'var(--danger-color)' }}
+                onClick={handleClearHistory}
+                disabled={clearingHistory || !clearPassword.trim()}
+              >
+                {clearingHistory ? (
+                  <><RefreshCw size={14} className="animate-spin" /> Borrando...</>
+                ) : (
+                  <><Trash2 size={14} /> Sí, Borrar Todo ️</>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
     </div>
   );

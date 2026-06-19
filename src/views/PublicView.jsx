@@ -32,6 +32,54 @@ export default function PublicView() {
   const [customGenre, setCustomGenre] = useState('');
   const [isCustomGenre, setIsCustomGenre] = useState(false);
 
+  // Géneros aprendidos dinámicamente del historial de peticiones y autocompletado
+  const dynamicGenres = React.useMemo(() => {
+    const BASE_GENRES = [
+      'Reggaetón / Urbano',
+      'Regional Mexicano (Banda/Norteño)',
+      'Cumbia / Sonidero',
+      'Pop Latino / Baladas',
+      'Rock en Español',
+      'Salsa / Bachata',
+      'Electrónica / Circuit',
+      'Ska / Reggae'
+    ];
+
+    // Contar frecuencia de cada género en peticiones reales
+    const frequencyMap = {};
+
+    // Aprender de las canciones del autocompletado (historial global)
+    autocompleteSongs.forEach(song => {
+      if (song.genre && song.genre.trim() && song.genre !== 'Personalizado') {
+        const g = song.genre.trim();
+        frequencyMap[g] = (frequencyMap[g] || 0) + 1;
+      }
+    });
+
+    // Aprender de las peticiones del evento actual (peso mayor = más reciente)
+    Object.values(requests).forEach(req => {
+      if (req.genre && req.genre.trim() && req.genre !== 'Personalizado') {
+        const g = req.genre.trim();
+        frequencyMap[g] = (frequencyMap[g] || 0) + 3; // más peso porque es petición real
+      }
+    });
+
+    // Combinar géneros base con aprendidos, ordenar por frecuencia (aprendidos primero si frecuentes)
+    const learnedGenres = Object.entries(frequencyMap)
+      .filter(([g]) => !BASE_GENRES.includes(g)) // solo los nuevos que no están en base
+      .sort((a, b) => b[1] - a[1])
+      .map(([g]) => g);
+
+    // Los de la base también se ordenan por frecuencia de uso real
+    const baseOrdered = [...BASE_GENRES].sort((a, b) => {
+      return (frequencyMap[b] || 0) - (frequencyMap[a] || 0);
+    });
+
+    // Fusionar: base ordenada + aprendidos nuevos (sin duplicados)
+    const merged = [...new Set([...baseOrdered, ...learnedGenres])];
+    return merged;
+  }, [autocompleteSongs, requests]);
+
   // Estados de Interfaz y Filtros
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [filteredSongs, setFilteredSongs] = useState([]);
@@ -40,17 +88,7 @@ export default function PublicView() {
 
   const autocompleteRef = useRef(null);
 
-  // Géneros populares en México por defecto para el selector
-  const PRESET_GENRES = [
-    'Reggaetón / Urbano',
-    'Regional Mexicano (Banda/Norteño)',
-    'Cumbia / Sonidero',
-    'Pop Latino / Baladas',
-    'Rock en Español',
-    'Salsa / Bachata',
-    'Electrónica / Circuit',
-    'Ska / Reggae'
-  ];
+  // PRESET_GENRES reemplazado por dynamicGenres (definido arriba con useMemo)
 
   // Control del cooldown (Anti-Spam)
   useEffect(() => {
@@ -109,13 +147,18 @@ export default function PublicView() {
     setTitle(song.title);
     setArtist(song.artist);
     
-    if (PRESET_GENRES.includes(song.genre)) {
+    if (song.genre && dynamicGenres.includes(song.genre)) {
+      // El género ya está en la lista dinámica aprendida → seleccionarlo directamente
       setGenre(song.genre);
       setIsCustomGenre(false);
-    } else {
+    } else if (song.genre && song.genre !== 'Personalizado') {
+      // Género nuevo no visto aún → marcarlo como personalizado para que el usuario confirme
       setGenre('Personalizado');
       setCustomGenre(song.genre);
       setIsCustomGenre(true);
+    } else {
+      setGenre('');
+      setIsCustomGenre(false);
     }
     
     setShowSuggestions(false);
@@ -371,19 +414,31 @@ export default function PublicView() {
                 />
               </div>
 
-              {/* Selector de Género */}
+              {/* Selector de Género — autoaprendido del historial de peticiones */}
               <div className="form-group">
-                <label className="form-label">Género Musical (Opcional)</label>
+                <label className="form-label" style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  Género Musical (Opcional)
+                  {dynamicGenres.length > 8 && (
+                    <span style={{
+                      fontSize: '0.65rem',
+                      background: 'rgba(6,182,212,0.12)',
+                      color: 'var(--secondary-color)',
+                      padding: '2px 6px',
+                      borderRadius: '4px',
+                      fontWeight: '700'
+                    }}>✨ {dynamicGenres.length} géneros aprendidos</span>
+                  )}
+                </label>
                 <select 
                   className="input-field" 
                   value={genre} 
                   onChange={handleGenreChange}
                 >
                   <option value="">Selecciona un género (opcional)...</option>
-                  {PRESET_GENRES.map((g) => (
+                  {dynamicGenres.map((g) => (
                     <option key={g} value={g}>{g}</option>
                   ))}
-                  <option value="Personalizado">Género: Personalizado</option>
+                  <option value="Personalizado">✏️ Otro género (escribir)...</option>
                 </select>
               </div>
 

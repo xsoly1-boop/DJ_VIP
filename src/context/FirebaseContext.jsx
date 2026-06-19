@@ -288,6 +288,27 @@ export const FirebaseProvider = ({ children }) => {
     await update(indexRef, { archived: archivedState });
   };
 
+  // Borrar TODOS los eventos, peticiones e historial de autocompletado (acción destructiva)
+  const clearAllHistory = async () => {
+    // 1. Borrar peticiones del evento activo y todos los demás eventos
+    const eventsRef = ref(database, 'events');
+    await set(eventsRef, null);
+
+    // 2. Borrar el índice de eventos
+    const indexRef = ref(database, 'events_index');
+    await set(indexRef, null);
+
+    // 3. Borrar catálogo de autocompletado (historial aprendido)
+    const autocompleteRef = ref(database, 'autocomplete_songs');
+    await set(autocompleteRef, null);
+
+    // 4. Resetear estado local
+    setRequests({});
+    setEventsList([]);
+    setAutocompleteSongs([]);
+    setCurrentEventId('default-event');
+  };
+
   return (
     <FirebaseContext.Provider value={{
       user,
@@ -308,7 +329,8 @@ export const FirebaseProvider = ({ children }) => {
       changeEvent,
       createNewEvent,
       deleteEvent,
-      archiveEvent
+      archiveEvent,
+      clearAllHistory
     }}>
       {children}
     </FirebaseContext.Provider>
