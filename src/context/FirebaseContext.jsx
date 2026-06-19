@@ -78,6 +78,61 @@ export const FirebaseProvider = ({ children }) => {
     return () => unsubscribe();
   }, []);
 
+  // 1b. Asegurar que el evento por defecto del DJ esté registrado en events_registry y settings
+  useEffect(() => {
+    if (!activeUid || !userBasePath) return;
+
+    const registryRef = ref(database, `events_registry/default-event-${activeUid}`);
+    const settingsRef = ref(database, `${userBasePath}/events/default-event/settings`);
+    const indexRef = ref(database, `${userBasePath}/events_index/default-event`);
+
+    const unsubscribe = onValue(registryRef, (snapshot) => {
+      if (!snapshot.exists()) {
+        const unsubscribeSettings = onValue(settingsRef, (settingsSnap) => {
+          const currentSettings = settingsSnap.exists() ? settingsSnap.val() : {
+            title: 'Mi Gran Evento VIP',
+            logoUrl: '',
+            themeColor: '#7c3aed',
+            themeColorSecondary: '#06b6d4',
+            djName: user?.displayName || 'DJ MasterMix',
+            webName: 'DJ a la Carta',
+            eventType: 'Otro'
+          };
+
+          if (!settingsSnap.exists()) {
+            set(settingsRef, currentSettings);
+          }
+
+          set(registryRef, {
+            ownerUid: activeUid,
+            title: currentSettings.title || 'Mi Gran Evento VIP',
+            djName: currentSettings.djName || 'DJ MasterMix',
+            eventType: currentSettings.eventType || 'Otro'
+          });
+
+          const unsubscribeIndex = onValue(indexRef, (indexSnap) => {
+            if (!indexSnap.exists()) {
+              set(indexRef, {
+                id: 'default-event',
+                title: currentSettings.title || 'Mi Gran Evento VIP',
+                djName: currentSettings.djName || 'DJ MasterMix',
+                date: new Date().toISOString().split('T')[0],
+                archived: false,
+                createdAt: Date.now(),
+                eventType: currentSettings.eventType || 'Otro'
+              });
+            }
+            unsubscribeIndex();
+          });
+
+          unsubscribeSettings();
+        });
+      }
+    });
+
+    return () => unsubscribe();
+  }, [activeUid, userBasePath, user]);
+
   // Estado para el owner del evento actual (para la vista pública)
   const [eventOwnerUid, setEventOwnerUid] = useState(null);
 
@@ -334,17 +389,23 @@ export const FirebaseProvider = ({ children }) => {
     // Si es el evento default, actualizar también el registro público y el índice privado
     if (currentEventId === 'default-event') {
       const registryRef = ref(database, `events_registry/default-event-${activeUid}`);
-      await update(registryRef, {
-        title: newSettings.title || 'Mi Gran Evento VIP',
-        djName: newSettings.djName || 'DJ MasterMix'
-      });
+      const updateDataRegistry = {};
+      if (newSettings.title !== undefined) updateDataRegistry.title = newSettings.title;
+      if (newSettings.djName !== undefined) updateDataRegistry.djName = newSettings.djName;
+      if (newSettings.eventType !== undefined) updateDataRegistry.eventType = newSettings.eventType;
+      if (Object.keys(updateDataRegistry).length > 0) {
+        await update(registryRef, updateDataRegistry);
+      }
 
       const indexRef = ref(database, `${userBasePath}/events_index/default-event`);
-      await update(indexRef, {
-        title: newSettings.title || 'Mi Gran Evento VIP',
-        djName: newSettings.djName || 'DJ MasterMix',
-        date: newSettings.date || new Date().toISOString().split('T')[0]
-      });
+      const updateDataIndex = {};
+      if (newSettings.title !== undefined) updateDataIndex.title = newSettings.title;
+      if (newSettings.djName !== undefined) updateDataIndex.djName = newSettings.djName;
+      if (newSettings.date !== undefined) updateDataIndex.date = newSettings.date;
+      if (newSettings.eventType !== undefined) updateDataIndex.eventType = newSettings.eventType;
+      if (Object.keys(updateDataIndex).length > 0) {
+        await update(indexRef, updateDataIndex);
+      }
     }
   };
 

@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useFirebase } from '../context/FirebaseContext';
 import { MOCK_ACCOUNTS, MASTER_ADMIN_EMAIL } from '../firebase';
-import { QRCodeSVG } from 'qrcode.react';
+import { QRCodeSVG, QRCodeCanvas } from 'qrcode.react';
 import { 
   Music, LogOut, Settings, Calendar, Download, RefreshCw, 
   Trash2, Plus, Play, Check, X, Bell, BellOff, Volume2, 
@@ -211,47 +211,22 @@ export default function DjDashboard() {
   };
 
   const downloadQR = () => {
-    const svgElement = document.getElementById('qr-code-svg');
-    if (!svgElement) { showToast('❌ No se encontró el código QR'); return; }
+    const canvasElement = document.getElementById('qr-code-canvas');
+    if (!canvasElement) { showToast('❌ No se encontró el código QR en canvas'); return; }
 
-    const SIZE = 1500;
-    const PADDING = 60; // zona de silencio en px
-    const serializer = new XMLSerializer();
-    const svgXml = serializer.serializeToString(svgElement);
-    
-    // Codificar en Base64 para máxima compatibilidad con el elemento Image
-    const svgBase64 = btoa(unescape(encodeURIComponent(svgXml)));
-    const svgDataUrl = `data:image/svg+xml;base64,${svgBase64}`;
-
-    const img = new Image();
-    img.onload = () => {
-      const canvas = document.createElement('canvas');
-      canvas.width = SIZE;
-      canvas.height = SIZE;
-      const ctx = canvas.getContext('2d');
-
-      // Fondo blanco (zona de silencio recomendada por estándar QR)
-      ctx.fillStyle = '#ffffff';
-      ctx.fillRect(0, 0, SIZE, SIZE);
-
-      // Dibujar QR centrado con padding
-      const drawSize = SIZE - PADDING * 2;
-      ctx.drawImage(img, PADDING, PADDING, drawSize, drawSize);
-
-      canvas.toBlob((blob) => {
-        const pngUrl = URL.createObjectURL(blob);
-        const link = document.createElement('a');
-        link.href = pngUrl;
-        link.download = `QR-${eventSettings.title || 'evento'}-1500px.png`;
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-        URL.revokeObjectURL(pngUrl);
-        showToast('⬇️ QR de alta calidad (1500px) descargado');
-      }, 'image/png', 1.0);
-    };
-    img.onerror = () => { showToast('❌ Error al generar el PNG'); };
-    img.src = svgDataUrl;
+    try {
+      const pngUrl = canvasElement.toDataURL('image/png');
+      const link = document.createElement('a');
+      link.href = pngUrl;
+      link.download = `QR-${eventSettings.title || 'evento'}-1500px.png`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      showToast('⬇️ QR de alta calidad (1500px) descargado');
+    } catch (err) {
+      console.error(err);
+      showToast('❌ Error al exportar la imagen del QR');
+    }
   };
 
   const downloadQRSvg = () => {
@@ -720,6 +695,9 @@ export default function DjDashboard() {
             </p>
             <div className="flex-center" style={{ background: '#fff', padding: '15px', borderRadius: 'var(--radius-md)', display: 'inline-flex', boxShadow: 'var(--shadow-sm)', marginBottom: '16px' }}>
               <QRCodeSVG id="qr-code-svg" value={publicEventUrl} size={180} level={"H"} includeMargin={false} />
+              <div style={{ display: 'none' }}>
+                <QRCodeCanvas id="qr-code-canvas" value={publicEventUrl} size={1500} level={"H"} includeMargin={true} />
+              </div>
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
               <button className="btn btn-secondary" onClick={downloadQR} style={{ width: '100%', padding: '10px' }}>
