@@ -48,6 +48,7 @@ export const FirebaseProvider = ({ children }) => {
   const [requests, setRequests] = useState({});
   const [autocompleteSongs, setAutocompleteSongs] = useState([]);
   const [eventsList, setEventsList] = useState([]);
+  const [allEventsData, setAllEventsData] = useState({});
 
   // Admin master: lista de todos los usuarios y sus eventos
   const [allUsersData, setAllUsersData] = useState({});
@@ -174,6 +175,23 @@ export const FirebaseProvider = ({ children }) => {
         setEventsList(list);
       } else {
         setEventsList([]);
+      }
+    });
+    return () => unsubscribe();
+  }, [userBasePath]);
+
+  // 5b. Escuchar todos los eventos en tiempo real con sus configuraciones y peticiones
+  useEffect(() => {
+    if (!userBasePath) {
+      setAllEventsData({});
+      return;
+    }
+    const eventsRef = ref(database, `${userBasePath}/events`);
+    const unsubscribe = onValue(eventsRef, (snapshot) => {
+      if (snapshot.exists()) {
+        setAllEventsData(snapshot.val());
+      } else {
+        setAllEventsData({});
       }
     });
     return () => unsubscribe();
@@ -636,6 +654,7 @@ export const FirebaseProvider = ({ children }) => {
       requests,
       autocompleteSongs,
       eventsList,
+      allEventsData,
       allUsersData,
       loginDJ,
       logoutDJ,

@@ -6,7 +6,8 @@ import {
   Music, LogOut, Settings, Calendar, Download, RefreshCw, 
   Trash2, Plus, Play, Check, X, Bell, BellOff, Volume2, 
   Sparkles, Sliders, Users, Layers, ShieldCheck,
-  Link, AlertTriangle, ShieldAlert, ArrowLeft, UserCog, Edit, UserPlus, Mail, Lock, User
+  Link, AlertTriangle, ShieldAlert, ArrowLeft, UserCog, Edit, UserPlus, Mail, Lock, User,
+  LayoutGrid, ExternalLink
 } from 'lucide-react';
 
 export default function DjDashboard() {
@@ -32,13 +33,18 @@ export default function DjDashboard() {
     updateEventMetadata,
     clearHistoryWithOptions,
     autocompleteSongs,
+    allEventsData,
     createDjAccount
   } = useFirebase();
 
   // Estados Locales
-  const [activeTab, setActiveTab] = useState('requests'); // requests | settings | events | admin
+  const [activeTab, setActiveTab] = useState('overview'); // overview | requests | settings | events | admin
   const [filterSort, setFilterSort] = useState('time');
   const [filterStatus, setFilterStatus] = useState('all');
+
+  // Estados para Vista General
+  const [overviewSearch, setOverviewSearch] = useState('');
+  const [overviewFilter, setOverviewFilter] = useState('all'); // all | active | archived
   
   // Formulario Nuevo Evento
   const [newEventId, setNewEventId] = useState('');
@@ -205,6 +211,25 @@ export default function DjDashboard() {
     downloadLink.click();
     document.body.removeChild(downloadLink);
     showToast("⬇️ Código QR descargado exitosamente");
+  };
+
+  const downloadQRForEvent = (eventId, title) => {
+    const svgElement = document.getElementById(`qr-${eventId}`);
+    if (!svgElement) {
+      showToast("❌ Error al generar QR");
+      return;
+    }
+    const serializer = new XMLSerializer();
+    const svgXml = serializer.serializeToString(svgElement);
+    const svgBlob = new Blob([svgXml], { type: "image/svg+xml;charset=utf-8" });
+    const svgUrl = URL.createObjectURL(svgBlob);
+    const downloadLink = document.createElement("a");
+    downloadLink.href = svgUrl;
+    downloadLink.download = `QR-${title.replace(/\s+/g, '_')}-${eventId}.svg`;
+    document.body.appendChild(downloadLink);
+    downloadLink.click();
+    document.body.removeChild(downloadLink);
+    showToast(`⬇️ Código QR de "${title}" descargado`);
   };
 
   // Guardar configuraciones de Marca Blanca
@@ -599,6 +624,10 @@ export default function DjDashboard() {
         {/* COLUMNA IZQUIERDA */}
         <aside style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
           <nav className="glass-panel" style={{ padding: '8px', display: 'flex', flexDirection: 'column', gap: '4px' }}>
+            <button className={`btn ${activeTab === 'overview' ? 'btn-primary' : 'btn-secondary'}`}
+              onClick={() => setActiveTab('overview')} style={{ justifyContent: 'flex-start', width: '100%' }}>
+              <LayoutGrid size={16} /><span>Vista General</span>
+            </button>
             <button className={`btn ${activeTab === 'requests' ? 'btn-primary' : 'btn-secondary'}`}
               onClick={() => setActiveTab('requests')} style={{ justifyContent: 'flex-start', width: '100%' }}>
               <Music size={16} /><span>Lista de Peticiones</span>
@@ -644,6 +673,316 @@ export default function DjDashboard() {
 
         {/* COLUMNA DERECHA */}
         <main>
+
+          {/* 0. VISTA GENERAL SIMULTÁNEA */}
+          {activeTab === 'overview' && (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+              {/* Cabecera de la sección */}
+              <div className="glass-panel" style={{ padding: '20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '15px' }}>
+                <div>
+                  <h2 style={{ fontSize: '1.5rem', display: 'flex', alignItems: 'center', gap: '10px' }}>
+                    <LayoutGrid size={24} color="var(--primary-color)" />
+                    Vista General de Eventos
+                  </h2>
+                  <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginTop: '4px' }}>
+                    Visualiza y gestiona todos tus eventos creados y sus peticiones en tiempo real de forma simultánea.
+                  </p>
+                </div>
+                <button className="btn btn-primary" onClick={() => setActiveTab('events')} style={{ fontSize: '0.85rem', padding: '10px 16px' }}>
+                  <Plus size={16} /><span>Crear Evento</span>
+                </button>
+              </div>
+
+              {/* Filtros locales */}
+              <div className="glass-panel" style={{ padding: '16px 20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '15px' }}>
+                <div style={{ display: 'flex', gap: '10px', flex: 1, minWidth: '260px' }}>
+                  <input
+                    type="text"
+                    className="input-field"
+                    placeholder="🔍 Buscar evento por título o DJ..."
+                    value={overviewSearch}
+                    onChange={(e) => setOverviewSearch(e.target.value)}
+                    style={{ fontSize: '0.85rem', padding: '8px 12px' }}
+                  />
+                </div>
+                <div style={{ display: 'flex', gap: '8px' }}>
+                  <button className={`btn ${overviewFilter === 'all' ? 'btn-primary' : 'btn-secondary'}`}
+                    onClick={() => setOverviewFilter('all')} style={{ padding: '6px 12px', fontSize: '0.8rem' }}>
+                    Todos
+                  </button>
+                  <button className={`btn ${overviewFilter === 'active' ? 'btn-primary' : 'btn-secondary'}`}
+                    onClick={() => setOverviewFilter('active')} style={{ padding: '6px 12px', fontSize: '0.8rem' }}>
+                    Activos
+                  </button>
+                  <button className={`btn ${overviewFilter === 'archived' ? 'btn-primary' : 'btn-secondary'}`}
+                    onClick={() => setOverviewFilter('archived')} style={{ padding: '6px 12px', fontSize: '0.8rem' }}>
+                    Archivados
+                  </button>
+                </div>
+              </div>
+
+              {/* Grid de eventos */}
+              {eventsList.length === 0 ? (
+                <div className="glass-panel text-center" style={{ padding: '48px 24px' }}>
+                  <Music size={48} color="var(--text-muted)" style={{ marginBottom: '16px', opacity: 0.5 }} />
+                  <h3 style={{ fontSize: '1.2rem', marginBottom: '8px' }}>No tienes eventos creados</h3>
+                  <p style={{ fontSize: '0.9rem', color: 'var(--text-secondary)', maxWidth: '400px', margin: '0 auto 20px' }}>
+                    Crea tu primer evento desde la sección de gestión para comenzar a recibir las peticiones de tu público con su propio código QR.
+                  </p>
+                  <button className="btn btn-primary" onClick={() => setActiveTab('events')}>
+                    <Plus size={16} /><span>Crear mi primer evento</span>
+                  </button>
+                </div>
+              ) : (
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(380px, 1fr))', gap: '20px' }}>
+                  {eventsList
+                    .filter(ev => {
+                      const details = allEventsData[ev.id] || {};
+                      const settings = details.settings || { archived: ev.archived || false, title: ev.title || '', djName: ev.djName || '' };
+                      
+                      const matchesSearch = 
+                        (settings.title || '').toLowerCase().includes(overviewSearch.toLowerCase()) ||
+                        (settings.djName || '').toLowerCase().includes(overviewSearch.toLowerCase());
+                      
+                      if (overviewFilter === 'active') return matchesSearch && !settings.archived;
+                      if (overviewFilter === 'archived') return matchesSearch && settings.archived;
+                      return matchesSearch;
+                    })
+                    .map(ev => {
+                      const details = allEventsData[ev.id] || {};
+                      const settings = details.settings || {
+                        title: ev.title,
+                        djName: ev.djName,
+                        date: ev.date,
+                        themeColor: '#7c3aed',
+                        themeColorSecondary: '#06b6d4',
+                        archived: ev.archived || false
+                      };
+                      const eventRequests = details.requests || {};
+                      const eventRequestsList = Object.keys(eventRequests)
+                        .map(key => ({ id: key, ...eventRequests[key] }))
+                        .sort((a, b) => {
+                          // Ordenar por votos primero, luego por tiempo
+                          if (b.votes !== a.votes) return b.votes - a.votes;
+                          return b.timestamp - a.timestamp;
+                        });
+
+                      const totalReqs = eventRequestsList.length;
+                      const pendingReqs = eventRequestsList.filter(r => r.status === 'pending').length;
+                      const playingReq = eventRequestsList.find(r => r.status === 'playing');
+                      const totalVotes = eventRequestsList.reduce((sum, r) => sum + (r.votes || 0), 0);
+
+                      // Generar URL pública única para el QR de este evento específico
+                      const cardBaseUrl = settings.productionUrl || productionUrl || 
+                        (window.location.protocol !== 'file:' ? window.location.origin : '');
+                      const eventPublicUrl = cardBaseUrl 
+                        ? `${cardBaseUrl}/?event=${ev.id}` 
+                        : `/?event=${ev.id}`;
+
+                      return (
+                        <div
+                          key={ev.id}
+                          className="glass-panel glass-card-hover"
+                          style={{
+                            padding: '24px',
+                            display: 'flex',
+                            flexDirection: 'column',
+                            gap: '16px',
+                            borderTop: `5px solid ${ev.id === currentEventId ? 'var(--secondary-color)' : settings.themeColor || 'var(--primary-color)'}`,
+                            opacity: settings.archived ? 0.75 : 1,
+                            position: 'relative'
+                          }}
+                        >
+                          {/* Cabecera del Evento */}
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '10px' }}>
+                            <div>
+                              <h3 style={{ fontSize: '1.2rem', fontWeight: '700', color: 'var(--text-primary)', wordBreak: 'break-word' }}>
+                                {settings.title}
+                              </h3>
+                              <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginTop: '4px' }}>
+                                {settings.djName} • {settings.date}
+                              </p>
+                            </div>
+                            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '4px' }}>
+                              {ev.id === currentEventId && (
+                                <span className="badge badge-playing animate-pulse-glow" style={{ fontSize: '0.65rem', padding: '3px 8px' }}>
+                                  ACTIVO EN CONSOLA ⚡
+                                </span>
+                              )}
+                              {settings.archived ? (
+                                <span className="badge badge-rejected" style={{ fontSize: '0.65rem', padding: '3px 8px' }}>
+                                  Archivado
+                                </span>
+                              ) : (
+                                <span className="badge badge-accepted" style={{ fontSize: '0.65rem', padding: '3px 8px' }}>
+                                  Activo
+                                </span>
+                              )}
+                            </div>
+                          </div>
+
+                          {/* Sección del Código QR Individual */}
+                          <div style={{
+                            display: 'flex',
+                            gap: '15px',
+                            alignItems: 'center',
+                            background: 'rgba(255, 255, 255, 0.02)',
+                            padding: '12px',
+                            borderRadius: 'var(--radius-sm)',
+                            border: '1px solid rgba(255,255,255,0.05)'
+                          }}>
+                            <div className="flex-center" style={{
+                              background: '#fff',
+                              padding: '6px',
+                              borderRadius: '6px',
+                              display: 'inline-flex',
+                              flexShrink: 0
+                            }}>
+                              <QRCodeSVG
+                                id={`qr-${ev.id}`}
+                                value={eventPublicUrl}
+                                size={80}
+                                level={"H"}
+                                includeMargin={false}
+                              />
+                            </div>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', flex: 1 }}>
+                              <span style={{ fontSize: '0.75rem', fontWeight: '600', color: 'var(--text-secondary)' }}>
+                                Código QR del Evento
+                              </span>
+                              <button
+                                className="btn btn-secondary"
+                                onClick={() => downloadQRForEvent(ev.id, settings.title)}
+                                style={{ padding: '6px 10px', fontSize: '0.75rem', alignSelf: 'flex-start' }}
+                              >
+                                <Download size={12} /><span>Descargar QR (SVG)</span>
+                              </button>
+                              <a
+                                href={eventPublicUrl}
+                                target="_blank"
+                                rel="noreferrer"
+                                style={{ fontSize: '0.7rem', color: 'var(--secondary-color)', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '4px', wordBreak: 'break-all' }}
+                              >
+                                <ExternalLink size={10} /><span>Abrir Vista Público</span>
+                              </a>
+                            </div>
+                          </div>
+
+                          {/* Grid de Estadísticas */}
+                          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '10px' }}>
+                            <div style={{ background: 'rgba(255,255,255,0.02)', padding: '8px 12px', borderRadius: 'var(--radius-sm)', border: '1px solid rgba(255,255,255,0.04)' }}>
+                              <p style={{ fontSize: '0.7rem', color: 'var(--text-secondary)' }}>Peticiones / Votos</p>
+                              <p style={{ fontSize: '1rem', fontWeight: '600', color: 'var(--text-primary)', marginTop: '2px' }}>
+                                {totalReqs} <span style={{ fontSize: '0.75rem', color: 'var(--success-color)' }}>({totalVotes}v)</span>
+                              </p>
+                            </div>
+                            <div style={{ background: 'rgba(255,255,255,0.02)', padding: '8px 12px', borderRadius: 'var(--radius-sm)', border: '1px solid rgba(255,255,255,0.04)' }}>
+                              <p style={{ fontSize: '0.7rem', color: 'var(--text-secondary)' }}>Por Aceptar</p>
+                              <p style={{ fontSize: '1rem', fontWeight: '600', color: pendingReqs > 0 ? 'var(--warning-color)' : 'var(--text-secondary)', marginTop: '2px' }}>
+                                {pendingReqs}
+                              </p>
+                            </div>
+                          </div>
+
+                          {/* Canción Sonando */}
+                          <div style={{ background: 'rgba(255,255,255,0.02)', padding: '8px 12px', borderRadius: 'var(--radius-sm)', border: '1px solid rgba(255,255,255,0.04)' }}>
+                            <p style={{ fontSize: '0.7rem', color: 'var(--text-secondary)' }}>Sonando Ahora</p>
+                            <p style={{ fontSize: '0.85rem', fontWeight: '600', color: playingReq ? 'var(--secondary-color)' : 'var(--text-muted)', marginTop: '2px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                              {playingReq ? `🎵 ${playingReq.title} - ${playingReq.artist}` : 'Ninguna'}
+                            </p>
+                          </div>
+
+                          {/* Cola de Peticiones en Vivo (inline) */}
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                            <span style={{ fontSize: '0.75rem', fontWeight: '600', color: 'var(--text-secondary)' }}>
+                              Peticiones en vivo ({totalReqs})
+                            </span>
+                            <div style={{
+                              maxHeight: '160px',
+                              overflowY: 'auto',
+                              display: 'flex',
+                              flexDirection: 'column',
+                              gap: '6px',
+                              background: 'rgba(0, 0, 0, 0.2)',
+                              padding: '8px',
+                              borderRadius: 'var(--radius-sm)',
+                              border: '1px solid rgba(255,255,255,0.04)'
+                            }}>
+                              {eventRequestsList.length === 0 ? (
+                                <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', fontStyle: 'italic', textAlign: 'center', padding: '10px 0' }}>
+                                  Sin peticiones aún
+                                </p>
+                              ) : (
+                                eventRequestsList.map(req => (
+                                  <div
+                                    key={req.id}
+                                    style={{
+                                      display: 'flex',
+                                      justifyContent: 'space-between',
+                                      alignItems: 'center',
+                                      padding: '6px 8px',
+                                      background: 'rgba(255,255,255,0.02)',
+                                      borderRadius: '4px',
+                                      borderLeft: `3px solid ${
+                                        req.status === 'playing' ? 'var(--secondary-color)' :
+                                        req.status === 'accepted' ? 'var(--success-color)' :
+                                        req.status === 'rejected' ? 'var(--danger-color)' : 'var(--warning-color)'
+                                      }`,
+                                      fontSize: '0.75rem'
+                                    }}
+                                  >
+                                    <div style={{ overflow: 'hidden', marginRight: '8px' }}>
+                                      <p style={{ fontWeight: '600', color: 'var(--text-primary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                                        {req.title}
+                                      </p>
+                                      <p style={{ fontSize: '0.65rem', color: 'var(--text-secondary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                                        {req.artist} • <span style={{ color: 'var(--primary-color)' }}>{req.genre}</span>
+                                      </p>
+                                    </div>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexShrink: 0 }}>
+                                      <span style={{ fontSize: '0.7rem', color: req.votes > 0 ? 'var(--success-color)' : 'var(--text-muted)', fontWeight: '600' }}>
+                                        +{req.votes || 0}v
+                                      </span>
+                                      <div style={{
+                                        width: '6px',
+                                        height: '6px',
+                                        borderRadius: '50%',
+                                        background: 
+                                          req.status === 'playing' ? 'var(--secondary-color)' :
+                                          req.status === 'accepted' ? 'var(--success-color)' :
+                                          req.status === 'rejected' ? 'var(--danger-color)' : 'var(--warning-color)',
+                                        boxShadow: 
+                                          req.status === 'playing' ? '0 0 6px var(--secondary-color)' :
+                                          req.status === 'accepted' ? '0 0 6px var(--success-color)' : '0 0 6px var(--warning-color)'
+                                      }} />
+                                    </div>
+                                  </div>
+                                ))
+                              )}
+                            </div>
+                          </div>
+
+                          {/* Botón de Selección / Gestión */}
+                          <div style={{ marginTop: 'auto', paddingTop: '8px' }}>
+                            <button
+                              className={`btn ${ev.id === currentEventId ? 'btn-primary' : 'btn-secondary'}`}
+                              onClick={() => {
+                                changeEvent(ev.id);
+                                setActiveTab('requests');
+                                showToast(`👁️ Gestionando: ${settings.title}`);
+                              }}
+                              style={{ width: '100%', padding: '10px', fontSize: '0.8rem' }}
+                            >
+                              {ev.id === currentEventId ? 'Ir a Consola (Activo) ⚡' : 'Seleccionar y Gestionar 🎧'}
+                            </button>
+                          </div>
+                        </div>
+                      );
+                    })}
+                </div>
+              )}
+            </div>
+          )}
 
           {/* 1. LISTA DE PETICIONES */}
           {activeTab === 'requests' && (
