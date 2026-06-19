@@ -46,14 +46,57 @@ Es el motor WebSockets que comunica instantáneamente a la audiencia con el DJ.
 3. Selecciona una ubicación cercana (ej. `us-central1` si estás en México) y presiona Siguiente.
 4. Inicia en **Modo bloqueado** y presiona Habilitar.
 5. Una vez creada, ve a la pestaña **Reglas** (Rules).
-6. Copia y pega el contenido completo de tu archivo [database.rules.json](file:///Users/dorian/.gemini/antigravity/scratch/dj-interactive-platform/database.rules.json):
+6. Copia y pega el contenido completo de tu archivo [database.rules.json](file:///Users/dorian/.gemini/antigravity/scratch/DJ_a%20la%20Carta2.0/database.rules.json):
    ```json
    {
      "rules": {
-       "events_index": {
-         ".read": "auth != null",
-         ".write": "auth != null"
+       // Registro público de eventos → mapea qué DJ es el dueño de cada evento
+       "events_registry": {
+         "$eventId": {
+           ".read": "true",
+           ".write": "auth != null"
+         }
        },
+
+       // Datos por usuario (arquitectura multi-usuario)
+       "users": {
+         // El administrador master puede listar/leer todas las cuentas de usuario
+         ".read": "auth != null && auth.token.email == 'dj@admin.com'",
+         ".write": "auth != null && auth.token.email == 'dj@admin.com'",
+         
+         "$uid": {
+           "events_index": {
+             ".read": "auth != null && (auth.uid == $uid || auth.token.email == 'dj@admin.com')",
+             ".write": "auth != null && (auth.uid == $uid || auth.token.email == 'dj@admin.com')"
+           },
+           "autocomplete_songs": {
+             ".read": "auth != null && (auth.uid == $uid || auth.token.email == 'dj@admin.com')",
+             ".write": "auth != null && (auth.uid == $uid || auth.token.email == 'dj@admin.com')"
+           },
+           "events": {
+             ".read": "auth != null && (auth.uid == $uid || auth.token.email == 'dj@admin.com')",
+             ".write": "auth != null && (auth.uid == $uid || auth.token.email == 'dj@admin.com')",
+             
+             "$eventId": {
+               // El público general (sin estar autenticado) puede leer la configuración del evento
+               "settings": {
+                 ".read": "true"
+               },
+               
+               // El público general puede leer solicitudes y enviar/votar de forma anónima
+               "requests": {
+                 ".read": "true",
+                 "$requestId": {
+                   ".write": "true",
+                   ".validate": "newData.hasChildren(['title', 'artist', 'timestamp', 'status'])"
+                 }
+               }
+             }
+           }
+         }
+       },
+
+       // Rutas heredadas para mantener compatibilidad hacia atrás
        "events": {
          "$eventId": {
            ".write": "auth != null",
@@ -70,12 +113,13 @@ Es el motor WebSockets que comunica instantáneamente a la audiencia con el DJ.
            }
          }
        },
+       "events_index": {
+         ".read": "auth != null",
+         ".write": "auth != null"
+       },
        "autocomplete_songs": {
          ".read": "true",
-         ".write": "true",
-         "$songId": {
-           ".validate": "newData.hasChildren(['title', 'artist'])"
-         }
+         ".write": "true"
        }
      }
    }
@@ -129,7 +173,7 @@ Permite que el DJ suba su logo a la nube de Google.
 
 Para que el compilador inyecte tus credenciales reales y apague el "Modo Demo", debes crear un archivo de configuración en tu carpeta local.
 
-1. En la raíz de tu proyecto local `/Users/dorian/.gemini/antigravity/scratch/dj-interactive-platform/`, crea un nuevo archivo de texto con el nombre exacto de **`.env`**.
+1. En la raíz de tu proyecto local `/Users/dorian/.gemini/antigravity/scratch/DJ_a la Carta2.0/`, crea un nuevo archivo de texto con el nombre exacto de **`.env`**.
 2. Abre el archivo `.env` y pega tus credenciales de Firebase en el siguiente formato (importante respetar los prefijos `VITE_`):
 
 ```env

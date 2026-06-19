@@ -59,7 +59,7 @@ graph TD
 
 ### Estructura del Proyecto
 ```text
-dj-interactive-platform/
+DJ_a la Carta2.0/
 ├── database.rules.json       # Reglas de seguridad de Firebase RTDB
 ├── package.json              # Configuración y dependencias
 ├── vite.config.js            # Configuración de Vite
@@ -83,19 +83,19 @@ dj-interactive-platform/
 Los archivos de código fuente ya están creados y optimizados para producción en tu directorio de trabajo. Puedes abrirlos y revisarlos haciendo clic en los siguientes enlaces:
 
 1. **Configuración e Inicialización de Firebase (con simulación local integrada):**
-   - Ubicación: [src/firebase.js](file:///Users/dorian/.gemini/antigravity/scratch/dj-interactive-platform/src/firebase.js)
+   - Ubicación: [src/firebase.js](file:///Users/dorian/.gemini/antigravity/scratch/DJ_a%20la%20Carta2.0/src/firebase.js)
    - *Este script decide automáticamente si conectarse a Firebase o activar el motor local BroadcastChannel basándose en la presencia de variables de entorno.*
 
 2. **Capa de Negocio y Estado en Tiempo Real (React Context):**
-   - Ubicación: [src/context/FirebaseContext.jsx](file:///Users/dorian/.gemini/antigravity/scratch/dj-interactive-platform/src/context/FirebaseContext.jsx)
+   - Ubicación: [src/context/FirebaseContext.jsx](file:///Users/dorian/.gemini/antigravity/scratch/DJ_a%20la%20Carta2.0/src/context/FirebaseContext.jsx)
    - *Gestiona el ciclo de vida de los eventos, peticiones de canciones, lógica de votos, carga del logotipo y la inyección en caliente de la paleta de colores del DJ.*
 
 3. **Panel de Control del DJ (Dashboard Multi-dispositivo):**
-   - Ubicación: [src/views/DjDashboard.jsx](file:///Users/dorian/.gemini/antigravity/scratch/dj-interactive-platform/src/views/DjDashboard.jsx)
+   - Ubicación: [src/views/DjDashboard.jsx](file:///Users/dorian/.gemini/antigravity/scratch/DJ_a%20la%20Carta2.0/src/views/DjDashboard.jsx)
    - *Módulo administrativo con soporte para notificaciones del sistema (Push API), sintetizador de sonido premium (Web Audio API) y gestor de marca blanca.*
 
 4. **Formulario del Público (Web App Móvil):**
-   - Ubicación: [src/views/PublicView.jsx](file:///Users/dorian/.gemini/antigravity/scratch/dj-interactive-platform/src/views/PublicView.jsx)
+   - Ubicación: [src/views/PublicView.jsx](file:///Users/dorian/.gemini/antigravity/scratch/DJ_a%20la%20Carta2.0/src/views/PublicView.jsx)
    - *Interfaz móvil optimizada para escaneo QR, con sistema de cooldown anti-spam de 2 minutos basado en almacenamiento local y autocompletado inteligente.*
 
 ---
@@ -107,7 +107,7 @@ Si no deseas crear cuentas en la nube aún, puedes ejecutar la plataforma en mod
 
 1. **Abrir la terminal e ir al directorio del proyecto:**
    ```bash
-   cd /Users/dorian/.gemini/antigravity/scratch/dj-interactive-platform
+    cd "/Users/dorian/.gemini/antigravity/scratch/DJ_a la Carta2.0"
    ```
 2. **Instalar dependencias necesarias:**
    ```bash
@@ -155,7 +155,7 @@ Para que los teléfonos móviles lean el código QR a través de internet real, 
    - `appId`
 
 #### Paso 5: Configurar Variables en el Proyecto Local
-1. En la carpeta `/Users/dorian/.gemini/antigravity/scratch/dj-interactive-platform/`, crea un archivo llamado `.env` y pega tus credenciales con el siguiente formato exacto:
+1. En la carpeta `/Users/dorian/.gemini/antigravity/scratch/DJ_a la Carta2.0/`, crea un archivo llamado `.env` y pega tus credenciales con el siguiente formato exacto:
    ```env
    VITE_FIREBASE_API_KEY=Tu_ApiKey_Aqui
    VITE_FIREBASE_AUTH_DOMAIN=Tu_AuthDomain_Aqui
