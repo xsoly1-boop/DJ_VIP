@@ -87,7 +87,7 @@ export const FirebaseProvider = ({ children }) => {
     const indexRef = ref(database, `${userBasePath}/events_index/default-event`);
 
     const unsubscribe = onValue(registryRef, (snapshot) => {
-      if (!snapshot.exists()) {
+      if (!snapshot.exists() || !snapshot.val()?.ownerUid) {
         const unsubscribeSettings = onValue(settingsRef, (settingsSnap) => {
           const currentSettings = settingsSnap.exists() ? settingsSnap.val() : {
             title: 'Mi Gran Evento VIP',
@@ -146,10 +146,18 @@ export const FirebaseProvider = ({ children }) => {
     // Usuario anónimo (público): buscar en el registro
     const registryRef = ref(database, `events_registry/${currentEventId}`);
     const unsubscribe = onValue(registryRef, (snapshot) => {
-      if (snapshot.exists()) {
+      if (snapshot.exists() && snapshot.val().ownerUid) {
         setEventOwnerUid(snapshot.val().ownerUid);
       } else {
-        // Fallback: intentar con el evento por defecto del primer DJ conocido (modo mock demo)
+        // Fallback 1: intentar extraer el uid del ID del evento si es default-event-UID
+        if (currentEventId && currentEventId.startsWith('default-event-')) {
+          const extractedUid = currentEventId.replace('default-event-', '');
+          if (extractedUid) {
+            setEventOwnerUid(extractedUid);
+            return;
+          }
+        }
+        // Fallback 2: intentar con el evento por defecto del primer DJ conocido (modo mock demo)
         setEventOwnerUid(null);
       }
     });
