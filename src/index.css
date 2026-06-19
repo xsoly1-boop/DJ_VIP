@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Inter:wght@300;400;500;600;700;800&family=Roboto:wght@300;400;500;700&family=Montserrat:wght@300;400;500;600;700;800&family=Playfair+Display:ital,wght@0,400..900;1,400..900&family=Caveat:wght@400..700&display=swap');
 
 /* ==========================================
    DESIGN SYSTEM TOKENS (HSL PALETTE)
@@ -52,6 +52,7 @@
 
 body {
   font-family: var(--font-family);
+  font-size: var(--base-font-size, 1rem);
   background-color: var(--bg-color);
   color: var(--text-primary);
   min-height: 100vh;

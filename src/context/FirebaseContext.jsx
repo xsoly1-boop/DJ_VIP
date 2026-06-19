@@ -165,15 +165,16 @@ export const FirebaseProvider = ({ children }) => {
   }, [currentEventId, activeUid]);
 
   // Ruta de lectura efectiva para settings/requests:
-  // - DJ autenticado → userBasePath (su propio nodo, siempre correcto)
-  // - Público anónimo → ownerBasePath (resuelto desde events_registry)
+  // - DJ en dashboard → Prioriza userBasePath
+  // - Público en vista de evento → Prioriza ownerBasePath (independiente de si está logueado)
+  const isPublicView = window.location.search.includes('event=');
   const ownerBasePath = eventOwnerUid ? `users/${eventOwnerUid}` : null;
-  const effectiveReadPath = userBasePath || ownerBasePath;
+  const effectiveReadPath = isPublicView ? (ownerBasePath || userBasePath) : (userBasePath || ownerBasePath);
 
   // Escuchar configuraciones del evento activo
   useEffect(() => {
     if (!effectiveReadPath) return;
-    const targetEventId = (!userBasePath && currentEventId && currentEventId.startsWith('default-event'))
+    const targetEventId = (currentEventId && currentEventId.startsWith('default-event'))
       ? 'default-event'
       : currentEventId;
     const settingsRef = ref(database, `${effectiveReadPath}/events/${targetEventId}/settings`);
@@ -189,6 +190,20 @@ export const FirebaseProvider = ({ children }) => {
           document.documentElement.style.setProperty('--secondary-color', data.themeColorSecondary);
           document.documentElement.style.setProperty('--secondary-glow', `${data.themeColorSecondary}55`);
         }
+        if (data.fontFamily) {
+          document.documentElement.style.setProperty('--font-family', `'${data.fontFamily}', -apple-system, BlinkMacSystemFont, sans-serif`);
+        } else {
+          document.documentElement.style.setProperty('--font-family', "'Outfit', -apple-system, BlinkMacSystemFont, sans-serif");
+        }
+        if (data.fontSize) {
+          let sizeVal = '1rem';
+          if (data.fontSize === 'small') sizeVal = '0.9rem';
+          if (data.fontSize === 'large') sizeVal = '1.1rem';
+          if (data.fontSize === 'xlarge') sizeVal = '1.25rem';
+          document.documentElement.style.setProperty('--base-font-size', sizeVal);
+        } else {
+          document.documentElement.style.setProperty('--base-font-size', '1rem');
+        }
       } else {
         setEventSettings({
           title: 'Mi Gran Evento VIP',
@@ -197,17 +212,19 @@ export const FirebaseProvider = ({ children }) => {
           themeColorSecondary: '#06b6d4',
           djName: 'DJ MasterMix',
           webName: 'DJ a la Carta',
-          eventType: 'Otro'
+          eventType: 'Otro',
+          fontFamily: 'Outfit',
+          fontSize: 'medium'
         });
       }
     });
     return () => unsubscribe();
-  }, [currentEventId, effectiveReadPath]);
+  }, [currentEventId, effectiveReadPath, userBasePath]);
 
   // 3. Escuchar peticiones de canciones en tiempo real
   useEffect(() => {
     if (!effectiveReadPath) return;
-    const targetEventId = (!userBasePath && currentEventId && currentEventId.startsWith('default-event'))
+    const targetEventId = (currentEventId && currentEventId.startsWith('default-event'))
       ? 'default-event'
       : currentEventId;
     const requestsRef = ref(database, `${effectiveReadPath}/events/${targetEventId}/requests`);
@@ -219,7 +236,7 @@ export const FirebaseProvider = ({ children }) => {
       }
     });
     return () => unsubscribe();
-  }, [currentEventId, effectiveReadPath]);
+  }, [currentEventId, effectiveReadPath, userBasePath]);
 
   // 4. Escuchar catálogo de autocompletado (tanto DJ como Público)
   useEffect(() => {
@@ -315,7 +332,7 @@ export const FirebaseProvider = ({ children }) => {
     if (!targetUid) {
       throw new Error('No se pudo identificar al propietario del evento.');
     }
-    const targetEventId = (!userBasePath && currentEventId && currentEventId.startsWith('default-event'))
+    const targetEventId = (currentEventId && currentEventId.startsWith('default-event'))
       ? 'default-event'
       : currentEventId;
     const requestsRef = ref(database, `users/${targetUid}/events/${targetEventId}/requests`);
@@ -344,7 +361,7 @@ export const FirebaseProvider = ({ children }) => {
   const voteRequest = async (requestId, sessionId, hasVoted, eventOwnerUid) => {
     const targetUid = eventOwnerUid || activeUid;
     if (!targetUid) return;
-    const targetEventId = (!userBasePath && currentEventId && currentEventId.startsWith('default-event'))
+    const targetEventId = (currentEventId && currentEventId.startsWith('default-event'))
       ? 'default-event'
       : currentEventId;
     const requestRef = ref(database, `users/${targetUid}/events/${targetEventId}/requests/${requestId}`);

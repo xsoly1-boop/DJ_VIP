@@ -53,6 +53,8 @@ export default function DjDashboard() {
   const [productionUrl, setProductionUrl] = useState(eventSettings.productionUrl || import.meta.env.VITE_PUBLIC_URL || '');
   // Logo solo por URL externa
   const [logoUrlInput, setLogoUrlInput] = useState(eventSettings.logoUrl || '');
+  const [fontFamily, setFontFamily] = useState(eventSettings.fontFamily || 'Outfit');
+  const [fontSize, setFontSize] = useState(eventSettings.fontSize || 'medium');
 
   // Pestaña Calendario: Crear Evento
   const [showCreateEventForm, setShowCreateEventForm] = useState(false);
@@ -111,6 +113,8 @@ export default function DjDashboard() {
     setSecondaryColor(eventSettings.themeColorSecondary || '#06b6d4');
     setProductionUrl(eventSettings.productionUrl || import.meta.env.VITE_PUBLIC_URL || '');
     setLogoUrlInput(eventSettings.logoUrl || '');
+    setFontFamily(eventSettings.fontFamily || 'Outfit');
+    setFontSize(eventSettings.fontSize || 'medium');
   }, [eventSettings, currentEventId]);
 
   // Actualizar el título del navegador dinámicamente
@@ -285,7 +289,9 @@ export default function DjDashboard() {
         date: dateInput,
         themeColor: primaryColor,
         themeColorSecondary: secondaryColor,
-        productionUrl: productionUrl.trim().replace(/\/$/, '')
+        productionUrl: productionUrl.trim().replace(/\/$/, ''),
+        fontFamily,
+        fontSize
       });
       showToast("💾 Configuración de marca guardada");
     } catch (err) {
@@ -986,12 +992,38 @@ export default function DjDashboard() {
                   </div>
                 </div>
 
+                {/* Tipografía y Escala */}
+                <div style={{ borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: '20px', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
+                  <div className="form-group">
+                    <label className="form-label">Tipografía / Fuente del Sitio</label>
+                    <select className="input-field" value={fontFamily} onChange={(e) => setFontFamily(e.target.value)} style={{ cursor: 'pointer' }}>
+                      <option value="Outfit">Outfit (Moderna/Sleek)</option>
+                      <option value="Inter">Inter (Limpia/Minimalista)</option>
+                      <option value="Roboto">Roboto (Clásica/Geométrica)</option>
+                      <option value="Montserrat">Montserrat (Llamativa/Ancha)</option>
+                      <option value="Playfair Display">Playfair Display (Elegante/Serif)</option>
+                      <option value="Caveat">Caveat (Manuscrita/Divertida)</option>
+                    </select>
+                  </div>
+                  <div className="form-group">
+                    <label className="form-label">Escala / Tamaño de Texto</label>
+                    <select className="input-field" value={fontSize} onChange={(e) => setFontSize(e.target.value)} style={{ cursor: 'pointer' }}>
+                      <option value="small">Pequeño</option>
+                      <option value="medium">Mediano (Estándar)</option>
+                      <option value="large">Grande</option>
+                      <option value="xlarge">Extra Grande</option>
+                    </select>
+                  </div>
+                </div>
+
                 <div style={{ display: 'flex', gap: '10px', marginTop: '10px', borderTop: '1px solid var(--surface-border)', paddingTop: '20px' }}>
                   <button type="submit" className="btn btn-primary">Guardar Configuración</button>
                   <button type="button" className="btn btn-secondary" onClick={() => {
                     setTitleInput(eventSettings.title); setDjNameInput(eventSettings.djName);
                     setPrimaryColor(eventSettings.themeColor || '#7c3aed');
                     setSecondaryColor(eventSettings.themeColorSecondary || '#06b6d4');
+                    setFontFamily(eventSettings.fontFamily || 'Outfit');
+                    setFontSize(eventSettings.fontSize || 'medium');
                     showToast("Revertido a cambios guardados");
                   }}>Descartar Cambios</button>
                 </div>
