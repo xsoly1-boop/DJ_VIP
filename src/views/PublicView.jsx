@@ -343,7 +343,7 @@ export default function PublicView() {
             width: '100%'
           }}>
             <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-              🎧 <strong>DJ:</strong> <span style={{ color: 'var(--secondary-color)', fontWeight: '600' }}>{eventSettings.djName}</span>
+              🎧 <strong>Dj en cabina:</strong> <span style={{ color: 'var(--secondary-color)', fontWeight: '600' }}>{eventSettings.djName}</span>
             </span>
             {eventSettings.date && (
               <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>

@@ -7,7 +7,7 @@ import {
   Trash2, Plus, Play, Check, X, Bell, BellOff, Volume2, 
   Sparkles, Sliders, Users, Layers, ShieldCheck,
   Link, AlertTriangle, ShieldAlert, ArrowLeft, UserCog, Edit, UserPlus, Mail, Lock, User,
-  LayoutGrid, ExternalLink
+  LayoutGrid, ExternalLink, Image
 } from 'lucide-react';
 
 export default function DjDashboard() {
@@ -34,7 +34,8 @@ export default function DjDashboard() {
     clearHistoryWithOptions,
     autocompleteSongs,
     allEventsData,
-    createDjAccount
+    createDjAccount,
+    uploadLogo
   } = useFirebase();
 
   // Estados Locales
@@ -243,6 +244,29 @@ export default function DjDashboard() {
     downloadLink.click();
     document.body.removeChild(downloadLink);
     showToast(`⬇️ Código QR de "${title}" descargado`);
+  };
+
+  // Subir Logotipo local
+  const handleLogoUpload = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    if (!file.type.startsWith('image/')) {
+      showToast("⚠️ Por favor selecciona una imagen válida");
+      return;
+    }
+    if (file.size > 2 * 1024 * 1024) {
+      showToast("⚠️ La imagen no debe superar los 2MB");
+      return;
+    }
+    try {
+      showToast("⏳ Subiendo logotipo...");
+      const url = await uploadLogo(file);
+      setLogoUrlInput(url);
+      showToast("🖼️ Logotipo subido con éxito");
+    } catch (err) {
+      console.error(err);
+      showToast("❌ Error al subir logotipo. Verifica Firebase Storage.");
+    }
   };
 
   // Guardar configuraciones de Marca Blanca
@@ -755,43 +779,64 @@ export default function DjDashboard() {
 
               <form onSubmit={handleSaveBranding} style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
 
-                {/* Logo por URL — única opción */}
+                {/* Logo Personalizado */}
                 <div className="form-group" style={{ borderBottom: '1px solid rgba(255,255,255,0.05)', paddingBottom: '20px' }}>
                   <label className="form-label" style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px' }}>
-                    <Link size={15} color="var(--secondary-color)" />
-                    URL de Logotipo Personalizado
+                    <Image size={15} color="var(--secondary-color)" />
+                    Logotipo Personalizado (Marca Blanca)
                   </label>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
+                  <div style={{ display: 'flex', alignItems: 'flex-start', gap: '20px', flexWrap: 'wrap' }}>
                     {/* Vista previa */}
-                    <div style={{ width: '80px', height: '80px', borderRadius: 'var(--radius-md)', background: 'rgba(255,255,255,0.02)', border: '1px solid var(--surface-border)', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', flexShrink: 0 }}>
+                    <div style={{ width: '90px', height: '90px', borderRadius: 'var(--radius-md)', background: 'rgba(255,255,255,0.02)', border: '1px solid var(--surface-border)', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', flexShrink: 0 }}>
                       {(eventSettings.logoUrl || logoUrlInput) ? (
                         <img src={logoUrlInput || eventSettings.logoUrl} alt="Logo" style={{ width: '100%', height: '100%', objectFit: 'contain' }} onError={(e) => { e.target.style.display = 'none'; }} />
                       ) : (
-                        <Music size={24} color="var(--text-muted)" />
+                        <Music size={30} color="var(--text-muted)" />
                       )}
                     </div>
-                    {/* Input URL */}
-                    <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                      <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                    {/* Controles de Subida / URL */}
+                    <div style={{ flex: 1, minWidth: '250px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                      
+                      {/* Opción A: Subir Archivo */}
+                      <div>
+                        <span style={{ fontSize: '0.8rem', fontWeight: '600', display: 'block', marginBottom: '6px', color: 'var(--text-primary)' }}>
+                          Opción A: Subir desde tu computadora
+                        </span>
                         <input
-                          type="url"
-                          className="input-field"
-                          placeholder="https://ejemplo.com/mi-logo.png"
-                          value={logoUrlInput}
-                          onChange={(e) => setLogoUrlInput(e.target.value)}
-                          style={{ flex: 1 }}
+                          type="file"
+                          accept="image/*"
+                          onChange={handleLogoUpload}
+                          style={{ fontSize: '0.85rem' }}
                         />
-                        <button type="button" className="btn btn-secondary" onClick={handleSaveLogoUrl} style={{ whiteSpace: 'nowrap', padding: '8px 14px' }}>
-                          <Link size={13} style={{ marginRight: '4px' }} />Aplicar
-                        </button>
                       </div>
-                      <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
-                        🔗 Pega la URL directa de tu logo (Imgur, Cloudinary, GitHub, etc.)
-                      </p>
-                      {logoUrlInput && (
+
+                      <div style={{ height: '1px', background: 'rgba(255,255,255,0.05)', margin: '4px 0' }} />
+
+                      {/* Opción B: URL Externa */}
+                      <div>
+                        <span style={{ fontSize: '0.8rem', fontWeight: '600', display: 'block', marginBottom: '6px', color: 'var(--text-primary)' }}>
+                          Opción B: URL externa de imagen
+                        </span>
+                        <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                          <input
+                            type="url"
+                            className="input-field"
+                            placeholder="https://ejemplo.com/mi-logo.png"
+                            value={logoUrlInput}
+                            onChange={(e) => setLogoUrlInput(e.target.value)}
+                            style={{ flex: 1, padding: '8px 12px', fontSize: '0.85rem' }}
+                          />
+                          <button type="button" className="btn btn-secondary" onClick={handleSaveLogoUrl} style={{ whiteSpace: 'nowrap', padding: '8px 14px', fontSize: '0.85rem' }}>
+                            <Link size={13} style={{ marginRight: '4px' }} />Aplicar URL
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* Botón de Limpiar */}
+                      {(logoUrlInput || eventSettings.logoUrl) && (
                         <button type="button" onClick={() => { setLogoUrlInput(''); updateEventSettings({ logoUrl: '' }); showToast('Logo eliminado'); }}
-                          style={{ alignSelf: 'flex-start', fontSize: '0.75rem', color: 'var(--danger-color)', background: 'none', border: 'none', cursor: 'pointer', padding: 0, display: 'flex', alignItems: 'center', gap: '4px' }}>
-                          <X size={12} /> Quitar logo
+                          style={{ alignSelf: 'flex-start', fontSize: '0.75rem', color: 'var(--danger-color)', background: 'none', border: 'none', cursor: 'pointer', padding: 0, display: 'flex', alignItems: 'center', gap: '4px', marginTop: '4px' }}>
+                          <X size={12} /> Quitar logotipo
                         </button>
                       )}
                     </div>
