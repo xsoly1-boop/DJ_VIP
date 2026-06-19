@@ -1005,6 +1005,43 @@ export default function DjDashboard() {
           </div>
         </div>
       )}
+
+      {/* CRÉDITOS DEL CREADOR */}
+      <footer style={{
+        marginTop: '40px',
+        paddingTop: '20px',
+        borderTop: '1px solid rgba(255,255,255,0.06)',
+        textAlign: 'center',
+        paddingBottom: '16px'
+      }}>
+        <p style={{
+          fontSize: '0.8rem',
+          color: 'var(--text-muted)',
+          letterSpacing: '0.5px',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          gap: '8px'
+        }}>
+          <span style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: '6px',
+            background: 'linear-gradient(135deg, rgba(124,58,237,0.08), rgba(6,182,212,0.08))',
+            border: '1px solid rgba(124,58,237,0.15)',
+            padding: '6px 14px',
+            borderRadius: 'var(--radius-full)',
+            fontWeight: '600',
+            color: 'var(--text-secondary)'
+          }}>
+            <Sparkles size={13} color="var(--primary-color)" />
+            Plataforma creada por <strong style={{ color: 'var(--primary-color)' }}>Dorian Najera</strong>
+          </span>
+        </p>
+        <p style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginTop: '6px', opacity: 0.6 }}>
+          DJ a la Carta © {new Date().getFullYear()} — Todos los derechos reservados
+        </p>
+      </footer>
     </div>
   );
 }
