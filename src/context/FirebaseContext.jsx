@@ -108,7 +108,10 @@ export const FirebaseProvider = ({ children }) => {
   // Escuchar configuraciones del evento activo
   useEffect(() => {
     if (!effectiveReadPath) return;
-    const settingsRef = ref(database, `${effectiveReadPath}/events/${currentEventId}/settings`);
+    const targetEventId = (!userBasePath && currentEventId && currentEventId.startsWith('default-event'))
+      ? 'default-event'
+      : currentEventId;
+    const settingsRef = ref(database, `${effectiveReadPath}/events/${targetEventId}/settings`);
     const unsubscribe = onValue(settingsRef, (snapshot) => {
       if (snapshot.exists()) {
         const data = snapshot.val();
@@ -137,7 +140,10 @@ export const FirebaseProvider = ({ children }) => {
   // 3. Escuchar peticiones de canciones en tiempo real
   useEffect(() => {
     if (!effectiveReadPath) return;
-    const requestsRef = ref(database, `${effectiveReadPath}/events/${currentEventId}/requests`);
+    const targetEventId = (!userBasePath && currentEventId && currentEventId.startsWith('default-event'))
+      ? 'default-event'
+      : currentEventId;
+    const requestsRef = ref(database, `${effectiveReadPath}/events/${targetEventId}/requests`);
     const unsubscribe = onValue(requestsRef, (snapshot) => {
       if (snapshot.exists()) {
         setRequests(snapshot.val());
@@ -242,7 +248,10 @@ export const FirebaseProvider = ({ children }) => {
     if (!targetUid) {
       throw new Error('No se pudo identificar al propietario del evento.');
     }
-    const requestsRef = ref(database, `users/${targetUid}/events/${currentEventId}/requests`);
+    const targetEventId = (!userBasePath && currentEventId && currentEventId.startsWith('default-event'))
+      ? 'default-event'
+      : currentEventId;
+    const requestsRef = ref(database, `users/${targetUid}/events/${targetEventId}/requests`);
     const newRequest = {
       title,
       artist,
@@ -259,7 +268,10 @@ export const FirebaseProvider = ({ children }) => {
   const voteRequest = async (requestId, sessionId, hasVoted, eventOwnerUid) => {
     const targetUid = eventOwnerUid || activeUid;
     if (!targetUid) return;
-    const requestRef = ref(database, `users/${targetUid}/events/${currentEventId}/requests/${requestId}`);
+    const targetEventId = (!userBasePath && currentEventId && currentEventId.startsWith('default-event'))
+      ? 'default-event'
+      : currentEventId;
+    const requestRef = ref(database, `users/${targetUid}/events/${targetEventId}/requests/${requestId}`);
     const reqData = requests[requestId];
     if (!reqData) return;
 
@@ -313,7 +325,23 @@ export const FirebaseProvider = ({ children }) => {
       throw new Error('No hay sesión activa. Por favor inicia sesión nuevamente.');
     }
     const settingsRef = ref(database, `${userBasePath}/events/${currentEventId}/settings`);
-    return update(settingsRef, newSettings);
+    await update(settingsRef, newSettings);
+
+    // Si es el evento default, actualizar también el registro público y el índice privado
+    if (currentEventId === 'default-event') {
+      const registryRef = ref(database, `events_registry/default-event-${activeUid}`);
+      await update(registryRef, {
+        title: newSettings.title || 'Mi Gran Evento VIP',
+        djName: newSettings.djName || 'DJ MasterMix'
+      });
+
+      const indexRef = ref(database, `${userBasePath}/events_index/default-event`);
+      await update(indexRef, {
+        title: newSettings.title || 'Mi Gran Evento VIP',
+        djName: newSettings.djName || 'DJ MasterMix',
+        date: newSettings.date || new Date().toISOString().split('T')[0]
+      });
+    }
   };
 
   // Subir logotipo personalizado (DJ) — mantiene compatibilidad Firebase Storage real
