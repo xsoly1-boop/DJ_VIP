@@ -4,7 +4,7 @@
     "events_registry": {
       "$eventId": {
         ".read": "true",
-        ".write": "auth != null && (!data.exists() || data.child('ownerUid').val() == auth.uid || auth.token.email == 'dj@admin.com')"
+        ".write": "auth != null && (!data.exists() || !data.hasChild('ownerUid') || data.child('ownerUid').val() == auth.uid || $eventId.contains(auth.uid) || auth.token.email == 'dj@admin.com')"
       }
     },
 
