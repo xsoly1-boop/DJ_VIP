@@ -40,13 +40,17 @@ Al abrir la aplicación (o ingresar a la URL del panel), verás una interfaz opt
   * **Contraseña**: `admin123`
 * **Sincronización en vivo**: Permite el uso simultáneo en hasta 3 MacBooks sincronizadas en tiempo real en la misma cabina, y también en un móvil Android que acceda a la URL del DJ.
 
-### 3.2. Gestión de Eventos y Calendario (Pestaña "Gestión de Eventos")
-* **Crear Eventos**: Introduce un ID único (ej: `boda-sofia-carlos`), un título descriptivo (ej: `Boda de Sofía y Carlos`), el nombre del DJ y selecciona la fecha en el calendario. Haz clic en **Crear e Iniciar**.
-* **Archivar Eventos**: Si un evento musical finaliza, haz clic en **Archivar**. Esto bloqueará automáticamente la pantalla de peticiones del público con un mensaje elegante informando que el evento concluyó.
-* **Eliminar Eventos**: Si necesitas borrar un evento de forma definitiva, haz clic en el ícono de la papelera (se solicitará confirmación).
+### 3.2. Gestión de Eventos y Calendario (Pestaña "Calendario y Eventos")
+* **Acceso**: Haz clic en el botón con el icono de calendario en la barra lateral izquierda.
+* **Crear Eventos**: Haz clic en "Nuevo Evento". Introduce un título descriptivo (ej: `Boda de Sofía y Carlos`), selecciona el **Tipo de Evento** desde el selector (con opciones precargadas para que el usuario sea consciente: "Mis XV años", "Mi Boda", "Cumpleaños", "Graduación", "Fiesta Corporativa", etc.), especifica el nombre del DJ en cabina (opcional) y la fecha del evento. Al presionar "Crear Evento", se creará y guardará en la base de datos automáticamente.
+* **Activar Eventos**: En el listado de eventos, presiona "Activar" para cambiar el contexto actual de la plataforma a dicho evento. Todas las peticiones, estadísticas y la pantalla pública se actualizarán instantáneamente.
+* **Editar Eventos**: Haz clic en el icono del lápiz sobre cualquier evento para actualizar su título, tipo de evento, DJ o fecha de manera interactiva.
+* **Archivar Eventos**: Presiona el icono de capas/archivo para archivar/desarchivar el evento. Cuando está archivado, la pantalla del público mostrará un mensaje elegante y no permitirá el envío de peticiones.
+* **Eliminar Eventos**: Si necesitas borrar un evento de forma definitiva, haz clic en el icono de la papelera (se solicitará confirmación de seguridad inline).
 
 ### 3.3. Personalización de Marca Blanca (Pestaña "Personalizar Marca")
-* **Logotipo**: Haz clic en **Subir Imagen** para subir el logo personalizado del evento (PNG transparente recomendado). El logo se reflejará instantáneamente en la pantalla del público.
+* **Nombre de la Web / Plataforma**: Añade un nombre personalizado (ej. "Mis XV Años VIP", "Boda de Ana y Juan") en el campo de texto. Esto cambiará de forma dinámica el título de la pestaña del navegador (`document.title`) y el pie de página de toda la web.
+* **Logotipo**: Haz clic en **Subir Imagen** para subir el logo personalizado del evento (o de tu empresa de DJ). El logo se reflejará instantáneamente en la pantalla del público y de cabina.
 * **Colores**: Modifica el color primario (botones y títulos) y secundario usando los selectores visuales de color. La interfaz del público se adaptará en tiempo real con transiciones animadas.
 * **Título y DJ**: Puedes cambiar el nombre del DJ y el título visual en cualquier momento.
 
@@ -59,6 +63,16 @@ Al abrir la aplicación (o ingresar a la URL del panel), verás una interfaz opt
 * En la barra lateral izquierda verás el código QR generado para el evento seleccionado.
 * Haz clic en **Descargar QR (SVG)** para obtener el código en alta calidad, listo para imprimir en carteles, pantallas o proyectar en el evento.
 * El código QR conecta al público de forma única al evento activo sin importar la IP del servidor.
+
+### 3.6. Borrado de Historial Opcional y Seguro
+Para limpiar la base de datos de manera controlada, el panel cuenta con una opción de borrado seguro en la configuración:
+* **Selección Individual**: Puedes elegir exactamente qué deseas limpiar marcando las casillas correspondientes:
+  - **Canciones (peticiones)**: Borra la cola de solicitudes del evento activo.
+  - **Géneros**: Limpia la lista de géneros musicales registrados.
+  - **Artistas**: Elimina los nombres de artistas registrados en el evento.
+  - **Calendario y Eventos**: Borra todo el historial de eventos creados (a excepción del evento activo/por defecto).
+  - **Base de Datos de Autocompletado**: Reinicia el motor de sugerencias evolutivo.
+* **Palabra Clave de Seguridad**: Para evitar borrados accidentales, la acción de limpieza **solo** se ejecutará si escribes la palabra clave exacta `"clear"` en el campo de confirmación antes de pulsar el botón de confirmación.
 
 ---
 

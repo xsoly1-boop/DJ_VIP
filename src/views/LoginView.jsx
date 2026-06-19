@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { useFirebase } from '../context/FirebaseContext';
 import { Lock, Mail, Music, ArrowRight, ShieldAlert } from 'lucide-react';
 

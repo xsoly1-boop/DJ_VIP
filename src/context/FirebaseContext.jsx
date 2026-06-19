@@ -43,7 +43,9 @@ export const FirebaseProvider = ({ children }) => {
     logoUrl: '',
     themeColor: '#7c3aed',
     themeColorSecondary: '#06b6d4',
-    djName: 'DJ MasterMix'
+    djName: 'DJ MasterMix',
+    webName: 'DJ a la Carta',
+    eventType: 'Otro'
   });
   const [requests, setRequests] = useState({});
   const [autocompleteSongs, setAutocompleteSongs] = useState([]);
@@ -130,7 +132,9 @@ export const FirebaseProvider = ({ children }) => {
           logoUrl: '',
           themeColor: '#7c3aed',
           themeColorSecondary: '#06b6d4',
-          djName: 'DJ MasterMix'
+          djName: 'DJ MasterMix',
+          webName: 'DJ a la Carta',
+          eventType: 'Otro'
         });
       }
     });
@@ -356,7 +360,7 @@ export const FirebaseProvider = ({ children }) => {
 
   const changeEvent = (eventId) => { setCurrentEventId(eventId); };
 
-  const createNewEvent = async (eventId, title, djName, date) => {
+  const createNewEvent = async (eventId, title, djName, date, eventType) => {
     if (!userBasePath) return;
     const eventRef = ref(database, `${userBasePath}/events/${eventId}`);
     const initialEvent = {
@@ -367,7 +371,8 @@ export const FirebaseProvider = ({ children }) => {
         themeColorSecondary: '#06b6d4',
         djName: djName || 'DJ MasterMix',
         date: date || new Date().toISOString().split('T')[0],
-        archived: false
+        archived: false,
+        eventType: eventType || 'Otro'
       },
       requests: {}
     };
@@ -381,12 +386,13 @@ export const FirebaseProvider = ({ children }) => {
       djName: djName || 'DJ MasterMix',
       date: date || new Date().toISOString().split('T')[0],
       archived: false,
-      createdAt: Date.now()
+      createdAt: Date.now(),
+      eventType: eventType || 'Otro'
     });
 
     // Registro público: permite que la vista pública encuentre al propietario del evento
     const registryRef = ref(database, `events_registry/${eventId}`);
-    await set(registryRef, { ownerUid: activeUid, title, djName: djName || 'DJ MasterMix' });
+    await set(registryRef, { ownerUid: activeUid, title, djName: djName || 'DJ MasterMix', eventType: eventType || 'Otro' });
 
     setCurrentEventId(eventId);
   };
@@ -397,6 +403,9 @@ export const FirebaseProvider = ({ children }) => {
     await set(eventRef, null);
     const indexRef = ref(database, `${userBasePath}/events_index/${eventId}`);
     await set(indexRef, null);
+    // Limpiar del registro público también
+    const registryRef = ref(database, `events_registry/${eventId}`);
+    await set(registryRef, null);
     if (currentEventId === eventId) setCurrentEventId('default-event');
   };
 
@@ -408,7 +417,7 @@ export const FirebaseProvider = ({ children }) => {
     await update(indexRef, { archived: archivedState });
   };
 
-  const updateEventMetadata = async (eventId, title, djName, date) => {
+  const updateEventMetadata = async (eventId, title, djName, date, eventType) => {
     if (!userBasePath) return;
 
     // Actualizar index
@@ -416,7 +425,8 @@ export const FirebaseProvider = ({ children }) => {
     await update(indexRef, {
       title,
       djName: djName || 'DJ MasterMix',
-      date
+      date,
+      eventType: eventType || 'Otro'
     });
 
     // Actualizar settings
@@ -424,14 +434,16 @@ export const FirebaseProvider = ({ children }) => {
     await update(settingsRef, {
       title,
       djName: djName || 'DJ MasterMix',
-      date
+      date,
+      eventType: eventType || 'Otro'
     });
 
     // Actualizar registro público si existe
     const registryRef = ref(database, `events_registry/${eventId}`);
     await update(registryRef, {
       title,
-      djName: djName || 'DJ MasterMix'
+      djName: djName || 'DJ MasterMix',
+      eventType: eventType || 'Otro'
     });
   };
 

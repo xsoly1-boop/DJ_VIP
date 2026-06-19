@@ -257,4 +257,32 @@ El código QR es dinámico y se adapta de forma automática al ID del evento act
    - El formato SVG es vectorial. Esto significa que **puedes ampliar la imagen al tamaño de una valla publicitaria sin que se pixele**.
    - **Para impresión:** Envía este archivo SVG al diseñador o imprenta para colocarlo en pancartas de mesa, lonas para la cabina o folletos.
    - **Para proyección:** Inserta el SVG en tu software de proyección (ej. Resolume, OBS, ProPresenter) para mostrar el código QR en las pantallas gigantes de la discoteca o el salón durante los descansos del set.
+
+---
+
+## 5. CARACTERÍSTICAS AVANZADAS DE MARCA BLANCA Y GESTIÓN DE EVENTOS
+
+La plataforma cuenta con capacidades mejoradas de personalización, control del calendario de eventos y políticas de seguridad para el borrado del historial:
+
+### 5.1. Personalización Completa de Marca Blanca (White-Label)
+* **Nombre de la Plataforma Personalizado:** En la pestaña "Personalizar Marca" del panel del DJ, ahora es posible establecer un nombre personalizado para la web (ej: *Mis XV Años de Sofía*, *La Boda de Ana y Carlos*).
+* **Título del Navegador Dinámico:** El título de la pestaña del navegador (`document.title`) se actualiza reactivamente tanto en la cabina del DJ como en la pantalla del público, combinando el nombre personalizado de la web con el título del evento activo.
+* **Pie de Página (Footer) Dinámico:** El pie de página muestra dinámicamente el nombre de la plataforma personalizado en lugar del valor estático por defecto.
+
+### 5.2. Panel de Calendario y Ciclo de Vida de Eventos
+* **Creación Intuitiva de Eventos:** El formulario permite definir el Título, Fecha, DJ en Cabina y un **Tipo de Evento** desde un selector con opciones preestablecidas (Mis XV años, Mi Boda, Cumpleaños, Graduación, Fiesta Corporativa, Otro).
+* **Activación de Eventos Activos:** Cambia el contexto activo de la plataforma en tiempo real haciendo clic en **Activar** sobre cualquier evento en el listado.
+* **Edición en Caliente:** Modifica los metadatos de cualquier evento directamente desde la lista (Título, Tipo de Evento, DJ, Fecha) con persistencia inmediata en la base de datos.
+* **Archivado de Seguridad:** Archivar un evento inhabilita temporalmente el envío de peticiones por parte del público, mostrando un mensaje elegante de conclusión de evento sin necesidad de eliminar la información.
+* **Eliminación Permanente:** Remueve eventos de la base de datos de manera definitiva a través de una confirmación visual inline (evitando eliminaciones accidentales).
+
+### 5.3. Borrado Opcional y Seguro de Historial
+* **Granularidad en la Limpieza:** El DJ puede decidir limpiar de forma selectiva:
+  - **Canciones (peticiones):** Cola de canciones del evento actual.
+  - **Géneros:** Historial de géneros de música.
+  - **Artistas:** Historial de artistas solicitados.
+  - **Calendario y Eventos:** Lista de eventos creados históricamente.
+  - **Base de Datos de Autocompletado:** El catálogo evolutivo del buscador.
+* **Palabra Clave de Seguridad:** Como mecanismo de protección para evitar la pérdida accidental de datos, el botón de confirmación de borrado requiere que el usuario escriba la palabra clave exacta `"clear"` para validar y ejecutar la acción.
+
 # DJ_eventos

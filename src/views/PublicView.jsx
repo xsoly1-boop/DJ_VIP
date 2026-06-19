@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useFirebase } from '../context/FirebaseContext';
-import { Music, Search, Heart, Sparkles, Send, Clock, Volume2, ShieldAlert } from 'lucide-react';
+import { Music, Heart, Sparkles, Send, Clock, Volume2, ShieldAlert } from 'lucide-react';
 
 // Generar o recuperar ID de sesión único para controlar anti-spam y votos
 const getSessionId = () => {
@@ -30,7 +30,9 @@ export default function PublicView() {
     logoUrl: '',
     themeColor: '#7c3aed',
     themeColorSecondary: '#06b6d4',
-    archived: false
+    archived: false,
+    webName: 'DJ a la Carta',
+    eventType: 'Otro'
   };
 
   const sessionId = getSessionId();
@@ -125,6 +127,13 @@ export default function PublicView() {
 
     return () => clearInterval(timer);
   }, []);
+
+  // Actualizar el título del navegador con el nombre de la plataforma y el evento
+  useEffect(() => {
+    const webName = eventSettings.webName || 'DJ a la Carta';
+    const eventTitle = eventSettings.title ? ` — ${eventSettings.title}` : '';
+    document.title = `${webName}${eventTitle}`;
+  }, [eventSettings.webName, eventSettings.title]);
 
   // Filtrar canciones para el autocompletado evolutivo
   useEffect(() => {
@@ -295,6 +304,7 @@ export default function PublicView() {
         textAlign: 'center',
         gap: '12px'
       }}>
+        {/* Logo o ícono */}
         {eventSettings.logoUrl ? (
           <img 
             src={eventSettings.logoUrl} 
@@ -319,8 +329,41 @@ export default function PublicView() {
         )}
         
         <div style={{ width: '100%' }}>
-          <span className="badge badge-playing" style={{ marginBottom: '8px' }}>En Vivo ⚡</span>
+          {/* Nombre de la plataforma / web */}
+          <p style={{ fontSize: '0.7rem', color: 'var(--text-muted)', fontWeight: '600', letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: '6px' }}>
+            {eventSettings.webName || 'DJ a la Carta'}
+          </p>
+
+          <span className="badge badge-playing" style={{ marginBottom: '10px' }}>En Vivo ⚡</span>
           
+          {/* Tipo de evento — muy visible para que la audiencia sepa en qué evento está */}
+          {eventSettings.eventType && eventSettings.eventType !== 'Otro' && (
+            <div style={{ marginBottom: '8px' }}>
+              <span style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '6px',
+                fontSize: '0.85rem',
+                fontWeight: '700',
+                color: 'var(--secondary-color)',
+                background: 'rgba(6,182,212,0.1)',
+                border: '1px solid rgba(6,182,212,0.25)',
+                padding: '4px 14px',
+                borderRadius: 'var(--radius-full)',
+                letterSpacing: '0.02em'
+              }}>
+                {eventSettings.eventType === 'Mis XV años' && '🌸'}
+                {eventSettings.eventType === 'Mi Boda' && '💍'}
+                {eventSettings.eventType === 'Cumpleaños' && '🎂'}
+                {eventSettings.eventType === 'Graduación' && '🎓'}
+                {eventSettings.eventType === 'Fiesta Corporativa' && '🏢'}
+                {eventSettings.eventType === 'Aniversario' && '💝'}
+                {eventSettings.eventType === 'Bautizo' && '👶'}
+                {' '}{eventSettings.eventType}
+              </span>
+            </div>
+          )}
+
           <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', marginBottom: '12px' }}>
             <span style={{ fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--text-secondary)', fontWeight: '600' }}>
               Evento
@@ -358,6 +401,7 @@ export default function PublicView() {
           </div>
         </div>
       </header>
+
 
       {/* FORMULARIO DE PETICIÓN (PÚBLICO) */}
       <main style={{ maxWidth: '500px', margin: '0 auto', padding: '0 15px' }}>

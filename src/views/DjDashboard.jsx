@@ -39,21 +39,39 @@ export default function DjDashboard() {
   } = useFirebase();
 
   // Estados Locales
-  const [activeTab, setActiveTab] = useState('requests'); // requests | settings | admin
+  const [activeTab, setActiveTab] = useState('requests'); // requests | settings | calendar | admin
   const [filterSort, setFilterSort] = useState('time');
   const [filterStatus, setFilterStatus] = useState('all');
-
-
 
   // Branding temporal
   const [titleInput, setTitleInput] = useState(eventSettings.title);
   const [djNameInput, setDjNameInput] = useState(eventSettings.djName);
+  const [webNameInput, setWebNameInput] = useState(eventSettings.webName || 'DJ a la Carta');
   const [dateInput, setDateInput] = useState(eventSettings.date || new Date().toISOString().split('T')[0]);
   const [primaryColor, setPrimaryColor] = useState(eventSettings.themeColor || '#7c3aed');
   const [secondaryColor, setSecondaryColor] = useState(eventSettings.themeColorSecondary || '#06b6d4');
   const [productionUrl, setProductionUrl] = useState(eventSettings.productionUrl || import.meta.env.VITE_PUBLIC_URL || '');
   // Logo solo por URL externa
   const [logoUrlInput, setLogoUrlInput] = useState(eventSettings.logoUrl || '');
+
+  // Pestaña Calendario: Crear Evento
+  const [showCreateEventForm, setShowCreateEventForm] = useState(false);
+  const [newEventTitle, setNewEventTitle] = useState('');
+  const [newEventDjName, setNewEventDjName] = useState('');
+  const [newEventDate, setNewEventDate] = useState(new Date().toISOString().split('T')[0]);
+  const [newEventType, setNewEventType] = useState('Otro');
+  const [createEventLoading, setCreateEventLoading] = useState(false);
+
+  // Pestaña Calendario: Editar Evento
+  const [editingEventId, setEditingEventId] = useState(null);
+  const [editEventTitle, setEditEventTitle] = useState('');
+  const [editEventDjName, setEditEventDjName] = useState('');
+  const [editEventDate, setEditEventDate] = useState('');
+  const [editEventType, setEditEventType] = useState('Otro');
+
+  // Confirmación de borrado de evento
+  const [deletingEventId, setDeletingEventId] = useState(null);
+
   
   // Modal Borrar Historial Opcional con palabra clave
   const [showClearModal, setShowClearModal] = useState(false);
@@ -62,6 +80,7 @@ export default function DjDashboard() {
   const [clearOptionGenres, setClearOptionGenres] = useState(false);
   const [clearOptionArtists, setClearOptionArtists] = useState(false);
   const [clearOptionAutocomplete, setClearOptionAutocomplete] = useState(false);
+  const [clearOptionCalendar, setClearOptionCalendar] = useState(false);
   const [clearErrorMsg, setClearErrorMsg] = useState('');
   const [clearingHistory, setClearingHistory] = useState(false);
 
@@ -86,12 +105,20 @@ export default function DjDashboard() {
   useEffect(() => {
     setTitleInput(eventSettings.title);
     setDjNameInput(eventSettings.djName);
+    setWebNameInput(eventSettings.webName || 'DJ a la Carta');
     setDateInput(eventSettings.date || new Date().toISOString().split('T')[0]);
     setPrimaryColor(eventSettings.themeColor || '#7c3aed');
     setSecondaryColor(eventSettings.themeColorSecondary || '#06b6d4');
     setProductionUrl(eventSettings.productionUrl || import.meta.env.VITE_PUBLIC_URL || '');
     setLogoUrlInput(eventSettings.logoUrl || '');
   }, [eventSettings, currentEventId]);
+
+  // Actualizar el título del navegador dinámicamente
+  useEffect(() => {
+    const webName = eventSettings.webName || 'DJ a la Carta';
+    const eventTitle = eventSettings.title ? ` — ${eventSettings.title}` : '';
+    document.title = `${webName}${eventTitle}`;
+  }, [eventSettings.webName, eventSettings.title]);
 
   // Sintetizador de audio premium con Web Audio API
   const playNotificationSound = (toneType = selectedTone) => {
@@ -227,25 +254,6 @@ export default function DjDashboard() {
     img.src = svgUrl;
   };
 
-  const downloadQRForEvent = (eventId, title) => {
-    const svgElement = document.getElementById(`qr-${eventId}`);
-    if (!svgElement) {
-      showToast("❌ Error al generar QR");
-      return;
-    }
-    const serializer = new XMLSerializer();
-    const svgXml = serializer.serializeToString(svgElement);
-    const svgBlob = new Blob([svgXml], { type: "image/svg+xml;charset=utf-8" });
-    const svgUrl = URL.createObjectURL(svgBlob);
-    const downloadLink = document.createElement("a");
-    downloadLink.href = svgUrl;
-    downloadLink.download = `QR-${title.replace(/\s+/g, '_')}-${eventId}.svg`;
-    document.body.appendChild(downloadLink);
-    downloadLink.click();
-    document.body.removeChild(downloadLink);
-    showToast(`⬇️ Código QR de "${title}" descargado`);
-  };
-
   // Subir Logotipo local
   const handleLogoUpload = async (e) => {
     const file = e.target.files[0];
@@ -280,6 +288,7 @@ export default function DjDashboard() {
       await updateEventSettings({
         title: titleInput,
         djName: djNameInput,
+        webName: webNameInput.trim() || 'DJ a la Carta',
         date: dateInput,
         themeColor: primaryColor,
         themeColorSecondary: secondaryColor,
@@ -336,7 +345,7 @@ export default function DjDashboard() {
     }
 
     // Validar que al menos una opción esté seleccionada
-    const hasSelectedOption = clearOptionSongs || clearOptionGenres || clearOptionArtists || clearOptionAutocomplete;
+    const hasSelectedOption = clearOptionSongs || clearOptionGenres || clearOptionArtists || clearOptionAutocomplete || clearOptionCalendar;
     if (!hasSelectedOption) {
       setClearErrorMsg('⚠️ Selecciona al menos una sección para eliminar.');
       return;
@@ -348,7 +357,8 @@ export default function DjDashboard() {
         songs: clearOptionSongs,
         genres: clearOptionGenres,
         artists: clearOptionArtists,
-        autocomplete: clearOptionAutocomplete
+        autocomplete: clearOptionAutocomplete,
+        calendar: clearOptionCalendar
       });
       showToast('🗑️ Datos seleccionados eliminados correctamente');
       
@@ -359,6 +369,7 @@ export default function DjDashboard() {
       setClearOptionGenres(false);
       setClearOptionArtists(false);
       setClearOptionAutocomplete(false);
+      setClearOptionCalendar(false);
     } catch (err) {
       console.error(err);
       setClearErrorMsg(`❌ Error: ${err.message || 'Intenta de nuevo.'}`);
@@ -367,9 +378,50 @@ export default function DjDashboard() {
     }
   };
 
+  // Crear nuevo evento desde el panel Calendario
+  const handleCreateEvent = async (e) => {
+    e.preventDefault();
+    if (!newEventTitle.trim()) { showToast('⚠️ El título del evento es requerido'); return; }
+    setCreateEventLoading(true);
+    try {
+      const slug = newEventTitle.trim().toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '') + '-' + Date.now().toString(36);
+      await createNewEvent(slug, newEventTitle.trim(), newEventDjName.trim() || djNameInput, newEventDate, newEventType);
+      showToast(`🎉 Evento "${newEventTitle}" creado correctamente`);
+      setNewEventTitle('');
+      setNewEventDjName('');
+      setNewEventDate(new Date().toISOString().split('T')[0]);
+      setNewEventType('Otro');
+      setShowCreateEventForm(false);
+    } catch (err) {
+      showToast(`❌ Error al crear evento: ${err.message || ''}`);
+    } finally {
+      setCreateEventLoading(false);
+    }
+  };
 
+  // Guardar edición de evento existente
+  const handleSaveEditEvent = async (eventId) => {
+    if (!editEventTitle.trim()) { showToast('⚠️ El título es requerido'); return; }
+    try {
+      await updateEventMetadata(eventId, editEventTitle.trim(), editEventDjName.trim() || djNameInput, editEventDate, editEventType);
+      showToast('✅ Evento actualizado correctamente');
+      setEditingEventId(null);
+    } catch (err) {
+      showToast(`❌ Error al actualizar: ${err.message || ''}`);
+    }
+  };
 
-  // Crear nueva cuenta DJ desde el Panel Admin
+  // Confirmar y eliminar evento
+  const handleDeleteEvent = async (eventId) => {
+    try {
+      await deleteEvent(eventId);
+      showToast('🗑️ Evento eliminado');
+      setDeletingEventId(null);
+    } catch (err) {
+      showToast(`❌ Error al eliminar: ${err.message || ''}`);
+    }
+  };
+
   const handleCreateDjAccount = async (e) => {
     e.preventDefault();
     setAddDjError('');
@@ -621,6 +673,15 @@ export default function DjDashboard() {
               onClick={() => setActiveTab('settings')} style={{ justifyContent: 'flex-start', width: '100%' }}>
               <Settings size={16} /><span>Personalizar Evento</span>
             </button>
+            <button className={`btn ${activeTab === 'calendar' ? 'btn-primary' : 'btn-secondary'}`}
+              onClick={() => setActiveTab('calendar')} style={{ justifyContent: 'flex-start', width: '100%' }}>
+              <Calendar size={16} /><span>Mis Eventos</span>
+              {eventsList.length > 0 && (
+                <span style={{ marginLeft: 'auto', fontSize: '0.65rem', background: 'rgba(124,58,237,0.15)', color: 'var(--primary-color)', padding: '2px 6px', borderRadius: '8px', fontWeight: '700' }}>
+                  {eventsList.length}
+                </span>
+              )}
+            </button>
             {/* Tab Admin: solo visible para dj@admin.com sin impersonar */}
             {isAdminMaster && !impersonatingUid && (
               <button className={`btn ${activeTab === 'admin' ? 'btn-primary' : 'btn-secondary'}`}
@@ -855,6 +916,24 @@ export default function DjDashboard() {
                   </p>
                 </div>
 
+                {/* Nombre de la Web / Plataforma */}
+                <div className="form-group" style={{ borderBottom: '1px solid rgba(255,255,255,0.05)', paddingBottom: '20px' }}>
+                  <label className="form-label" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <Sparkles size={15} color="var(--primary-color)" />
+                    Nombre de la Plataforma / Web
+                  </label>
+                  <input
+                    type="text"
+                    className="input-field"
+                    placeholder="DJ a la Carta"
+                    value={webNameInput}
+                    onChange={(e) => setWebNameInput(e.target.value)}
+                  />
+                  <p style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginTop: '6px' }}>
+                    Este nombre aparecerá en el título de la pestaña del navegador y en el pie de página de la plataforma.
+                  </p>
+                </div>
+
                 {/* Títulos */}
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
                   <div className="form-group">
@@ -916,6 +995,185 @@ export default function DjDashboard() {
                   }}>Descartar Cambios</button>
                 </div>
               </form>
+            </div>
+          )}
+
+
+
+          {/* 3. PANEL CALENDARIO Y GESTIÓN DE EVENTOS */}
+          {activeTab === 'calendar' && (
+            <div className="glass-panel" style={{ padding: '24px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', borderBottom: '1px solid var(--surface-border)', paddingBottom: '16px' }}>
+                <h2 style={{ fontSize: '1.25rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <Calendar size={20} color="var(--primary-color)" />
+                  Mis Eventos
+                </h2>
+                <button
+                  className="btn btn-primary"
+                  style={{ padding: '8px 16px', fontSize: '0.85rem' }}
+                  onClick={() => setShowCreateEventForm(!showCreateEventForm)}
+                >
+                  <Plus size={15} /><span>{showCreateEventForm ? 'Cancelar' : 'Nuevo Evento'}</span>
+                </button>
+              </div>
+
+              {/* FORMULARIO CREAR EVENTO */}
+              {showCreateEventForm && (
+                <form onSubmit={handleCreateEvent} style={{ background: 'rgba(124,58,237,0.05)', border: '1px solid rgba(124,58,237,0.2)', borderRadius: 'var(--radius-md)', padding: '20px', marginBottom: '24px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                  <h3 style={{ fontSize: '1rem', display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--primary-color)' }}>
+                    <Plus size={16} /> Crear Nuevo Evento
+                  </h3>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+                    <div className="form-group">
+                      <label className="form-label">Título del Evento *</label>
+                      <input type="text" className="input-field" placeholder="Mi Gran Fiesta" value={newEventTitle} onChange={(e) => setNewEventTitle(e.target.value)} required />
+                    </div>
+                    <div className="form-group">
+                      <label className="form-label">Tipo de Evento</label>
+                      <select className="input-field" value={newEventType} onChange={(e) => setNewEventType(e.target.value)} style={{ cursor: 'pointer' }}>
+                        <option value="Mis XV años">🌸 Mis XV años</option>
+                        <option value="Mi Boda">💍 Mi Boda</option>
+                        <option value="Cumpleaños">🎂 Cumpleaños</option>
+                        <option value="Graduación">🎓 Graduación</option>
+                        <option value="Fiesta Corporativa">🏢 Fiesta Corporativa</option>
+                        <option value="Aniversario">💝 Aniversario</option>
+                        <option value="Bautizo">👶 Bautizo</option>
+                        <option value="Otro">🎉 Otro</option>
+                      </select>
+                    </div>
+                  </div>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+                    <div className="form-group">
+                      <label className="form-label">DJ en Cabina (opcional)</label>
+                      <input type="text" className="input-field" placeholder={djNameInput || 'DJ MasterMix'} value={newEventDjName} onChange={(e) => setNewEventDjName(e.target.value)} />
+                    </div>
+                    <div className="form-group">
+                      <label className="form-label">Fecha del Evento</label>
+                      <input type="date" className="input-field" value={newEventDate} onChange={(e) => setNewEventDate(e.target.value)} />
+                    </div>
+                  </div>
+                  <div style={{ display: 'flex', gap: '10px' }}>
+                    <button type="submit" className="btn btn-primary" disabled={createEventLoading}>
+                      {createEventLoading ? <><RefreshCw size={14} className="animate-spin" /> Creando...</> : <><Check size={14} /> Crear Evento</>}
+                    </button>
+                    <button type="button" className="btn btn-secondary" onClick={() => setShowCreateEventForm(false)}>Cancelar</button>
+                  </div>
+                </form>
+              )}
+
+              {/* LISTA DE EVENTOS */}
+              {eventsList.length === 0 ? (
+                <div style={{ textAlign: 'center', padding: '40px', color: 'var(--text-muted)' }}>
+                  <Calendar size={48} style={{ opacity: 0.3, marginBottom: '12px' }} />
+                  <p>No hay eventos creados todavía.</p>
+                  <p style={{ fontSize: '0.85rem', marginTop: '4px' }}>Crea tu primer evento con el botón de arriba.</p>
+                </div>
+              ) : (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                  {eventsList
+                    .sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0))
+                    .map((ev) => {
+                      const isActive = currentEventId === ev.id;
+                      const isArchived = ev.archived;
+                      const isEditing = editingEventId === ev.id;
+                      const isDeleting = deletingEventId === ev.id;
+                      const evRequests = allEventsData?.[ev.id]?.requests || {};
+                      const reqCount = Object.keys(evRequests).length;
+
+                      return (
+                        <div key={ev.id} style={{
+                          padding: '16px 20px',
+                          borderRadius: 'var(--radius-md)',
+                          border: isActive ? '1px solid rgba(124,58,237,0.5)' : '1px solid rgba(255,255,255,0.06)',
+                          background: isActive ? 'rgba(124,58,237,0.08)' : 'rgba(255,255,255,0.02)',
+                          opacity: isArchived ? 0.6 : 1,
+                          display: 'flex', flexDirection: 'column', gap: '12px'
+                        }}>
+                          {/* Header del evento */}
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '12px' }}>
+                            <div style={{ flex: 1 }}>
+                              {isEditing ? (
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+                                    <input type="text" className="input-field" style={{ padding: '6px 10px', fontSize: '0.85rem' }} value={editEventTitle} onChange={(e) => setEditEventTitle(e.target.value)} placeholder="Título" />
+                                    <select className="input-field" style={{ padding: '6px 10px', fontSize: '0.85rem', cursor: 'pointer' }} value={editEventType} onChange={(e) => setEditEventType(e.target.value)}>
+                                      <option value="Mis XV años">🌸 Mis XV años</option>
+                                      <option value="Mi Boda">💍 Mi Boda</option>
+                                      <option value="Cumpleaños">🎂 Cumpleaños</option>
+                                      <option value="Graduación">🎓 Graduación</option>
+                                      <option value="Fiesta Corporativa">🏢 Fiesta Corporativa</option>
+                                      <option value="Aniversario">💝 Aniversario</option>
+                                      <option value="Bautizo">👶 Bautizo</option>
+                                      <option value="Otro">🎉 Otro</option>
+                                    </select>
+                                  </div>
+                                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+                                    <input type="text" className="input-field" style={{ padding: '6px 10px', fontSize: '0.85rem' }} value={editEventDjName} onChange={(e) => setEditEventDjName(e.target.value)} placeholder="Nombre DJ" />
+                                    <input type="date" className="input-field" style={{ padding: '6px 10px', fontSize: '0.85rem' }} value={editEventDate} onChange={(e) => setEditEventDate(e.target.value)} />
+                                  </div>
+                                  <div style={{ display: 'flex', gap: '8px' }}>
+                                    <button className="btn btn-primary" style={{ padding: '6px 14px', fontSize: '0.8rem' }} onClick={() => handleSaveEditEvent(ev.id)}><Check size={13} /> Guardar</button>
+                                    <button className="btn btn-secondary" style={{ padding: '6px 14px', fontSize: '0.8rem' }} onClick={() => setEditingEventId(null)}><X size={13} /> Cancelar</button>
+                                  </div>
+                                </div>
+                              ) : (
+                                <>
+                                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                                    <span style={{ fontWeight: '700', fontSize: '1rem', color: 'var(--text-primary)' }}>{ev.title}</span>
+                                    {isActive && <span className="badge badge-playing" style={{ fontSize: '0.65rem' }}>Activo</span>}
+                                    {isArchived && <span style={{ fontSize: '0.65rem', padding: '2px 8px', borderRadius: '8px', background: 'rgba(255,255,255,0.06)', color: 'var(--text-muted)', fontWeight: '600' }}>Archivado</span>}
+                                  </div>
+                                  <div style={{ display: 'flex', gap: '12px', fontSize: '0.78rem', color: 'var(--text-secondary)', marginTop: '4px', flexWrap: 'wrap' }}>
+                                    {ev.eventType && <span style={{ background: 'rgba(6,182,212,0.1)', color: 'var(--secondary-color)', padding: '2px 8px', borderRadius: '8px', fontWeight: '600' }}>{ev.eventType}</span>}
+                                    <span>📅 {ev.date || 'Sin fecha'}</span>
+                                    <span>🎧 {ev.djName || 'Sin DJ'}</span>
+                                    <span>🎵 {reqCount} petición{reqCount !== 1 ? 'es' : ''}</span>
+                                  </div>
+                                </>
+                              )}
+                            </div>
+
+                            {/* Botones de acción */}
+                            {!isEditing && !isDeleting && (
+                              <div style={{ display: 'flex', gap: '6px', flexShrink: 0 }}>
+                                {!isActive && (
+                                  <button title="Activar este evento" className="btn btn-primary" style={{ padding: '6px 10px', fontSize: '0.75rem' }} onClick={() => { changeEvent(ev.id); showToast(`✅ Evento "${ev.title}" activado`); }}>
+                                    <Play size={13} /> Activar
+                                  </button>
+                                )}
+                                <button title="Editar evento" className="btn btn-secondary" style={{ padding: '6px 10px', fontSize: '0.75rem' }} onClick={() => { setEditingEventId(ev.id); setEditEventTitle(ev.title); setEditEventDjName(ev.djName || ''); setEditEventDate(ev.date || ''); setEditEventType(ev.eventType || 'Otro'); }}>
+                                  <Edit size={13} />
+                                </button>
+                                <button title={isArchived ? 'Desarchivar' : 'Archivar'} className="btn btn-secondary" style={{ padding: '6px 10px', fontSize: '0.75rem' }} onClick={() => { archiveEvent(ev.id, !isArchived); showToast(isArchived ? `📂 Evento desarchivado` : `🗄️ Evento archivado`); }}>
+                                  <Layers size={13} />
+                                </button>
+                                {ev.id !== 'default-event' && (
+                                  <button title="Eliminar evento" className="btn btn-secondary" style={{ padding: '6px 10px', fontSize: '0.75rem', borderColor: 'rgba(239,68,68,0.3)', color: 'var(--danger-color)' }} onClick={() => setDeletingEventId(ev.id)}>
+                                    <Trash2 size={13} />
+                                  </button>
+                                )}
+                              </div>
+                            )}
+                          </div>
+
+                          {/* Confirmación de eliminación inline */}
+                          {isDeleting && (
+                            <div style={{ background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.3)', borderRadius: 'var(--radius-sm)', padding: '12px 16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px' }}>
+                              <span style={{ fontSize: '0.85rem', color: 'var(--danger-color)', fontWeight: '600' }}>⚠️ ¿Eliminar "<strong>{ev.title}</strong>" permanentemente?</span>
+                              <div style={{ display: 'flex', gap: '8px' }}>
+                                <button className="btn btn-secondary" style={{ padding: '5px 12px', fontSize: '0.8rem' }} onClick={() => setDeletingEventId(null)}>Cancelar</button>
+                                <button style={{ padding: '5px 12px', fontSize: '0.8rem', background: 'rgba(239,68,68,0.15)', border: '1px solid rgba(239,68,68,0.4)', color: 'var(--danger-color)', borderRadius: 'var(--radius-sm)', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }} onClick={() => handleDeleteEvent(ev.id)}>
+                                  <Trash2 size={13} /> Eliminar
+                                </button>
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })
+                  }
+                </div>
+              )}
             </div>
           )}
 
@@ -1175,6 +1433,16 @@ export default function DjDashboard() {
                 <span>🗑️ Catálogo de autocompletado</span>
               </label>
 
+              <label style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer', userSelect: 'none', fontSize: '0.9rem' }}>
+                <input
+                  type="checkbox"
+                  checked={clearOptionCalendar}
+                  onChange={(e) => { setClearOptionCalendar(e.target.checked); setClearErrorMsg(''); }}
+                  style={{ width: '18px', height: '18px', accentColor: 'var(--danger-color)' }}
+                />
+                <span>🗑️ Calendario completo (todos los eventos)</span>
+              </label>
+
             </div>
 
             <div className="form-group">
@@ -1205,6 +1473,7 @@ export default function DjDashboard() {
                   setClearOptionGenres(false);
                   setClearOptionArtists(false);
                   setClearOptionAutocomplete(false);
+                  setClearOptionCalendar(false);
                   setClearErrorMsg('');
                 }}
                 disabled={clearingHistory}>
@@ -1258,7 +1527,7 @@ export default function DjDashboard() {
           </span>
         </p>
         <p style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginTop: '6px', opacity: 0.6 }}>
-          DJ a la Carta © {new Date().getFullYear()} — Todos los derechos reservados
+          {eventSettings.webName || 'DJ a la Carta'} © {new Date().getFullYear()} — Todos los derechos reservados
         </p>
       </footer>
     </div>
