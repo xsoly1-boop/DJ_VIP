@@ -46,7 +46,10 @@ export const FirebaseProvider = ({ children }) => {
     themeColorSecondary: '#06b6d4',
     djName: 'DJ MasterMix',
     webName: 'DJ a la Carta',
-    eventType: 'Otro'
+    eventType: 'Otro',
+    fontFamily: 'Outfit',
+    fontSize: 'medium',
+    logoSize: 'medium'
   });
   const [requests, setRequests] = useState({});
   const [autocompleteSongs, setAutocompleteSongs] = useState([]);
@@ -97,7 +100,8 @@ export const FirebaseProvider = ({ children }) => {
             themeColorSecondary: '#06b6d4',
             djName: user?.displayName || 'DJ MasterMix',
             webName: 'DJ a la Carta',
-            eventType: 'Otro'
+            eventType: 'Otro',
+            logoSize: 'medium'
           };
 
           if (!settingsSnap.exists()) {
@@ -215,7 +219,8 @@ export const FirebaseProvider = ({ children }) => {
           webName: 'DJ a la Carta',
           eventType: 'Otro',
           fontFamily: 'Outfit',
-          fontSize: 'medium'
+          fontSize: 'medium',
+          logoSize: 'medium'
         });
       }
     });
@@ -489,7 +494,8 @@ export const FirebaseProvider = ({ children }) => {
         djName: djName || 'DJ MasterMix',
         date: date || new Date().toISOString().split('T')[0],
         archived: false,
-        eventType: eventType || 'Otro'
+        eventType: eventType || 'Otro',
+        logoSize: 'medium'
       },
       requests: {}
     };
@@ -531,7 +537,8 @@ export const FirebaseProvider = ({ children }) => {
         date: new Date().toISOString().split('T')[0],
         archived: false,
         webName: 'DJ a la Carta',
-        eventType: 'Otro'
+        eventType: 'Otro',
+        logoSize: 'medium'
       };
       await set(settingsRef, defaultSettings);
 
@@ -680,7 +687,8 @@ export const FirebaseProvider = ({ children }) => {
           themeColorSecondary: '#06b6d4',
           djName: user?.displayName || 'DJ MasterMix',
           date: new Date().toISOString().split('T')[0],
-          archived: false
+          archived: false,
+          logoSize: 'medium'
         },
         requests: {}
       });

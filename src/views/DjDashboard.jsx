@@ -55,6 +55,7 @@ export default function DjDashboard() {
   const [logoUrlInput, setLogoUrlInput] = useState(eventSettings.logoUrl || '');
   const [fontFamily, setFontFamily] = useState(eventSettings.fontFamily || 'Outfit');
   const [fontSize, setFontSize] = useState(eventSettings.fontSize || 'medium');
+  const [logoSize, setLogoSize] = useState(eventSettings.logoSize || 'medium');
 
   // Pestaña Calendario: Crear Evento
   const [showCreateEventForm, setShowCreateEventForm] = useState(false);
@@ -115,6 +116,7 @@ export default function DjDashboard() {
     setLogoUrlInput(eventSettings.logoUrl || '');
     setFontFamily(eventSettings.fontFamily || 'Outfit');
     setFontSize(eventSettings.fontSize || 'medium');
+    setLogoSize(eventSettings.logoSize || 'medium');
   }, [eventSettings, currentEventId]);
 
   // Actualizar el título del navegador dinámicamente
@@ -291,7 +293,8 @@ export default function DjDashboard() {
         themeColorSecondary: secondaryColor,
         productionUrl: productionUrl.trim().replace(/\/$/, ''),
         fontFamily,
-        fontSize
+        fontSize,
+        logoSize
       });
       showToast("💾 Configuración de marca guardada");
     } catch (err) {
@@ -902,10 +905,29 @@ export default function DjDashboard() {
 
                       {/* Botón de Limpiar */}
                       {(logoUrlInput || eventSettings.logoUrl) && (
-                        <button type="button" onClick={() => { setLogoUrlInput(''); updateEventSettings({ logoUrl: '' }); showToast('Logo eliminado'); }}
-                          style={{ alignSelf: 'flex-start', fontSize: '0.75rem', color: 'var(--danger-color)', background: 'none', border: 'none', cursor: 'pointer', padding: 0, display: 'flex', alignItems: 'center', gap: '4px', marginTop: '4px' }}>
-                          <X size={12} /> Quitar logotipo
-                        </button>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginTop: '4px' }}>
+                          <button type="button" onClick={() => { setLogoUrlInput(''); updateEventSettings({ logoUrl: '' }); showToast('Logo eliminado'); }}
+                            style={{ alignSelf: 'flex-start', fontSize: '0.75rem', color: 'var(--danger-color)', background: 'none', border: 'none', cursor: 'pointer', padding: 0, display: 'flex', alignItems: 'center', gap: '4px' }}>
+                            <X size={12} /> Quitar logotipo
+                          </button>
+
+                          <div style={{ marginTop: '6px' }}>
+                            <span style={{ fontSize: '0.8rem', fontWeight: '600', display: 'block', marginBottom: '6px', color: 'var(--text-primary)' }}>
+                              Tamaño de visualización del logotipo (público)
+                            </span>
+                            <select 
+                              className="input-field" 
+                              value={logoSize} 
+                              onChange={(e) => { setLogoSize(e.target.value); updateEventSettings({ logoSize: e.target.value }); showToast("📏 Tamaño del logo actualizado"); }} 
+                              style={{ padding: '6px 12px', fontSize: '0.85rem', width: 'auto', minWidth: '160px', cursor: 'pointer' }}
+                            >
+                              <option value="small">Pequeño (50px)</option>
+                              <option value="medium">Mediano (75px)</option>
+                              <option value="large">Grande (100px)</option>
+                              <option value="xlarge">Extra Grande (130px)</option>
+                            </select>
+                          </div>
+                        </div>
                       )}
                     </div>
                   </div>

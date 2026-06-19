@@ -310,7 +310,9 @@ export default function PublicView() {
             src={eventSettings.logoUrl} 
             alt="Logo Evento" 
             style={{ 
-              height: '70px', 
+              height: eventSettings.logoSize === 'small' ? '50px' :
+                      eventSettings.logoSize === 'large' ? '100px' :
+                      eventSettings.logoSize === 'xlarge' ? '130px' : '75px', 
               objectFit: 'contain',
               borderRadius: 'var(--radius-md)',
               border: '1px solid var(--surface-border)'
