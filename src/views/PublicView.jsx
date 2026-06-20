@@ -24,7 +24,7 @@ export default function PublicView() {
     eventOwnerUid
   } = useFirebase();
 
-  const eventSettings = rawEventSettings || {
+  const defaults = {
     title: 'Mi Gran Evento VIP',
     djName: 'DJ MasterMix',
     logoUrl: '',
@@ -32,8 +32,13 @@ export default function PublicView() {
     themeColorSecondary: '#06b6d4',
     archived: false,
     webName: 'DJ a la Carta',
-    eventType: 'Otro'
+    eventType: 'Otro',
+    tipsEnabled: false,
+    paypalUsername: '',
+    mercadopagoLink: ''
   };
+
+  const eventSettings = rawEventSettings ? { ...defaults, ...rawEventSettings } : defaults;
 
   const sessionId = getSessionId();
 
@@ -198,6 +203,37 @@ export default function PublicView() {
   const showToast = (message) => {
     setToastMessage(message);
     setTimeout(() => setToastMessage(null), 3000);
+  };
+
+  const handlePaypalClick = () => {
+    const userOrEmail = eventSettings.paypalUsername.trim();
+    if (!userOrEmail) return;
+    
+    let url = '';
+    if (userOrEmail.includes('@')) {
+      url = `https://www.paypal.com/cgi-bin/webscr?cmd=_xclick&business=${encodeURIComponent(userOrEmail)}&item_name=Propina%20al%20DJ&currency_code=USD`;
+    } else {
+      url = `https://paypal.me/${userOrEmail}`;
+    }
+    window.open(url, '_blank');
+  };
+
+  const handleMercadoPagoClick = () => {
+    const input = eventSettings.mercadopagoLink.trim();
+    if (!input) return;
+
+    if (input.startsWith('http') || input.includes('mercadopago.com') || input.includes('mpago.la')) {
+      window.open(input, '_blank');
+    } else {
+      navigator.clipboard.writeText(input)
+        .then(() => {
+          showToast(`📋 Alias/CVU copiado: ${input}`);
+        })
+        .catch((err) => {
+          console.error('Error al copiar:', err);
+          showToast('❌ No se pudo copiar automáticamente.');
+        });
+    }
   };
 
   const handleSubmit = async (e) => {
@@ -426,7 +462,88 @@ export default function PublicView() {
             </p>
           </section>
         ) : (
-          <section className="glass-panel" style={{ padding: '24px', borderRadius: 'var(--radius-lg)' }}>
+          <>
+            {/* Tarjeta de Propinas Voluntarias */}
+            {eventSettings.tipsEnabled && (eventSettings.paypalUsername || eventSettings.mercadopagoLink) && (
+              <div 
+                className={`glass-panel animate-slide-in ${cooldownTimeLeft > 0 ? 'tips-card-active' : ''}`}
+                style={{ 
+                  padding: '20px', 
+                  borderRadius: 'var(--radius-lg)', 
+                  marginBottom: '20px', 
+                  border: cooldownTimeLeft > 0 ? '1px solid var(--primary-color)' : '1px solid var(--surface-border)',
+                  transition: 'all 0.4s ease'
+                }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                  <span style={{ fontSize: '1.6rem', flexShrink: 0 }}>💸</span>
+                  <div style={{ flex: 1 }}>
+                    <h3 style={{ fontSize: '1.05rem', fontWeight: '700', color: 'var(--text-primary)', marginBottom: '4px' }}>
+                      {cooldownTimeLeft > 0 ? '⚡ ¡Destaca tu petición apoyando al DJ!' : 'Apoya al DJ (Propina Voluntaria)'}
+                    </h3>
+                    <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', lineHeight: '1.4' }}>
+                      Si estás disfrutando de la música, puedes apoyar el set enviando una propina por PayPal o copiando su alias de Mercado Pago.
+                    </p>
+                  </div>
+                </div>
+
+                <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', marginTop: '16px' }}>
+                  {eventSettings.paypalUsername && (
+                    <button 
+                      type="button" 
+                      onClick={handlePaypalClick}
+                      className="btn"
+                      style={{ 
+                        background: '#003087', 
+                        color: '#ffffff', 
+                        fontSize: '0.85rem', 
+                        padding: '10px 16px', 
+                        borderRadius: 'var(--radius-md)',
+                        flex: '1 1 120px',
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        gap: '6px',
+                        border: 'none',
+                        boxShadow: '0 4px 10px rgba(0, 48, 135, 0.2)'
+                      }}
+                      onMouseEnter={(e) => { e.currentTarget.style.transform = 'scale(1.03)'; }}
+                      onMouseLeave={(e) => { e.currentTarget.style.transform = 'scale(1)'; }}
+                    >
+                      <span>Pagar con PayPal</span>
+                    </button>
+                  )}
+
+                  {eventSettings.mercadopagoLink && (
+                    <button 
+                      type="button" 
+                      onClick={handleMercadoPagoClick}
+                      className="btn"
+                      style={{ 
+                        background: '#009EE3', 
+                        color: '#ffffff', 
+                        fontSize: '0.85rem', 
+                        padding: '10px 16px', 
+                        borderRadius: 'var(--radius-md)',
+                        flex: '1 1 120px',
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        gap: '6px',
+                        border: 'none',
+                        boxShadow: '0 4px 10px rgba(0, 158, 227, 0.2)'
+                      }}
+                      onMouseEnter={(e) => { e.currentTarget.style.transform = 'scale(1.03)'; }}
+                      onMouseLeave={(e) => { e.currentTarget.style.transform = 'scale(1)'; }}
+                    >
+                      <span>{eventSettings.mercadopagoLink.startsWith('http') || eventSettings.mercadopagoLink.includes('mercadopago.com') || eventSettings.mercadopagoLink.includes('mpago.la') ? 'Pagar con Mercado Pago' : 'Copiar Alias Mercado Pago'}</span>
+                    </button>
+                  )}
+                </div>
+              </div>
+            )}
+
+            <section className="glass-panel" style={{ padding: '24px', borderRadius: 'var(--radius-lg)' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '20px' }}>
               <Sparkles size={20} color="var(--primary-color)" />
               <h2 style={{ fontSize: '1.25rem' }}>¿Qué canción quieres escuchar?</h2>
@@ -578,7 +695,8 @@ export default function PublicView() {
               </button>
             </form>
           </section>
-        )}
+        </>
+      )}
 
         {/* FEED EN VIVO DE PETICIONES */}
         <section style={{ marginTop: '30px' }}>

@@ -57,6 +57,11 @@ export default function DjDashboard() {
   const [fontSize, setFontSize] = useState(eventSettings.fontSize || 'medium');
   const [logoSize, setLogoSize] = useState(eventSettings.logoSize || 'medium');
 
+  // Propinas
+  const [tipsEnabledInput, setTipsEnabledInput] = useState(eventSettings.tipsEnabled || false);
+  const [paypalUsernameInput, setPaypalUsernameInput] = useState(eventSettings.paypalUsername || '');
+  const [mercadopagoLinkInput, setMercadopagoLinkInput] = useState(eventSettings.mercadopagoLink || '');
+
   // Pestaña Calendario: Crear Evento
   const [showCreateEventForm, setShowCreateEventForm] = useState(false);
   const [newEventTitle, setNewEventTitle] = useState('');
@@ -131,6 +136,9 @@ export default function DjDashboard() {
     setFontFamily(eventSettings.fontFamily || 'Outfit');
     setFontSize(eventSettings.fontSize || 'medium');
     setLogoSize(eventSettings.logoSize || 'medium');
+    setTipsEnabledInput(eventSettings.tipsEnabled || false);
+    setPaypalUsernameInput(eventSettings.paypalUsername || '');
+    setMercadopagoLinkInput(eventSettings.mercadopagoLink || '');
   }, [eventSettings, currentEventId]);
 
   // Actualizar el título del navegador dinámicamente
@@ -376,7 +384,10 @@ export default function DjDashboard() {
         productionUrl: productionUrl.trim().replace(/\/$/, ''),
         fontFamily,
         fontSize,
-        logoSize
+        logoSize,
+        tipsEnabled: tipsEnabledInput,
+        paypalUsername: paypalUsernameInput.trim(),
+        mercadopagoLink: mercadopagoLinkInput.trim()
       });
       showToast("💾 Configuración de marca guardada");
     } catch (err) {
@@ -1245,6 +1256,76 @@ export default function DjDashboard() {
                   </div>
                 )}
 
+                {/* Módulo de Propinas Voluntarias */}
+                <div style={{ borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: '20px' }}>
+                  <label className="form-label" style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--primary-color)', fontWeight: '600' }}>
+                    💸 Módulo de Propinas Voluntarias (PayPal / Mercado Pago)
+                  </label>
+                  <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginBottom: '16px' }}>
+                    Permite que tu audiencia apoye tu trabajo dejándote propinas. Se mostrará un banner especial en la vista de peticiones.
+                  </p>
+
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                    {/* Switch Activar Propinas */}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                      <input 
+                        type="checkbox" 
+                        id="tips-enabled"
+                        checked={tipsEnabledInput} 
+                        onChange={(e) => setTipsEnabledInput(e.target.checked)}
+                        style={{ width: '18px', height: '18px', cursor: 'pointer' }}
+                      />
+                      <label htmlFor="tips-enabled" style={{ fontSize: '0.9rem', fontWeight: '600', cursor: 'pointer' }}>
+                        Habilitar Propinas Voluntarias para el público
+                      </label>
+                    </div>
+
+                    {tipsEnabledInput && (
+                      <div className="animate-slide-in" style={{ display: 'flex', flexDirection: 'column', gap: '16px', background: 'rgba(255,255,255,0.02)', padding: '16px', borderRadius: 'var(--radius-md)', border: '1px solid rgba(255,255,255,0.05)' }}>
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px', flexWrap: 'wrap' }}>
+                          
+                          {/* PayPal Username */}
+                          <div className="form-group">
+                            <label className="form-label" style={{ fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                              <span style={{ color: '#0079C1', fontWeight: 'bold' }}>PayPal</span> Usuario o Correo
+                            </label>
+                            <input 
+                              type="text" 
+                              className="input-field" 
+                              placeholder="Ej: djmastermix o correo@paypal.com" 
+                              value={paypalUsernameInput}
+                              onChange={(e) => setPaypalUsernameInput(e.target.value)}
+                              style={{ fontSize: '0.85rem' }}
+                            />
+                            <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>
+                              Si ingresas tu usuario, usaremos paypal.me. Si es un correo, redireccionaremos a su página de pagos.
+                            </span>
+                          </div>
+
+                          {/* Mercado Pago Link / Alias */}
+                          <div className="form-group">
+                            <label className="form-label" style={{ fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                              <span style={{ color: '#009EE3', fontWeight: 'bold' }}>Mercado Pago</span> Enlace / Alias / CVU
+                            </label>
+                            <input 
+                              type="text" 
+                              className="input-field" 
+                              placeholder="Ej: link de pago, alias (dj.mastermix.mp) o CVU" 
+                              value={mercadopagoLinkInput}
+                              onChange={(e) => setMercadopagoLinkInput(e.target.value)}
+                              style={{ fontSize: '0.85rem' }}
+                            />
+                            <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>
+                              Si ingresas un alias o CVU, se copiará automáticamente al portapapeles de los usuarios.
+                            </span>
+                          </div>
+
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
                 <div style={{ display: 'flex', gap: '10px', marginTop: '10px', borderTop: '1px solid var(--surface-border)', paddingTop: '20px' }}>
                   <button type="submit" className="btn btn-primary">Guardar Configuración</button>
                   <button type="button" className="btn btn-secondary" onClick={() => {
@@ -1253,6 +1334,9 @@ export default function DjDashboard() {
                     setSecondaryColor(eventSettings.themeColorSecondary || '#06b6d4');
                     setFontFamily(eventSettings.fontFamily || 'Outfit');
                     setFontSize(eventSettings.fontSize || 'medium');
+                    setTipsEnabledInput(eventSettings.tipsEnabled || false);
+                    setPaypalUsernameInput(eventSettings.paypalUsername || '');
+                    setMercadopagoLinkInput(eventSettings.mercadopagoLink || '');
                     showToast("Revertido a cambios guardados");
                   }}>Descartar Cambios</button>
                 </div>

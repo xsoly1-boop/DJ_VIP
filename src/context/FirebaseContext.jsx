@@ -49,7 +49,10 @@ export const FirebaseProvider = ({ children }) => {
     eventType: 'Otro',
     fontFamily: 'Outfit',
     fontSize: 'medium',
-    logoSize: 'medium'
+    logoSize: 'medium',
+    tipsEnabled: false,
+    paypalUsername: '',
+    mercadopagoLink: ''
   });
   const [requests, setRequests] = useState({});
   const [autocompleteSongs, setAutocompleteSongs] = useState([]);
@@ -101,7 +104,10 @@ export const FirebaseProvider = ({ children }) => {
             djName: user?.displayName || 'DJ MasterMix',
             webName: 'DJ a la Carta',
             eventType: 'Otro',
-            logoSize: 'medium'
+            logoSize: 'medium',
+            tipsEnabled: false,
+            paypalUsername: '',
+            mercadopagoLink: ''
           };
 
           if (!settingsSnap.exists()) {
@@ -220,7 +226,10 @@ export const FirebaseProvider = ({ children }) => {
           eventType: 'Otro',
           fontFamily: 'Outfit',
           fontSize: 'medium',
-          logoSize: 'medium'
+          logoSize: 'medium',
+          tipsEnabled: false,
+          paypalUsername: '',
+          mercadopagoLink: ''
         });
       }
     });
@@ -495,7 +504,10 @@ export const FirebaseProvider = ({ children }) => {
         date: date || new Date().toISOString().split('T')[0],
         archived: false,
         eventType: eventType || 'Otro',
-        logoSize: 'medium'
+        logoSize: 'medium',
+        tipsEnabled: false,
+        paypalUsername: '',
+        mercadopagoLink: ''
       },
       requests: {}
     };
@@ -538,7 +550,10 @@ export const FirebaseProvider = ({ children }) => {
         archived: false,
         webName: 'DJ a la Carta',
         eventType: 'Otro',
-        logoSize: 'medium'
+        logoSize: 'medium',
+        tipsEnabled: false,
+        paypalUsername: '',
+        mercadopagoLink: ''
       };
       await set(settingsRef, defaultSettings);
 
@@ -760,7 +775,10 @@ export const FirebaseProvider = ({ children }) => {
             settings: {
               title: 'Mi Gran Evento VIP', logoUrl: '',
               themeColor: '#7c3aed', themeColorSecondary: '#06b6d4',
-              djName: displayName || email.split('@')[0]
+              djName: displayName || email.split('@')[0],
+              tipsEnabled: false,
+              paypalUsername: '',
+              mercadopagoLink: ''
             },
             requests: {}
           }
@@ -831,7 +849,10 @@ export const FirebaseProvider = ({ children }) => {
             settings: {
               title: 'Mi Gran Evento VIP', logoUrl: '',
               themeColor: '#7c3aed', themeColorSecondary: '#06b6d4',
-              djName: displayName || email.split('@')[0]
+              djName: displayName || email.split('@')[0],
+              tipsEnabled: false,
+              paypalUsername: '',
+              mercadopagoLink: ''
             },
             requests: {}
           }
