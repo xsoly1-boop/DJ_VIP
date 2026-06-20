@@ -1,5 +1,7 @@
-const { app, BrowserWindow, Menu } = require('electron');
+const { app, BrowserWindow, Menu, ipcMain } = require('electron');
 const path = require('path');
+const fs = require('fs');
+const os = require('os');
 
 let mainWindow;
 
@@ -85,6 +87,48 @@ function createWindow() {
     mainWindow = null;
   });
 }
+
+// IPC Handlers para Integración con Virtual DJ
+ipcMain.handle('detect-virtualdj-path', async () => {
+  const home = os.homedir();
+  let vdjPath = '';
+  if (process.platform === 'darwin') {
+    vdjPath = path.join(home, 'Documents', 'VirtualDJ');
+  } else if (process.platform === 'win32') {
+    vdjPath = path.join(home, 'Documents', 'VirtualDJ');
+  }
+  
+  if (fs.existsSync(vdjPath)) {
+    return vdjPath;
+  }
+  return '';
+});
+
+ipcMain.handle('write-playlist', async (event, { vdjPath, filename, content }) => {
+  try {
+    if (!vdjPath) return { success: false, error: 'Ruta de VirtualDJ no especificada.' };
+    
+    // Asegurar que la carpeta raíz de Virtual DJ existe
+    if (!fs.existsSync(vdjPath)) {
+      return { success: false, error: 'La ruta de Virtual DJ no existe.' };
+    }
+    
+    // Determinar la subcarpeta
+    const subfolderName = filename.endsWith('.vdjfolder') ? 'My Lists' : 'Playlists';
+    const targetFolder = path.join(vdjPath, subfolderName);
+    
+    if (!fs.existsSync(targetFolder)) {
+      fs.mkdirSync(targetFolder, { recursive: true });
+    }
+    
+    const targetFile = path.join(targetFolder, filename);
+    fs.writeFileSync(targetFile, content, 'utf8');
+    return { success: true, path: targetFile };
+  } catch (error) {
+    console.error('Error writing playlist:', error);
+    return { success: false, error: error.message };
+  }
+});
 
 app.whenReady().then(() => {
   createWindow();

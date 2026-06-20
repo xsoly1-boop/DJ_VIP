@@ -102,6 +102,20 @@ export default function DjDashboard() {
   const [notificationsEnabled, setNotificationsEnabled] = useState(false);
   const [toastMessage, setToastMessage] = useState(null);
   
+  // Integración con Virtual DJ
+  const [virtualDJEnabled, setVirtualDJEnabled] = useState(() => {
+    return localStorage.getItem('vdj_sync_enabled') === 'true';
+  });
+  const [virtualDJPath, setVirtualDJPath] = useState(() => {
+    return localStorage.getItem('vdj_path') || '';
+  });
+  const [virtualDJSyncMode, setVirtualDJSyncMode] = useState(() => {
+    return localStorage.getItem('vdj_sync_mode') || 'accepted'; // 'all' o 'accepted'
+  });
+  const [virtualDJFormat, setVirtualDJFormat] = useState(() => {
+    return localStorage.getItem('vdj_format') || 'm3u8'; // 'm3u8' o 'vdjfolder'
+  });
+  
   const prevRequestsRef = useRef({});
 
   // Sincronizar inputs locales al cambiar de evento
@@ -215,6 +229,74 @@ export default function DjDashboard() {
     setToastMessage(message);
     setTimeout(() => setToastMessage(null), 3000);
   };
+
+  useEffect(() => {
+    if (virtualDJEnabled && virtualDJPath) {
+      const syncVirtualDJPlaylist = async (currentRequests) => {
+        // Filtrar según el modo de sincronización
+        const filtered = currentRequests.filter(req => {
+          if (virtualDJSyncMode === 'all') {
+            return req.status !== 'rejected';
+          } else {
+            return req.status === 'accepted' || req.status === 'playing';
+          }
+        });
+
+        // Generar contenido basado en el formato
+        let filename = '';
+        let content = '';
+
+        if (virtualDJFormat === 'm3u8') {
+          filename = 'Peticiones DJ a la Carta.m3u8';
+          content = '#EXTM3U\n';
+          filtered.forEach(req => {
+            content += `#EXTINF:-1,${req.artist} - ${req.title} (${req.genre})\n`;
+            content += `${req.artist} - ${req.title}\n`;
+          });
+        } else if (virtualDJFormat === 'vdjfolder') {
+          filename = 'Peticiones DJ a la Carta.vdjfolder';
+          content = '<?xml version="1.0" encoding="UTF-8"?>\n<virtualfolder>\n';
+          filtered.forEach(req => {
+            const safeTitle = (req.title || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+            const safeArtist = (req.artist || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+            content += `  <song path="${safeArtist} - ${safeTitle}" />\n`;
+          });
+          content += '</virtualfolder>\n';
+        }
+
+        // Invocar API de Electron si está disponible
+        if (window.electronAPI && window.electronAPI.writePlaylist) {
+          try {
+            const res = await window.electronAPI.writePlaylist({
+              vdjPath: virtualDJPath,
+              filename,
+              content
+            });
+            if (!res.success) {
+              console.error('Error al guardar playlist en VirtualDJ:', res.error);
+            }
+          } catch (err) {
+            console.error('Error invocando writePlaylist:', err);
+          }
+        }
+      };
+
+      // Convertir peticiones en array ordenado
+      const requestList = Object.keys(requests || {})
+        .filter(key => requests[key] !== null && typeof requests[key] === 'object')
+        .map(key => ({
+          id: key,
+          ...requests[key]
+        })).sort((a, b) => {
+          if (a.status === 'playing' && b.status !== 'playing') return -1;
+          if (b.status === 'playing' && a.status !== 'playing') return 1;
+          if (b.votes !== a.votes) return b.votes - a.votes;
+          return b.timestamp - a.timestamp;
+        });
+
+      syncVirtualDJPlaylist(requestList);
+    }
+  }, [requests, virtualDJEnabled, virtualDJPath, virtualDJSyncMode, virtualDJFormat]);
 
   const downloadQR = () => {
     const canvasElement = document.getElementById('qr-code-canvas');
@@ -1037,6 +1119,131 @@ export default function DjDashboard() {
                     </select>
                   </div>
                 </div>
+
+                {/* Integración con Virtual DJ (Solo Desktop) */}
+                {window.electronAPI && window.electronAPI.isDesktop && (
+                  <div style={{ borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: '20px' }}>
+                    <label className="form-label" style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--secondary-color)', fontWeight: '600' }}>
+                      💿 Integración en Tiempo Real con Virtual DJ
+                    </label>
+                    <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginBottom: '16px' }}>
+                      Escribe de forma automática las peticiones aceptadas en una lista de reproducción o carpeta virtual local dentro de Virtual DJ.
+                    </p>
+
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                      {/* Switch Activar */}
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                        <input 
+                          type="checkbox" 
+                          id="vdj-enabled"
+                          checked={virtualDJEnabled} 
+                          onChange={(e) => {
+                            const val = e.target.checked;
+                            setVirtualDJEnabled(val);
+                            localStorage.setItem('vdj_sync_enabled', val ? 'true' : 'false');
+                            if (val && !virtualDJPath) {
+                              window.electronAPI.detectVirtualDJPath().then(path => {
+                                if (path) {
+                                  setVirtualDJPath(path);
+                                  localStorage.setItem('vdj_path', path);
+                                  showToast("💿 Ruta de Virtual DJ detectada!");
+                                } else {
+                                  showToast("⚠️ No se pudo auto-detectar. Introduce la ruta manualmente.");
+                                }
+                              });
+                            }
+                          }}
+                          style={{ width: '18px', height: '18px', cursor: 'pointer' }}
+                        />
+                        <label htmlFor="vdj-enabled" style={{ fontSize: '0.9rem', fontWeight: '600', cursor: 'pointer' }}>
+                          Activar Sincronización Automática con Virtual DJ
+                        </label>
+                      </div>
+
+                      {virtualDJEnabled && (
+                        <div className="animate-slide-in" style={{ display: 'flex', flexDirection: 'column', gap: '12px', background: 'rgba(255,255,255,0.02)', padding: '16px', borderRadius: 'var(--radius-md)', border: '1px solid rgba(255,255,255,0.05)' }}>
+                          {/* Ruta de carpeta */}
+                          <div className="form-group">
+                            <label className="form-label" style={{ fontSize: '0.8rem' }}>Ruta de la Carpeta de Virtual DJ</label>
+                            <div style={{ display: 'flex', gap: '8px' }}>
+                              <input 
+                                type="text" 
+                                className="input-field" 
+                                placeholder="Ej: /Users/usuario/Documents/VirtualDJ" 
+                                value={virtualDJPath} 
+                                onChange={(e) => {
+                                  setVirtualDJPath(e.target.value);
+                                  localStorage.setItem('vdj_path', e.target.value);
+                                }}
+                                style={{ fontSize: '0.85rem' }}
+                              />
+                              <button 
+                                type="button" 
+                                className="btn btn-secondary" 
+                                onClick={async () => {
+                                  const path = await window.electronAPI.detectVirtualDJPath();
+                                  if (path) {
+                                    setVirtualDJPath(path);
+                                    localStorage.setItem('vdj_path', path);
+                                    showToast("💿 Ruta de Virtual DJ detectada!");
+                                  } else {
+                                    showToast("❌ No se encontró la carpeta por defecto.");
+                                  }
+                                }}
+                                style={{ fontSize: '0.85rem', whiteSpace: 'nowrap' }}
+                              >
+                                Auto-detectar
+                              </button>
+                            </div>
+                            <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>
+                              Normalmente se encuentra en tus Documentos bajo la carpeta 'VirtualDJ'.
+                            </span>
+                          </div>
+
+                          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+                            {/* Formato de archivo */}
+                            <div className="form-group">
+                              <label className="form-label" style={{ fontSize: '0.8rem' }}>Formato del Archivo</label>
+                              <select 
+                                className="input-field" 
+                                value={virtualDJFormat} 
+                                onChange={(e) => {
+                                  setVirtualDJFormat(e.target.value);
+                                  localStorage.setItem('vdj_format', e.target.value);
+                                }}
+                                style={{ fontSize: '0.85rem', cursor: 'pointer' }}
+                              >
+                                <option value="m3u8">M3U8 Playlist (Recomendado - Carpeta Playlists)</option>
+                                <option value="vdjfolder">Virtual Folder XML (Carpeta My Lists)</option>
+                              </select>
+                            </div>
+
+                            {/* Filtro de sincronización */}
+                            <div className="form-group">
+                              <label className="form-label" style={{ fontSize: '0.8rem' }}>Qué Canciones Sincronizar</label>
+                              <select 
+                                className="input-field" 
+                                value={virtualDJSyncMode} 
+                                onChange={(e) => {
+                                  setVirtualDJSyncMode(e.target.value);
+                                  localStorage.setItem('vdj_sync_mode', e.target.value);
+                                }}
+                                style={{ fontSize: '0.85rem', cursor: 'pointer' }}
+                              >
+                                <option value="accepted">Solo Aceptadas y Reproduciendo</option>
+                                <option value="all">Todas las Peticiones Recibidas (excepto rechazadas)</option>
+                              </select>
+                            </div>
+                          </div>
+
+                          <span style={{ fontSize: '0.75rem', color: 'var(--secondary-color)', fontWeight: '500' }}>
+                            💡 Archivo generado: {virtualDJFormat === 'm3u8' ? 'Playlists/Peticiones DJ a la Carta.m3u8' : 'My Lists/Peticiones DJ a la Carta.vdjfolder'}
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
 
                 <div style={{ display: 'flex', gap: '10px', marginTop: '10px', borderTop: '1px solid var(--surface-border)', paddingTop: '20px' }}>
                   <button type="submit" className="btn btn-primary">Guardar Configuración</button>
