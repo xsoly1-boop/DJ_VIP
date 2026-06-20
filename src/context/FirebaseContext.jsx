@@ -144,17 +144,25 @@ export const FirebaseProvider = ({ children }) => {
     return () => unsubscribe();
   }, [activeUid, userBasePath, user]);
 
+  // Ruta de lectura efectiva para settings/requests:
+  // - DJ en dashboard → Prioriza userBasePath
+  // - Público en vista de evento → Prioriza ownerBasePath (independiente de si está logueado)
+  const isPublicView = window.location.search.includes('event=');
+
   // Estado para el owner del evento actual (para la vista pública)
   const [eventOwnerUid, setEventOwnerUid] = useState(null);
 
   // Resolver el ownerUid del evento actual desde el registro público (para la vista pública anónima)
   useEffect(() => {
-    if (activeUid) {
-      // DJ autenticado: el owner es él mismo
+    if (activeUid && !isPublicView) {
+      // DJ autenticado en el dashboard: el owner es él mismo
       setEventOwnerUid(activeUid);
       return;
     }
-    // Usuario anónimo (público): buscar en el registro
+
+    if (!currentEventId) return;
+
+    // Vista pública (o si no está logueado): buscar en el registro
     const registryRef = ref(database, `events_registry/${currentEventId}`);
     const unsubscribe = onValue(registryRef, (snapshot) => {
       if (snapshot.exists() && snapshot.val().ownerUid) {
@@ -173,12 +181,8 @@ export const FirebaseProvider = ({ children }) => {
       }
     });
     return () => unsubscribe();
-  }, [currentEventId, activeUid]);
+  }, [currentEventId, activeUid, isPublicView]);
 
-  // Ruta de lectura efectiva para settings/requests:
-  // - DJ en dashboard → Prioriza userBasePath
-  // - Público en vista de evento → Prioriza ownerBasePath (independiente de si está logueado)
-  const isPublicView = window.location.search.includes('event=');
   const ownerBasePath = eventOwnerUid ? `users/${eventOwnerUid}` : null;
   const effectiveReadPath = isPublicView ? (ownerBasePath || userBasePath) : (userBasePath || ownerBasePath);
 
