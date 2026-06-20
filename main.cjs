@@ -90,17 +90,28 @@ function createWindow() {
 // IPC Handlers para Integración con Virtual DJ
 ipcMain.handle('detect-virtualdj-path', async () => {
   const home = os.homedir();
-  let vdjPath = '';
+  const pathsToCheck = [];
+  
   if (process.platform === 'darwin') {
-    vdjPath = path.join(home, 'Documents', 'VirtualDJ');
+    // 1. Ruta moderna (VirtualDJ 2024/2026+) en Library/Application Support
+    pathsToCheck.push(path.join(home, 'Library', 'Application Support', 'VirtualDJ'));
+    // 2. Ruta clásica en Documentos
+    pathsToCheck.push(path.join(home, 'Documents', 'VirtualDJ'));
   } else if (process.platform === 'win32') {
-    vdjPath = path.join(home, 'Documents', 'VirtualDJ');
+    // 1. Ruta moderna en AppData Local
+    pathsToCheck.push(path.join(home, 'AppData', 'Local', 'VirtualDJ'));
+    // 2. Ruta clásica en Documentos
+    pathsToCheck.push(path.join(home, 'Documents', 'VirtualDJ'));
   }
   
-  if (fs.existsSync(vdjPath)) {
-    return vdjPath;
+  for (const vdjPath of pathsToCheck) {
+    if (fs.existsSync(vdjPath)) {
+      return vdjPath;
+    }
   }
-  return '';
+  
+  // Retornar primera coincidencia como fallback
+  return pathsToCheck[0] || '';
 });
 
 ipcMain.handle('write-playlist', async (event, { vdjPath, filename, content }) => {
@@ -112,8 +123,20 @@ ipcMain.handle('write-playlist', async (event, { vdjPath, filename, content }) =
       return { success: false, error: 'La ruta de Virtual DJ no existe.' };
     }
     
-    // Determinar la subcarpeta
-    const subfolderName = filename.endsWith('.vdjfolder') ? 'My Lists' : 'Playlists';
+    // Determinar la subcarpeta (MyLists para moderno, My Lists para clásico, Playlists para M3U)
+    let subfolderName = '';
+    if (filename.endsWith('.vdjfolder')) {
+      const modernLists = path.join(vdjPath, 'MyLists');
+      const classicLists = path.join(vdjPath, 'My Lists');
+      if (fs.existsSync(modernLists) || !fs.existsSync(classicLists)) {
+        subfolderName = 'MyLists';
+      } else {
+        subfolderName = 'My Lists';
+      }
+    } else {
+      subfolderName = 'Playlists';
+    }
+    
     const targetFolder = path.join(vdjPath, subfolderName);
     
     if (!fs.existsSync(targetFolder)) {
