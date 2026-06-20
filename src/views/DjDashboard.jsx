@@ -113,7 +113,7 @@ export default function DjDashboard() {
     return localStorage.getItem('vdj_sync_mode') || 'accepted'; // 'all' o 'accepted'
   });
   const [virtualDJFormat, setVirtualDJFormat] = useState(() => {
-    return localStorage.getItem('vdj_format') || 'm3u8'; // 'm3u8' o 'vdjfolder'
+    return localStorage.getItem('vdj_format') || 'm3u'; // 'm3u' o 'vdjfolder'
   });
   
   const prevRequestsRef = useRef({});
@@ -246,8 +246,8 @@ export default function DjDashboard() {
         let filename = '';
         let content = '';
 
-        if (virtualDJFormat === 'm3u8') {
-          filename = 'Peticiones DJ a la Carta.m3u8';
+        if (virtualDJFormat === 'm3u') {
+          filename = 'Peticiones DJ a la Carta.m3u';
           content = '#EXTM3U\n';
           filtered.forEach(req => {
             content += `#EXTINF:-1,${req.artist} - ${req.title} (${req.genre})\n`;
@@ -1213,7 +1213,7 @@ export default function DjDashboard() {
                                 }}
                                 style={{ fontSize: '0.85rem', cursor: 'pointer' }}
                               >
-                                <option value="m3u8">M3U8 Playlist (Recomendado - Carpeta Playlists)</option>
+                                <option value="m3u">M3U Playlist (Recomendado - Carpeta Playlists)</option>
                                 <option value="vdjfolder">Virtual Folder XML (Carpeta My Lists)</option>
                               </select>
                             </div>
@@ -1237,7 +1237,7 @@ export default function DjDashboard() {
                           </div>
 
                           <span style={{ fontSize: '0.75rem', color: 'var(--secondary-color)', fontWeight: '500' }}>
-                            💡 Archivo generado: {virtualDJFormat === 'm3u8' ? 'Playlists/Peticiones DJ a la Carta.m3u8' : 'My Lists/Peticiones DJ a la Carta.vdjfolder'}
+                            💡 Archivo generado: {virtualDJFormat === 'm3u' ? 'Playlists/Peticiones DJ a la Carta.m3u' : 'My Lists/Peticiones DJ a la Carta.vdjfolder'}
                           </span>
                         </div>
                       )}
