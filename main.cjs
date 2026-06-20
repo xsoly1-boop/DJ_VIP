@@ -16,8 +16,7 @@ function createWindow() {
     webPreferences: {
       nodeIntegration: false,
       contextIsolation: true,
-      // Ruta robusta al preload: funciona tanto en dev como en DMG distribuido
-      preload: path.join(app.isPackaged ? path.dirname(app.getAppPath()) : __dirname, 'preload.cjs')
+      preload: path.join(__dirname, 'preload.cjs')
     }
   });
 
