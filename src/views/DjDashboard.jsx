@@ -1571,7 +1571,7 @@ export default function DjDashboard() {
 
                 if (sortedSongs.length === 0) return null;
                 
-                const topSongs = sortedSongs.slice(0, 5);
+                const topSongs = sortedSongs.slice(0, 10);
 
                 return (
                   <div style={{ marginTop: '24px', borderTop: '1px solid var(--surface-border)', paddingTop: '20px' }}>
