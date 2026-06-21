@@ -74,14 +74,28 @@ const DEFAULT_MOCK_ACCOUNTS = [
   { email: 'dj@admin.com', password: 'admin123', uid: 'uid-admin-master', displayName: 'DJ Administrador Master', isAdmin: true },
   { email: 'dj1@dj.com',   password: 'dj123',    uid: 'uid-dj1',          displayName: 'DJ MasterMix', isAdmin: false },
   { email: 'dj2@dj.com',   password: 'dj456',    uid: 'uid-dj2',          displayName: 'DJ Neon Vibes', isAdmin: false },
+  { email: 'demo@dj.com',  password: 'demo123',  uid: 'uid-demo',         displayName: 'DJ Demo', isAdmin: false }
 ];
 
 const savedAccounts = localStorage.getItem('mock_accounts');
-if (!savedAccounts) {
+let finalMockAccounts = DEFAULT_MOCK_ACCOUNTS;
+if (savedAccounts) {
+  try {
+    const parsed = JSON.parse(savedAccounts);
+    const hasDemo = parsed.some(a => a.email === 'demo@dj.com');
+    if (!hasDemo) {
+      parsed.push({ email: 'demo@dj.com', password: 'demo123', uid: 'uid-demo', displayName: 'DJ Demo', isAdmin: false });
+      localStorage.setItem('mock_accounts', JSON.stringify(parsed));
+    }
+    finalMockAccounts = parsed;
+  } catch (e) {
+    localStorage.setItem('mock_accounts', JSON.stringify(DEFAULT_MOCK_ACCOUNTS));
+  }
+} else {
   localStorage.setItem('mock_accounts', JSON.stringify(DEFAULT_MOCK_ACCOUNTS));
 }
 
-export const MOCK_ACCOUNTS = savedAccounts ? JSON.parse(savedAccounts) : DEFAULT_MOCK_ACCOUNTS;
+export const MOCK_ACCOUNTS = finalMockAccounts;
 
 // Email del administrador master (sin importar si es real o mock)
 export const MASTER_ADMIN_EMAIL = 'dj@admin.com';
@@ -107,28 +121,161 @@ export const INITIAL_AUTOCOMPLETE = [
 // Construir datos iniciales para un usuario DJ dado
 const buildInitialUserData = (uid) => {
   const now = Date.now();
+  const isDemoUser = uid === 'uid-demo';
+  
+  const settings = isDemoUser ? {
+    title: 'Mega Show en Vivo de DJ Demo',
+    logoUrl: '',
+    themeColor: '#7c3aed',
+    themeColorSecondary: '#06b6d4',
+    djName: 'DJ Demo',
+    dedicationsEnabled: true,
+    tipsEnabled: true,
+    paypalUsername: 'djdemo',
+    mercadopagoLink: 'https://link.mercadopago.com.mx/djdemo',
+    bankClabe: '123456789012345678',
+    promoEnabled: true,
+    promoWhatsapp: '5215512345678',
+    promoWebsite: 'https://djdemo.com',
+    promoInstagram: 'djdemo_oficial',
+    promoTiktok: 'djdemo_oficial'
+  } : {
+    title: 'Mi Gran Evento VIP',
+    logoUrl: '',
+    themeColor: '#7c3aed',
+    themeColorSecondary: '#06b6d4',
+    djName: 'DJ MasterMix',
+    dedicationsEnabled: false
+  };
+
+  const requests = isDemoUser ? {
+    "req_demo_1": {
+      id: "req_demo_1",
+      title: "Ella Baila Sola",
+      artist: "Eslabon Armado x Peso Pluma",
+      genre: "Regional Mexicano",
+      dedication: "Para Lupita con todo mi amor de parte de Carlos",
+      timestamp: now - 7200000,
+      status: 'playing',
+      votes: 14,
+      voters: { "sess_v1": true, "sess_v2": true, "sess_v3": true }
+    },
+    "req_demo_2": {
+      id: "req_demo_2",
+      title: "Música Ligera",
+      artist: "Soda Stereo",
+      genre: "Rock en Español",
+      dedication: "¡Para cantar todos juntos esta noche en la cabina!",
+      timestamp: now - 3600000,
+      status: 'accepted',
+      votes: 11,
+      voters: { "sess_v4": true, "sess_v5": true }
+    },
+    "req_demo_3": {
+      id: "req_demo_3",
+      title: "Gatita",
+      artist: "Bellakath",
+      genre: "Reggaetón",
+      dedication: "Dedicado a las chicas de la mesa 5",
+      timestamp: now - 2400000,
+      status: 'accepted',
+      votes: 18,
+      voters: { "sess_v6": true, "sess_v7": true, "sess_v8": true }
+    },
+    "req_demo_4": {
+      id: "req_demo_4",
+      title: "Lamento Boliviano",
+      artist: "Enanitos Verdes",
+      genre: "Rock en Español",
+      dedication: "¡Un clásico infaltable!",
+      timestamp: now - 1800000,
+      status: 'pending',
+      votes: 7,
+      voters: { "sess_v9": true }
+    },
+    "req_demo_5": {
+      id: "req_demo_5",
+      title: "Como La Flor",
+      artist: "Selena",
+      genre: "Cumbia",
+      dedication: "Para mi esposa en nuestro aniversario",
+      timestamp: now - 1500000,
+      status: 'pending',
+      votes: 9,
+      voters: { "sess_v10": true }
+    },
+    "req_demo_6": {
+      id: "req_demo_6",
+      title: "Quevedo: Bzrp Music Sessions, Vol. 52",
+      artist: "Bizarrap x Quevedo",
+      genre: "Urban/Electro",
+      dedication: "¡A bailar toda la noche!",
+      timestamp: now - 1200000,
+      status: 'pending',
+      votes: 12,
+      voters: { "sess_v11": true, "sess_v12": true }
+    },
+    "req_demo_7": {
+      id: "req_demo_7",
+      title: "Dynamite",
+      artist: "BTS",
+      genre: "Kpop",
+      dedication: "Para el grupo de K-pop de la fiesta",
+      timestamp: now - 900000,
+      status: 'pending',
+      votes: 4,
+      voters: { "sess_v13": true }
+    },
+    "req_demo_8": {
+      id: "req_demo_8",
+      title: "Gasolina",
+      artist: "Daddy Yankee",
+      genre: "Reggaetón",
+      dedication: "¡Ponle play para prender la pista!",
+      timestamp: now - 600000,
+      status: 'pending',
+      votes: 15,
+      voters: { "sess_v14": true, "sess_v15": true }
+    },
+    "req_demo_9": {
+      id: "req_demo_9",
+      title: "Save Your Tears",
+      artist: "The Weeknd",
+      genre: "Pop / Synthwave",
+      dedication: "",
+      timestamp: now - 300000,
+      status: 'pending',
+      votes: 3,
+      voters: { "sess_v16": true }
+    },
+    "req_demo_10": {
+      id: "req_demo_10",
+      title: "Tusa",
+      artist: "Karol G x Nicki Minaj",
+      genre: "Reggaetón",
+      dedication: "Para cantar a todo pulmón con las amigas",
+      timestamp: now - 60000,
+      status: 'pending',
+      votes: 6,
+      voters: { "sess_v17": true }
+    }
+  } : {};
+
   return {
     events_index: {
       'default-event': {
         id: 'default-event',
-        title: 'Mi Gran Evento VIP',
-        djName: 'DJ MasterMix',
-        date: '2026-06-20',
+        title: settings.title,
+        djName: settings.djName,
+        date: isDemoUser ? '2026-06-21' : '2026-06-20',
         archived: false,
         createdAt: now
       }
     },
     events: {
       'default-event': {
-        settings: {
-          title: 'Mi Gran Evento VIP',
-          logoUrl: '',
-          themeColor: '#7c3aed',
-          themeColorSecondary: '#06b6d4',
-          djName: 'DJ MasterMix',
-          dedicationsEnabled: false
-        },
-        requests: {}
+        settings,
+        requests
       }
     },
     autocomplete_songs: INITIAL_AUTOCOMPLETE.reduce((acc, s) => { acc[s.id] = s; return acc; }, {})
@@ -146,8 +293,32 @@ const getLocalData = () => {
   if (!parsed.events_registry) {
     return initFreshMockDB();
   }
+
+  let updated = false;
+  if (!parsed.users) {
+    parsed.users = {};
+    updated = true;
+  }
+
+  // Asegurarnos que todos los mock accounts (incluido uid-demo) tengan su estructura inicial en la BD
+  MOCK_ACCOUNTS.forEach(a => {
+    if (!parsed.users[a.uid]) {
+      parsed.users[a.uid] = buildInitialUserData(a.uid);
+      const isDemo = a.uid === 'uid-demo';
+      parsed.events_registry['default-event-' + a.uid] = {
+        ownerUid: a.uid,
+        title: isDemo ? 'Mega Show en Vivo de DJ Demo' : 'Mi Gran Evento VIP',
+        djName: a.displayName
+      };
+      updated = true;
+    }
+  });
+
   if (!parsed.autocomplete_songs) {
     parsed.autocomplete_songs = INITIAL_AUTOCOMPLETE.reduce((acc, s) => { acc[s.id] = s; return acc; }, {});
+    updated = true;
+  }
+  if (updated) {
     localStorage.setItem('mock_rtdb_v2', JSON.stringify(parsed));
   }
   return parsed;
@@ -157,10 +328,11 @@ const initFreshMockDB = () => {
   const db = { users: {}, events_registry: {}, autocomplete_songs: {} };
   MOCK_ACCOUNTS.forEach(a => {
     db.users[a.uid] = buildInitialUserData(a.uid);
+    const isDemo = a.uid === 'uid-demo';
     // Registrar el evento demo de cada DJ en el registry público
     db.events_registry['default-event-' + a.uid] = {
       ownerUid: a.uid,
-      title: 'Mi Gran Evento VIP',
+      title: isDemo ? 'Mega Show en Vivo de DJ Demo' : 'Mi Gran Evento VIP',
       djName: a.displayName
     };
   });
