@@ -105,6 +105,7 @@ export default function DjDashboard() {
   // Alertas / Audio / Notificaciones
   const [soundEnabled, setSoundEnabled] = useState(true);
   const [selectedTone, setSelectedTone] = useState(() => localStorage.getItem('dj_notification_tone') || 'chime');
+  const [androidSoundName, setAndroidSoundName] = useState('Predeterminado del sistema');
   const [notificationsEnabled, setNotificationsEnabled] = useState(false);
   const [toastMessage, setToastMessage] = useState(null);
   
@@ -143,6 +144,13 @@ export default function DjDashboard() {
     setDedicationsEnabledInput(eventSettings.dedicationsEnabled || false);
   }, [eventSettings, currentEventId]);
 
+  // Cargar nombre del tono seleccionado en Android
+  useEffect(() => {
+    if (window.AndroidApp && window.AndroidApp.getSelectedSoundName) {
+      setAndroidSoundName(window.AndroidApp.getSelectedSoundName());
+    }
+  }, []);
+
   // Actualizar el título del navegador dinámicamente
   useEffect(() => {
     const webName = eventSettings.webName || 'DJ a la Carta';
@@ -153,6 +161,13 @@ export default function DjDashboard() {
   // Sintetizador de audio premium con Web Audio API
   const playNotificationSound = (toneType = selectedTone) => {
     if (!soundEnabled) return;
+
+    // Si estamos en la app Android y tenemos la interfaz nativa
+    if (window.AndroidApp && window.AndroidApp.playSystemNotificationSound) {
+      window.AndroidApp.playSystemNotificationSound();
+      return;
+    }
+
     try {
       const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
       const now = audioCtx.currentTime;
@@ -707,14 +722,30 @@ export default function DjDashboard() {
               {soundEnabled ? <Volume2 size={16} /> : <Volume2 size={16} style={{ opacity: 0.4 }} />}
             </button>
             {soundEnabled && (
-              <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                <select value={selectedTone} onChange={(e) => { const t = e.target.value; setSelectedTone(t); localStorage.setItem('dj_notification_tone', t); playNotificationSound(t); }}
-                  className="input-field" style={{ padding: '4px 8px', fontSize: '0.75rem', height: '36px', width: '130px', border: 'none', background: 'rgba(255,255,255,0.05)', borderRadius: 'var(--radius-sm)' }}>
-                  <option value="chime">🔔 Campana</option>
-                  <option value="beep">📟 Bip Suave</option>
-                  <option value="retro">🎮 Alarma Retro</option>
-                  <option value="synth">🎹 Pulsos Synth</option>
-                </select>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                {window.AndroidApp ? (
+                  <>
+                    <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', background: 'rgba(255,255,255,0.05)', padding: '6px 12px', borderRadius: 'var(--radius-sm)' }}>
+                      🔊 Tono: {androidSoundName}
+                    </span>
+                    <button 
+                      type="button" 
+                      className="btn btn-secondary" 
+                      onClick={() => { if (window.AndroidApp.chooseNotificationSound) window.AndroidApp.chooseNotificationSound(); }}
+                      style={{ height: '36px', padding: '0 12px', fontSize: '0.8rem', whiteSpace: 'nowrap' }}
+                    >
+                      Cambiar tono
+                    </button>
+                  </>
+                ) : (
+                  <select value={selectedTone} onChange={(e) => { const t = e.target.value; setSelectedTone(t); localStorage.setItem('dj_notification_tone', t); playNotificationSound(t); }}
+                    className="input-field" style={{ padding: '4px 8px', fontSize: '0.75rem', height: '36px', width: '130px', border: 'none', background: 'rgba(255,255,255,0.05)', borderRadius: 'var(--radius-sm)' }}>
+                    <option value="chime">🔔 Campana</option>
+                    <option value="beep">📟 Bip Suave</option>
+                    <option value="retro">🎮 Alarma Retro</option>
+                    <option value="synth">🎹 Pulsos Synth</option>
+                  </select>
+                )}
                 <button className="btn btn-secondary btn-icon" onClick={() => playNotificationSound(selectedTone)}
                   style={{ width: '36px', height: '36px', border: 'none', background: 'transparent' }} title="Probar Sonido">
                   <Volume2 size={14} color="var(--text-secondary)" />
