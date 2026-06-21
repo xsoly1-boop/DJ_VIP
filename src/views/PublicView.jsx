@@ -50,6 +50,11 @@ export default function PublicView() {
   const [isCustomGenre, setIsCustomGenre] = useState(false);
   const [dedication, setDedication] = useState('');
 
+  // Buscador Global
+  const [searchQuery, setSearchQuery] = useState('');
+  const [showGlobalSuggestions, setShowGlobalSuggestions] = useState(false);
+  const [globalFilteredSongs, setGlobalFilteredSongs] = useState([]);
+
   // Géneros aprendidos dinámicamente del historial de peticiones y autocompletado
   const dynamicGenres = React.useMemo(() => {
     const BASE_GENRES = [
@@ -106,6 +111,7 @@ export default function PublicView() {
   const [toastMessage, setToastMessage] = useState(null);
 
   const autocompleteRef = useRef(null);
+  const globalSearchRef = useRef(null);
 
   // PRESET_GENRES reemplazado por dynamicGenres (definido arriba con useMemo)
 
@@ -158,11 +164,31 @@ export default function PublicView() {
     setFilteredSongs(matches.slice(0, 5));
   }, [title, artist, autocompleteSongs]);
 
+  // Filtrar canciones para el buscador global rápido
+  useEffect(() => {
+    if (!searchQuery) {
+      setGlobalFilteredSongs([]);
+      return;
+    }
+
+    const q = searchQuery.toLowerCase();
+    const matches = autocompleteSongs.filter(song => 
+      (song.title && song.title.toLowerCase().includes(q)) || 
+      (song.artist && song.artist.toLowerCase().includes(q)) ||
+      (song.genre && song.genre.toLowerCase().includes(q))
+    );
+    
+    setGlobalFilteredSongs(matches.slice(0, 8));
+  }, [searchQuery, autocompleteSongs]);
+
   // Cerrar sugerencias al hacer click afuera
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (autocompleteRef.current && !autocompleteRef.current.contains(event.target)) {
         setShowSuggestions(false);
+      }
+      if (globalSearchRef.current && !globalSearchRef.current.contains(event.target)) {
+        setShowGlobalSuggestions(false);
       }
     };
     document.addEventListener('mousedown', handleClickOutside);
@@ -188,6 +214,28 @@ export default function PublicView() {
     }
     
     setShowSuggestions(false);
+  };
+
+  const handleSelectGlobalSuggestion = (song) => {
+    setTitle(song.title || '');
+    setArtist(song.artist || '');
+    
+    if (song.genre && dynamicGenres.includes(song.genre)) {
+      setGenre(song.genre);
+      setIsCustomGenre(false);
+      setCustomGenre('');
+    } else if (song.genre && song.genre !== 'Personalizado') {
+      setGenre('Personalizado');
+      setCustomGenre(song.genre);
+      setIsCustomGenre(true);
+    } else {
+      setGenre('');
+      setIsCustomGenre(false);
+      setCustomGenre('');
+    }
+    
+    setSearchQuery('');
+    setShowGlobalSuggestions(false);
   };
 
   const handleGenreChange = (e) => {
@@ -555,6 +603,68 @@ export default function PublicView() {
 
             <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
               
+              {/* Buscador Rápido Global */}
+              <div className="form-group" style={{ position: 'relative', borderBottom: '1px solid rgba(255,255,255,0.06)', paddingBottom: '16px' }} ref={globalSearchRef}>
+                <label className="form-label" style={{ color: 'var(--secondary-color)', fontWeight: '700', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <span>🔍 Buscador Rápido (Autocompletar)</span>
+                </label>
+                <input
+                  type="text"
+                  placeholder="Busca por canción, artista o género..."
+                  className="input-field"
+                  value={searchQuery}
+                  onChange={(e) => {
+                    setSearchQuery(e.target.value);
+                    setShowGlobalSuggestions(true);
+                  }}
+                  onFocus={() => setShowGlobalSuggestions(true)}
+                  style={{ borderColor: 'rgba(6,182,212,0.3)', boxShadow: searchQuery ? '0 0 10px rgba(6,182,212,0.1)' : 'none' }}
+                />
+
+                {/* Lista de Sugerencias Globales */}
+                {showGlobalSuggestions && globalFilteredSongs.length > 0 && (
+                  <div className="glass-panel" style={{
+                    position: 'absolute',
+                    top: '100%',
+                    left: 0,
+                    right: 0,
+                    zIndex: 210,
+                    marginTop: '6px',
+                    borderRadius: 'var(--radius-md)',
+                    maxHeight: '260px',
+                    overflowY: 'auto',
+                    background: 'rgba(12, 12, 18, 0.98)',
+                    boxShadow: '0 10px 25px rgba(0,0,0,0.5)',
+                    border: '1px solid rgba(6, 182, 212, 0.3)'
+                  }}>
+                    {globalFilteredSongs.map((song) => (
+                      <div
+                        key={song.id}
+                        onClick={() => handleSelectGlobalSuggestion(song)}
+                        style={{
+                          padding: '12px 16px',
+                          borderBottom: '1px solid rgba(255, 255, 255, 0.05)',
+                          cursor: 'pointer',
+                          transition: 'background 0.2s',
+                          display: 'flex',
+                          flexDirection: 'column',
+                          gap: '2px',
+                          textAlign: 'left'
+                        }}
+                        className="suggestion-item"
+                        onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(6, 182, 212, 0.12)'}
+                        onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
+                      >
+                        <span style={{ fontWeight: '700', fontSize: '0.95rem', color: 'var(--text-primary)' }}>{song.title}</span>
+                        <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
+                          👤 {song.artist} • <span style={{ color: 'var(--secondary-color)', fontWeight: '600' }}>{song.genre}</span>
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
               {/* Input Canción y Autocompletado */}
               <div className="form-group" style={{ position: 'relative' }} ref={autocompleteRef}>
                 <label className="form-label">Nombre de la Canción (Opcional)</label>
