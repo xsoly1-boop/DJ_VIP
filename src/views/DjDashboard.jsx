@@ -110,6 +110,13 @@ export default function DjDashboard() {
   const [androidSoundName, setAndroidSoundName] = useState('Predeterminado del sistema');
   const [notificationsEnabled, setNotificationsEnabled] = useState(false);
   const [toastMessage, setToastMessage] = useState(null);
+  const [visualAlertEnabled, setVisualAlertEnabled] = useState(() => {
+    return localStorage.getItem('dj_visual_alert_enabled') !== 'false';
+  });
+  const [visualAlertDuration, setVisualAlertDuration] = useState(() => {
+    return parseInt(localStorage.getItem('dj_visual_alert_duration') || '3', 10);
+  });
+  const [activeVisualAlert, setActiveVisualAlert] = useState(null);
   
   // Integración con Virtual DJ
   const [virtualDJEnabled, setVirtualDJEnabled] = useState(() => {
@@ -240,6 +247,22 @@ export default function DjDashboard() {
         const req = requests[key];
         if (req && req.status === 'pending') {
           playNotificationSound(selectedTone);
+          
+          if (visualAlertEnabled) {
+            let type = 'new';
+            if (req.isRepeat) {
+              type = 'repeat';
+            } else if (req.dedication && req.dedication.trim() !== '') {
+              type = 'dedication';
+            }
+            
+            setActiveVisualAlert({
+              type,
+              title: req.title,
+              artist: req.artist
+            });
+          }
+
           if (notificationsEnabled && Notification.permission === 'granted') {
             new Notification(`Nueva petición: ${req.title}`, {
               body: `De: ${req.artist} (${req.genre})`,
@@ -250,7 +273,16 @@ export default function DjDashboard() {
       });
     }
     prevRequestsRef.current = requests;
-  }, [requests]);
+  }, [requests, visualAlertEnabled, notificationsEnabled, selectedTone]);
+
+  useEffect(() => {
+    if (activeVisualAlert) {
+      const timer = setTimeout(() => {
+        setActiveVisualAlert(null);
+      }, visualAlertDuration * 1000);
+      return () => clearTimeout(timer);
+    }
+  }, [activeVisualAlert, visualAlertDuration]);
 
   const showToast = (message) => {
     setToastMessage(message);
@@ -1455,6 +1487,70 @@ export default function DjDashboard() {
                   </div>
                 </div>
 
+                {/* Módulo de Alertas Visuales a Pantalla Completa */}
+                <div style={{ borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: '20px' }}>
+                  <label className="form-label" style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--primary-color)', fontWeight: '600' }}>
+                    📺 Alertas Visuales en Pantalla Completa
+                  </label>
+                  <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginBottom: '16px' }}>
+                    Muestra un destello de color a pantalla completa cuando entra una nueva canción, ideal para cabinas oscuras.
+                  </p>
+
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                      <input 
+                        type="checkbox" 
+                        id="visual-alerts-enabled"
+                        checked={visualAlertEnabled} 
+                        onChange={(e) => {
+                          setVisualAlertEnabled(e.target.checked);
+                          localStorage.setItem('dj_visual_alert_enabled', e.target.checked.toString());
+                          showToast(e.target.checked ? '📺 Alertas visuales activadas' : '📺 Alertas visuales desactivadas');
+                        }}
+                        style={{ width: '18px', height: '18px', cursor: 'pointer' }}
+                      />
+                      <label htmlFor="visual-alerts-enabled" style={{ fontSize: '0.9rem', fontWeight: '600', cursor: 'pointer' }}>
+                        Habilitar alertas visuales de pantalla completa
+                      </label>
+                    </div>
+
+                    {visualAlertEnabled && (
+                      <div className="animate-slide-in" style={{ display: 'flex', alignItems: 'center', gap: '12px', background: 'rgba(255,255,255,0.02)', padding: '12px 16px', borderRadius: 'var(--radius-md)', border: '1px solid rgba(255,255,255,0.05)', maxWidth: '400px' }}>
+                        <span style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', whiteSpace: 'nowrap' }}>
+                          Duración del destello (segundos):
+                        </span>
+                        <input 
+                          type="number" 
+                          min="1" 
+                          max="10" 
+                          className="input-field" 
+                          value={visualAlertDuration} 
+                          onChange={(e) => {
+                            const val = Math.max(1, parseInt(e.target.value, 10) || 1);
+                            setVisualAlertDuration(val);
+                            localStorage.setItem('dj_visual_alert_duration', val.toString());
+                          }}
+                          style={{ width: '80px', padding: '6px 12px', fontSize: '0.85rem', textAlign: 'center' }}
+                        />
+                        <button 
+                          type="button" 
+                          className="btn btn-secondary" 
+                          onClick={() => {
+                            setActiveVisualAlert({
+                              type: 'new',
+                              title: 'Tema de Prueba',
+                              artist: 'Artista de Prueba'
+                            });
+                          }}
+                          style={{ fontSize: '0.8rem', padding: '6px 12px', height: '32px' }}
+                        >
+                          Probar
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
                 {/* Módulo de Propinas Voluntarias */}
                 <div style={{ borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: '20px' }}>
                   <label className="form-label" style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--primary-color)', fontWeight: '600' }}>
@@ -2078,6 +2174,63 @@ export default function DjDashboard() {
           {eventSettings.webName || 'DJ a la Carta'} © {new Date().getFullYear()} — Todos los derechos reservados
         </p>
       </footer>
+
+      {/* Alerta Visual a Pantalla Completa */}
+      {activeVisualAlert && (
+        <div className="animate-fade-in" style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          zIndex: 9999,
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'center',
+          background: activeVisualAlert.type === 'repeat' 
+            ? 'rgba(239, 68, 68, 0.96)' // Red
+            : activeVisualAlert.type === 'dedication'
+              ? 'rgba(245, 158, 11, 0.96)' // Orange
+              : 'rgba(16, 185, 129, 0.96)', // Green
+          color: '#fff',
+          textAlign: 'center',
+          padding: '30px'
+        }}>
+          <h1 style={{
+            fontSize: '4.5rem',
+            fontWeight: '800',
+            marginBottom: '20px',
+            textTransform: 'uppercase',
+            letterSpacing: '0.05em',
+            textShadow: '0 4px 20px rgba(0,0,0,0.5)',
+            color: '#fff'
+          }}>
+            {activeVisualAlert.type === 'repeat' 
+              ? 'Petición para repetir' 
+              : activeVisualAlert.type === 'dedication'
+                ? 'Petición Dedicada'
+                : 'Petición Agregada'}
+          </h1>
+          <p style={{
+            fontSize: '2.5rem',
+            fontWeight: '600',
+            color: 'rgba(255,255,255,0.95)',
+            marginBottom: '10px',
+            textShadow: '0 2px 10px rgba(0,0,0,0.4)'
+          }}>
+            "{activeVisualAlert.title}"
+          </p>
+          <p style={{
+            fontSize: '1.8rem',
+            fontWeight: '400',
+            color: 'rgba(255,255,255,0.85)',
+            textShadow: '0 2px 8px rgba(0,0,0,0.4)'
+          }}>
+            {activeVisualAlert.artist}
+          </p>
+        </div>
+      )}
     </div>
   );
 }

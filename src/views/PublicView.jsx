@@ -290,15 +290,16 @@ export default function PublicView() {
     }
   };
 
-  const executeSubmit = async (cleanTitle, cleanArtist, finalGenre, cleanDedication) => {
+  const executeSubmit = async (cleanTitle, cleanArtist, finalGenre, cleanDedication, isRepeat = false) => {
     try {
-      await addRequest(
+      const result = await addRequest(
         cleanTitle || 'Tema no especificado',
         cleanArtist || 'Artista no especificado',
         finalGenre || 'Personalizado',
         cleanDedication,
         sessionId,
-        eventOwnerUid
+        eventOwnerUid,
+        isRepeat
       );
 
       // Guardar marca de tiempo para el cooldown
@@ -313,7 +314,11 @@ export default function PublicView() {
       setIsCustomGenre(false);
       setDedication('');
 
-      showToast('🎵 ¡Petición enviada al DJ con éxito!');
+      if (result && result.isDuplicateMerge) {
+        showToast('❤️ ¡Esta canción ya estaba en la lista! Hemos sumado tu voto.');
+      } else {
+        showToast('🎵 ¡Petición enviada al DJ con éxito!');
+      }
     } catch (err) {
       console.error(err);
       showToast('Error al enviar la petición. Inténtalo de nuevo.');
@@ -344,9 +349,9 @@ export default function PublicView() {
       return str
         .normalize("NFD")
         .replace(/[\u0300-\u036f]/g, "")
+        .replace(/[^a-z0-9]/gi, "") // Quitar puntuación y símbolos
         .toLowerCase()
-        .trim()
-        .replace(/\s+/g, ' ');
+        .trim();
     };
 
     // Verificar si ya existe en playedRequests (historial de reproducidas)
@@ -1151,7 +1156,8 @@ export default function PublicView() {
                       pendingDuplicateRequest.title,
                       pendingDuplicateRequest.artist,
                       pendingDuplicateRequest.genre,
-                      pendingDuplicateRequest.dedication
+                      pendingDuplicateRequest.dedication,
+                      true
                     );
                     setPendingDuplicateRequest(null);
                   }

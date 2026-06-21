@@ -1,9 +1,10 @@
-const { app, BrowserWindow, Menu, ipcMain } = require('electron');
+const { app, BrowserWindow, Menu, ipcMain, powerSaveBlocker } = require('electron');
 const path = require('path');
 const fs = require('fs');
 const os = require('os');
 
 let mainWindow;
+let powerSaveBlockerId;
 
 function createWindow() {
   mainWindow = new BrowserWindow({
@@ -11,7 +12,7 @@ function createWindow() {
     height: 850,
     minWidth: 800,
     minHeight: 600,
-    title: "DJ Control Panel",
+    title: "DJ Panel",
     titleBarStyle: 'default',
     webPreferences: {
       nodeIntegration: false,
@@ -153,6 +154,9 @@ ipcMain.handle('write-playlist', async (event, { vdjPath, filename, content }) =
 });
 
 app.whenReady().then(() => {
+  // Evitar reposo de la pantalla/sistema en macOS/desktop
+  powerSaveBlockerId = powerSaveBlocker.start('prevent-display-sleep');
+
   createWindow();
 
   app.on('activate', () => {
@@ -165,5 +169,11 @@ app.whenReady().then(() => {
 app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') {
     app.quit();
+  }
+});
+
+app.on('will-quit', () => {
+  if (powerSaveBlockerId !== undefined && powerSaveBlocker.isStarted(powerSaveBlockerId)) {
+    powerSaveBlocker.stop(powerSaveBlockerId);
   }
 });

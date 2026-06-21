@@ -367,7 +367,7 @@ export const FirebaseProvider = ({ children }) => {
 
   // Crear una nueva petición (Público) — funciona TANTO para usuarios autenticados como anónimos.
   // El público no tiene sesión, por eso buscamos el ownerUid del evento en el registro público.
-  const addRequest = async (title, artist, genre, dedication, sessionId, eventOwnerUid) => {
+  const addRequest = async (title, artist, genre, dedication, sessionId, eventOwnerUid, isRepeat = false) => {
     // ownerUid puede venir del caller (PublicView lo pasa) o del usuario autenticado (DJ usando su propia vista)
     const targetUid = eventOwnerUid || activeUid;
     if (!targetUid) {
@@ -376,28 +376,102 @@ export const FirebaseProvider = ({ children }) => {
     const targetEventId = (currentEventId && currentEventId.startsWith('default-event'))
       ? 'default-event'
       : currentEventId;
+
+    const normalizeString = (str) => {
+      if (!str) return '';
+      return str
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .replace(/[^a-z0-9]/gi, "") // Quitar puntuación, comas, puntos y símbolos
+        .toLowerCase()
+        .trim();
+    };
+
+    const cleanTitle = (title || '').trim();
+    const cleanArtist = (artist || '').trim();
+
+    // 1. Buscar si ya existe la canción en la cola activa (requests)
+    const existingEntry = Object.entries(requests || {}).find(([id, req]) => {
+      if (!req || !req.title) return false;
+      const reqTitleNormalized = normalizeString(req.title);
+      const userTitleNormalized = normalizeString(cleanTitle);
+      
+      const matchTitle = reqTitleNormalized === userTitleNormalized;
+      if (!matchTitle) return false;
+      
+      const reqArtistNormalized = normalizeString(req.artist);
+      const userArtistNormalized = normalizeString(cleanArtist);
+      
+      const isReqArtistEmpty = reqArtistNormalized === '' || reqArtistNormalized === 'artista no especificado';
+      const isUserArtistEmpty = userArtistNormalized === '' || userArtistNormalized === 'artista no especificado';
+      
+      // Si el artista no se especifica o coincide, consideramos que es la misma canción
+      return isUserArtistEmpty || isReqArtistEmpty || (reqArtistNormalized === userArtistNormalized);
+    });
+
+    if (existingEntry) {
+      const [existingId, existingReq] = existingEntry;
+      const requestRef = ref(database, `users/${targetUid}/events/${targetEventId}/requests/${existingId}`);
+      
+      const voters = existingReq.voters || {};
+      let newVotes = existingReq.votes || 0;
+      
+      // Sumar voto/corazón
+      if (!voters[sessionId]) {
+        voters[sessionId] = true;
+        newVotes += 1;
+      } else {
+        // Permitir sumar más corazones de la misma sesión si vuelven a enviar la petición
+        newVotes += 1;
+      }
+      
+      const updates = { votes: newVotes, voters };
+      
+      // Anexar dedicatoria si el nuevo voto/petición incluye una dedicatoria
+      if (dedication && dedication.trim() !== '') {
+        const originalDedication = existingReq.dedication || '';
+        updates.dedication = originalDedication 
+          ? `${originalDedication} | ${dedication.trim()}` 
+          : dedication.trim();
+      }
+      
+      await update(requestRef, updates);
+
+      // Auto-alimentar la base de datos de autocompletado global en tiempo real
+      try {
+        await checkAndAddToAutocomplete(cleanTitle, cleanArtist, genre);
+      } catch (e) {
+        console.warn("No se pudo agregar a autocompletado:", e);
+      }
+
+      return { key: existingId, isDuplicateMerge: true };
+    }
+
+    // 2. Si no existe, crear la nueva petición
     const requestsRef = ref(database, `users/${targetUid}/events/${targetEventId}/requests`);
     const newRequest = {
-      title,
-      artist,
+      title: cleanTitle || 'Tema no especificado',
+      artist: cleanArtist || 'Artista no especificado',
       genre: genre || 'Personalizado',
       dedication: dedication || '',
       timestamp: Date.now(),
       status: 'pending',
       votes: 0,
-      voters: { [sessionId]: true }
+      voters: { [sessionId]: true },
+      isRepeat
     };
     const result = await push(requestsRef, newRequest);
 
     // Auto-alimentar la base de datos de autocompletado global en tiempo real
     try {
-      await checkAndAddToAutocomplete(title, artist, genre);
+      await checkAndAddToAutocomplete(cleanTitle, cleanArtist, genre);
     } catch (e) {
       console.warn("No se pudo agregar a autocompletado:", e);
     }
 
     return result;
   };
+
 
   // Votar por una petición existente (Público) — igual, soporta usuarios anónimos con ownerUid
   const voteRequest = async (requestId, sessionId, hasVoted, eventOwnerUid) => {
