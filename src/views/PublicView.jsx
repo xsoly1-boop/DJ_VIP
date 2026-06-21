@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useFirebase } from '../context/FirebaseContext';
-import { Music, Heart, Sparkles, Send, Clock, Volume2, ShieldAlert } from 'lucide-react';
+import { Music, Heart, Sparkles, Send, Clock, Volume2, ShieldAlert, CheckCircle } from 'lucide-react';
 
 // Generar o recuperar ID de sesión único para controlar anti-spam y votos
 const getSessionId = () => {
@@ -117,6 +117,17 @@ export default function PublicView() {
   const [filteredSongs, setFilteredSongs] = useState([]);
   const [cooldownTimeLeft, setCooldownTimeLeft] = useState(0);
   const [toastMessage, setToastMessage] = useState(null);
+  const [showInfoPopup, setShowInfoPopup] = useState(false);
+
+  const popupTimerRef = useRef(null);
+
+  useEffect(() => {
+    return () => {
+      if (popupTimerRef.current) {
+        clearTimeout(popupTimerRef.current);
+      }
+    };
+  }, []);
 
   const autocompleteRef = useRef(null);
   const globalSearchRef = useRef(null);
@@ -332,9 +343,15 @@ export default function PublicView() {
 
       if (result && result.isDuplicateMerge) {
         showToast('❤️ ¡Esta canción ya estaba en la lista! Hemos sumado tu voto.');
-      } else {
-        showToast('🎵 ¡Petición enviada al DJ con éxito!');
       }
+      setShowInfoPopup(true);
+      if (popupTimerRef.current) {
+        clearTimeout(popupTimerRef.current);
+      }
+      popupTimerRef.current = setTimeout(() => {
+        setShowInfoPopup(false);
+        popupTimerRef.current = null;
+      }, 8000);
     } catch (err) {
       console.error(err);
       showToast('Error al enviar la petición. Inténtalo de nuevo.');
@@ -1226,6 +1243,127 @@ export default function PublicView() {
                 No, cancelar
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Ventana emergente informativa de 8 segundos */}
+      {showInfoPopup && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          zIndex: 1100,
+          background: 'rgba(0, 0, 0, 0.8)',
+          backdropFilter: 'blur(10px)',
+          display: 'flex',
+          justifyContent: 'center',
+          alignItems: 'center',
+          padding: '20px'
+        }}>
+          <div className="glass-panel animate-slide-in" style={{
+            maxWidth: '420px',
+            width: '100%',
+            padding: '32px 24px 24px 24px',
+            borderRadius: 'var(--radius-lg)',
+            border: '1px solid var(--primary-color)',
+            boxShadow: '0 0 30px var(--primary-glow)',
+            textAlign: 'center',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '20px',
+            position: 'relative',
+            overflow: 'hidden'
+          }}>
+            <style>{`
+              @keyframes shrinkBar {
+                from { width: 100%; }
+                to { width: 0%; }
+              }
+            `}</style>
+            
+            {/* Animación del progress bar de 8 segundos en la parte superior */}
+            <div style={{
+              position: 'absolute',
+              top: 0,
+              left: 0,
+              height: '4px',
+              background: 'linear-gradient(90deg, var(--primary-color), var(--secondary-color))',
+              animation: 'shrinkBar 8s linear forwards'
+            }} />
+
+            <div className="flex-center" style={{
+              width: '56px',
+              height: '56px',
+              borderRadius: 'var(--radius-full)',
+              background: 'rgba(139, 92, 246, 0.15)',
+              margin: '0 auto',
+              color: 'var(--primary-color)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center'
+            }}>
+              <CheckCircle size={28} />
+            </div>
+
+            <div>
+              <h3 style={{ 
+                fontSize: '1.3rem', 
+                fontWeight: '700', 
+                color: 'var(--text-primary)', 
+                marginBottom: '12px' 
+              }}>
+                ¡Petición Enviada!
+              </h3>
+              <p style={{ 
+                fontSize: '0.95rem', 
+                color: 'var(--text-secondary)', 
+                lineHeight: '1.6',
+                textAlign: 'left',
+                margin: 0
+              }}>
+                Tu petición se reproducirá basándose en dos cosas:
+              </p>
+              <ul style={{
+                textAlign: 'left',
+                fontSize: '0.9rem',
+                color: 'var(--text-secondary)',
+                lineHeight: '1.6',
+                margin: '12px 0 0 0',
+                paddingLeft: '20px',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '8px'
+              }}>
+                <li style={{ listStyleType: 'disc' }}>
+                  <strong style={{ color: 'var(--text-primary)' }}>El contexto:</strong> si es para bailar o solo escuchar.
+                </li>
+                <li style={{ listStyleType: 'disc' }}>
+                  <strong style={{ color: 'var(--text-primary)' }}>La popularidad:</strong> la cantidad de votos recibidos.
+                </li>
+              </ul>
+            </div>
+
+            <button
+              type="button"
+              className="btn btn-primary"
+              onClick={() => {
+                setShowInfoPopup(false);
+                if (popupTimerRef.current) {
+                  clearTimeout(popupTimerRef.current);
+                  popupTimerRef.current = null;
+                }
+              }}
+              style={{ 
+                width: '100%', 
+                padding: '12px',
+                fontWeight: '600'
+              }}
+            >
+              Entendido
+            </button>
           </div>
         </div>
       )}
