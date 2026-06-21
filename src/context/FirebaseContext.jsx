@@ -56,6 +56,7 @@ export const FirebaseProvider = ({ children }) => {
     dedicationsEnabled: false
   });
   const [requests, setRequests] = useState({});
+  const [playedRequests, setPlayedRequests] = useState({});
   const [autocompleteSongs, setAutocompleteSongs] = useState([]);
   const [eventsList, setEventsList] = useState([]);
   const [allEventsData, setAllEventsData] = useState({});
@@ -260,6 +261,23 @@ export const FirebaseProvider = ({ children }) => {
     return () => unsubscribe();
   }, [currentEventId, effectiveReadPath, userBasePath]);
 
+  // 3b. Escuchar peticiones ya reproducidas en tiempo real
+  useEffect(() => {
+    if (!effectiveReadPath) return;
+    const targetEventId = (currentEventId && currentEventId.startsWith('default-event'))
+      ? 'default-event'
+      : currentEventId;
+    const playedRef = ref(database, `${effectiveReadPath}/events/${targetEventId}/played_requests`);
+    const unsubscribe = onValue(playedRef, (snapshot) => {
+      if (snapshot.exists()) {
+        setPlayedRequests(snapshot.val());
+      } else {
+        setPlayedRequests({});
+      }
+    });
+    return () => unsubscribe();
+  }, [currentEventId, effectiveReadPath, userBasePath]);
+
   // 4. Cargar catálogo de autocompletado una vez al cambiar de ruta efectiva (sin escucha real-time para escalabilidad)
   useEffect(() => {
     if (!effectiveReadPath) return;
@@ -421,12 +439,37 @@ export const FirebaseProvider = ({ children }) => {
   // Actualizar estado de petición (DJ)
   const updateRequestStatus = async (requestId, newStatus) => {
     if (!userBasePath) return;
-    const requestRef = ref(database, `${userBasePath}/events/${currentEventId}/requests/${requestId}`);
-    await update(requestRef, { status: newStatus });
-    if (newStatus === 'accepted') {
-      const acceptedReq = requests[requestId];
-      if (acceptedReq) {
-        checkAndAddToAutocomplete(acceptedReq.title, acceptedReq.artist, acceptedReq.genre, activeUid);
+    
+    if (newStatus === 'playing') {
+      const playingReq = requests[requestId];
+      if (playingReq) {
+        const targetEventId = (currentEventId && currentEventId.startsWith('default-event'))
+          ? 'default-event'
+          : currentEventId;
+        const playedRef = ref(database, `${userBasePath}/events/${targetEventId}/played_requests`);
+        
+        // 1. Agregar a la lista "Ya reproducida"
+        await push(playedRef, {
+          ...playingReq,
+          status: 'playing',
+          playedAt: Date.now()
+        });
+
+        // 2. Auto-alimentar base de datos de autocompletado
+        checkAndAddToAutocomplete(playingReq.title, playingReq.artist, playingReq.genre, activeUid);
+
+        // 3. Eliminar de la cola de peticiones activas
+        const requestRef = ref(database, `${userBasePath}/events/${targetEventId}/requests/${requestId}`);
+        await set(requestRef, null);
+      }
+    } else {
+      const requestRef = ref(database, `${userBasePath}/events/${currentEventId}/requests/${requestId}`);
+      await update(requestRef, { status: newStatus });
+      if (newStatus === 'accepted') {
+        const acceptedReq = requests[requestId];
+        if (acceptedReq) {
+          checkAndAddToAutocomplete(acceptedReq.title, acceptedReq.artist, acceptedReq.genre, activeUid);
+        }
       }
     }
   };
@@ -747,6 +790,23 @@ export const FirebaseProvider = ({ children }) => {
     }
   };
 
+  // Limpiar lista completa de peticiones activas e históricas del evento activo
+  const clearActiveAndPlayedRequests = async () => {
+    if (!userBasePath) throw new Error('No hay sesión activa.');
+    const targetEventId = (currentEventId && currentEventId.startsWith('default-event'))
+      ? 'default-event'
+      : currentEventId;
+    
+    const requestsRef = ref(database, `${userBasePath}/events/${targetEventId}/requests`);
+    const playedRef = ref(database, `${userBasePath}/events/${targetEventId}/played_requests`);
+    
+    await set(requestsRef, null);
+    await set(playedRef, null);
+    
+    setRequests({});
+    setPlayedRequests({});
+  };
+
   // Crear nueva cuenta DJ (solo Admin Master)
   // En modo real: usa una app secundaria temporal para no cerrar la sesión del admin.
   // En modo mock: persiste la cuenta nueva en MOCK_ACCOUNTS (localStorage).
@@ -898,6 +958,7 @@ export const FirebaseProvider = ({ children }) => {
       currentEventId,
       eventSettings,
       requests,
+      playedRequests,
       autocompleteSongs,
       eventsList,
       allEventsData,
@@ -909,6 +970,7 @@ export const FirebaseProvider = ({ children }) => {
       addRequest,
       voteRequest,
       updateRequestStatus,
+      clearActiveAndPlayedRequests,
       updateEventSettings,
       uploadLogo,
       changeEvent,

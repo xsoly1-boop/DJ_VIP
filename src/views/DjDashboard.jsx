@@ -17,7 +17,9 @@ export default function DjDashboard() {
     currentEventId, 
     eventSettings, 
     requests, 
+    playedRequests,
     updateRequestStatus, 
+    clearActiveAndPlayedRequests,
     updateEventSettings, 
     createNewEvent,
     changeEvent,
@@ -582,11 +584,16 @@ export default function DjDashboard() {
       return b.timestamp - a.timestamp;
     });
 
+  const playedRequestsList = Object.keys(playedRequests || {})
+    .map(key => ({ id: key, ...playedRequests[key] }))
+    .sort((a, b) => (b.playedAt || 0) - (a.playedAt || 0));
+
   const stats = {
-    total: Object.keys(requests).length,
+    total: Object.keys(requests).length + Object.keys(playedRequests || {}).length,
     pending: Object.values(requests).filter(r => r.status === 'pending').length,
-    playing: Object.values(requests).filter(r => r.status === 'playing').length,
-    votes: Object.values(requests).reduce((sum, r) => sum + (r.votes || 0), 0)
+    playing: Object.values(playedRequests || {}).filter(r => r.status === 'playing').length,
+    votes: Object.values(requests).reduce((sum, r) => sum + (r.votes || 0), 0) + 
+           Object.values(playedRequests || {}).reduce((sum, r) => sum + (r.votes || 0), 0)
   };
 
   // Construir lista de usuarios para el panel admin
@@ -864,6 +871,25 @@ export default function DjDashboard() {
                   Peticiones en Cola
                 </h2>
                 <div style={{ display: 'flex', gap: '10px', alignItems: 'center', flexWrap: 'wrap' }}>
+                  <button
+                    onClick={async () => {
+                      if (window.confirm("¿Estás seguro de limpiar la lista?")) {
+                        try {
+                          await clearActiveAndPlayedRequests();
+                          showToast("🧹 Lista de peticiones e historial limpiados con éxito");
+                        } catch (err) {
+                          console.error(err);
+                          showToast("❌ Error al limpiar la lista");
+                        }
+                      }
+                    }}
+                    className="btn btn-danger"
+                    style={{ padding: '6px 14px', fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: '6px' }}
+                    title="Limpiar toda la cola de peticiones e historial"
+                  >
+                    <Trash2 size={14} />
+                    <span>Limpiar Cola</span>
+                  </button>
                   <select className="input-field" value={filterStatus} onChange={(e) => setFilterStatus(e.target.value)}
                     style={{ padding: '6px 12px', fontSize: '0.85rem', width: 'auto' }}>
                     <option value="all">Todos los estados</option>
@@ -953,6 +979,56 @@ export default function DjDashboard() {
                   ))
                 )}
               </div>
+
+              {/* HISTORIAL DE CANCIONES YA REPRODUCIDAS */}
+              {playedRequestsList.length > 0 && (
+                <div style={{ marginTop: '24px', borderTop: '1px solid var(--surface-border)', paddingTop: '20px' }}>
+                  <h3 style={{ fontSize: '1.1rem', fontWeight: '600', marginBottom: '15px', display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--text-secondary)' }}>
+                    <span>✅ Historial: Ya Reproducidas ({playedRequestsList.length})</span>
+                  </h3>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                    {playedRequestsList.map((req) => (
+                      <div key={req.id} className="glass-panel" style={{
+                        padding: '12px 16px', borderRadius: 'var(--radius-md)',
+                        display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '12px',
+                        background: 'rgba(255, 255, 255, 0.01)',
+                        border: '1px solid rgba(255, 255, 255, 0.03)'
+                      }}>
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                            <span style={{ 
+                              fontWeight: '600', 
+                              color: 'var(--text-muted)', 
+                              textDecoration: 'line-through',
+                              fontSize: '0.95rem'
+                            }}>
+                              {req.title}
+                            </span>
+                          </div>
+                          <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', margin: '2px 0 0 0' }}>
+                            {req.artist} • <span>{req.genre}</span>
+                          </p>
+                        </div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                          {req.dedication && (
+                            <span 
+                              title={`Dedicatoria: ${req.dedication}`} 
+                              style={{ cursor: 'help', fontSize: '1.1rem' }}
+                            >
+                              💬
+                            </span>
+                          )}
+                          {req.playedAt && (
+                            <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+                              Reproducida: {new Date(req.playedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
 
               {/* Géneros aprendidos */}
               {(() => {

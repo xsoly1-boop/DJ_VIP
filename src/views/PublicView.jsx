@@ -18,6 +18,7 @@ export default function PublicView() {
   const { 
     eventSettings: rawEventSettings, 
     requests, 
+    playedRequests,
     autocompleteSongs, 
     addRequest, 
     voteRequest,
@@ -54,6 +55,10 @@ export default function PublicView() {
   const [searchQuery, setSearchQuery] = useState('');
   const [showGlobalSuggestions, setShowGlobalSuggestions] = useState(false);
   const [globalFilteredSongs, setGlobalFilteredSongs] = useState([]);
+
+  // Estados de confirmación de duplicados
+  const [showConfirmDuplicateModal, setShowConfirmDuplicateModal] = useState(false);
+  const [pendingDuplicateRequest, setPendingDuplicateRequest] = useState(null);
 
   // Géneros aprendidos dinámicamente del historial de peticiones y autocompletado
   const dynamicGenres = React.useMemo(() => {
@@ -285,25 +290,7 @@ export default function PublicView() {
     }
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-
-    const cleanTitle = title.trim();
-    const cleanArtist = artist.trim();
-    const finalGenre = isCustomGenre ? customGenre.trim() : genre;
-    const cleanDedication = dedication.trim();
-
-    // Al menos un campo debe estar lleno para proceder
-    if (!cleanTitle && !cleanArtist && !finalGenre) {
-      showToast('Por favor, ingresa al menos un dato (canción, artista o género) para tu petición.');
-      return;
-    }
-
-    if (cooldownTimeLeft > 0) {
-      showToast(`¡Anti-Spam activo! Espera ${Math.ceil(cooldownTimeLeft / 1000)}s.`);
-      return;
-    }
-
+  const executeSubmit = async (cleanTitle, cleanArtist, finalGenre, cleanDedication) => {
     try {
       await addRequest(
         cleanTitle || 'Tema no especificado',
@@ -333,6 +320,46 @@ export default function PublicView() {
     }
   };
 
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+
+    const cleanTitle = title.trim();
+    const cleanArtist = artist.trim();
+    const finalGenre = isCustomGenre ? customGenre.trim() : genre;
+    const cleanDedication = dedication.trim();
+
+    // Al menos un campo debe estar lleno para proceder
+    if (!cleanTitle && !cleanArtist && !finalGenre) {
+      showToast('Por favor, ingresa al menos un dato (canción, artista o género) para tu petición.');
+      return;
+    }
+
+    if (cooldownTimeLeft > 0) {
+      showToast(`¡Anti-Spam activo! Espera ${Math.ceil(cooldownTimeLeft / 1000)}s.`);
+      return;
+    }
+
+    // Verificar si ya existe en playedRequests (historial de reproducidas)
+    const existsInPlayed = Object.values(playedRequests || {}).some(
+      req => req && 
+             req.title && req.title.trim().toLowerCase() === cleanTitle.toLowerCase() &&
+             req.artist && req.artist.trim().toLowerCase() === cleanArtist.toLowerCase()
+    );
+
+    if (existsInPlayed) {
+      setPendingDuplicateRequest({
+        title: cleanTitle,
+        artist: cleanArtist,
+        genre: finalGenre,
+        dedication: cleanDedication
+      });
+      setShowConfirmDuplicateModal(true);
+      return;
+    }
+
+    await executeSubmit(cleanTitle, cleanArtist, finalGenre, cleanDedication);
+  };
+
   // Convertir peticiones en array y ordenar por popularidad (votos) o fecha
   const requestList = Object.keys(requests || {})
     .filter(key => requests[key] !== null && typeof requests[key] === 'object')
@@ -351,6 +378,14 @@ export default function PublicView() {
     // Finalmente por timestamp descendente (más recientes primero)
     return b.timestamp - a.timestamp;
   });
+
+  // Convertir peticiones ya reproducidas en array y ordenar por fecha de reproducción descendente
+  const playedList = Object.keys(playedRequests || {})
+    .filter(key => playedRequests[key] !== null && typeof playedRequests[key] === 'object')
+    .map(key => ({
+      id: key,
+      ...playedRequests[key]
+    })).sort((a, b) => (b.playedAt || 0) - (a.playedAt || 0));
 
   const formatTimeLeft = (ms) => {
     const mins = Math.floor(ms / 60000);
@@ -937,7 +972,152 @@ export default function PublicView() {
             )}
           </div>
         </section>
+
+        {/* HISTORIAL DE CANCIONES YA REPRODUCIDAS */}
+        {playedList.length > 0 && (
+          <section style={{ marginTop: '40px', opacity: 0.75 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px' }}>
+              <h3 style={{ fontSize: '1.1rem', fontWeight: '600', display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--text-secondary)' }}>
+                <span>✅ Ya reproducidas ({playedList.length})</span>
+              </h3>
+              <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Historial del evento</span>
+            </div>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+              {playedList.map((req) => (
+                <div
+                  key={req.id}
+                  className="glass-panel"
+                  style={{
+                    padding: '12px 16px',
+                    borderRadius: 'var(--radius-md)',
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    gap: '12px',
+                    background: 'rgba(255, 255, 255, 0.01)',
+                    border: '1px solid rgba(255, 255, 255, 0.03)'
+                  }}
+                >
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                      <span style={{ 
+                        fontWeight: '600', 
+                        color: 'var(--text-muted)', 
+                        textDecoration: 'line-through',
+                        overflow: 'hidden', 
+                        textOverflow: 'ellipsis', 
+                        whiteSpace: 'nowrap', 
+                        fontSize: '0.95rem' 
+                      }}>
+                        {req.title}
+                      </span>
+                    </div>
+                    <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', marginTop: '2px' }}>
+                      {req.artist} • <span>{req.genre}</span>
+                    </p>
+                  </div>
+                  {req.playedAt && (
+                    <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+                      {new Date(req.playedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                    </span>
+                  )}
+                </div>
+              ))}
+            </div>
+          </section>
+        )}
       </main>
+
+      {/* Modal de Confirmación de Duplicado */}
+      {showConfirmDuplicateModal && pendingDuplicateRequest && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          zIndex: 1100,
+          background: 'rgba(5, 5, 10, 0.85)',
+          backdropFilter: 'blur(8px)',
+          display: 'flex',
+          justifyContent: 'center',
+          alignItems: 'center',
+          padding: '20px'
+        }}>
+          <div className="glass-panel animate-slide-in" style={{
+            maxWidth: '400px',
+            width: '100%',
+            padding: '24px',
+            borderRadius: 'var(--radius-lg)',
+            border: '1px solid var(--primary-color)',
+            boxShadow: '0 0 25px var(--primary-glow)',
+            textAlign: 'center',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '16px'
+          }}>
+            <div className="flex-center" style={{
+              width: '50px',
+              height: '50px',
+              borderRadius: 'var(--radius-full)',
+              background: 'rgba(124, 58, 237, 0.15)',
+              margin: '0 auto',
+              color: 'var(--primary-color)'
+            }}>
+              <Volume2 size={24} />
+            </div>
+            
+            <div>
+              <h3 style={{ fontSize: '1.2rem', fontWeight: '700', color: 'var(--text-primary)', marginBottom: '8px' }}>
+                ⚠️ Canción ya reproducida
+              </h3>
+              <p style={{ fontSize: '0.9rem', color: 'var(--text-secondary)', lineHeight: '1.5' }}>
+                La canción <strong style={{ color: 'var(--secondary-color)' }}>"{pendingDuplicateRequest.title}"</strong> de <strong style={{ color: 'var(--text-primary)' }}>{pendingDuplicateRequest.artist || 'Artista no especificado'}</strong> ya fue reproducida en este evento. ¿Aún deseas volver a realizar la petición?
+              </p>
+            </div>
+
+            <div style={{ display: 'flex', gap: '12px', marginTop: '8px' }}>
+              <button
+                type="button"
+                className="btn btn-primary"
+                onClick={async () => {
+                  setShowConfirmDuplicateModal(false);
+                  if (pendingDuplicateRequest) {
+                    await executeSubmit(
+                      pendingDuplicateRequest.title,
+                      pendingDuplicateRequest.artist,
+                      pendingDuplicateRequest.genre,
+                      pendingDuplicateRequest.dedication
+                    );
+                    setPendingDuplicateRequest(null);
+                  }
+                }}
+                style={{ flex: 1, padding: '12px' }}
+              >
+                Sí, pedir otra vez
+              </button>
+              <button
+                type="button"
+                className="btn"
+                onClick={() => {
+                  setShowConfirmDuplicateModal(false);
+                  setPendingDuplicateRequest(null);
+                }}
+                style={{ 
+                  flex: 1, 
+                  padding: '12px',
+                  background: 'rgba(255, 255, 255, 0.05)',
+                  border: '1px solid rgba(255, 255, 255, 0.1)',
+                  color: 'var(--text-secondary)'
+                }}
+              >
+                No, cancelar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
