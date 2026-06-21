@@ -341,9 +341,22 @@ export default function PublicView() {
 
     // Verificar si ya existe en playedRequests (historial de reproducidas)
     const existsInPlayed = Object.values(playedRequests || {}).some(
-      req => req && 
-             req.title && req.title.trim().toLowerCase() === cleanTitle.toLowerCase() &&
-             req.artist && req.artist.trim().toLowerCase() === cleanArtist.toLowerCase()
+      req => {
+        if (!req || !req.title) return false;
+        
+        const matchTitle = req.title.trim().toLowerCase() === cleanTitle.toLowerCase();
+        if (!matchTitle) return false;
+        
+        const reqArtist = (req.artist || '').trim().toLowerCase();
+        const userArtist = cleanArtist.toLowerCase();
+        
+        const isReqArtistEmpty = reqArtist === '' || reqArtist === 'artista no especificado';
+        const isUserArtistEmpty = userArtist === '' || userArtist === 'artista no especificado';
+        
+        // Si el usuario no especificó artista, o si el tema registrado no tiene artista,
+        // o si los artistas coinciden exactamente, se considera duplicado.
+        return isUserArtistEmpty || isReqArtistEmpty || (reqArtist === userArtist);
+      }
     );
 
     if (existsInPlayed) {
