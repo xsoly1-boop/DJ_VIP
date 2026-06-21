@@ -12,7 +12,7 @@ const getSessionId = () => {
   return sessionId;
 };
 
-const COOLDOWN_TIME_MS = 20000; // 20 segundos de cooldown para anti-spam
+const COOLDOWN_TIME_MS = 10000; // 10 segundos de cooldown para anti-spam
 
 export default function PublicView() {
   const { 
