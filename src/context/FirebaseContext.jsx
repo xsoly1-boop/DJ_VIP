@@ -278,11 +278,10 @@ export const FirebaseProvider = ({ children }) => {
     return () => unsubscribe();
   }, [currentEventId, effectiveReadPath, userBasePath]);
 
-  // 4. Cargar catálogo de autocompletado una vez al cambiar de ruta efectiva (sin escucha real-time para escalabilidad)
+  // 4. Cargar catálogo de autocompletado global en tiempo real (todos los eventos y DJs comparten el mismo catálogo)
   useEffect(() => {
-    if (!effectiveReadPath) return;
-    const autocompleteRef = ref(database, `${effectiveReadPath}/autocomplete_songs`);
-    get(autocompleteRef).then((snapshot) => {
+    const autocompleteRef = ref(database, 'autocomplete_songs');
+    const unsubscribe = onValue(autocompleteRef, (snapshot) => {
       if (snapshot.exists()) {
         const val = snapshot.val();
         const list = Object.keys(val).map(key => ({ id: key, ...val[key] }));
@@ -290,11 +289,11 @@ export const FirebaseProvider = ({ children }) => {
       } else {
         setAutocompleteSongs([]);
       }
-    }).catch((err) => {
-      console.error("Error al cargar autocompletado:", err);
-      setAutocompleteSongs([]);
+    }, (err) => {
+      console.error("Error al escuchar autocompletado global:", err);
     });
-  }, [effectiveReadPath]);
+    return () => unsubscribe();
+  }, [database]);
 
   // 5. Escuchar índice de eventos (scope por usuario)
   useEffect(() => {
@@ -390,21 +389,9 @@ export const FirebaseProvider = ({ children }) => {
     };
     const result = await push(requestsRef, newRequest);
 
-    // Auto-alimentar la base de datos de autocompletado en tiempo real
+    // Auto-alimentar la base de datos de autocompletado global en tiempo real
     try {
-      await checkAndAddToAutocomplete(title, artist, genre, targetUid);
-      // Anexar la canción localmente para evitar consultas de red inmediatas
-      const cleanTitle = title.trim().toLowerCase();
-      const cleanArtist = artist.trim().toLowerCase();
-      const exists = (autocompleteSongs || []).some(
-        song => song.title.toLowerCase() === cleanTitle && song.artist.toLowerCase() === cleanArtist
-      );
-      if (!exists) {
-        setAutocompleteSongs(prev => [
-          ...prev,
-          { id: result.key, title: title.trim(), artist: artist.trim(), genre: genre || 'Personalizado' }
-        ]);
-      }
+      await checkAndAddToAutocomplete(title, artist, genre);
     } catch (e) {
       console.warn("No se pudo agregar a autocompletado:", e);
     }
@@ -456,7 +443,7 @@ export const FirebaseProvider = ({ children }) => {
         });
 
         // 2. Auto-alimentar base de datos de autocompletado
-        checkAndAddToAutocomplete(playingReq.title, playingReq.artist, playingReq.genre, activeUid);
+        checkAndAddToAutocomplete(playingReq.title, playingReq.artist, playingReq.genre);
 
         // 3. Eliminar de la cola de peticiones activas
         const requestRef = ref(database, `${userBasePath}/events/${targetEventId}/requests/${requestId}`);
@@ -468,34 +455,28 @@ export const FirebaseProvider = ({ children }) => {
       if (newStatus === 'accepted') {
         const acceptedReq = requests[requestId];
         if (acceptedReq) {
-          checkAndAddToAutocomplete(acceptedReq.title, acceptedReq.artist, acceptedReq.genre, activeUid);
+          checkAndAddToAutocomplete(acceptedReq.title, acceptedReq.artist, acceptedReq.genre);
         }
       }
     }
   };
 
-  const checkAndAddToAutocomplete = async (title, artist, genre, targetUid) => {
-    const resolvedUid = targetUid || activeUid;
-    if (!resolvedUid) return;
+  const checkAndAddToAutocomplete = async (title, artist, genre) => {
     const cleanTitle = title.trim().toLowerCase();
     const cleanArtist = artist.trim().toLowerCase();
     const exists = (autocompleteSongs || []).some(
-      song => song.title.toLowerCase() === cleanTitle && song.artist.toLowerCase() === cleanArtist
+      song => song && song.title && song.artist &&
+              song.title.toLowerCase() === cleanTitle && 
+              song.artist.toLowerCase() === cleanArtist
     );
     if (!exists) {
-      const autocompleteRef = ref(database, `users/${resolvedUid}/autocomplete_songs`);
+      const autocompleteRef = ref(database, 'autocomplete_songs');
       const newSong = {
         title: title.trim(),
         artist: artist.trim(),
         genre: genre ? genre.trim() : 'Personalizado'
       };
-      const result = await push(autocompleteRef, newSong);
-      
-      // Sincronizar el estado local para que el DJ también lo vea reflejado de inmediato
-      setAutocompleteSongs(prev => [
-        ...prev,
-        { id: result.key, ...newSong }
-      ]);
+      await push(autocompleteRef, newSong);
     }
   };
 

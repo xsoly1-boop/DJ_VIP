@@ -146,11 +146,15 @@ const getLocalData = () => {
   if (!parsed.events_registry) {
     return initFreshMockDB();
   }
+  if (!parsed.autocomplete_songs) {
+    parsed.autocomplete_songs = INITIAL_AUTOCOMPLETE.reduce((acc, s) => { acc[s.id] = s; return acc; }, {});
+    localStorage.setItem('mock_rtdb_v2', JSON.stringify(parsed));
+  }
   return parsed;
 };
 
 const initFreshMockDB = () => {
-  const db = { users: {}, events_registry: {} };
+  const db = { users: {}, events_registry: {}, autocomplete_songs: {} };
   MOCK_ACCOUNTS.forEach(a => {
     db.users[a.uid] = buildInitialUserData(a.uid);
     // Registrar el evento demo de cada DJ en el registry público
@@ -166,6 +170,7 @@ const initFreshMockDB = () => {
     title: 'Mi Gran Evento VIP',
     djName: 'DJ MasterMix'
   };
+  db.autocomplete_songs = INITIAL_AUTOCOMPLETE.reduce((acc, s) => { acc[s.id] = s; return acc; }, {});
   localStorage.setItem('mock_rtdb_v2', JSON.stringify(db));
   return db;
 };
