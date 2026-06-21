@@ -64,6 +64,7 @@ export default function DjDashboard() {
   const [paypalUsernameInput, setPaypalUsernameInput] = useState(eventSettings.paypalUsername || '');
   const [mercadopagoLinkInput, setMercadopagoLinkInput] = useState(eventSettings.mercadopagoLink || '');
   const [dedicationsEnabledInput, setDedicationsEnabledInput] = useState(eventSettings.dedicationsEnabled || false);
+  const [customGenresInput, setCustomGenresInput] = useState(eventSettings.customGenres || '');
 
   // Pestaña Calendario: Crear Evento
   const [showCreateEventForm, setShowCreateEventForm] = useState(false);
@@ -151,6 +152,7 @@ export default function DjDashboard() {
     setPaypalUsernameInput(eventSettings.paypalUsername || '');
     setMercadopagoLinkInput(eventSettings.mercadopagoLink || '');
     setDedicationsEnabledInput(eventSettings.dedicationsEnabled || false);
+    setCustomGenresInput(eventSettings.customGenres || '');
   }, [eventSettings, currentEventId]);
 
   // Cargar nombre del tono seleccionado en Android
@@ -439,7 +441,8 @@ export default function DjDashboard() {
         tipsEnabled: tipsEnabledInput,
         paypalUsername: paypalUsernameInput.trim(),
         mercadopagoLink: mercadopagoLinkInput.trim(),
-        dedicationsEnabled: dedicationsEnabledInput
+        dedicationsEnabled: dedicationsEnabledInput,
+        customGenres: customGenresInput.trim()
       });
       showToast("💾 Configuración de marca guardada");
     } catch (err) {
@@ -1487,6 +1490,25 @@ export default function DjDashboard() {
                   </div>
                 </div>
 
+                {/* Módulo de Personalización de Géneros Musicales */}
+                <div style={{ borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: '20px' }}>
+                  <label className="form-label" style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--primary-color)', fontWeight: '600' }}>
+                    🎵 Personalización de Géneros Musicales
+                  </label>
+                  <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginBottom: '12px' }}>
+                    Define tu propia lista de géneros musicales para el formulario del público. Escríbelos separados por comas. Si se deja vacío, se utilizará la lista predeterminada.
+                  </p>
+                  <div className="form-group">
+                    <input 
+                      type="text" 
+                      placeholder="Ej. Salsa, Bachata, Reggaetón, Rock, Electrónica" 
+                      className="input-field" 
+                      value={customGenresInput} 
+                      onChange={(e) => setCustomGenresInput(e.target.value)} 
+                    />
+                  </div>
+                </div>
+
                 {/* Módulo de Alertas Visuales a Pantalla Completa */}
                 <div style={{ borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: '20px' }}>
                   <label className="form-label" style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--primary-color)', fontWeight: '600' }}>
@@ -1633,6 +1655,7 @@ export default function DjDashboard() {
                     setPaypalUsernameInput(eventSettings.paypalUsername || '');
                     setMercadopagoLinkInput(eventSettings.mercadopagoLink || '');
                     setDedicationsEnabledInput(eventSettings.dedicationsEnabled || false);
+                    setCustomGenresInput(eventSettings.customGenres || '');
                     showToast("Revertido a cambios guardados");
                   }}>Descartar Cambios</button>
                 </div>

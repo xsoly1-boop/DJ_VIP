@@ -62,17 +62,20 @@ export default function PublicView() {
 
   // Géneros aprendidos dinámicamente del historial de peticiones y autocompletado
   const dynamicGenres = React.useMemo(() => {
-    const BASE_GENRES = [
-      'Reggaetón / Urbano',
-      'Regional Mexicano (Banda/Norteño)',
-      'Cumbia / Sonidero',
-      'Pop Latino / Baladas',
-      'Rock en Español',
-      'Salsa / Bachata',
-      'Electrónica / Circuit',
-      'Ska / Reggae',
-      'Kpop'
-    ];
+    const customGenresString = eventSettings?.customGenres || '';
+    const BASE_GENRES = customGenresString.trim() !== ''
+      ? customGenresString.split(',').map(g => g.trim()).filter(Boolean)
+      : [
+          'Reggaetón / Urbano',
+          'Regional Mexicano (Banda/Norteño)',
+          'Cumbia / Sonidero',
+          'Pop Latino / Baladas',
+          'Rock en Español',
+          'Salsa / Bachata',
+          'Electrónica / Circuit',
+          'Ska / Reggae',
+          'Kpop'
+        ];
 
     // Contar frecuencia de cada género en peticiones reales
     const frequencyMap = {};
