@@ -582,7 +582,13 @@ export const FirebaseProvider = ({ children }) => {
       throw new Error('No hay sesión activa. Por favor inicia sesión nuevamente.');
     }
     const settingsRef = ref(database, `${userBasePath}/events/${currentEventId}/settings`);
-    await update(settingsRef, newSettings);
+    
+    const settingsToUpdate = { ...newSettings };
+    if (newSettings.djName !== undefined && newSettings.djName !== null && newSettings.djName.trim() !== '') {
+      settingsToUpdate.djNameSaved = true;
+    }
+    
+    await update(settingsRef, settingsToUpdate);
 
     // Si es el evento default, actualizar también el registro público y el índice privado
     if (currentEventId === 'default-event') {
@@ -669,12 +675,21 @@ export const FirebaseProvider = ({ children }) => {
       const activeUid = user?.uid || auth.currentUser?.uid;
       
       const settingsRef = ref(database, `${userBasePath}/events/default-event/settings`);
+      const snapshot = await get(settingsRef);
+      const currentData = snapshot.exists() ? snapshot.val() : {};
+      
+      // Respetar el DJ guardado anteriormente. Si no se ha guardado, usar DJ_Demo
+      const finalDjName = currentData.djNameSaved && currentData.djName && currentData.djName.trim()
+        ? currentData.djName.trim()
+        : 'DJ_Demo';
+
       const defaultSettings = {
         title: 'Mi Gran Evento VIP',
         logoUrl: '',
         themeColor: '#7c3aed',
         themeColorSecondary: '#06b6d4',
-        djName: user?.displayName || 'DJ MasterMix',
+        djName: finalDjName,
+        djNameSaved: currentData.djNameSaved || false,
         date: new Date().toISOString().split('T')[0],
         archived: false,
         webName: 'DJ a la Carta',
@@ -694,7 +709,7 @@ export const FirebaseProvider = ({ children }) => {
       await set(indexRef, {
         id: 'default-event',
         title: 'Mi Gran Evento VIP',
-        djName: user?.displayName || 'DJ MasterMix',
+        djName: finalDjName,
         date: new Date().toISOString().split('T')[0],
         archived: false,
         createdAt: Date.now(),
@@ -705,7 +720,7 @@ export const FirebaseProvider = ({ children }) => {
       await set(registryRef, {
         ownerUid: activeUid,
         title: 'Mi Gran Evento VIP',
-        djName: user?.displayName || 'DJ MasterMix',
+        djName: finalDjName,
         eventType: 'Otro'
       });
 
@@ -751,7 +766,8 @@ export const FirebaseProvider = ({ children }) => {
       title,
       djName: djName || 'DJ MasterMix',
       date,
-      eventType: eventType || 'Otro'
+      eventType: eventType || 'Otro',
+      djNameSaved: true
     });
 
     // Actualizar registro público si existe
