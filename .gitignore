@@ -33,5 +33,6 @@ dist-desktop
 *.rpm
 *.pkg
 *.zip
+*.apk
 out/
 release/
