@@ -339,23 +339,36 @@ export default function PublicView() {
       return;
     }
 
+    const normalizeString = (str) => {
+      if (!str) return '';
+      return str
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .toLowerCase()
+        .trim()
+        .replace(/\s+/g, ' ');
+    };
+
     // Verificar si ya existe en playedRequests (historial de reproducidas)
     const existsInPlayed = Object.values(playedRequests || {}).some(
       req => {
         if (!req || !req.title) return false;
         
-        const matchTitle = req.title.trim().toLowerCase() === cleanTitle.toLowerCase();
+        const reqTitleNormalized = normalizeString(req.title);
+        const userTitleNormalized = normalizeString(cleanTitle);
+        
+        const matchTitle = reqTitleNormalized === userTitleNormalized;
         if (!matchTitle) return false;
         
-        const reqArtist = (req.artist || '').trim().toLowerCase();
-        const userArtist = cleanArtist.toLowerCase();
+        const reqArtistNormalized = normalizeString(req.artist);
+        const userArtistNormalized = normalizeString(cleanArtist);
         
-        const isReqArtistEmpty = reqArtist === '' || reqArtist === 'artista no especificado';
-        const isUserArtistEmpty = userArtist === '' || userArtist === 'artista no especificado';
+        const isReqArtistEmpty = reqArtistNormalized === '' || reqArtistNormalized === 'artista no especificado';
+        const isUserArtistEmpty = userArtistNormalized === '' || userArtistNormalized === 'artista no especificado';
         
         // Si el usuario no especificó artista, o si el tema registrado no tiene artista,
         // o si los artistas coinciden exactamente, se considera duplicado.
-        return isUserArtistEmpty || isReqArtistEmpty || (reqArtist === userArtist);
+        return isUserArtistEmpty || isReqArtistEmpty || (reqArtistNormalized === userArtistNormalized);
       }
     );
 
