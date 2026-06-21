@@ -1556,6 +1556,129 @@ export default function DjDashboard() {
                   </div>
                 );
               })()}
+
+              {/* Melodías más pedidas (Top Popularidad) */}
+              {(() => {
+                const songCount = {};
+                
+                // Procesar peticiones activas
+                Object.values(requests).forEach(r => {
+                  if (r.title) {
+                    const key = `${r.title.trim().toLowerCase()} - ${r.artist ? r.artist.trim().toLowerCase() : 'artista no especificado'}`;
+                    const votes = r.votes || 1;
+                    if (!songCount[key]) {
+                      songCount[key] = {
+                        title: r.title.trim(),
+                        artist: r.artist ? r.artist.trim() : 'Artista no especificado',
+                        genre: r.genre || '',
+                        votes: 0
+                      };
+                    }
+                    songCount[key].votes += votes;
+                  }
+                });
+
+                // Procesar peticiones ya reproducidas
+                Object.values(playedRequests || {}).forEach(r => {
+                  if (r.title) {
+                    const key = `${r.title.trim().toLowerCase()} - ${r.artist ? r.artist.trim().toLowerCase() : 'artista no especificado'}`;
+                    const votes = r.votes || 1;
+                    if (!songCount[key]) {
+                      songCount[key] = {
+                        title: r.title.trim(),
+                        artist: r.artist ? r.artist.trim() : 'Artista no especificado',
+                        genre: r.genre || '',
+                        votes: 0
+                      };
+                    }
+                    songCount[key].votes += votes;
+                  }
+                });
+
+                const sortedSongs = Object.values(songCount).sort((a, b) => b.votes - a.votes);
+                if (sortedSongs.length === 0) return null;
+                
+                // Mostrar solo las top 5 melodías más pedidas para mantenerlo compacto
+                const topSongs = sortedSongs.slice(0, 5);
+
+                return (
+                  <div style={{ marginTop: '24px', borderTop: '1px solid var(--surface-border)', paddingTop: '20px' }}>
+                    <h4 style={{ fontSize: '0.9rem', color: 'var(--text-secondary)', marginBottom: '12px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                      <Music size={14} color="var(--primary-color)" />
+                      Melodías más pedidas (Top Popularidad)
+                    </h4>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                      {topSongs.map((song, index) => (
+                        <div key={index} style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'space-between',
+                          padding: '10px 14px',
+                          background: 'rgba(255, 255, 255, 0.02)',
+                          border: '1px solid rgba(255, 255, 255, 0.04)',
+                          borderRadius: 'var(--radius-md)',
+                          gap: '12px'
+                        }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flex: 1, minWidth: 0 }}>
+                            <span style={{
+                              width: '22px',
+                              height: '22px',
+                              borderRadius: '50%',
+                              background: index === 0 ? 'rgba(245, 158, 11, 0.15)' : 'rgba(255, 255, 255, 0.05)',
+                              color: index === 0 ? 'var(--warning-color)' : 'var(--text-secondary)',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              fontSize: '0.75rem',
+                              fontWeight: '800',
+                              flexShrink: 0
+                            }}>
+                              {index + 1}
+                            </span>
+                            <div style={{ minWidth: 0, flex: 1 }}>
+                              <p style={{ margin: 0, fontWeight: '700', fontSize: '0.85rem', color: 'var(--text-primary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                                {song.title}
+                              </p>
+                              <p style={{ margin: 0, fontSize: '0.75rem', color: 'var(--text-secondary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                                {song.artist}
+                              </p>
+                            </div>
+                          </div>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexShrink: 0 }}>
+                            {song.genre && (
+                              <span style={{
+                                background: 'rgba(6, 182, 212, 0.08)',
+                                color: 'var(--secondary-color)',
+                                border: '1px solid rgba(6, 182, 212, 0.15)',
+                                padding: '1px 6px',
+                                borderRadius: '4px',
+                                fontSize: '0.7rem',
+                                fontWeight: '600'
+                              }}>
+                                {song.genre.split('/')[0].trim()}
+                              </span>
+                            )}
+                            <span style={{
+                              padding: '2px 8px',
+                              borderRadius: '4px',
+                              background: 'rgba(236, 72, 153, 0.08)',
+                              border: '1px solid rgba(236, 72, 153, 0.15)',
+                              color: '#ec4899',
+                              fontSize: '0.75rem',
+                              fontWeight: '700',
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: '4px'
+                            }}>
+                              ❤️ {song.votes}
+                            </span>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                );
+              })()}
             </div>
           )}
 
