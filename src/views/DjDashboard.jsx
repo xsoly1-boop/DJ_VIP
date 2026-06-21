@@ -1658,20 +1658,25 @@ export default function DjDashboard() {
                                 {song.genre.split('/')[0].trim()}
                               </span>
                             )}
-                            <span style={{
-                              padding: '2px 8px',
-                              borderRadius: '4px',
-                              background: 'rgba(236, 72, 153, 0.08)',
-                              border: '1px solid rgba(236, 72, 153, 0.15)',
-                              color: '#ec4899',
-                              fontSize: '0.75rem',
-                              fontWeight: '700',
-                              display: 'flex',
-                              alignItems: 'center',
-                              gap: '4px'
-                            }}>
-                              ❤️ {song.votes}
-                            </span>
+                            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '2px' }}>
+                              <span style={{
+                                padding: '2px 8px',
+                                borderRadius: '4px',
+                                background: 'rgba(236, 72, 153, 0.08)',
+                                border: '1px solid rgba(236, 72, 153, 0.15)',
+                                color: '#ec4899',
+                                fontSize: '0.75rem',
+                                fontWeight: '700',
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '4px'
+                              }}>
+                                ❤️ {song.votes} {song.votes === 1 ? 'voto' : 'votos'}
+                              </span>
+                              <span style={{ fontSize: '0.65rem', color: 'var(--text-muted)' }}>
+                                Pedida {song.votes} {song.votes === 1 ? 'vez' : 'veces'}
+                              </span>
+                            </div>
                           </div>
                         </div>
                       ))}
