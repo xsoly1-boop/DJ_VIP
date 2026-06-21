@@ -493,6 +493,11 @@ export const FirebaseProvider = ({ children }) => {
     } else {
       voters[sessionId] = true;
       newVotes += 1;
+      try {
+        await checkAndAddToAutocomplete(reqData.title, reqData.artist, reqData.genre);
+      } catch (e) {
+        console.warn("No se pudo incrementar popularidad global en voto:", e);
+      }
     }
     return update(requestRef, { votes: newVotes, voters });
   };
@@ -558,21 +563,33 @@ export const FirebaseProvider = ({ children }) => {
   };
 
   const checkAndAddToAutocomplete = async (title, artist, genre) => {
-    const cleanTitle = title.trim().toLowerCase();
-    const cleanArtist = artist.trim().toLowerCase();
-    const exists = (autocompleteSongs || []).some(
+    const cleanTitle = (title || '').trim().toLowerCase();
+    const cleanArtist = (artist || '').trim().toLowerCase();
+    if (!cleanTitle) return;
+
+    const songIndex = (autocompleteSongs || []).findIndex(
       song => song && song.title && song.artist &&
               song.title.toLowerCase() === cleanTitle && 
               song.artist.toLowerCase() === cleanArtist
     );
-    if (!exists) {
-      const autocompleteRef = ref(database, 'autocomplete_songs');
+
+    const autocompleteRef = ref(database, 'autocomplete_songs');
+
+    if (songIndex === -1) {
       const newSong = {
         title: title.trim(),
-        artist: artist.trim(),
-        genre: genre ? genre.trim() : 'Personalizado'
+        artist: artist.trim() || 'Artista no especificado',
+        genre: genre ? genre.trim() : 'Personalizado',
+        globalRequests: 1
       };
       await push(autocompleteRef, newSong);
+    } else {
+      const song = autocompleteSongs[songIndex];
+      const songRef = ref(database, `autocomplete_songs/${song.id}`);
+      const currentCount = song.globalRequests || 1;
+      await update(songRef, { 
+        globalRequests: currentCount + 1 
+      });
     }
   };
 

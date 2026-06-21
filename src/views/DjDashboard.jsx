@@ -1557,55 +1557,27 @@ export default function DjDashboard() {
                 );
               })()}
 
-              {/* Melodías más pedidas (Top Popularidad) */}
+              {/* Melodías más pedidas (Top Popularidad Global) */}
               {(() => {
-                const songCount = {};
-                
-                // Procesar peticiones activas
-                Object.values(requests).forEach(r => {
-                  if (r.title) {
-                    const key = `${r.title.trim().toLowerCase()} - ${r.artist ? r.artist.trim().toLowerCase() : 'artista no especificado'}`;
-                    const votes = r.votes || 1;
-                    if (!songCount[key]) {
-                      songCount[key] = {
-                        title: r.title.trim(),
-                        artist: r.artist ? r.artist.trim() : 'Artista no especificado',
-                        genre: r.genre || '',
-                        votes: 0
-                      };
-                    }
-                    songCount[key].votes += votes;
-                  }
-                });
+                const sortedSongs = (autocompleteSongs || [])
+                  .filter(s => s && s.title)
+                  .map(s => ({
+                    title: s.title,
+                    artist: s.artist || 'Artista no especificado',
+                    genre: s.genre || '',
+                    votes: s.globalRequests || 1
+                  }))
+                  .sort((a, b) => b.votes - a.votes);
 
-                // Procesar peticiones ya reproducidas
-                Object.values(playedRequests || {}).forEach(r => {
-                  if (r.title) {
-                    const key = `${r.title.trim().toLowerCase()} - ${r.artist ? r.artist.trim().toLowerCase() : 'artista no especificado'}`;
-                    const votes = r.votes || 1;
-                    if (!songCount[key]) {
-                      songCount[key] = {
-                        title: r.title.trim(),
-                        artist: r.artist ? r.artist.trim() : 'Artista no especificado',
-                        genre: r.genre || '',
-                        votes: 0
-                      };
-                    }
-                    songCount[key].votes += votes;
-                  }
-                });
-
-                const sortedSongs = Object.values(songCount).sort((a, b) => b.votes - a.votes);
                 if (sortedSongs.length === 0) return null;
                 
-                // Mostrar solo las top 5 melodías más pedidas para mantenerlo compacto
                 const topSongs = sortedSongs.slice(0, 5);
 
                 return (
                   <div style={{ marginTop: '24px', borderTop: '1px solid var(--surface-border)', paddingTop: '20px' }}>
                     <h4 style={{ fontSize: '0.9rem', color: 'var(--text-secondary)', marginBottom: '12px', display: 'flex', alignItems: 'center', gap: '6px' }}>
                       <Music size={14} color="var(--primary-color)" />
-                      Melodías más pedidas (Top Popularidad)
+                      Melodías más pedidas (Top Global)
                     </h4>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                       {topSongs.map((song, index) => (
@@ -1671,7 +1643,7 @@ export default function DjDashboard() {
                                 alignItems: 'center',
                                 gap: '4px'
                               }}>
-                                ❤️ {song.votes} {song.votes === 1 ? 'voto' : 'votos'}
+                                ❤️ {song.votes} {song.votes === 1 ? 'voto global' : 'votos globales'}
                               </span>
                               <span style={{ fontSize: '0.65rem', color: 'var(--text-muted)' }}>
                                 Pedida {song.votes} {song.votes === 1 ? 'vez' : 'veces'}
