@@ -48,6 +48,7 @@ export default function PublicView() {
   const [genre, setGenre] = useState('');
   const [customGenre, setCustomGenre] = useState('');
   const [isCustomGenre, setIsCustomGenre] = useState(false);
+  const [dedication, setDedication] = useState('');
 
   // Géneros aprendidos dinámicamente del historial de peticiones y autocompletado
   const dynamicGenres = React.useMemo(() => {
@@ -242,6 +243,7 @@ export default function PublicView() {
     const cleanTitle = title.trim();
     const cleanArtist = artist.trim();
     const finalGenre = isCustomGenre ? customGenre.trim() : genre;
+    const cleanDedication = dedication.trim();
 
     // Al menos un campo debe estar lleno para proceder
     if (!cleanTitle && !cleanArtist && !finalGenre) {
@@ -259,6 +261,7 @@ export default function PublicView() {
         cleanTitle || 'Tema no especificado',
         cleanArtist || 'Artista no especificado',
         finalGenre || 'Personalizado',
+        cleanDedication,
         sessionId,
         eventOwnerUid
       );
@@ -273,6 +276,7 @@ export default function PublicView() {
       setGenre('');
       setCustomGenre('');
       setIsCustomGenre(false);
+      setDedication('');
 
       showToast('🎵 ¡Petición enviada al DJ con éxito!');
     } catch (err) {
@@ -663,6 +667,25 @@ export default function PublicView() {
                 </div>
               )}
 
+              {/* Comentario o Dedicatoria */}
+              {eventSettings.dedicationsEnabled && (
+                <div className="form-group animate-slide-in">
+                  <label className="form-label">Comentario o Dedicatoria (Opcional)</label>
+                  <textarea
+                    placeholder="Ej. Dedicado para la novia de parte de sus primos de Monterrey"
+                    className="input-field"
+                    rows={2}
+                    value={dedication}
+                    onChange={(e) => setDedication(e.target.value)}
+                    maxLength={150}
+                    style={{ resize: 'none', fontFamily: 'inherit' }}
+                  />
+                  <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)', display: 'block', textAlign: 'right', marginTop: '4px' }}>
+                    {dedication.length}/150 caracteres
+                  </span>
+                </div>
+              )}
+
               {/* Botón de Enviar con Anti-Spam */}
               <button
                 type="submit"
@@ -749,6 +772,21 @@ export default function PublicView() {
                     <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                       {req.artist} • <span style={{ color: 'var(--secondary-color)' }}>{req.genre}</span>
                     </p>
+                    {req.dedication && (
+                      <p style={{ 
+                        fontSize: '0.8rem', 
+                        color: 'var(--text-muted)', 
+                        marginTop: '6px',
+                        fontStyle: 'italic',
+                        background: 'rgba(255, 255, 255, 0.02)',
+                        padding: '4px 8px',
+                        borderRadius: '4px',
+                        borderLeft: '2px solid var(--primary-color)',
+                        textAlign: 'left'
+                      }}>
+                        💬 "{req.dedication}"
+                      </p>
+                    )}
                   </div>
 
                   {/* Votos */}

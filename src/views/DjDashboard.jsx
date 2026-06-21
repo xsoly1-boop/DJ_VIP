@@ -61,6 +61,7 @@ export default function DjDashboard() {
   const [tipsEnabledInput, setTipsEnabledInput] = useState(eventSettings.tipsEnabled || false);
   const [paypalUsernameInput, setPaypalUsernameInput] = useState(eventSettings.paypalUsername || '');
   const [mercadopagoLinkInput, setMercadopagoLinkInput] = useState(eventSettings.mercadopagoLink || '');
+  const [dedicationsEnabledInput, setDedicationsEnabledInput] = useState(eventSettings.dedicationsEnabled || false);
 
   // Pestaña Calendario: Crear Evento
   const [showCreateEventForm, setShowCreateEventForm] = useState(false);
@@ -139,6 +140,7 @@ export default function DjDashboard() {
     setTipsEnabledInput(eventSettings.tipsEnabled || false);
     setPaypalUsernameInput(eventSettings.paypalUsername || '');
     setMercadopagoLinkInput(eventSettings.mercadopagoLink || '');
+    setDedicationsEnabledInput(eventSettings.dedicationsEnabled || false);
   }, [eventSettings, currentEventId]);
 
   // Actualizar el título del navegador dinámicamente
@@ -387,7 +389,8 @@ export default function DjDashboard() {
         logoSize,
         tipsEnabled: tipsEnabledInput,
         paypalUsername: paypalUsernameInput.trim(),
-        mercadopagoLink: mercadopagoLinkInput.trim()
+        mercadopagoLink: mercadopagoLinkInput.trim(),
+        dedicationsEnabled: dedicationsEnabledInput
       });
       showToast("💾 Configuración de marca guardada");
     } catch (err) {
@@ -870,6 +873,21 @@ export default function DjDashboard() {
                         <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
                           {req.artist} • <span style={{ color: 'var(--secondary-color)' }}>{req.genre}</span>
                         </p>
+                        {req.dedication && (
+                          <div style={{
+                            fontSize: '0.85rem',
+                            color: 'var(--warning-color)',
+                            background: 'rgba(245, 158, 11, 0.05)',
+                            borderLeft: '3px solid var(--warning-color)',
+                            padding: '6px 12px',
+                            margin: '8px 0',
+                            borderRadius: '4px',
+                            fontWeight: '500',
+                            textAlign: 'left'
+                          }}>
+                            💬 Dedicatoria: "{req.dedication}"
+                          </div>
+                        )}
                         <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
                           Recibido: {new Date(req.timestamp).toLocaleTimeString()}
                         </span>
@@ -1256,6 +1274,29 @@ export default function DjDashboard() {
                   </div>
                 )}
 
+                {/* Módulo de Comentarios o Dedicatorias */}
+                <div style={{ borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: '20px' }}>
+                  <label className="form-label" style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--primary-color)', fontWeight: '600' }}>
+                    💬 Módulo de Dedicatorias y Comentarios
+                  </label>
+                  <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginBottom: '16px' }}>
+                    Permite que tu audiencia te deje comentarios o dedicatorias al momento de enviar sus peticiones de canciones.
+                  </p>
+
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                    <input 
+                      type="checkbox" 
+                      id="dedications-enabled"
+                      checked={dedicationsEnabledInput} 
+                      onChange={(e) => setDedicationsEnabledInput(e.target.checked)}
+                      style={{ width: '18px', height: '18px', cursor: 'pointer' }}
+                    />
+                    <label htmlFor="dedications-enabled" style={{ fontSize: '0.9rem', fontWeight: '600', cursor: 'pointer' }}>
+                      Habilitar apartado de Comentario/Dedicatoria para el público
+                    </label>
+                  </div>
+                </div>
+
                 {/* Módulo de Propinas Voluntarias */}
                 <div style={{ borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: '20px' }}>
                   <label className="form-label" style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--primary-color)', fontWeight: '600' }}>
@@ -1337,6 +1378,7 @@ export default function DjDashboard() {
                     setTipsEnabledInput(eventSettings.tipsEnabled || false);
                     setPaypalUsernameInput(eventSettings.paypalUsername || '');
                     setMercadopagoLinkInput(eventSettings.mercadopagoLink || '');
+                    setDedicationsEnabledInput(eventSettings.dedicationsEnabled || false);
                     showToast("Revertido a cambios guardados");
                   }}>Descartar Cambios</button>
                 </div>

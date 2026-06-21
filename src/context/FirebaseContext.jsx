@@ -52,7 +52,8 @@ export const FirebaseProvider = ({ children }) => {
     logoSize: 'medium',
     tipsEnabled: false,
     paypalUsername: '',
-    mercadopagoLink: ''
+    mercadopagoLink: '',
+    dedicationsEnabled: false
   });
   const [requests, setRequests] = useState({});
   const [autocompleteSongs, setAutocompleteSongs] = useState([]);
@@ -107,7 +108,8 @@ export const FirebaseProvider = ({ children }) => {
             logoSize: 'medium',
             tipsEnabled: false,
             paypalUsername: '',
-            mercadopagoLink: ''
+            mercadopagoLink: '',
+            dedicationsEnabled: false
           };
 
           if (!settingsSnap.exists()) {
@@ -233,7 +235,8 @@ export const FirebaseProvider = ({ children }) => {
           logoSize: 'medium',
           tipsEnabled: false,
           paypalUsername: '',
-          mercadopagoLink: ''
+          mercadopagoLink: '',
+          dedicationsEnabled: false
         });
       }
     });
@@ -347,7 +350,7 @@ export const FirebaseProvider = ({ children }) => {
 
   // Crear una nueva petición (Público) — funciona TANTO para usuarios autenticados como anónimos.
   // El público no tiene sesión, por eso buscamos el ownerUid del evento en el registro público.
-  const addRequest = async (title, artist, genre, sessionId, eventOwnerUid) => {
+  const addRequest = async (title, artist, genre, dedication, sessionId, eventOwnerUid) => {
     // ownerUid puede venir del caller (PublicView lo pasa) o del usuario autenticado (DJ usando su propia vista)
     const targetUid = eventOwnerUid || activeUid;
     if (!targetUid) {
@@ -361,6 +364,7 @@ export const FirebaseProvider = ({ children }) => {
       title,
       artist,
       genre: genre || 'Personalizado',
+      dedication: dedication || '',
       timestamp: Date.now(),
       status: 'pending',
       votes: 0,
@@ -511,7 +515,8 @@ export const FirebaseProvider = ({ children }) => {
         logoSize: 'medium',
         tipsEnabled: false,
         paypalUsername: '',
-        mercadopagoLink: ''
+        mercadopagoLink: '',
+        dedicationsEnabled: false
       },
       requests: {}
     };
@@ -557,7 +562,8 @@ export const FirebaseProvider = ({ children }) => {
         logoSize: 'medium',
         tipsEnabled: false,
         paypalUsername: '',
-        mercadopagoLink: ''
+        mercadopagoLink: '',
+        dedicationsEnabled: false
       };
       await set(settingsRef, defaultSettings);
 
@@ -707,7 +713,8 @@ export const FirebaseProvider = ({ children }) => {
           djName: user?.displayName || 'DJ MasterMix',
           date: new Date().toISOString().split('T')[0],
           archived: false,
-          logoSize: 'medium'
+          logoSize: 'medium',
+          dedicationsEnabled: false
         },
         requests: {}
       });
@@ -782,7 +789,8 @@ export const FirebaseProvider = ({ children }) => {
               djName: displayName || email.split('@')[0],
               tipsEnabled: false,
               paypalUsername: '',
-              mercadopagoLink: ''
+              mercadopagoLink: '',
+              dedicationsEnabled: false
             },
             requests: {}
           }
@@ -856,7 +864,8 @@ export const FirebaseProvider = ({ children }) => {
               djName: displayName || email.split('@')[0],
               tipsEnabled: false,
               paypalUsername: '',
-              mercadopagoLink: ''
+              mercadopagoLink: '',
+              dedicationsEnabled: false
             },
             requests: {}
           }

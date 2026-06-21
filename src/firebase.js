@@ -125,7 +125,8 @@ const buildInitialUserData = (uid) => {
           logoUrl: '',
           themeColor: '#7c3aed',
           themeColorSecondary: '#06b6d4',
-          djName: 'DJ MasterMix'
+          djName: 'DJ MasterMix',
+          dedicationsEnabled: false
         },
         requests: {}
       }
