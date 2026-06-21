@@ -293,6 +293,19 @@ export default function PublicView() {
     }
   };
 
+  const handleCopyClabeClick = () => {
+    const clabe = eventSettings.bankClabe ? eventSettings.bankClabe.trim() : '';
+    if (!clabe) return;
+    navigator.clipboard.writeText(clabe)
+      .then(() => {
+        showToast(`📋 CLABE copiada: ${clabe}`);
+      })
+      .catch((err) => {
+        console.error('Error al copiar CLABE:', err);
+        showToast('❌ No se pudo copiar automáticamente.');
+      });
+  };
+
   const executeSubmit = async (cleanTitle, cleanArtist, finalGenre, cleanDedication, isRepeat = false) => {
     try {
       const result = await addRequest(
@@ -585,7 +598,7 @@ export default function PublicView() {
         ) : (
           <>
             {/* Tarjeta de Propinas Voluntarias */}
-            {eventSettings.tipsEnabled && (eventSettings.paypalUsername || eventSettings.mercadopagoLink) && (
+            {eventSettings.tipsEnabled && (eventSettings.paypalUsername || eventSettings.mercadopagoLink || eventSettings.bankClabe) && (
               <div 
                 className={`glass-panel animate-slide-in ${cooldownTimeLeft > 0 ? 'tips-card-active' : ''}`}
                 style={{ 
@@ -603,7 +616,7 @@ export default function PublicView() {
                       {cooldownTimeLeft > 0 ? '⚡ ¡Destaca tu petición apoyando al DJ!' : 'Apoya al DJ (Propina Voluntaria)'}
                     </h3>
                     <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', lineHeight: '1.4' }}>
-                      Si estás disfrutando de la música, puedes apoyar el set enviando una propina por PayPal o copiando su alias de Mercado Pago.
+                      Si estás disfrutando de la música, puedes apoyar el set enviando una propina por PayPal, Mercado Pago o por transferencia bancaria.
                     </p>
                   </div>
                 </div>
@@ -658,6 +671,32 @@ export default function PublicView() {
                       onMouseLeave={(e) => { e.currentTarget.style.transform = 'scale(1)'; }}
                     >
                       <span>{eventSettings.mercadopagoLink.startsWith('http') || eventSettings.mercadopagoLink.includes('mercadopago.com') || eventSettings.mercadopagoLink.includes('mpago.la') ? 'Pagar con Mercado Pago' : 'Copiar Alias Mercado Pago'}</span>
+                    </button>
+                  )}
+
+                  {eventSettings.bankClabe && (
+                    <button 
+                      type="button" 
+                      onClick={handleCopyClabeClick}
+                      className="btn"
+                      style={{ 
+                        background: 'rgba(255, 255, 255, 0.05)', 
+                        color: 'var(--text-primary)', 
+                        fontSize: '0.85rem', 
+                        padding: '10px 16px', 
+                        borderRadius: 'var(--radius-md)',
+                        flex: '1 1 120px',
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        gap: '6px',
+                        border: '1px solid rgba(255, 255, 255, 0.1)',
+                        boxShadow: 'var(--shadow-sm)'
+                      }}
+                      onMouseEnter={(e) => { e.currentTarget.style.transform = 'scale(1.03)'; }}
+                      onMouseLeave={(e) => { e.currentTarget.style.transform = 'scale(1)'; }}
+                    >
+                      <span>Copiar CLABE Interbancaria</span>
                     </button>
                   )}
                 </div>

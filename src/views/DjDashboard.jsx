@@ -66,6 +66,7 @@ export default function DjDashboard() {
   const [tipsEnabledInput, setTipsEnabledInput] = useState(eventSettings.tipsEnabled || false);
   const [paypalUsernameInput, setPaypalUsernameInput] = useState(eventSettings.paypalUsername || '');
   const [mercadopagoLinkInput, setMercadopagoLinkInput] = useState(eventSettings.mercadopagoLink || '');
+  const [clabeInput, setClabeInput] = useState(eventSettings.bankClabe || '');
   const [dedicationsEnabledInput, setDedicationsEnabledInput] = useState(eventSettings.dedicationsEnabled || false);
   const [customGenresInput, setCustomGenresInput] = useState(eventSettings.customGenres || '');
 
@@ -422,6 +423,7 @@ export default function DjDashboard() {
     setTipsEnabledInput(eventSettings.tipsEnabled || false);
     setPaypalUsernameInput(eventSettings.paypalUsername || '');
     setMercadopagoLinkInput(eventSettings.mercadopagoLink || '');
+    setClabeInput(eventSettings.bankClabe || '');
     setDedicationsEnabledInput(eventSettings.dedicationsEnabled || false);
     setCustomGenresInput(eventSettings.customGenres || '');
   }, [eventSettings, currentEventId]);
@@ -712,6 +714,7 @@ export default function DjDashboard() {
         tipsEnabled: tipsEnabledInput,
         paypalUsername: paypalUsernameInput.trim(),
         mercadopagoLink: mercadopagoLinkInput.trim(),
+        bankClabe: clabeInput.trim(),
         dedicationsEnabled: dedicationsEnabledInput,
         customGenres: customGenresInput.trim()
       });
@@ -736,7 +739,8 @@ export default function DjDashboard() {
       await updateEventSettings({
         tipsEnabled: tipsEnabledInput,
         paypalUsername: paypalUsernameInput.trim(),
-        mercadopagoLink: mercadopagoLinkInput.trim()
+        mercadopagoLink: mercadopagoLinkInput.trim(),
+        bankClabe: clabeInput.trim()
       });
       showToast("💾 Configuración de propinas guardada");
     } catch (err) {
@@ -1730,6 +1734,7 @@ export default function DjDashboard() {
                     setTipsEnabledInput(eventSettings.tipsEnabled || false);
                     setPaypalUsernameInput(eventSettings.paypalUsername || '');
                     setMercadopagoLinkInput(eventSettings.mercadopagoLink || '');
+                    setClabeInput(eventSettings.bankClabe || '');
                     setDedicationsEnabledInput(eventSettings.dedicationsEnabled || false);
                     showToast("Revertido a cambios guardados");
                   }}>Descartar Cambios</button>
@@ -2309,7 +2314,7 @@ export default function DjDashboard() {
                     Propinas e Integraciones de Pago
                   </h3>
                   <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', lineHeight: '1.5', marginBottom: '14px' }}>
-                    Monetiza tu trabajo. Habilita links directos a PayPal o alias de Mercado Pago para que los usuarios puedan recompensarte con propinas voluntarias directamente desde sus celulares.
+                    Monetiza tu trabajo. Habilita links directos a PayPal, alias de Mercado Pago o transferencia bancaria (CLABE) para que los usuarios puedan recompensarte con propinas voluntarias directamente desde sus celulares.
                   </p>
                   
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: '12px', marginTop: 'auto' }}>
@@ -2347,6 +2352,17 @@ export default function DjDashboard() {
                             placeholder="Ej: dj.mastermix.mp" 
                             value={mercadopagoLinkInput}
                             onChange={(e) => setMercadopagoLinkInput(e.target.value)}
+                            style={{ fontSize: '0.8rem', padding: '6px 10px', height: '32px' }}
+                          />
+                        </div>
+                        <div className="form-group" style={{ marginBottom: 0 }}>
+                          <label className="form-label" style={{ fontSize: '0.7rem' }}>CLABE Interbancaria (Transferencias)</label>
+                          <input 
+                            type="text" 
+                            className="input-field" 
+                            placeholder="Ej: 18 dígitos CLABE" 
+                            value={clabeInput}
+                            onChange={(e) => setClabeInput(e.target.value)}
                             style={{ fontSize: '0.8rem', padding: '6px 10px', height: '32px' }}
                           />
                         </div>
