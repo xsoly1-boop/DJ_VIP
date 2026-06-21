@@ -855,6 +855,10 @@ export default function DjDashboard() {
                 </span>
               )}
             </button>
+            <button className={`btn ${activeTab === 'optimization' ? 'btn-primary' : 'btn-secondary'}`}
+              onClick={() => setActiveTab('optimization')} style={{ justifyContent: 'flex-start', width: '100%' }}>
+              <Sliders size={16} /><span>Ajustes de Optimización</span>
+            </button>
             {/* Tab Admin: solo visible para dj@admin.com sin impersonar */}
             {isAdminMaster && !impersonatingUid && (
               <button className={`btn ${activeTab === 'admin' ? 'btn-primary' : 'btn-secondary'}`}
@@ -1490,25 +1494,6 @@ export default function DjDashboard() {
                   </div>
                 </div>
 
-                {/* Módulo de Personalización de Géneros Musicales */}
-                <div style={{ borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: '20px' }}>
-                  <label className="form-label" style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--primary-color)', fontWeight: '600' }}>
-                    🎵 Personalización de Géneros Musicales
-                  </label>
-                  <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginBottom: '12px' }}>
-                    Define tu propia lista de géneros musicales para el formulario del público. Escríbelos separados por comas. Si se deja vacío, se utilizará la lista predeterminada.
-                  </p>
-                  <div className="form-group">
-                    <input 
-                      type="text" 
-                      placeholder="Ej. Salsa, Bachata, Reggaetón, Rock, Electrónica" 
-                      className="input-field" 
-                      value={customGenresInput} 
-                      onChange={(e) => setCustomGenresInput(e.target.value)} 
-                    />
-                  </div>
-                </div>
-
                 {/* Módulo de Alertas Visuales a Pantalla Completa */}
                 <div style={{ borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: '20px' }}>
                   <label className="form-label" style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--primary-color)', fontWeight: '600' }}>
@@ -1655,7 +1640,6 @@ export default function DjDashboard() {
                     setPaypalUsernameInput(eventSettings.paypalUsername || '');
                     setMercadopagoLinkInput(eventSettings.mercadopagoLink || '');
                     setDedicationsEnabledInput(eventSettings.dedicationsEnabled || false);
-                    setCustomGenresInput(eventSettings.customGenres || '');
                     showToast("Revertido a cambios guardados");
                   }}>Descartar Cambios</button>
                 </div>
@@ -1663,7 +1647,46 @@ export default function DjDashboard() {
             </div>
           )}
 
+          {/* PANEL AJUSTES DE OPTIMIZACIÓN */}
+          {activeTab === 'optimization' && (
+            <div className="glass-panel" style={{ padding: '24px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', borderBottom: '1px solid var(--surface-border)', paddingBottom: '16px' }}>
+                <h2 style={{ fontSize: '1.25rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <Sliders size={20} color="var(--primary-color)" />
+                  Ajustes de Optimización
+                </h2>
+              </div>
 
+              <form onSubmit={handleSaveBranding} style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+                {/* Módulo de Personalización de Géneros Musicales */}
+                <div>
+                  <label className="form-label" style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--primary-color)', fontWeight: '600' }}>
+                    🎵 Personalización de Géneros Musicales
+                  </label>
+                  <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginBottom: '12px' }}>
+                    Define tu propia lista de géneros musicales para el formulario del público. Escríbelos separados por comas. Si se deja vacío, se utilizará la lista predeterminada.
+                  </p>
+                  <div className="form-group">
+                    <input 
+                      type="text" 
+                      placeholder="Ej. Salsa, Bachata, Reggaetón, Rock, Electrónica" 
+                      className="input-field" 
+                      value={customGenresInput} 
+                      onChange={(e) => setCustomGenresInput(e.target.value)} 
+                    />
+                  </div>
+                </div>
+
+                <div style={{ display: 'flex', gap: '10px', marginTop: '10px', borderTop: '1px solid var(--surface-border)', paddingTop: '20px' }}>
+                  <button type="submit" className="btn btn-primary">Guardar Optimización</button>
+                  <button type="button" className="btn btn-secondary" onClick={() => {
+                    setCustomGenresInput(eventSettings.customGenres || '');
+                    showToast("Cambios descartados");
+                  }}>Descartar Cambios</button>
+                </div>
+              </form>
+            </div>
+          )}
 
           {/* 3. PANEL CALENDARIO Y GESTIÓN DE EVENTOS */}
           {activeTab === 'calendar' && (
