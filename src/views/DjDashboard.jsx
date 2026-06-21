@@ -663,7 +663,7 @@ export default function DjDashboard() {
           </div>
           <div>
             <h1 style={{ fontSize: '1.5rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
-              DJ Cabina Panel
+              DJ Panel
               <span className="badge badge-playing" style={{ fontSize: '0.65rem' }}>PWA Activo 💻</span>
               {isAdminMaster && !impersonatingUid && (
                 <span style={{ fontSize: '0.65rem', padding: '3px 8px', borderRadius: '8px', background: 'rgba(245,158,11,0.15)', color: 'var(--warning-color)', fontWeight: '700', border: '1px solid rgba(245,158,11,0.3)' }}>
