@@ -927,8 +927,27 @@ export default function DjDashboard() {
                           {req.status === 'playing'   && <span className="badge badge-playing animate-pulse-glow">En Reproducción 🎵</span>}
                           {req.status === 'rejected'  && <span className="badge badge-rejected">Rechazada</span>}
                         </div>
-                        <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
-                          {req.artist} • <span style={{ color: 'var(--secondary-color)' }}>{req.genre}</span>
+                        <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
+                          <span>{req.artist}</span>
+                          <span>•</span>
+                          {req.genre ? (
+                            req.genre.split('/').map((g, idx) => (
+                              <span key={idx} style={{
+                                display: 'inline-block',
+                                background: 'rgba(6, 182, 212, 0.08)',
+                                color: 'var(--secondary-color)',
+                                padding: '1px 6px',
+                                borderRadius: '4px',
+                                fontSize: '0.75rem',
+                                fontWeight: '600',
+                                border: '1px solid rgba(6, 182, 212, 0.15)'
+                              }}>
+                                {g.trim()}
+                              </span>
+                            ))
+                          ) : (
+                            <span style={{ color: 'var(--text-muted)' }}>Sin género</span>
+                          )}
                         </p>
                         {req.dedication && (
                           <div style={{
@@ -1005,8 +1024,26 @@ export default function DjDashboard() {
                               {req.title}
                             </span>
                           </div>
-                          <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', margin: '2px 0 0 0' }}>
-                            {req.artist} • <span>{req.genre}</span>
+                          <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', margin: '2px 0 0 0', display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
+                            <span>{req.artist}</span>
+                            <span>•</span>
+                            {req.genre ? (
+                              req.genre.split('/').map((g, idx) => (
+                                <span key={idx} style={{
+                                  display: 'inline-block',
+                                  background: 'rgba(255, 255, 255, 0.03)',
+                                  color: 'var(--text-muted)',
+                                  padding: '1px 5px',
+                                  borderRadius: '4px',
+                                  fontSize: '0.7rem',
+                                  border: '1px solid rgba(255, 255, 255, 0.05)'
+                                }}>
+                                  {g.trim()}
+                                </span>
+                              ))
+                            ) : (
+                              <span>Sin género</span>
+                            )}
                           </p>
                         </div>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
@@ -1033,8 +1070,22 @@ export default function DjDashboard() {
               {/* Géneros aprendidos */}
               {(() => {
                 const genreCount = {};
-                Object.values(requests).forEach(r => { if (r.genre && r.genre !== 'Personalizado') genreCount[r.genre] = (genreCount[r.genre] || 0) + 1; });
-                autocompleteSongs.forEach(s => { if (s.genre && s.genre !== 'Personalizado') genreCount[s.genre] = (genreCount[s.genre] || 0) + 1; });
+                Object.values(requests).forEach(r => { 
+                  if (r.genre && r.genre !== 'Personalizado') {
+                    r.genre.split('/').forEach(g => {
+                      const cleanG = g.trim();
+                      if (cleanG) genreCount[cleanG] = (genreCount[cleanG] || 0) + 1;
+                    });
+                  }
+                });
+                autocompleteSongs.forEach(s => { 
+                  if (s.genre && s.genre !== 'Personalizado') {
+                    s.genre.split('/').forEach(g => {
+                      const cleanG = g.trim();
+                      if (cleanG) genreCount[cleanG] = (genreCount[cleanG] || 0) + 1;
+                    });
+                  }
+                });
                 const sorted = Object.entries(genreCount).sort((a, b) => b[1] - a[1]);
                 if (sorted.length === 0) return null;
                 return (

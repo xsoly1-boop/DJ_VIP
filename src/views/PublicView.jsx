@@ -940,8 +940,27 @@ export default function PublicView() {
                       {req.status === 'rejected' && <span className="badge badge-rejected">Rechazada</span>}
                     </div>
                     
-                    <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                      {req.artist} • <span style={{ color: 'var(--secondary-color)' }}>{req.genre}</span>
+                    <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
+                      <span>{req.artist}</span>
+                      <span>•</span>
+                      {req.genre ? (
+                        req.genre.split('/').map((g, idx) => (
+                          <span key={idx} style={{
+                            display: 'inline-block',
+                            background: 'rgba(6, 182, 212, 0.08)',
+                            color: 'var(--secondary-color)',
+                            padding: '1px 6px',
+                            borderRadius: '4px',
+                            fontSize: '0.75rem',
+                            fontWeight: '600',
+                            border: '1px solid rgba(6, 182, 212, 0.15)'
+                          }}>
+                            {g.trim()}
+                          </span>
+                        ))
+                      ) : (
+                        <span style={{ color: 'var(--text-muted)' }}>Sin género</span>
+                      )}
                     </p>
                     {req.dedication && (
                       <p style={{ 
@@ -1039,8 +1058,26 @@ export default function PublicView() {
                         {req.title}
                       </span>
                     </div>
-                    <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', marginTop: '2px' }}>
-                      {req.artist} • <span>{req.genre}</span>
+                    <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', marginTop: '2px', display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
+                      <span>{req.artist}</span>
+                      <span>•</span>
+                      {req.genre ? (
+                        req.genre.split('/').map((g, idx) => (
+                          <span key={idx} style={{
+                            display: 'inline-block',
+                            background: 'rgba(255, 255, 255, 0.03)',
+                            color: 'var(--text-muted)',
+                            padding: '1px 5px',
+                            borderRadius: '4px',
+                            fontSize: '0.7rem',
+                            border: '1px solid rgba(255, 255, 255, 0.05)'
+                          }}>
+                            {g.trim()}
+                          </span>
+                        ))
+                      ) : (
+                        <span>Sin género</span>
+                      )}
                     </p>
                   </div>
                   {req.playedAt && (
