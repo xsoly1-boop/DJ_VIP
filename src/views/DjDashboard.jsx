@@ -7,7 +7,7 @@ import {
   Trash2, Plus, Play, Check, X, Bell, BellOff, Volume2, 
   Sparkles, Sliders, Users, Layers, ShieldCheck,
   Link, AlertTriangle, ShieldAlert, ArrowLeft, UserCog, Edit, UserPlus, Mail, Lock, User,
-  LayoutGrid, ExternalLink, Image, Search
+  LayoutGrid, ExternalLink, Image, Search, Megaphone
 } from 'lucide-react';
 
 export default function DjDashboard() {
@@ -70,6 +70,13 @@ export default function DjDashboard() {
   const [clabeInput, setClabeInput] = useState(eventSettings.bankClabe || '');
   const [dedicationsEnabledInput, setDedicationsEnabledInput] = useState(eventSettings.dedicationsEnabled || false);
   const [customGenresInput, setCustomGenresInput] = useState(eventSettings.customGenres || '');
+
+  // Publicidad y Contacto
+  const [promoEnabledInput, setPromoEnabledInput] = useState(eventSettings.promoEnabled || false);
+  const [promoWhatsappInput, setPromoWhatsappInput] = useState(eventSettings.promoWhatsapp || '');
+  const [promoWebsiteInput, setPromoWebsiteInput] = useState(eventSettings.promoWebsite || '');
+  const [promoInstagramInput, setPromoInstagramInput] = useState(eventSettings.promoInstagram || '');
+  const [promoTiktokInput, setPromoTiktokInput] = useState(eventSettings.promoTiktok || '');
 
   // Pestaña Calendario: Crear Evento
   const [showCreateEventForm, setShowCreateEventForm] = useState(false);
@@ -434,6 +441,11 @@ export default function DjDashboard() {
     setClabeInput(eventSettings.bankClabe || '');
     setDedicationsEnabledInput(eventSettings.dedicationsEnabled || false);
     setCustomGenresInput(eventSettings.customGenres || '');
+    setPromoEnabledInput(eventSettings.promoEnabled || false);
+    setPromoWhatsappInput(eventSettings.promoWhatsapp || '');
+    setPromoWebsiteInput(eventSettings.promoWebsite || '');
+    setPromoInstagramInput(eventSettings.promoInstagram || '');
+    setPromoTiktokInput(eventSettings.promoTiktok || '');
   }, [eventSettings, currentEventId]);
 
   // Cargar nombre del tono seleccionado en Android
@@ -754,6 +766,24 @@ export default function DjDashboard() {
     } catch (err) {
       console.error('Error guardando propinas:', err);
       showToast("❌ Error al guardar las propinas");
+    }
+  };
+
+  // Guardar configuración de Publicidad / Contacto para Contrataciones
+  const handleSavePromoSettings = async (e) => {
+    if (e) e.preventDefault();
+    try {
+      await updateEventSettings({
+        promoEnabled: promoEnabledInput,
+        promoWhatsapp: promoWhatsappInput.trim(),
+        promoWebsite: promoWebsiteInput.trim(),
+        promoInstagram: promoInstagramInput.trim(),
+        promoTiktok: promoTiktokInput.trim()
+      });
+      showToast("💾 Configuración de contacto/publicidad guardada");
+    } catch (err) {
+      console.error('Error guardando contacto/publicidad:', err);
+      showToast("❌ Error al guardar la configuración");
     }
   };
 
@@ -2536,6 +2566,104 @@ export default function DjDashboard() {
                       </span>
                     </div>
                   )}
+                </div>
+
+                {/* 7. Publicidad o Contacto para Contrataciones */}
+                <div 
+                  className="glass-panel" 
+                  style={{ 
+                    padding: '20px', 
+                    borderRadius: 'var(--radius-md)', 
+                    border: '1px solid rgba(255,255,255,0.04)',
+                    background: 'rgba(255,255,255,0.01)',
+                    transition: 'transform 0.2s',
+                    cursor: 'default',
+                    display: 'flex',
+                    flexDirection: 'column'
+                  }}
+                  onMouseEnter={(e) => e.currentTarget.style.transform = 'translateY(-3px)'}
+                  onMouseLeave={(e) => e.currentTarget.style.transform = 'translateY(0)'}
+                >
+                  <div style={{ width: '40px', height: '40px', borderRadius: '50%', background: 'rgba(168, 85, 247, 0.15)', display: 'flex', alignItems: 'center', marginBottom: '14px', color: '#a855f7', alignSelf: 'start', justifyContent: 'center' }}>
+                    <Megaphone size={20} />
+                  </div>
+                  <h3 style={{ fontSize: '1rem', fontWeight: '700', marginBottom: '8px', color: 'var(--text-primary)' }}>
+                    Publicidad y Contacto
+                  </h3>
+                  <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', lineHeight: '1.5', marginBottom: '14px' }}>
+                    Promociónate. Habilita una sección compacta y atractiva sobre la lista de peticiones en la web del público con tus enlaces de WhatsApp, Sitio Web, Instagram y TikTok para contrataciones.
+                  </p>
+                  
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: '12px', marginTop: 'auto' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <input 
+                        type="checkbox" 
+                        id="promo-enabled"
+                        checked={promoEnabledInput} 
+                        onChange={(e) => {
+                          setPromoEnabledInput(e.target.checked);
+                          updateEventSettings({ promoEnabled: e.target.checked });
+                          showToast(e.target.checked ? '📢 Banner de contacto activado' : '📢 Banner de contacto desactivado');
+                        }}
+                        style={{ width: '16px', height: '16px', cursor: 'pointer' }}
+                      />
+                      <label htmlFor="promo-enabled" style={{ fontSize: '0.8rem', fontWeight: '600', cursor: 'pointer' }}>
+                        Habilitar banner en frontend
+                      </label>
+                    </div>
+
+                    {promoEnabledInput && (
+                      <form onSubmit={handleSavePromoSettings} style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                        <div className="form-group" style={{ marginBottom: 0 }}>
+                          <label className="form-label" style={{ fontSize: '0.7rem' }}>WhatsApp (Número con código de país)</label>
+                          <input 
+                            type="text" 
+                            className="input-field" 
+                            placeholder="Ej: 5215512345678" 
+                            value={promoWhatsappInput}
+                            onChange={(e) => setPromoWhatsappInput(e.target.value)}
+                            style={{ fontSize: '0.8rem', padding: '6px 10px', height: '32px' }}
+                          />
+                        </div>
+                        <div className="form-group" style={{ marginBottom: 0 }}>
+                          <label className="form-label" style={{ fontSize: '0.7rem' }}>Sitio Web URL</label>
+                          <input 
+                            type="text" 
+                            className="input-field" 
+                            placeholder="Ej: https://misitioweb.com" 
+                            value={promoWebsiteInput}
+                            onChange={(e) => setPromoWebsiteInput(e.target.value)}
+                            style={{ fontSize: '0.8rem', padding: '6px 10px', height: '32px' }}
+                          />
+                        </div>
+                        <div className="form-group" style={{ marginBottom: 0 }}>
+                          <label className="form-label" style={{ fontSize: '0.7rem' }}>Instagram (Usuario sin @)</label>
+                          <input 
+                            type="text" 
+                            className="input-field" 
+                            placeholder="Ej: dj_mastermix" 
+                            value={promoInstagramInput}
+                            onChange={(e) => setPromoInstagramInput(e.target.value)}
+                            style={{ fontSize: '0.8rem', padding: '6px 10px', height: '32px' }}
+                          />
+                        </div>
+                        <div className="form-group" style={{ marginBottom: 0 }}>
+                          <label className="form-label" style={{ fontSize: '0.7rem' }}>TikTok (Usuario sin @)</label>
+                          <input 
+                            type="text" 
+                            className="input-field" 
+                            placeholder="Ej: dj_mastermix" 
+                            value={promoTiktokInput}
+                            onChange={(e) => setPromoTiktokInput(e.target.value)}
+                            style={{ fontSize: '0.8rem', padding: '6px 10px', height: '32px' }}
+                          />
+                        </div>
+                        <button type="submit" className="btn btn-primary" style={{ padding: '6px 10px', fontSize: '0.75rem', width: '100%', height: '32px', display: 'flex', justifyContent: 'center' }}>
+                          Guardar Datos de Contacto
+                        </button>
+                      </form>
+                    )}
+                  </div>
                 </div>
 
               </div>

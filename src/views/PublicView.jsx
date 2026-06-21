@@ -36,7 +36,12 @@ export default function PublicView() {
     eventType: 'Otro',
     tipsEnabled: false,
     paypalUsername: '',
-    mercadopagoLink: ''
+    mercadopagoLink: '',
+    promoEnabled: false,
+    promoWhatsapp: '',
+    promoWebsite: '',
+    promoInstagram: '',
+    promoTiktok: ''
   };
 
   const eventSettings = rawEventSettings ? { ...defaults, ...rawEventSettings } : defaults;
@@ -965,6 +970,146 @@ export default function PublicView() {
             </h3>
             <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Ordenado por votos</span>
           </div>
+
+          {/* Banner de Publicidad y Contacto para Contrataciones */}
+          {eventSettings.promoEnabled && (eventSettings.promoWhatsapp || eventSettings.promoWebsite || eventSettings.promoInstagram || eventSettings.promoTiktok) && (
+            <div className="glass-panel" style={{
+              padding: '12px 16px',
+              borderRadius: 'var(--radius-md)',
+              border: '1px solid rgba(255, 255, 255, 0.08)',
+              background: 'rgba(255, 255, 255, 0.02)',
+              marginBottom: '16px',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '10px',
+              boxShadow: '0 4px 15px rgba(0, 0, 0, 0.2)'
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <div className="flex-center" style={{
+                  width: '28px',
+                  height: '28px',
+                  borderRadius: '50%',
+                  background: 'rgba(168, 85, 247, 0.15)',
+                  color: '#a855f7',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center'
+                }}>
+                  <Sparkles size={14} />
+                </div>
+                <div>
+                  <h4 style={{ fontSize: '0.85rem', fontWeight: '700', color: 'var(--text-primary)', margin: 0 }}>
+                    ¿Te gusta el show? ¡Contrata a {eventSettings.djName || 'tu DJ'}! 🎧
+                  </h4>
+                  <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
+                    Contacto directo y redes oficiales
+                  </span>
+                </div>
+              </div>
+              
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+                {eventSettings.promoWhatsapp && (
+                  <a 
+                    href={`https://wa.me/${eventSettings.promoWhatsapp.replace(/[^0-9]/g, '')}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="btn"
+                    style={{
+                      padding: '6px 12px',
+                      fontSize: '0.75rem',
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '6px',
+                      background: 'rgba(37, 211, 102, 0.15)',
+                      border: '1px solid rgba(37, 211, 102, 0.3)',
+                      color: '#25d366',
+                      borderRadius: 'var(--radius-sm)',
+                      fontWeight: '600',
+                      textDecoration: 'none'
+                    }}
+                  >
+                    <svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"></path></svg>
+                    <span>WhatsApp</span>
+                  </a>
+                )}
+
+                {eventSettings.promoWebsite && (
+                  <a 
+                    href={eventSettings.promoWebsite.startsWith('http') ? eventSettings.promoWebsite : `https://${eventSettings.promoWebsite}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="btn"
+                    style={{
+                      padding: '6px 12px',
+                      fontSize: '0.75rem',
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '6px',
+                      background: 'rgba(59, 130, 246, 0.15)',
+                      border: '1px solid rgba(59, 130, 246, 0.3)',
+                      color: '#3b82f6',
+                      borderRadius: 'var(--radius-sm)',
+                      fontWeight: '600',
+                      textDecoration: 'none'
+                    }}
+                  >
+                    <svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="2" y1="12" x2="22" y2="12"></line><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path></svg>
+                    <span>Sitio Web</span>
+                  </a>
+                )}
+
+                {eventSettings.promoInstagram && (
+                  <a 
+                    href={eventSettings.promoInstagram.startsWith('http') ? eventSettings.promoInstagram : `https://instagram.com/${eventSettings.promoInstagram.replace('@', '')}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="btn"
+                    style={{
+                      padding: '6px 12px',
+                      fontSize: '0.75rem',
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '6px',
+                      background: 'rgba(236, 72, 153, 0.15)',
+                      border: '1px solid rgba(236, 72, 153, 0.3)',
+                      color: '#ec4899',
+                      borderRadius: 'var(--radius-sm)',
+                      fontWeight: '600',
+                      textDecoration: 'none'
+                    }}
+                  >
+                    <svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="2" width="20" height="20" rx="5" ry="5"></rect><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"></path><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"></line></svg>
+                    <span>Instagram</span>
+                  </a>
+                )}
+
+                {eventSettings.promoTiktok && (
+                  <a 
+                    href={eventSettings.promoTiktok.startsWith('http') ? eventSettings.promoTiktok : `https://tiktok.com/@${eventSettings.promoTiktok.replace('@', '')}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="btn"
+                    style={{
+                      padding: '6px 12px',
+                      fontSize: '0.75rem',
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '6px',
+                      background: 'rgba(255, 255, 255, 0.08)',
+                      border: '1px solid rgba(255, 255, 255, 0.15)',
+                      color: 'var(--text-primary)',
+                      borderRadius: 'var(--radius-sm)',
+                      fontWeight: '600',
+                      textDecoration: 'none'
+                    }}
+                  >
+                    <Music size={14} />
+                    <span>TikTok</span>
+                  </a>
+                )}
+              </div>
+            </div>
+          )}
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
             {requestList.length === 0 ? (
