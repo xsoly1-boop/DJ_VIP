@@ -151,6 +151,37 @@ export default function DjDashboard() {
   const [editItemArtist, setEditItemArtist] = useState('');
   const [editItemGenre, setEditItemGenre] = useState('');
 
+  // Edición directa desde la cola de peticiones
+  const [editingQueueRequestId, setEditingQueueRequestId] = useState(null);
+  const [queueEditTitle, setQueueEditTitle] = useState('');
+  const [queueEditArtist, setQueueEditArtist] = useState('');
+  const [queueEditGenre, setQueueEditGenre] = useState('');
+
+  const handleStartEditQueueRequest = (req) => {
+    setEditingQueueRequestId(req.id);
+    setQueueEditTitle(req.title || '');
+    setQueueEditArtist(req.artist || '');
+    setQueueEditGenre(req.genre || '');
+  };
+
+  const handleSaveQueueRequestEdit = async (id) => {
+    const title = queueEditTitle.trim();
+    const artist = queueEditArtist.trim();
+    const genre = queueEditGenre.trim();
+    if (!title) {
+      showToast("⚠️ El título no puede estar vacío");
+      return;
+    }
+    try {
+      await updateActiveRequest(id, { title, artist, genre });
+      showToast("✅ Petición editada con éxito");
+      setEditingQueueRequestId(null);
+    } catch (err) {
+      console.error(err);
+      showToast("❌ Error al guardar la edición");
+    }
+  };
+
   // Sincronizar géneros desde base de datos
   useEffect(() => {
     const raw = eventSettings.customGenres || '';
@@ -698,6 +729,22 @@ export default function DjDashboard() {
     }
   };
 
+  // Guardar configuraciones de propinas desde el panel de beneficios
+  const handleSaveBenefitsSettings = async (e) => {
+    if (e) e.preventDefault();
+    try {
+      await updateEventSettings({
+        tipsEnabled: tipsEnabledInput,
+        paypalUsername: paypalUsernameInput.trim(),
+        mercadopagoLink: mercadopagoLinkInput.trim()
+      });
+      showToast("💾 Configuración de propinas guardada");
+    } catch (err) {
+      console.error('Error guardando propinas:', err);
+      showToast("❌ Error al guardar las propinas");
+    }
+  };
+
   // Guardar URL externa de logo
   const handleSaveLogoUrl = async () => {
     if (!logoUrlInput.trim()) {
@@ -1202,61 +1249,120 @@ export default function DjDashboard() {
                                   req.status === 'accepted' ? '4px solid var(--success-color)' :
                                   req.status === 'rejected' ? '4px solid var(--danger-color)' : '4px solid var(--warning-color)'
                     }}>
-                      <div style={{ flex: 1, minWidth: '200px' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap', marginBottom: '4px' }}>
-                          <span style={{ fontWeight: '700', fontSize: '1.05rem', color: 'var(--text-primary)' }}>{req.title}</span>
-                          {req.status === 'pending'   && <span className="badge badge-pending">En espera</span>}
-                          {req.status === 'accepted'  && <span className="badge badge-accepted">Aceptada</span>}
-                          {req.status === 'playing'   && <span className="badge badge-playing animate-pulse-glow">En Reproducción 🎵</span>}
-                          {req.status === 'rejected'  && <span className="badge badge-rejected">Rechazada</span>}
-                        </div>
-                        <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
-                          <span>{req.artist}</span>
-                          <span>•</span>
-                          {req.genre ? (
-                            req.genre.split('/').map((g, idx) => (
-                              <span key={idx} style={{
-                                display: 'inline-block',
-                                background: 'rgba(6, 182, 212, 0.08)',
-                                color: 'var(--secondary-color)',
-                                padding: '1px 6px',
-                                borderRadius: '4px',
-                                fontSize: '0.75rem',
-                                fontWeight: '600',
-                                border: '1px solid rgba(6, 182, 212, 0.15)'
-                              }}>
-                                {g.trim()}
-                              </span>
-                            ))
-                          ) : (
-                            <span style={{ color: 'var(--text-muted)' }}>Sin género</span>
-                          )}
-                        </p>
-                        {req.dedication && (
-                          <div style={{
-                            fontSize: '0.85rem',
-                            color: 'var(--warning-color)',
-                            background: 'rgba(245, 158, 11, 0.05)',
-                            borderLeft: '3px solid var(--warning-color)',
-                            padding: '6px 12px',
-                            margin: '8px 0',
-                            borderRadius: '4px',
-                            fontWeight: '500',
-                            textAlign: 'left'
-                          }}>
-                            💬 Dedicatoria: "{req.dedication}"
+                      {editingQueueRequestId === req.id ? (
+                        <div style={{ flex: 1, minWidth: '200px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))', gap: '8px' }}>
+                            <div className="form-group" style={{ marginBottom: 0 }}>
+                              <label className="form-label" style={{ fontSize: '0.7rem' }}>Canción</label>
+                              <input 
+                                type="text" 
+                                className="input-field" 
+                                value={queueEditTitle} 
+                                onChange={(e) => setQueueEditTitle(e.target.value)} 
+                                style={{ fontSize: '0.8rem', padding: '6px 10px' }} 
+                              />
+                            </div>
+                            <div className="form-group" style={{ marginBottom: 0 }}>
+                              <label className="form-label" style={{ fontSize: '0.7rem' }}>Artista</label>
+                              <input 
+                                type="text" 
+                                className="input-field" 
+                                value={queueEditArtist} 
+                                onChange={(e) => setQueueEditArtist(e.target.value)} 
+                                style={{ fontSize: '0.8rem', padding: '6px 10px' }} 
+                              />
+                            </div>
+                            <div className="form-group" style={{ marginBottom: 0 }}>
+                              <label className="form-label" style={{ fontSize: '0.7rem' }}>Género</label>
+                              <input 
+                                type="text" 
+                                className="input-field" 
+                                value={queueEditGenre} 
+                                onChange={(e) => setQueueEditGenre(e.target.value)} 
+                                style={{ fontSize: '0.8rem', padding: '6px 10px' }} 
+                              />
+                            </div>
                           </div>
-                        )}
-                        <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
-                          Recibido: {new Date(req.timestamp).toLocaleTimeString()}
-                        </span>
-                      </div>
+                          <div style={{ display: 'flex', gap: '8px' }}>
+                            <button 
+                              onClick={() => handleSaveQueueRequestEdit(req.id)} 
+                              className="btn btn-primary" 
+                              style={{ padding: '6px 12px', fontSize: '0.75rem', display: 'flex', alignItems: 'center', gap: '4px' }}
+                            >
+                              <Check size={12} /> Guardar
+                            </button>
+                            <button 
+                              onClick={() => setEditingQueueRequestId(null)} 
+                              className="btn btn-secondary" 
+                              style={{ padding: '6px 12px', fontSize: '0.75rem', display: 'flex', alignItems: 'center', gap: '4px' }}
+                            >
+                              <X size={12} /> Cancelar
+                            </button>
+                          </div>
+                        </div>
+                      ) : (
+                        <div style={{ flex: 1, minWidth: '200px' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap', marginBottom: '4px' }}>
+                            <span style={{ fontWeight: '700', fontSize: '1.05rem', color: 'var(--text-primary)' }}>{req.title}</span>
+                            {req.status === 'pending'   && <span className="badge badge-pending">En espera</span>}
+                            {req.status === 'accepted'  && <span className="badge badge-accepted">Aceptada</span>}
+                            {req.status === 'playing'   && <span className="badge badge-playing animate-pulse-glow">En Reproducción 🎵</span>}
+                            {req.status === 'rejected'  && <span className="badge badge-rejected">Rechazada</span>}
+                          </div>
+                          <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
+                            <span>{req.artist}</span>
+                            <span>•</span>
+                            {req.genre ? (
+                              req.genre.split('/').map((g, idx) => (
+                                <span key={idx} style={{
+                                  display: 'inline-block',
+                                  background: 'rgba(6, 182, 212, 0.08)',
+                                  color: 'var(--secondary-color)',
+                                  padding: '1px 6px',
+                                  borderRadius: '4px',
+                                  fontSize: '0.75rem',
+                                  fontWeight: '600',
+                                  border: '1px solid rgba(6, 182, 212, 0.15)'
+                                }}>
+                                  {g.trim()}
+                                </span>
+                              ))
+                            ) : (
+                              <span style={{ color: 'var(--text-muted)' }}>Sin género</span>
+                            )}
+                          </p>
+                          {req.dedication && (
+                            <div style={{
+                              fontSize: '0.85rem',
+                              color: 'var(--warning-color)',
+                              background: 'rgba(245, 158, 11, 0.05)',
+                              borderLeft: '3px solid var(--warning-color)',
+                              padding: '6px 12px',
+                              margin: '8px 0',
+                              borderRadius: '4px',
+                              fontWeight: '500',
+                              textAlign: 'left'
+                            }}>
+                              💬 Dedicatoria: "{req.dedication}"
+                            </div>
+                          )}
+                          <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+                            Recibido: {new Date(req.timestamp).toLocaleTimeString()}
+                          </span>
+                        </div>
+                      )}
                       <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
                         <div style={{ textAlign: 'center' }}>
                           <span style={{ display: 'block', fontSize: '0.7rem', color: 'var(--text-muted)', textTransform: 'uppercase', fontWeight: '700' }}>Votos</span>
                           <span style={{ fontSize: '1.25rem', fontWeight: '800', color: 'var(--text-primary)' }}>{req.votes}</span>
                         </div>
                         <div style={{ display: 'flex', gap: '6px' }}>
+                          {editingQueueRequestId !== req.id && (
+                            <button onClick={() => handleStartEditQueueRequest(req)}
+                              className="btn btn-secondary btn-icon" style={{ border: '1px solid rgba(255,255,255,0.2)', color: 'var(--text-secondary)' }} title="Editar Petición">
+                              <Edit size={16} />
+                            </button>
+                          )}
                           {req.status !== 'accepted' && req.status !== 'playing' && (
                             <button onClick={() => { updateRequestStatus(req.id, 'accepted'); showToast(`Aceptaste: ${req.title}`); }}
                               className="btn btn-secondary btn-icon" style={{ border: '1px solid rgba(16, 185, 129, 0.4)', color: 'var(--success-color)' }} title="Aceptar">
@@ -1590,131 +1696,6 @@ export default function DjDashboard() {
                   </div>
                 </div>
 
-                {/* Integración con Virtual DJ (Solo Desktop) */}
-                {window.electronAPI && window.electronAPI.isDesktop && (
-                  <div style={{ borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: '20px' }}>
-                    <label className="form-label" style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--secondary-color)', fontWeight: '600' }}>
-                      💿 Integración en Tiempo Real con Virtual DJ
-                    </label>
-                    <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginBottom: '16px' }}>
-                      Escribe de forma automática las peticiones aceptadas en una lista de reproducción o carpeta virtual local dentro de Virtual DJ.
-                    </p>
-
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                      {/* Switch Activar */}
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                        <input 
-                          type="checkbox" 
-                          id="vdj-enabled"
-                          checked={virtualDJEnabled} 
-                          onChange={(e) => {
-                            const val = e.target.checked;
-                            setVirtualDJEnabled(val);
-                            localStorage.setItem('vdj_sync_enabled', val ? 'true' : 'false');
-                            if (val && !virtualDJPath) {
-                              window.electronAPI.detectVirtualDJPath().then(path => {
-                                if (path) {
-                                  setVirtualDJPath(path);
-                                  localStorage.setItem('vdj_path', path);
-                                  showToast("💿 Ruta de Virtual DJ detectada!");
-                                } else {
-                                  showToast("⚠️ No se pudo auto-detectar. Introduce la ruta manualmente.");
-                                }
-                              });
-                            }
-                          }}
-                          style={{ width: '18px', height: '18px', cursor: 'pointer' }}
-                        />
-                        <label htmlFor="vdj-enabled" style={{ fontSize: '0.9rem', fontWeight: '600', cursor: 'pointer' }}>
-                          Activar Sincronización Automática con Virtual DJ
-                        </label>
-                      </div>
-
-                      {virtualDJEnabled && (
-                        <div className="animate-slide-in" style={{ display: 'flex', flexDirection: 'column', gap: '12px', background: 'rgba(255,255,255,0.02)', padding: '16px', borderRadius: 'var(--radius-md)', border: '1px solid rgba(255,255,255,0.05)' }}>
-                          {/* Ruta de carpeta */}
-                          <div className="form-group">
-                            <label className="form-label" style={{ fontSize: '0.8rem' }}>Ruta de la Carpeta de Virtual DJ</label>
-                            <div style={{ display: 'flex', gap: '8px' }}>
-                              <input 
-                                type="text" 
-                                className="input-field" 
-                                placeholder="Ej: /Users/usuario/Documents/VirtualDJ" 
-                                value={virtualDJPath} 
-                                onChange={(e) => {
-                                  setVirtualDJPath(e.target.value);
-                                  localStorage.setItem('vdj_path', e.target.value);
-                                }}
-                                style={{ fontSize: '0.85rem' }}
-                              />
-                              <button 
-                                type="button" 
-                                className="btn btn-secondary" 
-                                onClick={async () => {
-                                  const path = await window.electronAPI.detectVirtualDJPath();
-                                  if (path) {
-                                    setVirtualDJPath(path);
-                                    localStorage.setItem('vdj_path', path);
-                                    showToast("💿 Ruta de Virtual DJ detectada!");
-                                  } else {
-                                    showToast("❌ No se encontró la carpeta por defecto.");
-                                  }
-                                }}
-                                style={{ fontSize: '0.85rem', whiteSpace: 'nowrap' }}
-                              >
-                                Auto-detectar
-                              </button>
-                            </div>
-                            <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>
-                              Normalmente se encuentra en tus Documentos bajo la carpeta 'VirtualDJ'.
-                            </span>
-                          </div>
-
-                          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
-                            {/* Formato de archivo */}
-                            <div className="form-group">
-                              <label className="form-label" style={{ fontSize: '0.8rem' }}>Formato del Archivo</label>
-                              <select 
-                                className="input-field" 
-                                value={virtualDJFormat} 
-                                onChange={(e) => {
-                                  setVirtualDJFormat(e.target.value);
-                                  localStorage.setItem('vdj_format', e.target.value);
-                                }}
-                                style={{ fontSize: '0.85rem', cursor: 'pointer' }}
-                              >
-                                <option value="m3u">M3U Playlist (Recomendado - Carpeta Playlists)</option>
-                                <option value="vdjfolder">Virtual Folder XML (Carpeta My Lists)</option>
-                              </select>
-                            </div>
-
-                            {/* Filtro de sincronización */}
-                            <div className="form-group">
-                              <label className="form-label" style={{ fontSize: '0.8rem' }}>Qué Canciones Sincronizar</label>
-                              <select 
-                                className="input-field" 
-                                value={virtualDJSyncMode} 
-                                onChange={(e) => {
-                                  setVirtualDJSyncMode(e.target.value);
-                                  localStorage.setItem('vdj_sync_mode', e.target.value);
-                                }}
-                                style={{ fontSize: '0.85rem', cursor: 'pointer' }}
-                              >
-                                <option value="accepted">Solo Aceptadas y Reproduciendo</option>
-                                <option value="all">Todas las Peticiones Recibidas (excepto rechazadas)</option>
-                              </select>
-                            </div>
-                          </div>
-
-                          <span style={{ fontSize: '0.75rem', color: 'var(--secondary-color)', fontWeight: '500' }}>
-                            💡 Archivo generado: {virtualDJFormat === 'm3u' ? 'Playlists/Peticiones DJ a la Carta.m3u' : 'My Lists/Peticiones DJ a la Carta.vdjfolder'}
-                          </span>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                )}
-
                 {/* Módulo de Comentarios o Dedicatorias */}
                 <div style={{ borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: '20px' }}>
                   <label className="form-label" style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--primary-color)', fontWeight: '600' }}>
@@ -1735,140 +1716,6 @@ export default function DjDashboard() {
                     <label htmlFor="dedications-enabled" style={{ fontSize: '0.9rem', fontWeight: '600', cursor: 'pointer' }}>
                       Habilitar apartado de Comentario/Dedicatoria para el público
                     </label>
-                  </div>
-                </div>
-
-                {/* Módulo de Alertas Visuales a Pantalla Completa */}
-                <div style={{ borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: '20px' }}>
-                  <label className="form-label" style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--primary-color)', fontWeight: '600' }}>
-                    📺 Alertas Visuales en Pantalla Completa
-                  </label>
-                  <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginBottom: '16px' }}>
-                    Muestra un destello de color a pantalla completa cuando entra una nueva canción, ideal para cabinas oscuras.
-                  </p>
-
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                      <input 
-                        type="checkbox" 
-                        id="visual-alerts-enabled"
-                        checked={visualAlertEnabled} 
-                        onChange={(e) => {
-                          setVisualAlertEnabled(e.target.checked);
-                          localStorage.setItem('dj_visual_alert_enabled', e.target.checked.toString());
-                          showToast(e.target.checked ? '📺 Alertas visuales activadas' : '📺 Alertas visuales desactivadas');
-                        }}
-                        style={{ width: '18px', height: '18px', cursor: 'pointer' }}
-                      />
-                      <label htmlFor="visual-alerts-enabled" style={{ fontSize: '0.9rem', fontWeight: '600', cursor: 'pointer' }}>
-                        Habilitar alertas visuales de pantalla completa
-                      </label>
-                    </div>
-
-                    {visualAlertEnabled && (
-                      <div className="animate-slide-in" style={{ display: 'flex', alignItems: 'center', gap: '12px', background: 'rgba(255,255,255,0.02)', padding: '12px 16px', borderRadius: 'var(--radius-md)', border: '1px solid rgba(255,255,255,0.05)', maxWidth: '400px' }}>
-                        <span style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', whiteSpace: 'nowrap' }}>
-                          Duración del destello (segundos):
-                        </span>
-                        <input 
-                          type="number" 
-                          min="1" 
-                          max="10" 
-                          className="input-field" 
-                          value={visualAlertDuration} 
-                          onChange={(e) => {
-                            const val = Math.max(1, parseInt(e.target.value, 10) || 1);
-                            setVisualAlertDuration(val);
-                            localStorage.setItem('dj_visual_alert_duration', val.toString());
-                          }}
-                          style={{ width: '80px', padding: '6px 12px', fontSize: '0.85rem', textAlign: 'center' }}
-                        />
-                        <button 
-                          type="button" 
-                          className="btn btn-secondary" 
-                          onClick={() => {
-                            setActiveVisualAlert({
-                              type: 'new',
-                              title: 'Tema de Prueba',
-                              artist: 'Artista de Prueba'
-                            });
-                          }}
-                          style={{ fontSize: '0.8rem', padding: '6px 12px', height: '32px' }}
-                        >
-                          Probar
-                        </button>
-                      </div>
-                    )}
-                  </div>
-                </div>
-
-                {/* Módulo de Propinas Voluntarias */}
-                <div style={{ borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: '20px' }}>
-                  <label className="form-label" style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--primary-color)', fontWeight: '600' }}>
-                    💸 Módulo de Propinas Voluntarias (PayPal / Mercado Pago)
-                  </label>
-                  <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginBottom: '16px' }}>
-                    Permite que tu audiencia apoye tu trabajo dejándote propinas. Se mostrará un banner especial en la vista de peticiones.
-                  </p>
-
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                    {/* Switch Activar Propinas */}
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                      <input 
-                        type="checkbox" 
-                        id="tips-enabled"
-                        checked={tipsEnabledInput} 
-                        onChange={(e) => setTipsEnabledInput(e.target.checked)}
-                        style={{ width: '18px', height: '18px', cursor: 'pointer' }}
-                      />
-                      <label htmlFor="tips-enabled" style={{ fontSize: '0.9rem', fontWeight: '600', cursor: 'pointer' }}>
-                        Habilitar Propinas Voluntarias para el público
-                      </label>
-                    </div>
-
-                    {tipsEnabledInput && (
-                      <div className="animate-slide-in" style={{ display: 'flex', flexDirection: 'column', gap: '16px', background: 'rgba(255,255,255,0.02)', padding: '16px', borderRadius: 'var(--radius-md)', border: '1px solid rgba(255,255,255,0.05)' }}>
-                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px', flexWrap: 'wrap' }}>
-                          
-                          {/* PayPal Username */}
-                          <div className="form-group">
-                            <label className="form-label" style={{ fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                              <span style={{ color: '#0079C1', fontWeight: 'bold' }}>PayPal</span> Usuario o Correo
-                            </label>
-                            <input 
-                              type="text" 
-                              className="input-field" 
-                              placeholder="Ej: djmastermix o correo@paypal.com" 
-                              value={paypalUsernameInput}
-                              onChange={(e) => setPaypalUsernameInput(e.target.value)}
-                              style={{ fontSize: '0.85rem' }}
-                            />
-                            <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>
-                              Si ingresas tu usuario, usaremos paypal.me. Si es un correo, redireccionaremos a su página de pagos.
-                            </span>
-                          </div>
-
-                          {/* Mercado Pago Link / Alias */}
-                          <div className="form-group">
-                            <label className="form-label" style={{ fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                              <span style={{ color: '#009EE3', fontWeight: 'bold' }}>Mercado Pago</span> Enlace / Alias / CVU
-                            </label>
-                            <input 
-                              type="text" 
-                              className="input-field" 
-                              placeholder="Ej: link de pago, alias (dj.mastermix.mp) o CVU" 
-                              value={mercadopagoLinkInput}
-                              onChange={(e) => setMercadopagoLinkInput(e.target.value)}
-                              style={{ fontSize: '0.85rem' }}
-                            />
-                            <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>
-                              Si ingresas un alias o CVU, se copiará automáticamente al portapapeles de los usuarios.
-                            </span>
-                          </div>
-
-                        </div>
-                      </div>
-                    )}
                   </div>
                 </div>
 
@@ -2369,7 +2216,9 @@ export default function DjDashboard() {
                     border: '1px solid rgba(255,255,255,0.04)',
                     background: 'rgba(255,255,255,0.01)',
                     transition: 'transform 0.2s',
-                    cursor: 'default'
+                    cursor: 'default',
+                    display: 'flex',
+                    flexDirection: 'column'
                   }}
                   onMouseEnter={(e) => e.currentTarget.style.transform = 'translateY(-3px)'}
                   onMouseLeave={(e) => e.currentTarget.style.transform = 'translateY(0)'}
@@ -2380,9 +2229,61 @@ export default function DjDashboard() {
                   <h3 style={{ fontSize: '1rem', fontWeight: '700', marginBottom: '8px', color: 'var(--text-primary)' }}>
                     Alertas Visuales Inmersivas
                   </h3>
-                  <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', lineHeight: '1.5' }}>
+                  <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', lineHeight: '1.5', marginBottom: '14px' }}>
                     Entérate al instante de dedicatorias críticas o peticiones altamente votadas mediante destellos perimetrales en tu panel de control, adaptándose a entornos oscuros de discoteca.
                   </p>
+                  
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: '12px', marginTop: 'auto' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <input 
+                        type="checkbox" 
+                        id="visual-alerts-enabled"
+                        checked={visualAlertEnabled} 
+                        onChange={(e) => {
+                          setVisualAlertEnabled(e.target.checked);
+                          localStorage.setItem('dj_visual_alert_enabled', e.target.checked.toString());
+                          showToast(e.target.checked ? '📺 Alertas visuales activadas' : '📺 Alertas visuales desactivadas');
+                        }}
+                        style={{ width: '16px', height: '16px', cursor: 'pointer' }}
+                      />
+                      <label htmlFor="visual-alerts-enabled" style={{ fontSize: '0.8rem', fontWeight: '600', cursor: 'pointer' }}>
+                        Habilitar destellos
+                      </label>
+                    </div>
+
+                    {visualAlertEnabled && (
+                      <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '8px' }}>
+                        <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Duración (seg):</span>
+                        <input 
+                          type="number" 
+                          min="1" 
+                          max="10" 
+                          className="input-field" 
+                          value={visualAlertDuration} 
+                          onChange={(e) => {
+                            const val = Math.max(1, parseInt(e.target.value, 10) || 1);
+                            setVisualAlertDuration(val);
+                            localStorage.setItem('dj_visual_alert_duration', val.toString());
+                          }}
+                          style={{ width: '50px', padding: '4px 8px', fontSize: '0.8rem', textAlign: 'center', height: '30px' }}
+                        />
+                        <button 
+                          type="button" 
+                          className="btn btn-secondary" 
+                          onClick={() => {
+                            setActiveVisualAlert({
+                              type: 'new',
+                              title: 'Tema de Prueba',
+                              artist: 'Artista de Prueba'
+                            });
+                          }}
+                          style={{ fontSize: '0.75rem', padding: '4px 10px', height: '30px' }}
+                        >
+                          Probar
+                        </button>
+                      </div>
+                    )}
+                  </div>
                 </div>
 
                 {/* 5. Propinas */}
@@ -2394,7 +2295,9 @@ export default function DjDashboard() {
                     border: '1px solid rgba(255,255,255,0.04)',
                     background: 'rgba(255,255,255,0.01)',
                     transition: 'transform 0.2s',
-                    cursor: 'default'
+                    cursor: 'default',
+                    display: 'flex',
+                    flexDirection: 'column'
                   }}
                   onMouseEnter={(e) => e.currentTarget.style.transform = 'translateY(-3px)'}
                   onMouseLeave={(e) => e.currentTarget.style.transform = 'translateY(0)'}
@@ -2405,9 +2308,54 @@ export default function DjDashboard() {
                   <h3 style={{ fontSize: '1rem', fontWeight: '700', marginBottom: '8px', color: 'var(--text-primary)' }}>
                     Propinas e Integraciones de Pago
                   </h3>
-                  <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', lineHeight: '1.5' }}>
+                  <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', lineHeight: '1.5', marginBottom: '14px' }}>
                     Monetiza tu trabajo. Habilita links directos a PayPal o alias de Mercado Pago para que los usuarios puedan recompensarte con propinas voluntarias directamente desde sus celulares.
                   </p>
+                  
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: '12px', marginTop: 'auto' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <input 
+                        type="checkbox" 
+                        id="tips-enabled"
+                        checked={tipsEnabledInput} 
+                        onChange={(e) => setTipsEnabledInput(e.target.checked)}
+                        style={{ width: '16px', height: '16px', cursor: 'pointer' }}
+                      />
+                      <label htmlFor="tips-enabled" style={{ fontSize: '0.8rem', fontWeight: '600', cursor: 'pointer' }}>
+                        Habilitar propinas
+                      </label>
+                    </div>
+
+                    {tipsEnabledInput && (
+                      <form onSubmit={handleSaveBenefitsSettings} style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                        <div className="form-group" style={{ marginBottom: 0 }}>
+                          <label className="form-label" style={{ fontSize: '0.7rem' }}>PayPal Usuario/Email</label>
+                          <input 
+                            type="text" 
+                            className="input-field" 
+                            placeholder="Ej: djmastermix" 
+                            value={paypalUsernameInput}
+                            onChange={(e) => setPaypalUsernameInput(e.target.value)}
+                            style={{ fontSize: '0.8rem', padding: '6px 10px', height: '32px' }}
+                          />
+                        </div>
+                        <div className="form-group" style={{ marginBottom: 0 }}>
+                          <label className="form-label" style={{ fontSize: '0.7rem' }}>Mercado Pago Alias/Link</label>
+                          <input 
+                            type="text" 
+                            className="input-field" 
+                            placeholder="Ej: dj.mastermix.mp" 
+                            value={mercadopagoLinkInput}
+                            onChange={(e) => setMercadopagoLinkInput(e.target.value)}
+                            style={{ fontSize: '0.8rem', padding: '6px 10px', height: '32px' }}
+                          />
+                        </div>
+                        <button type="submit" className="btn btn-primary" style={{ padding: '6px 10px', fontSize: '0.75rem', width: '100%', height: '32px', display: 'flex', justifyContent: 'center' }}>
+                          Guardar Propinas
+                        </button>
+                      </form>
+                    )}
+                  </div>
                 </div>
 
                 {/* 6. Virtual DJ */}
@@ -2419,7 +2367,9 @@ export default function DjDashboard() {
                     border: '1px solid rgba(255,255,255,0.04)',
                     background: 'rgba(255,255,255,0.01)',
                     transition: 'transform 0.2s',
-                    cursor: 'default'
+                    cursor: 'default',
+                    display: 'flex',
+                    flexDirection: 'column'
                   }}
                   onMouseEnter={(e) => e.currentTarget.style.transform = 'translateY(-3px)'}
                   onMouseLeave={(e) => e.currentTarget.style.transform = 'translateY(0)'}
@@ -2430,9 +2380,117 @@ export default function DjDashboard() {
                   <h3 style={{ fontSize: '1rem', fontWeight: '700', marginBottom: '8px', color: 'var(--text-primary)' }}>
                     Sincronización con Virtual DJ
                   </h3>
-                  <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', lineHeight: '1.5' }}>
+                  <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', lineHeight: '1.5', marginBottom: '14px' }}>
                     Exporta la cola directamente a una carpeta o playlist M3U en tu computadora. Virtual DJ leerá y actualizará el listado de temas solicitados de forma dinámica mientras mezclas.
                   </p>
+                  
+                  {window.electronAPI && window.electronAPI.isDesktop ? (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: '12px', marginTop: 'auto' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <input 
+                          type="checkbox" 
+                          id="vdj-enabled"
+                          checked={virtualDJEnabled} 
+                          onChange={(e) => {
+                            const val = e.target.checked;
+                            setVirtualDJEnabled(val);
+                            localStorage.setItem('vdj_sync_enabled', val ? 'true' : 'false');
+                            if (val && !virtualDJPath) {
+                              window.electronAPI.detectVirtualDJPath().then(path => {
+                                if (path) {
+                                  setVirtualDJPath(path);
+                                  localStorage.setItem('vdj_path', path);
+                                  showToast("💿 Ruta de Virtual DJ detectada!");
+                                } else {
+                                  showToast("⚠️ No se pudo auto-detectar. Introduce la ruta manualmente.");
+                                }
+                              });
+                            }
+                          }}
+                          style={{ width: '16px', height: '16px', cursor: 'pointer' }}
+                        />
+                        <label htmlFor="vdj-enabled" style={{ fontSize: '0.8rem', fontWeight: '600', cursor: 'pointer' }}>
+                          Activar Sincronización
+                        </label>
+                      </div>
+
+                      {virtualDJEnabled && (
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                          <div className="form-group" style={{ marginBottom: 0 }}>
+                            <label className="form-label" style={{ fontSize: '0.7rem' }}>Carpeta Virtual DJ</label>
+                            <div style={{ display: 'flex', gap: '6px' }}>
+                              <input 
+                                type="text" 
+                                className="input-field" 
+                                placeholder="/Users/.../VirtualDJ" 
+                                value={virtualDJPath} 
+                                onChange={(e) => {
+                                  setVirtualDJPath(e.target.value);
+                                  localStorage.setItem('vdj_path', e.target.value);
+                                }}
+                                style={{ fontSize: '0.75rem', padding: '4px 8px', height: '30px' }}
+                              />
+                              <button 
+                                type="button" 
+                                className="btn btn-secondary" 
+                                onClick={async () => {
+                                  const path = await window.electronAPI.detectVirtualDJPath();
+                                  if (path) {
+                                    setVirtualDJPath(path);
+                                    localStorage.setItem('vdj_path', path);
+                                    showToast("💿 Ruta de Virtual DJ detectada!");
+                                  } else {
+                                    showToast("❌ No se encontró carpeta.");
+                                  }
+                                }}
+                                style={{ fontSize: '0.7rem', padding: '4px 8px', height: '30px', whiteSpace: 'nowrap' }}
+                              >
+                                Auto
+                              </button>
+                            </div>
+                          </div>
+
+                          <div className="form-group" style={{ marginBottom: 0 }}>
+                            <label className="form-label" style={{ fontSize: '0.7rem' }}>Formato</label>
+                            <select 
+                              className="input-field" 
+                              value={virtualDJFormat} 
+                              onChange={(e) => {
+                                setVirtualDJFormat(e.target.value);
+                                localStorage.setItem('vdj_format', e.target.value);
+                              }}
+                              style={{ fontSize: '0.75rem', padding: '4px 8px', height: '30px', cursor: 'pointer' }}
+                            >
+                              <option value="m3u">M3U Playlist (Playlists/)</option>
+                              <option value="vdjfolder">Virtual Folder XML (My Lists/)</option>
+                            </select>
+                          </div>
+
+                          <div className="form-group" style={{ marginBottom: 0 }}>
+                            <label className="form-label" style={{ fontSize: '0.7rem' }}>Sincronizar</label>
+                            <select 
+                              className="input-field" 
+                              value={virtualDJSyncMode} 
+                              onChange={(e) => {
+                                setVirtualDJSyncMode(e.target.value);
+                                localStorage.setItem('vdj_sync_mode', e.target.value);
+                              }}
+                              style={{ fontSize: '0.75rem', padding: '4px 8px', height: '30px', cursor: 'pointer' }}
+                            >
+                              <option value="accepted">Solo Aceptadas</option>
+                              <option value="all">Todas las Recibidas</option>
+                            </select>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  ) : (
+                    <div style={{ marginTop: 'auto', borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: '12px' }}>
+                      <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', fontStyle: 'italic' }}>
+                        🖥️ Sincronización con Virtual DJ disponible en la versión de escritorio Mac/Windows.
+                      </span>
+                    </div>
+                  )}
                 </div>
 
               </div>
