@@ -535,6 +535,28 @@ export const FirebaseProvider = ({ children }) => {
     }
   };
 
+  // Actualizar una petición activa o corregir errores ortográficos (DJ)
+  const updateActiveRequest = async (requestId, updatedData) => {
+    if (!userBasePath) return;
+    const targetEventId = (currentEventId && currentEventId.startsWith('default-event'))
+      ? 'default-event'
+      : currentEventId;
+    const requestRef = ref(database, `${userBasePath}/events/${targetEventId}/requests/${requestId}`);
+    await update(requestRef, updatedData);
+  };
+
+  // Actualizar una sugerencia en el catálogo de autocompletado global
+  const updateAutocompleteSong = async (songId, updatedData) => {
+    const songRef = ref(database, `autocomplete_songs/${songId}`);
+    await update(songRef, updatedData);
+  };
+
+  // Eliminar una sugerencia del catálogo de autocompletado global
+  const deleteAutocompleteSong = async (songId) => {
+    const songRef = ref(database, `autocomplete_songs/${songId}`);
+    await set(songRef, null);
+  };
+
   const checkAndAddToAutocomplete = async (title, artist, genre) => {
     const cleanTitle = title.trim().toLowerCase();
     const cleanArtist = artist.trim().toLowerCase();
@@ -1034,7 +1056,10 @@ export const FirebaseProvider = ({ children }) => {
       archiveEvent,
       updateEventMetadata,
       clearHistoryWithOptions,
-      createDjAccount
+      createDjAccount,
+      updateActiveRequest,
+      updateAutocompleteSong,
+      deleteAutocompleteSong
     }}>
       {children}
     </FirebaseContext.Provider>

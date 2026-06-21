@@ -7,7 +7,7 @@ import {
   Trash2, Plus, Play, Check, X, Bell, BellOff, Volume2, 
   Sparkles, Sliders, Users, Layers, ShieldCheck,
   Link, AlertTriangle, ShieldAlert, ArrowLeft, UserCog, Edit, UserPlus, Mail, Lock, User,
-  LayoutGrid, ExternalLink, Image
+  LayoutGrid, ExternalLink, Image, Search
 } from 'lucide-react';
 
 export default function DjDashboard() {
@@ -28,6 +28,9 @@ export default function DjDashboard() {
     impersonatingUid,
     impersonateUser,
     stopImpersonating,
+    updateActiveRequest,
+    updateAutocompleteSong,
+    deleteAutocompleteSong,
     allUsersData,
     eventsList,
     deleteEvent,
@@ -41,7 +44,7 @@ export default function DjDashboard() {
   } = useFirebase();
 
   // Estados Locales
-  const [activeTab, setActiveTab] = useState('requests'); // requests | settings | calendar | admin
+  const [activeTab, setActiveTab] = useState('requests'); // requests | settings | calendar | optimization | benefits | admin
   const [filterSort, setFilterSort] = useState('time');
   const [filterStatus, setFilterStatus] = useState('all');
 
@@ -134,6 +137,243 @@ export default function DjDashboard() {
   });
   
   const prevRequestsRef = useRef({});
+
+  // Ajustes de Optimización: Gestión de Géneros
+  const [genresList, setGenresList] = useState([]);
+  const [newGenreInput, setNewGenreInput] = useState('');
+  const [editingGenreIndex, setEditingGenreIndex] = useState(null);
+  const [editingGenreValue, setEditingGenreValue] = useState('');
+
+  // Ajustes de Optimización: Buscador y Corrector de Ortografía
+  const [correctorQuery, setCorrectorQuery] = useState('');
+  const [editingItem, setEditingItem] = useState(null); // { id, type, title, artist, genre }
+  const [editItemTitle, setEditItemTitle] = useState('');
+  const [editItemArtist, setEditItemArtist] = useState('');
+  const [editItemGenre, setEditItemGenre] = useState('');
+
+  // Sincronizar géneros desde base de datos
+  useEffect(() => {
+    const raw = eventSettings.customGenres || '';
+    if (raw.trim() === '') {
+      setGenresList([
+        'Reggaetón / Urbano',
+        'Regional Mexicano (Banda/Norteño)',
+        'Cumbia / Sonidero',
+        'Pop Latino / Baladas',
+        'Rock en Español',
+        'Salsa / Bachata',
+        'Electrónica / Circuit',
+        'Ska / Reggae',
+        'Kpop'
+      ]);
+    } else {
+      setGenresList(raw.split(',').map(g => g.trim()).filter(Boolean));
+    }
+  }, [eventSettings.customGenres]);
+
+  // Obtener géneros creados por los usuarios (que no están en la lista oficial del DJ)
+  const userGenres = React.useMemo(() => {
+    const frequencyMap = {};
+    
+    // 1. Contar desde el catálogo de autocompletado global
+    if (Array.isArray(autocompleteSongs)) {
+      autocompleteSongs.forEach(song => {
+        if (song && song.genre && song.genre.trim() && song.genre !== 'Personalizado') {
+          const g = song.genre.trim();
+          frequencyMap[g] = (frequencyMap[g] || 0) + 1;
+        }
+      });
+    }
+
+    // 2. Contar desde la cola de peticiones activa
+    if (requests) {
+      Object.values(requests).forEach(req => {
+        if (req && req.genre && req.genre.trim() && req.genre !== 'Personalizado') {
+          const g = req.genre.trim();
+          frequencyMap[g] = (frequencyMap[g] || 0) + 3;
+        }
+      });
+    }
+
+    // Filtrar los que no están en la lista actual de géneros (insensible a mayúsculas)
+    return Object.keys(frequencyMap)
+      .filter(g => !genresList.some(activeG => activeG.toLowerCase() === g.toLowerCase()))
+      .sort((a, b) => frequencyMap[b] - frequencyMap[a]);
+  }, [autocompleteSongs, requests, genresList]);
+
+  // Buscar coincidencias de ortografía en la cola de peticiones y autocompletado
+  const correctorResults = React.useMemo(() => {
+    if (!correctorQuery.trim()) return [];
+    const query = correctorQuery.toLowerCase();
+    const results = [];
+    const seenKeys = new Set(); // Para evitar duplicar
+
+    // Buscar en peticiones activas
+    if (requests) {
+      Object.entries(requests).forEach(([id, req]) => {
+        if (req && (
+          (req.title && req.title.toLowerCase().includes(query)) ||
+          (req.artist && req.artist.toLowerCase().includes(query)) ||
+          (req.genre && req.genre.toLowerCase().includes(query))
+        )) {
+          const key = `req-${id}`;
+          if (!seenKeys.has(key)) {
+            seenKeys.add(key);
+            results.push({
+              id,
+              type: 'request',
+              title: req.title,
+              artist: req.artist,
+              genre: req.genre,
+              votes: req.votes || 0
+            });
+          }
+        }
+      });
+    }
+
+    // Buscar en autocompletado global
+    if (Array.isArray(autocompleteSongs)) {
+      autocompleteSongs.forEach(song => {
+        if (song && (
+          (song.title && song.title.toLowerCase().includes(query)) ||
+          (song.artist && song.artist.toLowerCase().includes(query)) ||
+          (song.genre && song.genre.toLowerCase().includes(query))
+        )) {
+          const key = `auto-${song.id}`;
+          if (!seenKeys.has(key)) {
+            seenKeys.add(key);
+            results.push({
+              id: song.id,
+              type: 'autocomplete',
+              title: song.title,
+              artist: song.artist,
+              genre: song.genre
+            });
+          }
+        }
+      });
+    }
+
+    return results.slice(0, 30);
+  }, [correctorQuery, requests, autocompleteSongs]);
+
+  // Añadir un género a la lista
+  const handleAddGenre = async () => {
+    const trimmed = newGenreInput.trim();
+    if (!trimmed) {
+      showToast("⚠️ Escribe el nombre del género");
+      return;
+    }
+    if (genresList.some(g => g.toLowerCase() === trimmed.toLowerCase())) {
+      showToast("⚠️ Este género ya está en la lista.");
+      return;
+    }
+    const updated = [...genresList, trimmed];
+    setGenresList(updated);
+    setNewGenreInput('');
+    try {
+      await updateEventSettings({ customGenres: updated.join(', ') });
+      showToast("🎵 Género agregado y guardado");
+    } catch (err) {
+      showToast("❌ Error al guardar el género");
+    }
+  };
+
+  // Eliminar un género de la lista
+  const handleDeleteGenre = async (genreToDelete) => {
+    const updated = genresList.filter(g => g !== genreToDelete);
+    setGenresList(updated);
+    try {
+      await updateEventSettings({ customGenres: updated.join(', ') });
+      showToast("🗑️ Género eliminado de la lista");
+    } catch (err) {
+      showToast("❌ Error al eliminar el género");
+    }
+  };
+
+  // Guardar edición de género
+  const handleSaveEditGenre = async (index) => {
+    const trimmed = editingGenreValue.trim();
+    if (!trimmed) return;
+    const updated = [...genresList];
+    updated[index] = trimmed;
+    setGenresList(updated);
+    setEditingGenreIndex(null);
+    setEditingGenreValue('');
+    try {
+      await updateEventSettings({ customGenres: updated.join(', ') });
+      showToast("📝 Género actualizado");
+    } catch (err) {
+      showToast("❌ Error al guardar actualización");
+    }
+  };
+
+  // Aprobar género sugerido por usuarios
+  const handleApproveUserGenre = async (genreToApprove) => {
+    if (genresList.some(g => g.toLowerCase() === genreToApprove.toLowerCase())) {
+      showToast("⚠️ Este género ya está en la lista.");
+      return;
+    }
+    const updated = [...genresList, genreToApprove];
+    setGenresList(updated);
+    try {
+      await updateEventSettings({ customGenres: updated.join(', ') });
+      showToast(`✅ Género "${genreToApprove}" aprobado y agregado`);
+    } catch (err) {
+      showToast("❌ Error al aprobar género");
+    }
+  };
+
+  // Iniciar edición de corrección de ortografía
+  const handleStartEditItem = (item) => {
+    setEditingItem(item);
+    setEditItemTitle(item.title || '');
+    setEditItemArtist(item.artist || '');
+    setEditItemGenre(item.genre || '');
+  };
+
+  // Guardar corrección de ortografía (Active Request or Autocomplete)
+  const handleSaveCorrectedItem = async () => {
+    if (!editingItem) return;
+    const title = editItemTitle.trim();
+    const artist = editItemArtist.trim();
+    const genre = editItemGenre.trim();
+
+    try {
+      if (editingItem.type === 'request') {
+        await updateActiveRequest(editingItem.id, {
+          title,
+          artist,
+          genre
+        });
+        showToast("✅ Petición corregida en tiempo real");
+      } else {
+        await updateAutocompleteSong(editingItem.id, {
+          title,
+          artist,
+          genre
+        });
+        showToast("✅ Autocompletado corregido correctamente");
+      }
+      setEditingItem(null);
+    } catch (err) {
+      console.error(err);
+      showToast("❌ Error al guardar corrección");
+    }
+  };
+
+  // Eliminar elemento de autocompletado
+  const handleDeleteAutocompleteItem = async (songId) => {
+    if (window.confirm("¿Deseas eliminar esta sugerencia del catálogo global de autocompletado?")) {
+      try {
+        await deleteAutocompleteSong(songId);
+        showToast("🗑️ Sugerencia eliminada del catálogo");
+      } catch (err) {
+        showToast("❌ Error al eliminar sugerencia");
+      }
+    }
+  };
 
   // Sincronizar inputs locales al cambiar de evento
   useEffect(() => {
@@ -858,6 +1098,10 @@ export default function DjDashboard() {
             <button className={`btn ${activeTab === 'optimization' ? 'btn-primary' : 'btn-secondary'}`}
               onClick={() => setActiveTab('optimization')} style={{ justifyContent: 'flex-start', width: '100%' }}>
               <Sliders size={16} /><span>Ajustes de Optimización</span>
+            </button>
+            <button className={`btn ${activeTab === 'benefits' ? 'btn-primary' : 'btn-secondary'}`}
+              onClick={() => setActiveTab('benefits')} style={{ justifyContent: 'flex-start', width: '100%' }}>
+              <Sparkles size={16} /><span>Beneficios para el DJ</span>
             </button>
             {/* Tab Admin: solo visible para dj@admin.com sin impersonar */}
             {isAdminMaster && !impersonatingUid && (
@@ -1649,42 +1893,549 @@ export default function DjDashboard() {
 
           {/* PANEL AJUSTES DE OPTIMIZACIÓN */}
           {activeTab === 'optimization' && (
-            <div className="glass-panel" style={{ padding: '24px' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+              {/* MÓDULO GESTIÓN DE GÉNEROS */}
+              <div className="glass-panel" style={{ padding: '24px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', borderBottom: '1px solid var(--surface-border)', paddingBottom: '16px' }}>
+                  <h2 style={{ fontSize: '1.25rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <Sliders size={20} color="var(--primary-color)" />
+                    Personalización de Géneros Musicales
+                  </h2>
+                </div>
+
+                <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginBottom: '20px' }}>
+                  Administra los géneros que se muestran al público al enviar peticiones. Puedes agregar nuevos géneros, editar los existentes y eliminar los que no necesites.
+                </p>
+
+                {/* Listado de Géneros Actuales */}
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px', marginBottom: '24px' }}>
+                  {genresList.map((genre, idx) => {
+                    const isEditing = editingGenreIndex === idx;
+                    return (
+                      <div 
+                        key={idx}
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '8px',
+                          background: 'rgba(255, 255, 255, 0.03)',
+                          border: '1px solid var(--surface-border)',
+                          padding: '6px 12px',
+                          borderRadius: '20px',
+                          fontSize: '0.85rem',
+                          transition: 'all 0.2s',
+                          color: 'var(--text-primary)'
+                        }}
+                      >
+                        {isEditing ? (
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                            <input 
+                              type="text" 
+                              value={editingGenreValue}
+                              onChange={(e) => setEditingGenreValue(e.target.value)}
+                              className="input-field"
+                              style={{
+                                padding: '2px 8px',
+                                fontSize: '0.8rem',
+                                borderRadius: '4px',
+                                width: '120px',
+                                height: 'auto',
+                                background: 'rgba(0,0,0,0.4)',
+                                border: '1px solid var(--primary-color)'
+                              }}
+                              autoFocus
+                              onKeyDown={(e) => {
+                                if (e.key === 'Enter') handleSaveEditGenre(idx);
+                                else if (e.key === 'Escape') setEditingGenreIndex(null);
+                              }}
+                            />
+                            <button 
+                              onClick={() => handleSaveEditGenre(idx)}
+                              style={{ background: 'none', border: 'none', color: 'var(--success-color)', cursor: 'pointer', padding: 0 }}
+                              title="Guardar"
+                            >
+                              <Check size={14} />
+                            </button>
+                            <button 
+                              onClick={() => setEditingGenreIndex(null)}
+                              style={{ background: 'none', border: 'none', color: 'var(--danger-color)', cursor: 'pointer', padding: 0 }}
+                              title="Cancelar"
+                            >
+                              <X size={14} />
+                            </button>
+                          </div>
+                        ) : (
+                          <>
+                            <span>{genre}</span>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '4px', marginLeft: '6px' }}>
+                              <button 
+                                onClick={() => { setEditingGenreIndex(idx); setEditingGenreValue(genre); }}
+                                style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', padding: '2px', display: 'flex', alignItems: 'center' }}
+                                title="Editar"
+                              >
+                                <Edit size={12} />
+                              </button>
+                              <button 
+                                onClick={() => handleDeleteGenre(genre)}
+                                style={{ background: 'none', border: 'none', color: 'var(--danger-color)', cursor: 'pointer', padding: '2px', display: 'flex', alignItems: 'center' }}
+                                title="Eliminar"
+                              >
+                                <Trash2 size={12} />
+                              </button>
+                            </div>
+                          </>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+
+                {/* Formulario Agregar Género */}
+                <div style={{ display: 'flex', gap: '10px', alignItems: 'center', marginBottom: '24px', maxWidth: '400px' }}>
+                  <input 
+                    type="text" 
+                    placeholder="Nuevo género (ej. Dembow, Synthwave)" 
+                    className="input-field" 
+                    value={newGenreInput}
+                    onChange={(e) => setNewGenreInput(e.target.value)}
+                    style={{ fontSize: '0.85rem', padding: '10px 14px' }}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') handleAddGenre();
+                    }}
+                  />
+                  <button 
+                    onClick={handleAddGenre}
+                    className="btn btn-primary"
+                    style={{ padding: '10px 16px', display: 'flex', alignItems: 'center', gap: '6px', whiteSpace: 'nowrap' }}
+                  >
+                    <Plus size={16} /> Agregar
+                  </button>
+                </div>
+
+                {/* Géneros Sugeridos por Usuarios */}
+                {userGenres.length > 0 && (
+                  <div style={{ borderTop: '1px solid var(--surface-border)', paddingTop: '20px', marginTop: '20px' }}>
+                    <h3 style={{ fontSize: '0.95rem', fontWeight: '600', marginBottom: '8px', color: 'var(--secondary-color)', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                      💡 Géneros Sugeridos por Usuarios
+                    </h3>
+                    <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginBottom: '12px' }}>
+                      Géneros ingresados manualmente por usuarios en el buscador de la web app que no están en tu lista oficial:
+                    </p>
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+                      {userGenres.map((genre, idx) => (
+                        <div 
+                          key={idx}
+                          style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '8px',
+                            background: 'rgba(6, 182, 212, 0.05)',
+                            border: '1px solid rgba(6, 182, 212, 0.25)',
+                            padding: '4px 10px',
+                            borderRadius: '16px',
+                            fontSize: '0.8rem',
+                            color: 'var(--secondary-color)'
+                          }}
+                        >
+                          <span>{genre}</span>
+                          <button 
+                            onClick={() => handleApproveUserGenre(genre)}
+                            style={{
+                              background: 'rgba(6, 182, 212, 0.15)',
+                              border: 'none',
+                              color: 'var(--secondary-color)',
+                              borderRadius: '50%',
+                              width: '18px',
+                              height: '18px',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              cursor: 'pointer',
+                              padding: 0
+                            }}
+                            title="Aprobar e integrar a tu lista oficial"
+                          >
+                            <Plus size={10} />
+                          </button>
+                          <button 
+                            onClick={() => { setCorrectorQuery(genre); showToast(`Buscando canciones con el género "${genre}"...`); }}
+                            style={{
+                              background: 'rgba(255, 255, 255, 0.05)',
+                              border: 'none',
+                              color: 'var(--text-muted)',
+                              borderRadius: '4px',
+                              fontSize: '0.7rem',
+                              padding: '2px 6px',
+                              cursor: 'pointer'
+                            }}
+                            title="Buscar y corregir canciones con este género"
+                          >
+                            Corregir
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* MÓDULO DE CORRECCIÓN ORTOGRÁFICA */}
+              <div className="glass-panel" style={{ padding: '24px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', borderBottom: '1px solid var(--surface-border)', paddingBottom: '16px' }}>
+                  <h2 style={{ fontSize: '1.25rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <Search size={20} color="var(--primary-color)" />
+                    Corrector Ortográfico y de Catálogo
+                  </h2>
+                </div>
+
+                <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginBottom: '16px' }}>
+                  Busca peticiones de la cola activa o sugerencias del catálogo de autocompletado para corregir errores de escritura de los usuarios.
+                </p>
+
+                {/* Buscador */}
+                <div style={{ position: 'relative', marginBottom: '20px', maxWidth: '500px' }}>
+                  <input 
+                    type="text"
+                    placeholder="Busca por canción, artista o género..."
+                    className="input-field"
+                    value={correctorQuery}
+                    onChange={(e) => setCorrectorQuery(e.target.value)}
+                    style={{ paddingLeft: '40px', fontSize: '0.85rem' }}
+                  />
+                  <Search 
+                    size={16} 
+                    color="var(--text-muted)" 
+                    style={{ position: 'absolute', left: '14px', top: '50%', transform: 'translateY(-50%)' }} 
+                  />
+                  {correctorQuery && (
+                    <button 
+                      onClick={() => setCorrectorQuery('')}
+                      style={{
+                        position: 'absolute',
+                        right: '12px',
+                        top: '50%',
+                        transform: 'translateY(-50%)',
+                        background: 'none',
+                        border: 'none',
+                        color: 'var(--text-muted)',
+                        cursor: 'pointer',
+                        padding: '4px'
+                      }}
+                    >
+                      <X size={14} />
+                    </button>
+                  )}
+                </div>
+
+                {/* Formulario de Corrección Activo */}
+                {editingItem && (
+                  <div 
+                    className="glass-panel animate-slide-in" 
+                    style={{ 
+                      padding: '16px', 
+                      background: 'rgba(124, 58, 237, 0.05)', 
+                      border: '1px solid var(--primary-color)', 
+                      borderRadius: 'var(--radius-md)',
+                      marginBottom: '20px'
+                    }}
+                  >
+                    <h4 style={{ fontSize: '0.9rem', fontWeight: '700', color: 'var(--primary-color)', marginBottom: '12px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                      ✏️ Corrigiendo: {editingItem.type === 'request' ? 'Petición en cola' : 'Sugerencia de autocompletado'}
+                    </h4>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: '12px', marginBottom: '16px' }}>
+                      <div className="form-group">
+                        <label className="form-label" style={{ fontSize: '0.75rem' }}>Título de Canción</label>
+                        <input 
+                          type="text" 
+                          className="input-field" 
+                          value={editItemTitle} 
+                          onChange={(e) => setEditItemTitle(e.target.value)} 
+                          style={{ fontSize: '0.85rem', padding: '8px 12px' }}
+                        />
+                      </div>
+                      <div className="form-group">
+                        <label className="form-label" style={{ fontSize: '0.75rem' }}>Artista / Banda</label>
+                        <input 
+                          type="text" 
+                          className="input-field" 
+                          value={editItemArtist} 
+                          onChange={(e) => setEditItemArtist(e.target.value)} 
+                          style={{ fontSize: '0.85rem', padding: '8px 12px' }}
+                        />
+                      </div>
+                      <div className="form-group">
+                        <label className="form-label" style={{ fontSize: '0.75rem' }}>Género</label>
+                        <input 
+                          type="text" 
+                          className="input-field" 
+                          value={editItemGenre} 
+                          onChange={(e) => setEditItemGenre(e.target.value)} 
+                          style={{ fontSize: '0.85rem', padding: '8px 12px' }}
+                        />
+                      </div>
+                    </div>
+                    <div style={{ display: 'flex', gap: '8px' }}>
+                      <button onClick={handleSaveCorrectedItem} className="btn btn-primary" style={{ padding: '8px 14px', fontSize: '0.8rem' }}>
+                        Guardar Cambios
+                      </button>
+                      <button onClick={() => setEditingItem(null)} className="btn btn-secondary" style={{ padding: '8px 14px', fontSize: '0.8rem' }}>
+                        Cancelar
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                {/* Resultados de Búsqueda del Corrector */}
+                {correctorQuery.trim() !== '' && (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                    <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)', fontWeight: '600' }}>
+                      Resultados de coincidencia ({correctorResults.length}):
+                    </span>
+                    {correctorResults.length === 0 ? (
+                      <div style={{ padding: '20px', textAlign: 'center', color: 'var(--text-secondary)', fontSize: '0.85rem' }}>
+                        No se encontraron coincidencias para "{correctorQuery}"
+                      </div>
+                    ) : (
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                        {correctorResults.map((item) => (
+                          <div 
+                            key={`${item.type}-${item.id}`}
+                            className="glass-panel"
+                            style={{ 
+                              padding: '12px 16px', 
+                              borderRadius: 'var(--radius-sm)', 
+                              display: 'flex', 
+                              justifyContent: 'space-between', 
+                              alignItems: 'center', 
+                              gap: '12px',
+                              background: item.type === 'request' ? 'rgba(124, 58, 237, 0.02)' : 'rgba(255, 255, 255, 0.01)',
+                              borderLeft: item.type === 'request' ? '3px solid var(--primary-color)' : '3px solid var(--secondary-color)'
+                            }}
+                          >
+                            <div style={{ minWidth: 0, flex: 1 }}>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '2px' }}>
+                                <span style={{ fontWeight: '700', fontSize: '0.9rem', color: 'var(--text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                  {item.title}
+                                </span>
+                                <span 
+                                  style={{ 
+                                    fontSize: '0.65rem', 
+                                    padding: '2px 6px', 
+                                    borderRadius: '4px',
+                                    fontWeight: '700',
+                                    background: item.type === 'request' ? 'rgba(124, 58, 237, 0.15)' : 'rgba(6, 182, 212, 0.15)',
+                                    color: item.type === 'request' ? 'var(--primary-color)' : 'var(--secondary-color)'
+                                  }}
+                                >
+                                  {item.type === 'request' ? `En Cola (Votos: ${item.votes})` : 'Autocompletado'}
+                                </span>
+                              </div>
+                              <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
+                                👤 {item.artist} • <span style={{ color: 'var(--secondary-color)' }}>{item.genre}</span>
+                              </span>
+                            </div>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                              <button 
+                                onClick={() => handleStartEditItem(item)}
+                                className="btn btn-secondary"
+                                style={{ padding: '6px 12px', fontSize: '0.75rem', display: 'flex', alignItems: 'center', gap: '4px' }}
+                              >
+                                <Edit size={12} /> Corregir
+                              </button>
+                              {item.type === 'autocomplete' && (
+                                <button 
+                                  onClick={() => handleDeleteAutocompleteItem(item.id)}
+                                  style={{
+                                    background: 'none',
+                                    border: 'none',
+                                    color: 'var(--danger-color)',
+                                    cursor: 'pointer',
+                                    padding: '6px'
+                                  }}
+                                  title="Eliminar del autocompletado"
+                                >
+                                  <Trash2 size={14} />
+                                </button>
+                              )}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* PANEL BENEFICIOS PARA EL DJ */}
+          {activeTab === 'benefits' && (
+            <div className="glass-panel animate-slide-in" style={{ padding: '24px' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', borderBottom: '1px solid var(--surface-border)', paddingBottom: '16px' }}>
                 <h2 style={{ fontSize: '1.25rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <Sliders size={20} color="var(--primary-color)" />
-                  Ajustes de Optimización
+                  <Sparkles size={20} color="var(--primary-color)" />
+                  Beneficios Exclusivos para el DJ 🚀
                 </h2>
               </div>
 
-              <form onSubmit={handleSaveBranding} style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-                {/* Módulo de Personalización de Géneros Musicales */}
-                <div>
-                  <label className="form-label" style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--primary-color)', fontWeight: '600' }}>
-                    🎵 Personalización de Géneros Musicales
-                  </label>
-                  <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginBottom: '12px' }}>
-                    Define tu propia lista de géneros musicales para el formulario del público. Escríbelos separados por comas. Si se deja vacío, se utilizará la lista predeterminada.
-                  </p>
-                  <div className="form-group">
-                    <input 
-                      type="text" 
-                      placeholder="Ej. Salsa, Bachata, Reggaetón, Rock, Electrónica" 
-                      className="input-field" 
-                      value={customGenresInput} 
-                      onChange={(e) => setCustomGenresInput(e.target.value)} 
-                    />
+              <p style={{ fontSize: '0.9rem', color: 'var(--text-secondary)', lineHeight: '1.6', marginBottom: '24px' }}>
+                Nuestra plataforma inteligente está diseñada para optimizar tu flujo de trabajo, mantener la energía en la pista y potenciar tu marca como DJ. A continuación se presentan las características clave y beneficios incluidos:
+              </p>
+
+              {/* Grid de 6 Tarjetas de Beneficios */}
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '20px' }}>
+                
+                {/* 1. Base de Datos Evolutiva */}
+                <div 
+                  className="glass-panel" 
+                  style={{ 
+                    padding: '20px', 
+                    borderRadius: 'var(--radius-md)', 
+                    border: '1px solid rgba(255,255,255,0.04)',
+                    background: 'rgba(255,255,255,0.01)',
+                    transition: 'transform 0.2s',
+                    cursor: 'default'
+                  }}
+                  onMouseEnter={(e) => e.currentTarget.style.transform = 'translateY(-3px)'}
+                  onMouseLeave={(e) => e.currentTarget.style.transform = 'translateY(0)'}
+                >
+                  <div style={{ width: '40px', height: '40px', borderRadius: '50%', background: 'rgba(124, 58, 237, 0.15)', display: 'flex', alignItems: 'center', marginBottom: '14px', color: 'var(--primary-color)', alignSelf: 'start', justifyContent: 'center' }}>
+                    <Music size={20} />
                   </div>
+                  <h3 style={{ fontSize: '1rem', fontWeight: '700', marginBottom: '8px', color: 'var(--text-primary)' }}>
+                    Autocompletado Evolutivo
+                  </h3>
+                  <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', lineHeight: '1.5' }}>
+                    Ahorra tiempo valioso. El sistema aprende automáticamente las canciones ingresadas por los usuarios y las suma al catálogo inteligente global de autocompletado en tiempo real.
+                  </p>
                 </div>
 
-                <div style={{ display: 'flex', gap: '10px', marginTop: '10px', borderTop: '1px solid var(--surface-border)', paddingTop: '20px' }}>
-                  <button type="submit" className="btn btn-primary">Guardar Optimización</button>
-                  <button type="button" className="btn btn-secondary" onClick={() => {
-                    setCustomGenresInput(eventSettings.customGenres || '');
-                    showToast("Cambios descartados");
-                  }}>Descartar Cambios</button>
+                {/* 2. Deduplicación inteligente */}
+                <div 
+                  className="glass-panel" 
+                  style={{ 
+                    padding: '20px', 
+                    borderRadius: 'var(--radius-md)', 
+                    border: '1px solid rgba(255,255,255,0.04)',
+                    background: 'rgba(255,255,255,0.01)',
+                    transition: 'transform 0.2s',
+                    cursor: 'default'
+                  }}
+                  onMouseEnter={(e) => e.currentTarget.style.transform = 'translateY(-3px)'}
+                  onMouseLeave={(e) => e.currentTarget.style.transform = 'translateY(0)'}
+                >
+                  <div style={{ width: '40px', height: '40px', borderRadius: '50%', background: 'rgba(6, 182, 212, 0.15)', display: 'flex', alignItems: 'center', marginBottom: '14px', color: 'var(--secondary-color)', alignSelf: 'start', justifyContent: 'center' }}>
+                    <Users size={20} />
+                  </div>
+                  <h3 style={{ fontSize: '1rem', fontWeight: '700', marginBottom: '8px', color: 'var(--text-primary)' }}>
+                    Deduplicación e Incremento de Votos
+                  </h3>
+                  <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', lineHeight: '1.5' }}>
+                    Mantén tu cola de peticiones limpia y ordenada. Si dos o más personas solicitan la misma canción, la petición se fusiona automáticamente sumando un voto y destacando su popularidad.
+                  </p>
                 </div>
-              </form>
+
+                {/* 3. Wake lock */}
+                <div 
+                  className="glass-panel" 
+                  style={{ 
+                    padding: '20px', 
+                    borderRadius: 'var(--radius-md)', 
+                    border: '1px solid rgba(255,255,255,0.04)',
+                    background: 'rgba(255,255,255,0.01)',
+                    transition: 'transform 0.2s',
+                    cursor: 'default'
+                  }}
+                  onMouseEnter={(e) => e.currentTarget.style.transform = 'translateY(-3px)'}
+                  onMouseLeave={(e) => e.currentTarget.style.transform = 'translateY(0)'}
+                >
+                  <div style={{ width: '40px', height: '40px', borderRadius: '50%', background: 'rgba(16, 185, 129, 0.15)', display: 'flex', alignItems: 'center', marginBottom: '14px', color: '#10b981', alignSelf: 'start', justifyContent: 'center' }}>
+                    <ShieldCheck size={20} />
+                  </div>
+                  <h3 style={{ fontSize: '1rem', fontWeight: '700', marginBottom: '8px', color: 'var(--text-primary)' }}>
+                    Wake Lock del Navegador
+                  </h3>
+                  <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', lineHeight: '1.5' }}>
+                    Evita interrupciones en cabina. La aplicación implementa el API de Wake Lock para prevenir que la pantalla del DJ se apague o suspenda automáticamente durante el show en vivo.
+                  </p>
+                </div>
+
+                {/* 4. Alertas inmersivas */}
+                <div 
+                  className="glass-panel" 
+                  style={{ 
+                    padding: '20px', 
+                    borderRadius: 'var(--radius-md)', 
+                    border: '1px solid rgba(255,255,255,0.04)',
+                    background: 'rgba(255,255,255,0.01)',
+                    transition: 'transform 0.2s',
+                    cursor: 'default'
+                  }}
+                  onMouseEnter={(e) => e.currentTarget.style.transform = 'translateY(-3px)'}
+                  onMouseLeave={(e) => e.currentTarget.style.transform = 'translateY(0)'}
+                >
+                  <div style={{ width: '40px', height: '40px', borderRadius: '50%', background: 'rgba(245, 158, 11, 0.15)', display: 'flex', alignItems: 'center', marginBottom: '14px', color: 'var(--warning-color)', alignSelf: 'start', justifyContent: 'center' }}>
+                    <Bell size={20} />
+                  </div>
+                  <h3 style={{ fontSize: '1rem', fontWeight: '700', marginBottom: '8px', color: 'var(--text-primary)' }}>
+                    Alertas Visuales Inmersivas
+                  </h3>
+                  <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', lineHeight: '1.5' }}>
+                    Entérate al instante de dedicatorias críticas o peticiones altamente votadas mediante destellos perimetrales en tu panel de control, adaptándose a entornos oscuros de discoteca.
+                  </p>
+                </div>
+
+                {/* 5. Propinas */}
+                <div 
+                  className="glass-panel" 
+                  style={{ 
+                    padding: '20px', 
+                    borderRadius: 'var(--radius-md)', 
+                    border: '1px solid rgba(255,255,255,0.04)',
+                    background: 'rgba(255,255,255,0.01)',
+                    transition: 'transform 0.2s',
+                    cursor: 'default'
+                  }}
+                  onMouseEnter={(e) => e.currentTarget.style.transform = 'translateY(-3px)'}
+                  onMouseLeave={(e) => e.currentTarget.style.transform = 'translateY(0)'}
+                >
+                  <div style={{ width: '40px', height: '40px', borderRadius: '50%', background: 'rgba(236, 72, 153, 0.15)', display: 'flex', alignItems: 'center', marginBottom: '14px', color: '#ec4899', alignSelf: 'start', justifyContent: 'center' }}>
+                    <Sparkles size={20} />
+                  </div>
+                  <h3 style={{ fontSize: '1rem', fontWeight: '700', marginBottom: '8px', color: 'var(--text-primary)' }}>
+                    Propinas e Integraciones de Pago
+                  </h3>
+                  <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', lineHeight: '1.5' }}>
+                    Monetiza tu trabajo. Habilita links directos a PayPal o alias de Mercado Pago para que los usuarios puedan recompensarte con propinas voluntarias directamente desde sus celulares.
+                  </p>
+                </div>
+
+                {/* 6. Virtual DJ */}
+                <div 
+                  className="glass-panel" 
+                  style={{ 
+                    padding: '20px', 
+                    borderRadius: 'var(--radius-md)', 
+                    border: '1px solid rgba(255,255,255,0.04)',
+                    background: 'rgba(255,255,255,0.01)',
+                    transition: 'transform 0.2s',
+                    cursor: 'default'
+                  }}
+                  onMouseEnter={(e) => e.currentTarget.style.transform = 'translateY(-3px)'}
+                  onMouseLeave={(e) => e.currentTarget.style.transform = 'translateY(0)'}
+                >
+                  <div style={{ width: '40px', height: '40px', borderRadius: '50%', background: 'rgba(59, 130, 246, 0.15)', display: 'flex', alignItems: 'center', marginBottom: '14px', color: '#3b82f6', alignSelf: 'start', justifyContent: 'center' }}>
+                    <Sliders size={20} />
+                  </div>
+                  <h3 style={{ fontSize: '1rem', fontWeight: '700', marginBottom: '8px', color: 'var(--text-primary)' }}>
+                    Sincronización con Virtual DJ
+                  </h3>
+                  <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', lineHeight: '1.5' }}>
+                    Exporta la cola directamente a una carpeta o playlist M3U en tu computadora. Virtual DJ leerá y actualizará el listado de temas solicitados de forma dinámica mientras mezclas.
+                  </p>
+                </div>
+
+              </div>
             </div>
           )}
 
