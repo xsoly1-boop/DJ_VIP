@@ -926,6 +926,10 @@ export const FirebaseProvider = ({ children }) => {
       if (!dbData.users) dbData.users = {};
       const now = Date.now();
       dbData.users[newUid] = {
+        profile: {
+          email,
+          displayName: displayName || email.split('@')[0]
+        },
         events_index: {
           'default-event': {
             id: 'default-event', title: 'Mi Gran Evento VIP',
@@ -1001,6 +1005,10 @@ export const FirebaseProvider = ({ children }) => {
       const userRef = ref(database, `users/${newUid}`);
       const now = Date.now();
       await set(userRef, {
+        profile: {
+          email,
+          displayName: displayName || email.split('@')[0]
+        },
         events_index: {
           'default-event': {
             id: 'default-event', title: 'Mi Gran Evento VIP',
@@ -1040,6 +1048,68 @@ export const FirebaseProvider = ({ children }) => {
     }
   };
 
+  // Editar datos de registro DJ (solo Admin Master)
+  const updateDjAccount = async (uid, newEmail, newDisplayName, newPassword) => {
+    if (!isAdminMaster) {
+      throw new Error('Solo el Administrador Master puede editar cuentas.');
+    }
+    if (isMockMode) {
+      const allAccounts = JSON.parse(localStorage.getItem('mock_accounts') || '[]');
+      const accountIdx = allAccounts.findIndex(a => a.uid === uid);
+      if (accountIdx !== -1) {
+        if (newEmail) allAccounts[accountIdx].email = newEmail;
+        if (newDisplayName) allAccounts[accountIdx].displayName = newDisplayName;
+        if (newPassword) allAccounts[accountIdx].password = newPassword;
+        localStorage.setItem('mock_accounts', JSON.stringify(allAccounts));
+      }
+      
+      // Actualizar también en RTDB mock
+      const dbData = JSON.parse(localStorage.getItem('mock_rtdb_v2') || '{}');
+      if (dbData.users && dbData.users[uid]) {
+        if (!dbData.users[uid].profile) dbData.users[uid].profile = {};
+        if (newEmail) dbData.users[uid].profile.email = newEmail;
+        if (newDisplayName) dbData.users[uid].profile.displayName = newDisplayName;
+        if (newPassword) dbData.users[uid].profile.password = newPassword;
+
+        // También actualizar el djName del evento por defecto si existe
+        if (dbData.users[uid].events_index && dbData.users[uid].events_index['default-event']) {
+          dbData.users[uid].events_index['default-event'].djName = newDisplayName;
+        }
+        if (dbData.users[uid].events && dbData.users[uid].events['default-event'] && dbData.users[uid].events['default-event'].settings) {
+          dbData.users[uid].events['default-event'].settings.djName = newDisplayName;
+        }
+        if (dbData.events_registry && dbData.events_registry['default-event-' + uid]) {
+          dbData.events_registry['default-event-' + uid].djName = newDisplayName;
+        }
+      }
+      localStorage.setItem('mock_rtdb_v2', JSON.stringify(dbData));
+
+      // Sincronizar
+      if (syncChannel) syncChannel.postMessage({ type: 'DB_UPDATE' });
+      return;
+    }
+
+    // En Firebase real:
+    const profileRef = ref(database, `users/${uid}/profile`);
+    const updates = {};
+    if (newEmail) updates.email = newEmail;
+    if (newDisplayName) updates.displayName = newDisplayName;
+    if (newPassword) updates.password = newPassword; // guardado para registro administrativo
+    await update(profileRef, updates);
+
+    // Actualizar también settings e index del default-event si es necesario
+    if (newDisplayName) {
+      const defaultSettingsRef = ref(database, `users/${uid}/events/default-event/settings`);
+      await update(defaultSettingsRef, { djName: newDisplayName });
+
+      const defaultIndexRef = ref(database, `users/${uid}/events_index/default-event`);
+      await update(defaultIndexRef, { djName: newDisplayName });
+
+      const registryRef = ref(database, `events_registry/default-event-${uid}`);
+      await update(registryRef, { djName: newDisplayName });
+    }
+  };
+
   return (
     <FirebaseContext.Provider value={{
       user,
@@ -1073,6 +1143,7 @@ export const FirebaseProvider = ({ children }) => {
       updateEventMetadata,
       clearHistoryWithOptions,
       createDjAccount,
+      updateDjAccount,
       updateActiveRequest,
       updateAutocompleteSong,
       deleteAutocompleteSong

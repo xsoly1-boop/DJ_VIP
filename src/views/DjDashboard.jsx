@@ -40,6 +40,7 @@ export default function DjDashboard() {
     autocompleteSongs,
     allEventsData,
     createDjAccount,
+    updateDjAccount,
     uploadLogo
   } = useFirebase();
 
@@ -84,6 +85,13 @@ export default function DjDashboard() {
   const [editEventDjName, setEditEventDjName] = useState('');
   const [editEventDate, setEditEventDate] = useState('');
   const [editEventType, setEditEventType] = useState('Otro');
+
+  // Admin Master: Editar DJ
+  const [editingDjUid, setEditingDjUid] = useState(null);
+  const [editDjDisplayName, setEditDjDisplayName] = useState('');
+  const [editDjEmail, setEditDjEmail] = useState('');
+  const [editDjPassword, setEditDjPassword] = useState('');
+  const [editDjLoading, setEditDjLoading] = useState(false);
 
   // Confirmación de borrado de evento
   const [deletingEventId, setDeletingEventId] = useState(null);
@@ -888,6 +896,24 @@ export default function DjDashboard() {
     }
   };
 
+  const handleSaveEditDjAccount = async (uid) => {
+    if (!editDjDisplayName.trim() || !editDjEmail.trim()) {
+      showToast('⚠️ Nombre y correo electrónico son requeridos.');
+      return;
+    }
+    setEditDjLoading(true);
+    try {
+      await updateDjAccount(uid, editDjEmail.trim(), editDjDisplayName.trim(), editDjPassword.trim() || null);
+      showToast('✅ Datos de registro actualizados correctamente');
+      setEditingDjUid(null);
+      setEditDjPassword('');
+    } catch (err) {
+      showToast(`❌ Error al actualizar: ${err.message || ''}`);
+    } finally {
+      setEditDjLoading(false);
+    }
+  };
+
   // Enlace público único por DJ — apunta a default-event-{uid} para que cada DJ tenga su propio QR
   const baseUrl = eventSettings.productionUrl || productionUrl || 
     (window.location.protocol !== 'file:' ? window.location.origin : '');
@@ -930,24 +956,27 @@ export default function DjDashboard() {
     
     // Obtener nombres de eventos y el djName común
     const eventTitles = events.map(e => e.title);
-    // Intentar buscar el nombre de DJ y email en las cuentas mock o en los eventos
-    let djName = 'DJ Sin Nombre';
-    let email = '';
+    
+    // Intentar buscar el nombre de DJ y email en el profile, cuentas mock o en los eventos
+    let djName = userData?.profile?.displayName || userData?.profile?.djName || 'DJ Sin Nombre';
+    let email = userData?.profile?.email || '';
 
     if (uid === 'uid-admin-master') {
       djName = 'Administrador';
       email = MASTER_ADMIN_EMAIL || 'dj@admin.com';
     } else {
-      // Leer MOCK_ACCOUNTS directamente desde localStorage (puede haberse actualizado)
-      const allAccounts = (() => {
-        try { return JSON.parse(localStorage.getItem('mock_accounts') || '[]'); } catch { return []; }
-      })();
-      const match = allAccounts.find(a => a.uid === uid) || MOCK_ACCOUNTS.find(a => a.uid === uid);
-      if (match) {
-        djName = match.displayName;
-        email = match.email;
-      } else if (events.length > 0) {
-        djName = events[0].djName;
+      if (!email || djName === 'DJ Sin Nombre') {
+        // Leer MOCK_ACCOUNTS directamente desde localStorage (puede haberse actualizado)
+        const allAccounts = (() => {
+          try { return JSON.parse(localStorage.getItem('mock_accounts') || '[]'); } catch { return []; }
+        })();
+        const match = allAccounts.find(a => a.uid === uid) || MOCK_ACCOUNTS.find(a => a.uid === uid);
+        if (match) {
+          if (djName === 'DJ Sin Nombre') djName = match.displayName;
+          if (!email) email = match.email;
+        } else if (events.length > 0) {
+          if (djName === 'DJ Sin Nombre') djName = events[0].djName;
+        }
       }
     }
     
@@ -2809,19 +2838,71 @@ export default function DjDashboard() {
                           <div className="flex-center" style={{ width: '44px', height: '44px', borderRadius: 'var(--radius-full)', background: uid === 'uid-admin-master' ? 'rgba(245,158,11,0.12)' : 'rgba(124, 58, 237, 0.1)', border: uid === 'uid-admin-master' ? '1px solid rgba(245,158,11,0.3)' : '1px solid rgba(124,58,237,0.2)' }}>
                             {uid === 'uid-admin-master' ? <ShieldCheck size={20} color="var(--warning-color)" /> : <Users size={20} color="var(--primary-color)" />}
                           </div>
-                          <div>
-                            <strong style={{ fontSize: '1.05rem', color: 'var(--text-primary)' }}>
-                              {uid === 'uid-admin-master' ? '👑 Administrador Master' : djName}
-                            </strong>
-                            {email && (
-                              <p style={{ fontSize: '0.78rem', color: 'var(--secondary-color)', marginTop: '1px', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                                <Mail size={11} /> {email}
+                          {editingDjUid === uid ? (
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', flex: 1 }}>
+                              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '10px' }}>
+                                <div className="form-group" style={{ marginBottom: 0 }}>
+                                  <label className="form-label" style={{ fontSize: '0.7rem' }}>Nombre del DJ</label>
+                                  <input
+                                    type="text" className="input-field"
+                                    value={editDjDisplayName}
+                                    onChange={(e) => setEditDjDisplayName(e.target.value)}
+                                    style={{ padding: '4px 8px', fontSize: '0.8rem', height: '28px' }}
+                                  />
+                                </div>
+                                <div className="form-group" style={{ marginBottom: 0 }}>
+                                  <label className="form-label" style={{ fontSize: '0.7rem' }}>Correo Electrónico</label>
+                                  <input
+                                    type="email" className="input-field"
+                                    value={editDjEmail}
+                                    onChange={(e) => setEditDjEmail(e.target.value)}
+                                    style={{ padding: '4px 8px', fontSize: '0.8rem', height: '28px' }}
+                                  />
+                                </div>
+                                <div className="form-group" style={{ marginBottom: 0 }}>
+                                  <label className="form-label" style={{ fontSize: '0.7rem' }}>Nueva Contraseña (Opcional)</label>
+                                  <input
+                                    type="password" className="input-field"
+                                    placeholder="Dejar en blanco para conservar"
+                                    value={editDjPassword}
+                                    onChange={(e) => setEditDjPassword(e.target.value)}
+                                    style={{ padding: '4px 8px', fontSize: '0.8rem', height: '28px' }}
+                                  />
+                                </div>
+                              </div>
+                              <div style={{ display: 'flex', gap: '8px', marginTop: '4px' }}>
+                                <button
+                                  onClick={() => handleSaveEditDjAccount(uid)}
+                                  disabled={editDjLoading}
+                                  className="btn btn-primary"
+                                  style={{ padding: '4px 10px', fontSize: '0.75rem', height: '28px', display: 'flex', alignItems: 'center', gap: '4px' }}
+                                >
+                                  {editDjLoading ? <RefreshCw size={12} className="animate-spin" /> : <Check size={12} />} Guardar
+                                </button>
+                                <button
+                                  onClick={() => { setEditingDjUid(null); setEditDjPassword(''); }}
+                                  className="btn btn-secondary"
+                                  style={{ padding: '4px 10px', fontSize: '0.75rem', height: '28px', display: 'flex', alignItems: 'center', gap: '4px' }}
+                                >
+                                  <X size={12} /> Cancelar
+                                </button>
+                              </div>
+                            </div>
+                          ) : (
+                            <div>
+                              <strong style={{ fontSize: '1.05rem', color: 'var(--text-primary)' }}>
+                                {uid === 'uid-admin-master' ? '👑 Administrador Master' : djName}
+                              </strong>
+                              <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '2px' }}>
+                                UID: <code style={{ fontSize: '0.7rem', background: 'rgba(255,255,255,0.06)', padding: '1px 6px', borderRadius: '4px' }}>{uid}</code>
                               </p>
-                            )}
-                            <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '2px' }}>
-                              UID: <code style={{ fontSize: '0.7rem', background: 'rgba(255,255,255,0.06)', padding: '1px 6px', borderRadius: '4px' }}>{uid}</code>
-                            </p>
-                          </div>
+                              {email && (
+                                <p style={{ fontSize: '0.78rem', color: 'var(--secondary-color)', marginTop: '2px', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                  <Mail size={11} /> {email}
+                                </p>
+                              )}
+                            </div>
+                          )}
                         </div>
 
                         <div style={{ display: 'flex', gap: '16px', alignItems: 'center' }}>
@@ -2834,14 +2915,28 @@ export default function DjDashboard() {
                             </span>
                           </div>
 
-                          {uid !== 'uid-admin-master' && (
-                            <button
-                              onClick={() => { impersonateUser(uid); setActiveTab('requests'); showToast(`👁️ Viendo panel de ${djName}`); }}
-                              className="btn btn-secondary"
-                              style={{ padding: '8px 16px', fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: '6px', border: '1px solid rgba(124,58,237,0.3)' }}
-                            >
-                              <UserCog size={14} /> Ver Panel
-                            </button>
+                          {uid !== 'uid-admin-master' && editingDjUid !== uid && (
+                            <div style={{ display: 'flex', gap: '8px' }}>
+                              <button
+                                onClick={() => {
+                                  setEditingDjUid(uid);
+                                  setEditDjDisplayName(djName);
+                                  setEditDjEmail(email);
+                                  setEditDjPassword('');
+                                }}
+                                className="btn btn-secondary"
+                                style={{ padding: '8px 12px', fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: '6px', border: '1px solid rgba(255,255,255,0.1)' }}
+                              >
+                                <Edit size={14} /> Editar
+                              </button>
+                              <button
+                                onClick={() => { impersonateUser(uid); setActiveTab('requests'); showToast(`👁️ Viendo panel de ${djName}`); }}
+                                className="btn btn-secondary"
+                                style={{ padding: '8px 16px', fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: '6px', border: '1px solid rgba(124,58,237,0.3)' }}
+                              >
+                                <UserCog size={14} /> Ver Panel
+                              </button>
+                            </div>
                           )}
                         </div>
                       </div>
