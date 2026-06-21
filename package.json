@@ -54,7 +54,7 @@
     ],
     "mac": {
       "category": "public.app-category.entertainment",
-      "minimumSystemVersion": "10.14",
+      "minimumSystemVersion": "10.13",
       "target": [
         {
           "target": "dmg",
