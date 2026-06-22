@@ -1127,6 +1127,19 @@ export const FirebaseProvider = ({ children }) => {
     }
   };
 
+  const getDatabaseBackup = async () => {
+    if (!isAdminMaster) {
+      throw new Error("No autorizado: solo el administrador master puede realizar respaldos.");
+    }
+    const rootRef = ref(database, '/');
+    const snapshot = await get(rootRef);
+    if (snapshot.exists()) {
+      return snapshot.val();
+    } else {
+      throw new Error("La base de datos está vacía o no se pudo obtener.");
+    }
+  };
+
   return (
     <FirebaseContext.Provider value={{
       user,
@@ -1163,7 +1176,8 @@ export const FirebaseProvider = ({ children }) => {
       updateDjAccount,
       updateActiveRequest,
       updateAutocompleteSong,
-      deleteAutocompleteSong
+      deleteAutocompleteSong,
+      getDatabaseBackup
     }}>
       {children}
     </FirebaseContext.Provider>

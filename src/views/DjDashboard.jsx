@@ -5,7 +5,7 @@ import { QRCodeSVG, QRCodeCanvas } from 'qrcode.react';
 import { 
   Music, LogOut, Settings, Calendar, Download, RefreshCw, 
   Trash2, Plus, Play, Check, X, Bell, BellOff, Volume2, 
-  Sparkles, Sliders, Users, Layers, ShieldCheck,
+  Sparkles, Sliders, Users, Layers, ShieldCheck, Database,
   Link, AlertTriangle, ShieldAlert, ArrowLeft, UserCog, Edit, UserPlus, Mail, Lock, User,
   LayoutGrid, ExternalLink, Image, Search, Megaphone
 } from 'lucide-react';
@@ -41,7 +41,8 @@ export default function DjDashboard() {
     allEventsData,
     createDjAccount,
     updateDjAccount,
-    uploadLogo
+    uploadLogo,
+    getDatabaseBackup
   } = useFirebase();
 
   // Estados Locales
@@ -195,6 +196,35 @@ export default function DjDashboard() {
     } catch (err) {
       console.error(err);
       showToast("❌ Error al guardar la edición");
+    }
+  };
+
+  // Respaldo de Base de Datos para Admin Master
+  const [backupLoading, setBackupLoading] = useState(false);
+
+  const handleDownloadBackup = async () => {
+    if (backupLoading) return;
+    setBackupLoading(true);
+    try {
+      const data = await getDatabaseBackup();
+      const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      
+      const nowStr = new Date().toISOString().split('T')[0];
+      link.download = `dj_panel_backup_${nowStr}.json`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+      
+      showToast("💾 Respaldo de base de datos descargado con éxito");
+    } catch (error) {
+      console.error("Error al descargar respaldo:", error);
+      showToast("❌ Error al generar la copia de seguridad");
+    } finally {
+      setBackupLoading(false);
     }
   };
 
@@ -3188,6 +3218,36 @@ export default function DjDashboard() {
                   ))}
                 </div>
               )}
+
+              {/* === SECCIÓN: RESPALDO DE BASE DE DATOS === */}
+              <div style={{ marginTop: '28px', padding: '20px', border: '1px solid rgba(16,185,129,0.25)', background: 'rgba(16,185,129,0.03)', borderRadius: 'var(--radius-md)' }}>
+                <h3 style={{ fontSize: '1.05rem', fontWeight: '700', marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '8px', color: '#10b981' }}>
+                  <Database size={18} /> Copia de Seguridad y Respaldo de Base de Datos
+                </h3>
+                <p style={{ fontSize: '0.82rem', color: 'var(--text-secondary)', lineHeight: '1.5', marginBottom: '16px' }}>
+                  Descarga una copia de seguridad completa de la base de datos en formato JSON. Este archivo incluye todas las cuentas de DJ registradas, la configuración de todos los eventos, el historial de peticiones de canciones y el catálogo global de autocompletado.
+                </p>
+                <button
+                  onClick={handleDownloadBackup}
+                  disabled={backupLoading}
+                  className="btn btn-primary"
+                  style={{
+                    background: 'linear-gradient(135deg, #10b981, #059669)',
+                    border: 'none',
+                    boxShadow: '0 4px 12px rgba(16,185,129,0.2)',
+                    padding: '10px 20px',
+                    fontSize: '0.85rem',
+                    fontWeight: '600',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '8px',
+                    height: 'auto'
+                  }}
+                >
+                  {backupLoading ? <RefreshCw size={14} className="animate-spin" /> : <Download size={14} />}
+                  {backupLoading ? 'Generando Copia...' : 'Descargar Respaldo Completo (JSON)'}
+                </button>
+              </div>
 
               {/* Info de cuentas mock */}
               {isMock && (
