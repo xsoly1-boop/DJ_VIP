@@ -35,6 +35,212 @@ export const useFirebase = () => {
   return context;
 };
 
+// --- CONSTANTES DE RESTABLECIMIENTO PARA LA CUENTA DEMO ---
+const DEMO_UID = 'RkgPXWAF32NsJUTCo4iBuNRsemC2';
+const DEMO_EMAIL = 'demo@dj.com';
+
+const DEMO_SETTINGS = {
+  bankClabe: "123456789012345678",
+  customGenres: "",
+  date: "2026-06-22",
+  dedicationsEnabled: true,
+  djName: "DJ Demo",
+  djNameSaved: true,
+  fontFamily: "Outfit",
+  fontSize: "medium",
+  logoSize: "medium",
+  logoUrl: "",
+  mercadopagoLink: "https://link.mercadopago.com.mx/djdemo",
+  paypalUsername: "djdemo",
+  productionUrl: "https://dj-a-la-carta2-0.vercel.app",
+  promoEnabled: true,
+  promoInstagram: "djdemo_oficial",
+  promoTiktok: "djdemo_oficial",
+  promoWebsite: "https://djdemo.com",
+  promoWhatsapp: "5215512345678",
+  themeColor: "#7c3aed",
+  themeColorSecondary: "#06b6d4",
+  tipsEnabled: true,
+  title: "Mega Show en Vivo de DJ Demo",
+  webName: "DJ a la Carta",
+  webNameFontSize: 22
+};
+
+const DEMO_REQUESTS = {
+  "-Ovgkcq_r1At1TQ10Ng8": {
+    "artist": "La Sonora Dinamita",
+    "dedication": "",
+    "genre": "Cumbia",
+    "isRepeat": false,
+    "status": "pending",
+    "timestamp": 1782088633715,
+    "title": "Que Nadie Sepa Mi Sufrir",
+    "voters": {
+      "sess_pg79zy66bmqks4qkg": true
+    },
+    "votes": 0
+  },
+  "-Ovgkfa_VfZinZBC7jJz": {
+    "artist": "BLACKPINK",
+    "dedication": "",
+    "genre": "Kpop",
+    "isRepeat": false,
+    "status": "pending",
+    "timestamp": 1782088644980,
+    "title": "How You Like That",
+    "voters": {
+      "sess_pg79zy66bmqks4qkg": true
+    },
+    "votes": 0
+  },
+  "req_demo_1": {
+    "artist": "Eslabon Armado x Peso Pluma",
+    "dedication": "Para Lupita con todo mi amor de parte de Carlos",
+    "genre": "Regional Mexicano",
+    "id": "req_demo_1",
+    "status": "playing",
+    "timestamp": 1782078220769,
+    "title": "Ella Baila Sola",
+    "voters": {
+      "sess_v1": true,
+      "sess_v2": true,
+      "sess_v3": true
+    },
+    "votes": 14
+  },
+  "req_demo_10": {
+    "artist": "Karol G x Nicki Minaj",
+    "dedication": "Para cantar a todo pulmón con las amigas",
+    "genre": "Reggaetón",
+    "id": "req_demo_10",
+    "status": "pending",
+    "timestamp": 1782085360769,
+    "title": "Tusa",
+    "voters": {
+      "sess_v17": true
+    },
+    "votes": 6
+  },
+  "req_demo_2": {
+    "artist": "Soda Stereo",
+    "dedication": "¡Para cantar todos juntos esta noche en la cabina!",
+    "genre": "Rock en Español",
+    "id": "req_demo_2",
+    "status": "accepted",
+    "timestamp": 1782081820769,
+    "title": "Música Ligera",
+    "voters": {
+      "sess_v4": true,
+      "sess_v5": true
+    },
+    "votes": 11
+  },
+  "req_demo_3": {
+    "artist": "Bellakath",
+    "dedication": "Dedicado a las chicas de la mesa 5",
+    "genre": "Reggaetón",
+    "id": "req_demo_3",
+    "status": "accepted",
+    "timestamp": 1782083020769,
+    "title": "Gatita",
+    "voters": {
+      "sess_v6": true,
+      "sess_v7": true,
+      "sess_v8": true
+    },
+    "votes": 18
+  },
+  "req_demo_4": {
+    "artist": "Enanitos Verdes",
+    "dedication": "¡Un clásico infaltable!",
+    "genre": "Rock en Español",
+    "id": "req_demo_4",
+    "status": "pending",
+    "timestamp": 1782083620769,
+    "title": "Lamento Boliviano",
+    "voters": {
+      "sess_v9": true
+    },
+    "votes": 7
+  },
+  "req_demo_5": {
+    "artist": "Selena",
+    "dedication": "Para mi esposa en nuestro aniversario",
+    "genre": "Cumbia",
+    "id": "req_demo_5",
+    "status": "pending",
+    "timestamp": 1782083920769,
+    "title": "Como La Flor",
+    "voters": {
+      "sess_v10": true
+    },
+    "votes": 9
+  },
+  "req_demo_6": {
+    "artist": "Bizarrap x Quevedo",
+    "dedication": "¡A bailar toda la noche!",
+    "genre": "Urban/Electro",
+    "id": "req_demo_6",
+    "status": "pending",
+    "timestamp": 1782084220769,
+    "title": "Quevedo: Bzrp Music Sessions, Vol. 52",
+    "voters": {
+      "sess_v11": true,
+      "sess_v12": true
+    },
+    "votes": 12
+  },
+  "req_demo_7": {
+    "artist": "BTS",
+    "dedication": "Para el grupo de K-pop de la fiesta",
+    "genre": "Kpop",
+    "id": "req_demo_7",
+    "status": "pending",
+    "timestamp": 1782084520769,
+    "title": "Dynamite",
+    "voters": {
+      "sess_v13": true
+    },
+    "votes": 4
+  },
+  "req_demo_8": {
+    "artist": "Daddy Yankee",
+    "dedication": "¡Ponle play para prender la pista!",
+    "genre": "Reggaetón",
+    "id": "req_demo_8",
+    "status": "pending",
+    "timestamp": 1782084820769,
+    "title": "Gasolina",
+    "voters": {
+      "sess_v14": true,
+      "sess_v15": true
+    },
+    "votes": 15
+  },
+  "req_demo_9": {
+    "artist": "The Weeknd",
+    "dedication": "",
+    "genre": "Pop / Synthwave",
+    "id": "req_demo_9",
+    "status": "pending",
+    "timestamp": 1782085120769,
+    "title": "Save Your Tears",
+    "voters": {
+      "sess_v16": true
+    },
+    "votes": 3
+  }
+};
+
+const DEMO_INDEX = {
+  archived: false,
+  createdAt: 1782085420769,
+  date: "2026-06-22",
+  djName: "DJ Demo",
+  id: "default-event",
+  title: "Mega Show en Vivo de DJ Demo"
+};
+
 export const FirebaseProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [authLoading, setAuthLoading] = useState(true);
@@ -687,11 +893,40 @@ export const FirebaseProvider = ({ children }) => {
 
   const deleteEvent = async (eventId) => {
     if (!userBasePath) return;
+
+    const isDemoAccount = (user?.email === DEMO_EMAIL) || 
+                          (impersonatingUid && allUsersData[impersonatingUid]?.profile?.email === DEMO_EMAIL) ||
+                          (activeUid === DEMO_UID);
     
     if (eventId === 'default-event') {
-      // Restablecer el evento por defecto a su punto de inicio
-      const activeUid = user?.uid || auth.currentUser?.uid;
+      const activeUidVal = user?.uid || auth.currentUser?.uid;
       
+      if (isDemoAccount) {
+        // Restablecer el evento demo a su instantánea original
+        const settingsRef = ref(database, `${userBasePath}/events/default-event/settings`);
+        await set(settingsRef, DEMO_SETTINGS);
+
+        const requestsRef = ref(database, `${userBasePath}/events/default-event/requests`);
+        await set(requestsRef, DEMO_REQUESTS);
+
+        const indexRef = ref(database, `${userBasePath}/events_index/default-event`);
+        await set(indexRef, DEMO_INDEX);
+
+        const registryRef = ref(database, `events_registry/default-event-${activeUidVal}`);
+        await set(registryRef, {
+          ownerUid: activeUidVal,
+          title: DEMO_SETTINGS.title,
+          djName: DEMO_SETTINGS.djName,
+          eventType: 'Otro'
+        });
+
+        if (currentEventId === 'default-event') {
+          setRequests(DEMO_REQUESTS);
+        }
+        return;
+      }
+
+      // Restablecer el evento por defecto a su punto de inicio
       const settingsRef = ref(database, `${userBasePath}/events/default-event/settings`);
       const snapshot = await get(settingsRef);
       const currentData = snapshot.exists() ? snapshot.val() : {};
@@ -734,9 +969,9 @@ export const FirebaseProvider = ({ children }) => {
         eventType: 'Otro'
       });
 
-      const registryRef = ref(database, `events_registry/default-event-${activeUid}`);
+      const registryRef = ref(database, `events_registry/default-event-${activeUidVal}`);
       await set(registryRef, {
-        ownerUid: activeUid,
+        ownerUid: activeUidVal,
         title: 'Mi Gran Evento VIP',
         djName: finalDjName,
         eventType: 'Otro'
@@ -801,22 +1036,34 @@ export const FirebaseProvider = ({ children }) => {
   const clearHistoryWithOptions = async (options) => {
     if (!userBasePath) throw new Error('No hay sesión activa.');
 
+    const isDemoAccount = (user?.email === DEMO_EMAIL) || 
+                          (impersonatingUid && allUsersData[impersonatingUid]?.profile?.email === DEMO_EMAIL) ||
+                          (activeUid === DEMO_UID);
+
     // 1. Borrado de canciones (peticiones) del evento activo
     if (options.songs) {
       const requestsRef = ref(database, `${userBasePath}/events/${currentEventId}/requests`);
-      await set(requestsRef, null);
-      setRequests({});
+      if (isDemoAccount && currentEventId === 'default-event') {
+        await set(requestsRef, DEMO_REQUESTS);
+        setRequests(DEMO_REQUESTS);
+      } else {
+        await set(requestsRef, null);
+        setRequests({});
+      }
     }
 
     // 2. Borrado de géneros (resetea a "Personalizado" en peticiones y autocompletado)
     if (options.genres) {
-      if (requests && Object.keys(requests).length > 0) {
-        const updatedRequests = {};
-        Object.keys(requests).forEach(key => {
-          updatedRequests[`${key}/genre`] = 'Personalizado';
-        });
-        const requestsRef = ref(database, `${userBasePath}/events/${currentEventId}/requests`);
-        await update(requestsRef, updatedRequests);
+      // Si es la cuenta demo y el evento activo es el de demostración, omitimos modificar sus peticiones
+      if (!(isDemoAccount && currentEventId === 'default-event')) {
+        if (requests && Object.keys(requests).length > 0) {
+          const updatedRequests = {};
+          Object.keys(requests).forEach(key => {
+            updatedRequests[`${key}/genre`] = 'Personalizado';
+          });
+          const requestsRef = ref(database, `${userBasePath}/events/${currentEventId}/requests`);
+          await update(requestsRef, updatedRequests);
+        }
       }
       if (autocompleteSongs && autocompleteSongs.length > 0) {
         const updatedAutocomplete = {};
@@ -830,13 +1077,16 @@ export const FirebaseProvider = ({ children }) => {
 
     // 3. Borrado de artistas (resetea a "Artista no especificado" en peticiones y autocompletado)
     if (options.artists) {
-      if (requests && Object.keys(requests).length > 0) {
-        const updatedRequests = {};
-        Object.keys(requests).forEach(key => {
-          updatedRequests[`${key}/artist`] = 'Artista no especificado';
-        });
-        const requestsRef = ref(database, `${userBasePath}/events/${currentEventId}/requests`);
-        await update(requestsRef, updatedRequests);
+      // Si es la cuenta demo y el evento activo es el de demostración, omitimos modificar sus peticiones
+      if (!(isDemoAccount && currentEventId === 'default-event')) {
+        if (requests && Object.keys(requests).length > 0) {
+          const updatedRequests = {};
+          Object.keys(requests).forEach(key => {
+            updatedRequests[`${key}/artist`] = 'Artista no especificado';
+          });
+          const requestsRef = ref(database, `${userBasePath}/events/${currentEventId}/requests`);
+          await update(requestsRef, updatedRequests);
+        }
       }
       if (autocompleteSongs && autocompleteSongs.length > 0) {
         const updatedAutocomplete = {};
@@ -856,41 +1106,56 @@ export const FirebaseProvider = ({ children }) => {
       const eventsRef = ref(database, `${userBasePath}/events`);
       await set(eventsRef, null);
 
-      // Re-crear evento default-event de inicio
-      const defaultEventRef = ref(database, `${userBasePath}/events/default-event`);
-      await set(defaultEventRef, {
-        settings: {
+      if (isDemoAccount) {
+        // Re-crear el default-event de la demo
+        const defaultEventRef = ref(database, `${userBasePath}/events/default-event`);
+        await set(defaultEventRef, {
+          settings: DEMO_SETTINGS,
+          requests: DEMO_REQUESTS
+        });
+
+        const defaultIndexRef = ref(database, `${userBasePath}/events_index/default-event`);
+        await set(defaultIndexRef, DEMO_INDEX);
+
+        setCurrentEventId('default-event');
+        setEventsList([DEMO_INDEX]);
+      } else {
+        // Re-crear evento default-event de inicio estándar
+        const defaultEventRef = ref(database, `${userBasePath}/events/default-event`);
+        await set(defaultEventRef, {
+          settings: {
+            title: 'Mi Gran Evento VIP',
+            logoUrl: '',
+            themeColor: '#7c3aed',
+            themeColorSecondary: '#06b6d4',
+            djName: user?.displayName || 'DJ MasterMix',
+            date: new Date().toISOString().split('T')[0],
+            archived: false,
+            logoSize: 'medium',
+            dedicationsEnabled: false
+          },
+          requests: {}
+        });
+
+        const defaultIndexRef = ref(database, `${userBasePath}/events_index/default-event`);
+        await set(defaultIndexRef, {
+          id: 'default-event',
           title: 'Mi Gran Evento VIP',
-          logoUrl: '',
-          themeColor: '#7c3aed',
-          themeColorSecondary: '#06b6d4',
           djName: user?.displayName || 'DJ MasterMix',
           date: new Date().toISOString().split('T')[0],
           archived: false,
-          logoSize: 'medium',
-          dedicationsEnabled: false
-        },
-        requests: {}
-      });
+          createdAt: Date.now()
+        });
 
-      const defaultIndexRef = ref(database, `${userBasePath}/events_index/default-event`);
-      await set(defaultIndexRef, {
-        id: 'default-event',
-        title: 'Mi Gran Evento VIP',
-        djName: user?.displayName || 'DJ MasterMix',
-        date: new Date().toISOString().split('T')[0],
-        archived: false,
-        createdAt: Date.now()
-      });
-
-      setCurrentEventId('default-event');
-      setEventsList([{
-        id: 'default-event',
-        title: 'Mi Gran Evento VIP',
-        djName: user?.displayName || 'DJ MasterMix',
-        date: new Date().toISOString().split('T')[0],
-        archived: false
-      }]);
+        setCurrentEventId('default-event');
+        setEventsList([{
+          id: 'default-event',
+          title: 'Mi Gran Evento VIP',
+          djName: user?.displayName || 'DJ MasterMix',
+          date: new Date().toISOString().split('T')[0],
+          archived: false
+        }]);
+      }
     }
 
     // 5. Borrado de base de datos de autocompletado

@@ -10,7 +10,8 @@
     "lint": "eslint .",
     "preview": "vite preview",
     "electron:dev": "concurrently -k \"npm run dev\" \"cross-env ELECTRON_DEV=true electron .\"",
-    "electron:build": "npm run build && electron-builder"
+    "electron:build": "npm run build && electron-builder",
+    "test": "node scratch/test_admin.js && node scratch/test_autocomplete.js && node scratch/test_queue_deduplication.js"
   },
   "dependencies": {
     "@capacitor/android": "^8.4.1",

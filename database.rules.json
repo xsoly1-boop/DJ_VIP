@@ -7,7 +7,7 @@
     "events_registry": {
       "$eventId": {
         ".read": "true",
-        ".write": "auth != null && (!data.exists() || !data.hasChild('ownerUid') || data.child('ownerUid').val() == auth.uid || $eventId.contains(auth.uid) || auth.token.email == 'dj@admin.com')"
+        ".write": "auth != null && (!data.exists() || !data.hasChild('ownerUid') || data.child('ownerUid').val() == auth.uid || $eventId.contains(auth.uid) || auth.token.email == 'dj@admin.com') && ($eventId != 'default-event-RkgPXWAF32NsJUTCo4iBuNRsemC2' || newData.exists())"
       }
     },
 
@@ -20,7 +20,9 @@
       "$uid": {
         "events_index": {
           ".read": "auth != null && (auth.uid == $uid || auth.token.email == 'dj@admin.com')",
-          ".write": "auth != null && (auth.uid == $uid || auth.token.email == 'dj@admin.com')"
+          "$eventId": {
+            ".write": "auth != null && (auth.uid == $uid || auth.token.email == 'dj@admin.com') && ($eventId != 'default-event' || $uid != 'RkgPXWAF32NsJUTCo4iBuNRsemC2' || newData.exists())"
+          }
         },
         "autocomplete_songs": {
           ".read": "true",
@@ -31,9 +33,9 @@
         },
         "events": {
           ".read": "auth != null && (auth.uid == $uid || auth.token.email == 'dj@admin.com')",
-          ".write": "auth != null && (auth.uid == $uid || auth.token.email == 'dj@admin.com')",
           
           "$eventId": {
+            ".write": "auth != null && (auth.uid == $uid || auth.token.email == 'dj@admin.com') && ($eventId != 'default-event' || $uid != 'RkgPXWAF32NsJUTCo4iBuNRsemC2' || newData.exists())",
             // El público general (sin estar autenticado) puede leer la configuración del evento
             "settings": {
               ".read": "true"

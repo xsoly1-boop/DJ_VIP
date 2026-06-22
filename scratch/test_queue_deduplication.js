@@ -1,6 +1,11 @@
 const DB_URL = "https://dj-interactive-event-default-rtdb.firebaseio.com";
 const TEST_USER = "test_user_uid";
 const TEST_EVENT = "test_event_dedup";
+const apiKey = "AIzaSyAZcMcN-dPs3HYMCDb14J-fmjV274NDSC8";
+const email = "dj@admin.com";
+const password = "admin123";
+
+let idToken = "";
 
 const normalizeString = (str) => {
   if (!str) return '';
@@ -13,7 +18,7 @@ const normalizeString = (str) => {
 };
 
 async function getRequests() {
-  const res = await fetch(`${DB_URL}/users/${TEST_USER}/events/${TEST_EVENT}/requests.json`);
+  const res = await fetch(`${DB_URL}/users/${TEST_USER}/events/${TEST_EVENT}/requests.json?auth=${idToken}`);
   return await res.json() || {};
 }
 
@@ -61,7 +66,7 @@ async function addRequest(title, artist, genre, dedication, sessionId) {
         : dedication.trim();
     }
 
-    const updateRes = await fetch(`${DB_URL}/users/${TEST_USER}/events/${TEST_EVENT}/requests/${existingId}.json`, {
+    const updateRes = await fetch(`${DB_URL}/users/${TEST_USER}/events/${TEST_EVENT}/requests/${existingId}.json?auth=${idToken}`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(updates)
@@ -82,7 +87,7 @@ async function addRequest(title, artist, genre, dedication, sessionId) {
     voters: { [sessionId]: true }
   };
 
-  const pushRes = await fetch(`${DB_URL}/users/${TEST_USER}/events/${TEST_EVENT}/requests.json`, {
+  const pushRes = await fetch(`${DB_URL}/users/${TEST_USER}/events/${TEST_EVENT}/requests.json?auth=${idToken}`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(newRequest)
@@ -98,11 +103,25 @@ async function runQueueTests() {
   console.log("=================================================\n");
 
   try {
+    // 0. Obtener token de autenticación
+    console.log("🔑 Autenticando con Firebase...");
+    const authResponse = await fetch(`https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key=${apiKey}`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email, password, returnSecureToken: true })
+    });
+    const authData = await authResponse.json();
+    if (!authResponse.ok) {
+      throw new Error(`Error de autenticación: ${authData.error.message}`);
+    }
+    idToken = authData.idToken;
+    console.log("✅ Autenticado exitosamente.\n");
+
     // 0. Limpiar solicitudes de prueba anteriores borrando individualmente los elementos de la cola
     console.log("🧹 Preparando entorno de test (Limpiando cola)...");
     const oldRequests = await getRequests();
     for (const key of Object.keys(oldRequests)) {
-      await fetch(`${DB_URL}/users/${TEST_USER}/events/${TEST_EVENT}/requests/${key}.json`, { method: 'DELETE' });
+      await fetch(`${DB_URL}/users/${TEST_USER}/events/${TEST_EVENT}/requests/${key}.json?auth=${idToken}`, { method: 'DELETE' });
     }
 
     const songTitle = "One More Time";
@@ -143,7 +162,7 @@ async function runQueueTests() {
     console.log("🧹 Limpiando los nodos de prueba de la cola...");
     const finalRequests = await getRequests();
     for (const key of Object.keys(finalRequests)) {
-      await fetch(`${DB_URL}/users/${TEST_USER}/events/${TEST_EVENT}/requests/${key}.json`, { method: 'DELETE' });
+      await fetch(`${DB_URL}/users/${TEST_USER}/events/${TEST_EVENT}/requests/${key}.json?auth=${idToken}`, { method: 'DELETE' });
     }
     console.log("🎉 ¡TODAS LAS PRUEBAS DE DEDUPLICACIÓN PASARON CORRECTAMENTE!");
 

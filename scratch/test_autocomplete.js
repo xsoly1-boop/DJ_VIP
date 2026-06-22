@@ -1,4 +1,7 @@
 const DB_URL = "https://dj-interactive-event-default-rtdb.firebaseio.com";
+const apiKey = "AIzaSyAZcMcN-dPs3HYMCDb14J-fmjV274NDSC8";
+const email = "dj@admin.com";
+const password = "admin123";
 
 async function runTests() {
   console.log("=================================================");
@@ -6,9 +9,23 @@ async function runTests() {
   console.log("=================================================\n");
 
   try {
+    // 0. Obtener token de autenticación
+    console.log("🔑 Autenticando con Firebase...");
+    const authResponse = await fetch(`https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key=${apiKey}`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email, password, returnSecureToken: true })
+    });
+    const authData = await authResponse.json();
+    if (!authResponse.ok) {
+      throw new Error(`Error de autenticación: ${authData.error.message}`);
+    }
+    const idToken = authData.idToken;
+    console.log("✅ Autenticado exitosamente.\n");
+
     // 1. Obtener la cantidad actual de canciones en el catálogo global de autocompletado
     console.log("1. Leyendo catálogo global de autocompletado...");
-    const getRes = await fetch(`${DB_URL}/autocomplete_songs.json`);
+    const getRes = await fetch(`${DB_URL}/autocomplete_songs.json?auth=${idToken}`);
     const initialSongs = await getRes.json() || {};
     const initialCount = Object.keys(initialSongs).length;
     console.log(`📊 Cantidad inicial de canciones en catálogo: ${initialCount}\n`);
@@ -25,7 +42,7 @@ async function runTests() {
     console.log(`💿 Género  : "${testGenre}"\n`);
 
     // 2. Simular inserción de canción en autocomplete_songs (Crecimiento de BD)
-    const postRes = await fetch(`${DB_URL}/autocomplete_songs.json`, {
+    const postRes = await fetch(`${DB_URL}/autocomplete_songs.json?auth=${idToken}`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json'
@@ -38,7 +55,7 @@ async function runTests() {
     });
 
     if (!postRes.ok) {
-      throw new Error(`Error al insertar canción: ${postRes.statusText}`);
+      throw new Error(`Error al insertar canción: ${postRes.status} - ${await postRes.text()}`);
     }
 
     const postData = await postRes.json();
@@ -47,7 +64,7 @@ async function runTests() {
 
     // 3. Verificar el crecimiento en la base de datos
     console.log("2. Confirmando crecimiento en la base de datos...");
-    const verifyRes = await fetch(`${DB_URL}/autocomplete_songs.json`);
+    const verifyRes = await fetch(`${DB_URL}/autocomplete_songs.json?auth=${idToken}`);
     const updatedSongs = await verifyRes.json() || {};
     const updatedCount = Object.keys(updatedSongs).length;
 
@@ -93,7 +110,7 @@ async function runTests() {
 
     // Limpieza del test
     console.log("🧹 Limpiando registro de prueba de la base de datos...");
-    const deleteRes = await fetch(`${DB_URL}/autocomplete_songs/${newSongId}.json`, {
+    const deleteRes = await fetch(`${DB_URL}/autocomplete_songs/${newSongId}.json?auth=${idToken}`, {
       method: 'DELETE'
     });
     if (deleteRes.ok) {

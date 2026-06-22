@@ -204,9 +204,9 @@ echo ""
 echo -e "${CYAN}[4/6] Instalando dependencias del proyecto...${RESET}"
 if [ -f "package-lock.json" ]; then
     echo -e "  📦 Detectado package-lock.json, usando 'npm ci' para una instalación limpia y rápida..."
-    npm ci --prefer-offline || npm install --prefer-offline
+    npm ci --include=dev || npm install --include=dev
 else
-    npm install --prefer-offline 2>&1 || npm install
+    npm install --include=dev 2>&1 || npm install --include=dev
 fi
 echo -e "  ✅ Dependencias instaladas"
 echo ""
