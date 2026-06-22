@@ -1134,7 +1134,12 @@ export default function DjDashboard() {
                   whiteSpace: 'nowrap',
                 }}
               >
-                {djOnline ? '🎧 EN CABINA' : '⏸ FUERA DE CABINA'}
+                {(() => {
+                  const djName = eventSettings.djName || user?.displayName || (user?.email ? user.email.split('@')[0] : 'DJ');
+                  return djOnline
+                    ? <>🎧 <strong style={{ fontWeight: '800' }}>{djName}</strong>&nbsp;· EN CABINA</>
+                    : <>⏸ <strong style={{ fontWeight: '800' }}>{djName}</strong>&nbsp;· FUERA</>;
+                })()}
               </button>
               {isAdminMaster && !impersonatingUid && (
                 <span style={{ fontSize: '0.65rem', padding: '3px 8px', borderRadius: '8px', background: 'rgba(245,158,11,0.15)', color: 'var(--warning-color)', fontWeight: '700', border: '1px solid rgba(245,158,11,0.3)' }}>
