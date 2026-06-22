@@ -1192,41 +1192,41 @@ export default function DjDashboard() {
       </header>
 
       {/* MÉTRICAS RÁPIDAS */}
-      <section style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: '12px', marginBottom: '24px' }}>
-        <div className="glass-panel" style={{ padding: '12px 16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+      <section style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(100px, 1fr))', gap: '8px', marginBottom: '20px' }}>
+        <div className="glass-panel" style={{ padding: '8px 10px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <div>
-            <p style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', fontWeight: '500' }}>Total Peticiones</p>
-            <h3 style={{ fontSize: '1.5rem', marginTop: '4px' }}>{stats.total}</h3>
+            <p style={{ fontSize: '0.65rem', color: 'var(--text-secondary)', fontWeight: '500', lineHeight: 1.2 }}>Total<br/>Peticiones</p>
+            <h3 style={{ fontSize: '1.25rem', marginTop: '2px' }}>{stats.total}</h3>
           </div>
-          <Layers size={24} color="var(--primary-color)" style={{ opacity: 0.6 }} />
+          <Layers size={18} color="var(--primary-color)" style={{ opacity: 0.6, flexShrink: 0 }} />
         </div>
-        <div className="glass-panel" style={{ padding: '12px 16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <div className="glass-panel" style={{ padding: '8px 10px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <div>
-            <p style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', fontWeight: '500' }}>Por Aceptar</p>
-            <h3 style={{ fontSize: '1.5rem', marginTop: '4px', color: 'var(--warning-color)' }}>{stats.pending}</h3>
+            <p style={{ fontSize: '0.65rem', color: 'var(--text-secondary)', fontWeight: '500', lineHeight: 1.2 }}>Por<br/>Aceptar</p>
+            <h3 style={{ fontSize: '1.25rem', marginTop: '2px', color: 'var(--warning-color)' }}>{stats.pending}</h3>
           </div>
-          <RefreshCw size={24} color="var(--warning-color)" style={{ opacity: 0.6 }} className={stats.pending > 0 ? 'animate-spin' : ''} />
+          <RefreshCw size={18} color="var(--warning-color)" style={{ opacity: 0.6, flexShrink: 0 }} className={stats.pending > 0 ? 'animate-spin' : ''} />
         </div>
-        <div className="glass-panel" style={{ padding: '12px 16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <div className="glass-panel" style={{ padding: '8px 10px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <div>
-            <p style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', fontWeight: '500' }}>Sonando Ahora</p>
-            <h3 style={{ fontSize: '1.5rem', marginTop: '4px', color: 'var(--secondary-color)' }}>{stats.playing}</h3>
+            <p style={{ fontSize: '0.65rem', color: 'var(--text-secondary)', fontWeight: '500', lineHeight: 1.2 }}>Sonando<br/>Ahora</p>
+            <h3 style={{ fontSize: '1.25rem', marginTop: '2px', color: 'var(--secondary-color)' }}>{stats.playing}</h3>
           </div>
-          <Play size={24} color="var(--secondary-color)" style={{ opacity: 0.6 }} />
+          <Play size={18} color="var(--secondary-color)" style={{ opacity: 0.6, flexShrink: 0 }} />
         </div>
-        <div className="glass-panel" style={{ padding: '12px 16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <div className="glass-panel" style={{ padding: '8px 10px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <div>
-            <p style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', fontWeight: '500' }}>Votos de la Audiencia</p>
-            <h3 style={{ fontSize: '1.5rem', marginTop: '4px', color: 'var(--success-color)' }}>{stats.votes}</h3>
+            <p style={{ fontSize: '0.65rem', color: 'var(--text-secondary)', fontWeight: '500', lineHeight: 1.2 }}>Votos<br/>Audiencia</p>
+            <h3 style={{ fontSize: '1.25rem', marginTop: '2px', color: 'var(--success-color)' }}>{stats.votes}</h3>
           </div>
-          <Users size={24} color="var(--success-color)" style={{ opacity: 0.6 }} />
+          <Users size={18} color="var(--success-color)" style={{ opacity: 0.6, flexShrink: 0 }} />
         </div>
-        <div className="glass-panel" style={{ padding: '12px 16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <div className="glass-panel" style={{ padding: '8px 10px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <div>
-            <p style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', fontWeight: '500' }}>Canciones Registradas</p>
-            <h3 style={{ fontSize: '1.5rem', marginTop: '4px', color: 'var(--primary-color)' }}>{(autocompleteSongs || []).length}</h3>
+            <p style={{ fontSize: '0.65rem', color: 'var(--text-secondary)', fontWeight: '500', lineHeight: 1.2 }}>Canciones<br/>BD</p>
+            <h3 style={{ fontSize: '1.25rem', marginTop: '2px', color: 'var(--primary-color)' }}>{(autocompleteSongs || []).length}</h3>
           </div>
-          <Database size={24} color="var(--primary-color)" style={{ opacity: 0.6 }} />
+          <Database size={18} color="var(--primary-color)" style={{ opacity: 0.6, flexShrink: 0 }} />
         </div>
       </section>
 
