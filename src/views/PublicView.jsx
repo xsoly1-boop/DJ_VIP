@@ -1014,7 +1014,7 @@ export default function PublicView() {
                 </div>
               </div>
               
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
                 {eventSettings.promoWhatsapp && (
                   <a 
                     href={`https://wa.me/${eventSettings.promoWhatsapp.replace(/[^0-9]/g, '')}`}
@@ -1022,11 +1022,11 @@ export default function PublicView() {
                     rel="noopener noreferrer"
                     className="btn"
                     style={{
-                      padding: '6px 12px',
-                      fontSize: '0.75rem',
+                      padding: '4px 8px',
+                      fontSize: '0.7rem',
                       display: 'inline-flex',
                       alignItems: 'center',
-                      gap: '6px',
+                      gap: '4px',
                       background: 'rgba(37, 211, 102, 0.15)',
                       border: '1px solid rgba(37, 211, 102, 0.3)',
                       color: '#25d366',
@@ -1035,7 +1035,7 @@ export default function PublicView() {
                       textDecoration: 'none'
                     }}
                   >
-                    <svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"></path></svg>
+                    <svg viewBox="0 0 24 24" width="12" height="12" stroke="currentColor" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"></path></svg>
                     <span>WhatsApp</span>
                   </a>
                 )}
@@ -1047,11 +1047,11 @@ export default function PublicView() {
                     rel="noopener noreferrer"
                     className="btn"
                     style={{
-                      padding: '6px 12px',
-                      fontSize: '0.75rem',
+                      padding: '4px 8px',
+                      fontSize: '0.7rem',
                       display: 'inline-flex',
                       alignItems: 'center',
-                      gap: '6px',
+                      gap: '4px',
                       background: 'rgba(59, 130, 246, 0.15)',
                       border: '1px solid rgba(59, 130, 246, 0.3)',
                       color: '#3b82f6',
@@ -1060,7 +1060,7 @@ export default function PublicView() {
                       textDecoration: 'none'
                     }}
                   >
-                    <svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="2" y1="12" x2="22" y2="12"></line><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path></svg>
+                    <svg viewBox="0 0 24 24" width="12" height="12" stroke="currentColor" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="2" y1="12" x2="22" y2="12"></line><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path></svg>
                     <span>Sitio Web</span>
                   </a>
                 )}
@@ -1072,11 +1072,11 @@ export default function PublicView() {
                     rel="noopener noreferrer"
                     className="btn"
                     style={{
-                      padding: '6px 12px',
-                      fontSize: '0.75rem',
+                      padding: '4px 8px',
+                      fontSize: '0.7rem',
                       display: 'inline-flex',
                       alignItems: 'center',
-                      gap: '6px',
+                      gap: '4px',
                       background: 'rgba(236, 72, 153, 0.15)',
                       border: '1px solid rgba(236, 72, 153, 0.3)',
                       color: '#ec4899',
@@ -1085,7 +1085,7 @@ export default function PublicView() {
                       textDecoration: 'none'
                     }}
                   >
-                    <svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="2" width="20" height="20" rx="5" ry="5"></rect><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"></path><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"></line></svg>
+                    <svg viewBox="0 0 24 24" width="12" height="12" stroke="currentColor" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="2" width="20" height="20" rx="5" ry="5"></rect><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"></path><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"></line></svg>
                     <span>Instagram</span>
                   </a>
                 )}
@@ -1097,11 +1097,11 @@ export default function PublicView() {
                     rel="noopener noreferrer"
                     className="btn"
                     style={{
-                      padding: '6px 12px',
-                      fontSize: '0.75rem',
+                      padding: '4px 8px',
+                      fontSize: '0.7rem',
                       display: 'inline-flex',
                       alignItems: 'center',
-                      gap: '6px',
+                      gap: '4px',
                       background: 'rgba(255, 255, 255, 0.08)',
                       border: '1px solid rgba(255, 255, 255, 0.15)',
                       color: 'var(--text-primary)',
@@ -1110,7 +1110,7 @@ export default function PublicView() {
                       textDecoration: 'none'
                     }}
                   >
-                    <Music size={14} />
+                    <Music size={12} />
                     <span>TikTok</span>
                   </a>
                 )}
