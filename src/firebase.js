@@ -840,7 +840,39 @@ export const INITIAL_AUTOCOMPLETE = [
   { id: '736', title: "Llegó el Afilador", artist: "Merenglass", genre: "Merengue" },
   { id: '737', title: "La Cerveza", artist: "Merenglass", genre: "Merengue" },
   { id: '738', title: "El Conejo", artist: "Merenglass", genre: "Merengue" },
-  { id: '739', title: "Chupando la Caña", artist: "Merenglass", genre: "Merengue" }
+  { id: '739', title: "Chupando la Caña", artist: "Merenglass", genre: "Merengue" },
+  { id: '740', title: "El Baile de la Sipiriana", artist: "Rayito Colombiano", genre: "Cumbia" },
+  { id: '741', title: "Cumbia Caliente", artist: "Rayito Colombiano", genre: "Cumbia" },
+  { id: '742', title: "Vestida de Amor", artist: "Rayito Colombiano", genre: "Cumbia" },
+  { id: '743', title: "Cicatrices", artist: "Rayito Colombiano", genre: "Cumbia" },
+  { id: '744', title: "Dama de Noche", artist: "Rayito Colombiano", genre: "Cumbia" },
+  { id: '745', title: "El Último Beso", artist: "Rayito Colombiano", genre: "Cumbia" },
+  { id: '746', title: "A Mi Manera", artist: "Rayito Colombiano", genre: "Cumbia" },
+  { id: '747', title: "Clavado en un Bar", artist: "Maná", genre: "Rock en Español" },
+  { id: '748', title: "En el Muelle de San Blas", artist: "Maná", genre: "Rock en Español / Pop" },
+  { id: '749', title: "Oye Mi Amor", artist: "Maná", genre: "Rock en Español" },
+  { id: '750', title: "Rayando el Sol", artist: "Maná", genre: "Rock en Español" },
+  { id: '751', title: "Mariposa Traicionera", artist: "Maná", genre: "Rock en Español" },
+  { id: '752', title: "Labios Compartidos", artist: "Maná", genre: "Rock en Español" },
+  { id: '753', title: "Vivir Sin Aire", artist: "Maná", genre: "Rock en Español" },
+  { id: '754', title: "Corazón Espinado", artist: "Maná x Santana", genre: "Rock en Español" },
+  { id: '755', title: "Eres Mi Religión", artist: "Maná", genre: "Rock en Español" },
+  { id: '756', title: "Amor Clandestino", artist: "Maná", genre: "Rock en Español" },
+  { id: '757', title: "Monaco", artist: "Bad Bunny", genre: "Trap / Urbano" },
+  { id: '758', title: "Mi Ex Tenía Razón", artist: "Karol G", genre: "Cumbia / Tex-Mex" },
+  { id: '759', title: "Amargura", artist: "Karol G", genre: "Reggaetón / Urbano" },
+  { id: '760', title: "Cairo", artist: "Karol G", genre: "Reggaetón / Pop" },
+  { id: '761', title: "Qlona", artist: "Karol G x Peso Pluma", genre: "Reggaetón" },
+  { id: '762', title: "Mami", artist: "Karol G x Becky G", genre: "Reggaetón" },
+  { id: '763', title: "200 Copas", artist: "Karol G", genre: "Regional Mexicano / Corrido" },
+  { id: '764', title: "Houdini", artist: "Dua Lipa", genre: "Pop / Disco" },
+  { id: '765', title: "Dance the Night", artist: "Dua Lipa", genre: "Pop / Disco" },
+  { id: '766', title: "New Rules", artist: "Dua Lipa", genre: "Pop" },
+  { id: '767', title: "Physical", artist: "Dua Lipa", genre: "Pop / Synthpop" },
+  { id: '768', title: "Break My Heart", artist: "Dua Lipa", genre: "Pop / Disco" },
+  { id: '769', title: "Cold Heart", artist: "Dua Lipa x Elton John", genre: "Pop / Dance" },
+  { id: '770', title: "Love Again", artist: "Dua Lipa", genre: "Pop / Disco" },
+  { id: '771', title: "Training Season", artist: "Dua Lipa", genre: "Pop" }
 ];
 
 // Construir datos iniciales para un usuario DJ dado
@@ -1042,6 +1074,14 @@ const getLocalData = () => {
   if (!parsed.autocomplete_songs) {
     parsed.autocomplete_songs = INITIAL_AUTOCOMPLETE.reduce((acc, s) => { acc[s.id] = s; return acc; }, {});
     updated = true;
+  } else {
+    // Asegurar que las nuevas canciones semilla estén presentes en la BD si el usuario ya tenía datos
+    INITIAL_AUTOCOMPLETE.forEach(song => {
+      if (!parsed.autocomplete_songs[song.id]) {
+        parsed.autocomplete_songs[song.id] = song;
+        updated = true;
+      }
+    });
   }
   if (updated) {
     localStorage.setItem('mock_rtdb_v2', JSON.stringify(parsed));

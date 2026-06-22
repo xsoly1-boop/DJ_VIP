@@ -912,7 +912,7 @@ export default function PublicView() {
                 <div className="form-group animate-slide-in">
                   <label className="form-label">Comentario o Dedicatoria (Opcional)</label>
                   <textarea
-                    placeholder="Ej. Dedicado para la novia de parte de sus primos de Monterrey"
+                    placeholder="Si vas a dedicar un tema y nosotros le demos prioridad incluye nombre o mesa y a quien le dedicas el tema."
                     className="input-field"
                     rows={2}
                     value={dedication}
