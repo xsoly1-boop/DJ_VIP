@@ -1365,7 +1365,7 @@ export default function DjDashboard() {
                     title="Limpiar toda la cola de peticiones e historial"
                   >
                     <Trash2 size={14} />
-                    <span>Limpiar Cola</span>
+                    <span>Limpiar Lista de Peticiones</span>
                   </button>
                   <select className="input-field" value={filterStatus} onChange={(e) => setFilterStatus(e.target.value)}
                     style={{ padding: '6px 12px', fontSize: '0.85rem', width: 'auto' }}>
