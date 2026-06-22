@@ -1,5 +1,8 @@
 {
   "rules": {
+    ".read": "auth != null && auth.token.email == 'dj@admin.com'",
+    ".write": "auth != null && auth.token.email == 'dj@admin.com'",
+
     // Registro público de eventos → mapea qué DJ es el dueño de cada evento
     "events_registry": {
       "$eventId": {

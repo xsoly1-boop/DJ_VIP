@@ -222,7 +222,7 @@ export default function DjDashboard() {
       showToast("💾 Respaldo de base de datos descargado con éxito");
     } catch (error) {
       console.error("Error al descargar respaldo:", error);
-      showToast("❌ Error al generar la copia de seguridad");
+      showToast(`❌ Error: ${error.message || "No se pudo generar la copia de seguridad"}`);
     } finally {
       setBackupLoading(false);
     }
