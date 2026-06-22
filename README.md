@@ -286,3 +286,4 @@ La plataforma cuenta con capacidades mejoradas de personalización, control del 
 * **Palabra Clave de Seguridad:** Como mecanismo de protección para evitar la pérdida accidental de datos, el botón de confirmación de borrado requiere que el usuario escriba la palabra clave exacta `"clear"` para validar y ejecutar la acción.
 
 # DJ_eventos
+# DJ_VIP
