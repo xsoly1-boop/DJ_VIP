@@ -36,3 +36,5 @@ dist-desktop
 *.apk
 out/
 release/
+*.keystore
+*.jks
