@@ -7,7 +7,7 @@ import {
   Trash2, Plus, Play, Check, X, Bell, BellOff, Volume2, 
   Sparkles, Sliders, Users, Layers, ShieldCheck, Database,
   Link, AlertTriangle, ShieldAlert, ArrowLeft, UserCog, Edit, UserPlus, Mail, Lock, User,
-  LayoutGrid, ExternalLink, Image, Search, Megaphone
+  LayoutGrid, ExternalLink, Image, Search, Megaphone, Star
 } from 'lucide-react';
 
 export default function DjDashboard() {
@@ -42,7 +42,8 @@ export default function DjDashboard() {
     createDjAccount,
     updateDjAccount,
     uploadLogo,
-    getDatabaseBackup
+    getDatabaseBackup,
+    ratingsStats
   } = useFirebase();
 
   // Estados Locales
@@ -1263,6 +1264,16 @@ export default function DjDashboard() {
             <h3 style={{ fontSize: '1.25rem', marginTop: '2px', color: 'var(--primary-color)' }}>{(autocompleteSongs || []).length}</h3>
           </div>
           <Database size={18} color="var(--primary-color)" style={{ opacity: 0.6, flexShrink: 0 }} />
+        </div>
+        <div className="glass-panel" style={{ padding: '8px 10px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <div>
+            <p style={{ fontSize: '0.65rem', color: 'var(--text-secondary)', fontWeight: '500', lineHeight: 1.2 }}>Calificación<br/>Servicio</p>
+            <div style={{ display: 'flex', alignItems: 'baseline', gap: '4px', marginTop: '2px' }}>
+              <h3 style={{ fontSize: '1.25rem', color: '#f59e0b' }}>{ratingsStats?.avg || 0}</h3>
+              <span style={{ fontSize: '0.65rem', color: 'var(--text-muted)' }}>({ratingsStats?.total || 0})</span>
+            </div>
+          </div>
+          <Star size={18} color="#f59e0b" style={{ opacity: 0.6, flexShrink: 0 }} />
         </div>
       </section>
 

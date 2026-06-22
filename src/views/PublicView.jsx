@@ -22,6 +22,7 @@ export default function PublicView() {
     autocompleteSongs, 
     addRequest, 
     voteRequest,
+    submitRating,
     eventOwnerUid
   } = useFirebase();
 
@@ -963,6 +964,86 @@ export default function PublicView() {
                   </>
                 )}
               </button>
+
+              {/* ⭐ CALIFICACIÓN DEL SERVICIO */}
+              {(() => {
+                const [ratingStars, setRatingStars] = React.useState(0);
+                const [ratingHover, setRatingHover] = React.useState(0);
+                const [ratingComment, setRatingComment] = React.useState('');
+                const [ratingSubmitted, setRatingSubmitted] = React.useState(false);
+                const [ratingLoading, setRatingLoading] = React.useState(false);
+
+                const handleRatingSubmit = async (stars) => {
+                  if (!stars || ratingLoading || ratingSubmitted) return;
+                  setRatingLoading(true);
+                  try {
+                    await submitRating({
+                      ownerUid: eventOwnerUid,
+                      eventId: eventSettings.currentEventId || 'default-event',
+                      stars,
+                      comment: ratingComment
+                    });
+                    setRatingSubmitted(true);
+                  } catch (e) {
+                    console.error('Error al calificar:', e);
+                  }
+                  setRatingLoading(false);
+                };
+
+                return (
+                  <div style={{
+                    marginTop: '16px',
+                    padding: '14px 16px',
+                    borderRadius: 'var(--radius-md)',
+                    background: 'rgba(255,255,255,0.03)',
+                    border: '1px solid rgba(255,255,255,0.08)',
+                  }}>
+                    {ratingSubmitted ? (
+                      <div style={{ textAlign: 'center', padding: '6px 0' }}>
+                        <p style={{ fontSize: '1.3rem' }}>⭐</p>
+                        <p style={{ fontWeight: '700', color: 'var(--success-color)', fontSize: '0.9rem' }}>¡Gracias por tu calificación!</p>
+                        <p style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginTop: '2px' }}>Tu opinión ayuda a mejorar el servicio.</p>
+                      </div>
+                    ) : (
+                      <>
+                        <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginBottom: '10px', fontWeight: '600', textAlign: 'center' }}>
+                          ⭐ ¿Cómo calificarías el servicio del DJ?
+                        </p>
+                        {/* Estrellas */}
+                        <div style={{ display: 'flex', justifyContent: 'center', gap: '6px', marginBottom: '10px' }}>
+                          {[1,2,3,4,5].map(star => (
+                            <button
+                              key={star}
+                              type="button"
+                              onClick={() => { setRatingStars(star); handleRatingSubmit(star); }}
+                              onMouseEnter={() => setRatingHover(star)}
+                              onMouseLeave={() => setRatingHover(0)}
+                              style={{
+                                background: 'none',
+                                border: 'none',
+                                cursor: 'pointer',
+                                fontSize: '1.8rem',
+                                lineHeight: 1,
+                                padding: '2px',
+                                transition: 'transform 0.15s ease',
+                                transform: (ratingHover >= star || ratingStars >= star) ? 'scale(1.2)' : 'scale(1)',
+                                filter: (ratingHover >= star || ratingStars >= star) ? 'brightness(1)' : 'grayscale(1) opacity(0.4)',
+                              }}
+                            >
+                              ⭐
+                            </button>
+                          ))}
+                        </div>
+                        {ratingStars > 0 && (
+                          <p style={{ fontSize: '0.72rem', color: 'var(--text-muted)', textAlign: 'center', marginTop: '-4px' }}>
+                            {['', 'Muy malo', 'Regular', 'Bueno', 'Muy bueno', '¡Excelente!'][ratingStars]}
+                          </p>
+                        )}
+                      </>
+                    )}
+                  </div>
+                );
+              })()}
             </form>
           </section>
         </>

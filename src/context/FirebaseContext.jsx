@@ -58,6 +58,7 @@ export const FirebaseProvider = ({ children }) => {
   const [requests, setRequests] = useState({});
   const [playedRequests, setPlayedRequests] = useState({});
   const [autocompleteSongs, setAutocompleteSongs] = useState([]);
+  const [ratingsData, setRatingsData] = useState([]);
   const [eventsList, setEventsList] = useState([]);
   const [allEventsData, setAllEventsData] = useState({});
 
@@ -900,6 +901,44 @@ export const FirebaseProvider = ({ children }) => {
     }
   };
 
+  // ── SISTEMA DE CALIFICACIONES ─────────────────────────────────────────────
+  // Enviar calificación (1-5 estrellas) al evento activo del DJ
+  const submitRating = async ({ ownerUid, eventId, stars, comment = '' }) => {
+    if (!ownerUid || !eventId) throw new Error('Faltan datos del evento.');
+    if (stars < 1 || stars > 5) throw new Error('Calificación inválida.');
+    const ratingsRef = ref(database, `users/${ownerUid}/events/${eventId}/ratings`);
+    const newRating = { stars, comment: comment.trim(), createdAt: Date.now() };
+    await push(ratingsRef, newRating);
+  };
+
+  // Escuchar calificaciones del evento activo (para el DJ Panel)
+  useEffect(() => {
+    if (!userBasePath || !currentEventId) return;
+    const targetEventId = (currentEventId && currentEventId.startsWith('default-event'))
+      ? 'default-event'
+      : currentEventId;
+    const ratingsRef = ref(database, `${userBasePath}/events/${targetEventId}/ratings`);
+    const unsub = onValue(ratingsRef, (snap) => {
+      if (snap.exists()) {
+        const data = snap.val();
+        setRatingsData(Object.values(data));
+      } else {
+        setRatingsData([]);
+      }
+    });
+    return () => unsub();
+  }, [userBasePath, currentEventId]);
+
+  // Calcular estadísticas de calificaciones
+  const ratingsStats = (() => {
+    if (!ratingsData.length) return { avg: 0, total: 0, dist: { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 } };
+    const dist = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 };
+    ratingsData.forEach(r => { if (r.stars >= 1 && r.stars <= 5) dist[r.stars]++; });
+    const total = ratingsData.length;
+    const avg = ratingsData.reduce((s, r) => s + (r.stars || 0), 0) / total;
+    return { avg: Math.round(avg * 10) / 10, total, dist };
+  })();
+
   // Limpiar lista completa de peticiones activas e históricas del evento activo
   const clearActiveAndPlayedRequests = async () => {
     if (!userBasePath) throw new Error('No hay sesión activa.');
@@ -1177,7 +1216,10 @@ export const FirebaseProvider = ({ children }) => {
       updateActiveRequest,
       updateAutocompleteSong,
       deleteAutocompleteSong,
-      getDatabaseBackup
+      getDatabaseBackup,
+      submitRating,
+      ratingsData,
+      ratingsStats
     }}>
       {children}
     </FirebaseContext.Provider>
