@@ -274,8 +274,8 @@ export const FirebaseProvider = ({ children }) => {
   // UID efectivo: puede ser el propio usuario o, si el admin está impersonando, el del DJ seleccionado
   const [impersonatingUid, setImpersonatingUid] = useState(null);
 
-  // Determinar si el usuario actual es el administrador master
-  const isAdminMaster = user?.email === MASTER_ADMIN_EMAIL;
+  // Determinar si el usuario actual es el administrador master (de forma insensible a mayúsculas/minúsculas)
+  const isAdminMaster = user?.email?.toLowerCase() === MASTER_ADMIN_EMAIL.toLowerCase();
 
   // UID que se usa para leer/escribir datos
   const activeUid = impersonatingUid || user?.uid;
