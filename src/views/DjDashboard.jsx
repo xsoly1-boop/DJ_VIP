@@ -54,6 +54,7 @@ export default function DjDashboard() {
   const [titleInput, setTitleInput] = useState(eventSettings.title);
   const [djNameInput, setDjNameInput] = useState(eventSettings.djName);
   const [webNameInput, setWebNameInput] = useState(eventSettings.webName || 'DJ a la Carta');
+  const [webNameFontSize, setWebNameFontSize] = useState(eventSettings.webNameFontSize || 11);
   const [dateInput, setDateInput] = useState(eventSettings.date || new Date().toISOString().split('T')[0]);
   const [primaryColor, setPrimaryColor] = useState(eventSettings.themeColor || '#7c3aed');
   const [secondaryColor, setSecondaryColor] = useState(eventSettings.themeColorSecondary || '#06b6d4');
@@ -457,6 +458,7 @@ export default function DjDashboard() {
     setTitleInput(eventSettings.title);
     setDjNameInput(eventSettings.djName);
     setWebNameInput(eventSettings.webName || 'DJ a la Carta');
+    setWebNameFontSize(eventSettings.webNameFontSize || 11);
     setDateInput(eventSettings.date || new Date().toISOString().split('T')[0]);
     setPrimaryColor(eventSettings.themeColor || '#7c3aed');
     setSecondaryColor(eventSettings.themeColorSecondary || '#06b6d4');
@@ -754,6 +756,7 @@ export default function DjDashboard() {
         title: titleInput,
         djName: djNameInput,
         webName: webNameInput.trim() || 'DJ a la Carta',
+        webNameFontSize: parseInt(webNameFontSize, 10) || 11,
         date: dateInput,
         themeColor: primaryColor,
         themeColorSecondary: secondaryColor,
@@ -1811,6 +1814,29 @@ export default function DjDashboard() {
                   />
                   <p style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginTop: '6px' }}>
                     Este nombre aparecerá en el título de la pestaña del navegador y en el pie de página de la plataforma.
+                  </p>
+                </div>
+
+                {/* Tamaño de letra del Nombre de la Plataforma */}
+                <div className="form-group" style={{ borderBottom: '1px solid rgba(255,255,255,0.05)', paddingBottom: '20px' }}>
+                  <label className="form-label" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <Sliders size={15} color="var(--primary-color)" />
+                    Tamaño de letra del Nombre de la Plataforma (en Píxeles)
+                  </label>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                    <input
+                      type="number"
+                      className="input-field"
+                      min="8"
+                      max="32"
+                      value={webNameFontSize}
+                      onChange={(e) => setWebNameFontSize(parseInt(e.target.value, 10) || 11)}
+                      style={{ width: '100px' }}
+                    />
+                    <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>px (Predeterminado: 11px)</span>
+                  </div>
+                  <p style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginTop: '6px' }}>
+                    Ajusta el tamaño del título de la plataforma que se muestra arriba en la vista del cliente.
                   </p>
                 </div>
 

@@ -524,7 +524,14 @@ export default function PublicView() {
         
         <div style={{ width: '100%' }}>
           {/* Nombre de la plataforma / web */}
-          <p style={{ fontSize: '0.7rem', color: 'var(--text-muted)', fontWeight: '600', letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: '6px' }}>
+          <p style={{ 
+            fontSize: eventSettings.webNameFontSize ? `${eventSettings.webNameFontSize}px` : '0.7rem', 
+            color: 'var(--text-muted)', 
+            fontWeight: '600', 
+            letterSpacing: '0.08em', 
+            textTransform: 'uppercase', 
+            marginBottom: '6px' 
+          }}>
             {eventSettings.webName || 'DJ a la Carta'}
           </p>
 
