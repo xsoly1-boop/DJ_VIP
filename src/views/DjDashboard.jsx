@@ -1350,10 +1350,10 @@ export default function DjDashboard() {
                 <div style={{ display: 'flex', gap: '10px', alignItems: 'center', flexWrap: 'wrap' }}>
                   <button
                     onClick={async () => {
-                      if (window.confirm("¿Estás seguro de limpiar la lista?")) {
+                      if (window.confirm("⚠️ ¿Estás seguro?\n\nEsto borrará:\n• Todas las Peticiones en Cola\n• Todo el Historial de Ya Reproducidas\n\nEsta acción no se puede deshacer.")) {
                         try {
                           await clearActiveAndPlayedRequests();
-                          showToast("🧹 Lista de peticiones e historial limpiados con éxito");
+                          showToast("🧹 Lista de peticiones e historial de reproducidas limpiados con éxito");
                         } catch (err) {
                           console.error(err);
                           showToast("❌ Error al limpiar la lista");
@@ -1362,7 +1362,7 @@ export default function DjDashboard() {
                     }}
                     className="btn btn-danger"
                     style={{ padding: '6px 14px', fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: '6px' }}
-                    title="Limpiar toda la cola de peticiones e historial"
+                    title="Borra toda la cola de peticiones Y el historial de Ya Reproducidas"
                   >
                     <Trash2 size={14} />
                     <span>Limpiar Lista de Peticiones</span>
