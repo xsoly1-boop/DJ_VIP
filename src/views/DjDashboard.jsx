@@ -132,6 +132,10 @@ export default function DjDashboard() {
   const [androidSoundName, setAndroidSoundName] = useState('Predeterminado del sistema');
   const [notificationsEnabled, setNotificationsEnabled] = useState(false);
   const [toastMessage, setToastMessage] = useState(null);
+  // Estado DJ en cabina (persiste en Firebase vía eventSettings)
+  const [djOnline, setDjOnline] = useState(() => {
+    return eventSettings?.djOnline !== undefined ? eventSettings.djOnline : true;
+  });
   const [visualAlertEnabled, setVisualAlertEnabled] = useState(() => {
     return localStorage.getItem('dj_visual_alert_enabled') !== 'false';
   });
@@ -1102,9 +1106,36 @@ export default function DjDashboard() {
             <Music size={22} color="#fff" />
           </div>
           <div>
-            <h1 style={{ fontSize: '1.5rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <h1 style={{ fontSize: '1.5rem', display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
               DJ Panel
               <span className="badge badge-playing" style={{ fontSize: '0.65rem' }}>PWA Activo 💻</span>
+              {/* Botón de Estado DJ */}
+              <button
+                onClick={() => {
+                  const next = !djOnline;
+                  setDjOnline(next);
+                  updateEventSettings({ djOnline: next });
+                  showToast(next ? '🎧 Estado: EN CABINA' : '⏸ Estado: FUERA DE CABINA');
+                }}
+                title={djOnline ? 'Haz clic para marcar como Fuera de Cabina' : 'Haz clic para marcar como En Cabina'}
+                style={{
+                  fontSize: '0.65rem',
+                  padding: '3px 10px',
+                  borderRadius: '8px',
+                  fontWeight: '700',
+                  border: djOnline ? '1px solid rgba(34,195,93,0.45)' : '1px solid rgba(232,48,91,0.45)',
+                  background: djOnline ? 'rgba(34,195,93,0.15)' : 'rgba(232,48,91,0.12)',
+                  color: djOnline ? 'var(--success-color)' : 'var(--danger-color)',
+                  cursor: 'pointer',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '4px',
+                  transition: 'all 0.25s ease',
+                  whiteSpace: 'nowrap',
+                }}
+              >
+                {djOnline ? '🎧 EN CABINA' : '⏸ FUERA DE CABINA'}
+              </button>
               {isAdminMaster && !impersonatingUid && (
                 <span style={{ fontSize: '0.65rem', padding: '3px 8px', borderRadius: '8px', background: 'rgba(245,158,11,0.15)', color: 'var(--warning-color)', fontWeight: '700', border: '1px solid rgba(245,158,11,0.3)' }}>
                   👑 ADMIN MASTER
