@@ -1,0 +1,22 @@
+# Ignore big binary installers
+*.dmg
+*.exe
+*.apk
+*.zip
+
+# Ignore local build outputs and node_modules
+node_modules/
+dist-desktop/
+out/
+release/
+scratch/
+
+# Ignore mobile platforms
+android/
+ios/
+
+# Ignore system files
+.DS_Store
+.git/
+.github/
+.agents/

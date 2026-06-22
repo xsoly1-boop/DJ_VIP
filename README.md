@@ -130,7 +130,7 @@ Para que los teléfonos móviles lean el código QR a través de internet real, 
 
 #### Paso 1: Crear el proyecto en la Consola de Firebase
 1. Ve a [Firebase Console](https://console.firebase.google.com/) e inicia sesión con tu cuenta de Google.
-2. Haz clic en **"Crear un proyecto"** (nómbralo `dj-interactive-event`).
+2. Haz clic en **"Crear un proyecto"** (nómbralo `DJVIP`).
 3. Desactiva Google Analytics (opcional) y haz clic en **"Crear proyecto"**.
 
 #### Paso 2: Configurar la Base de Datos Realtime
@@ -181,7 +181,7 @@ Para que los teléfonos móviles lean el código QR a través de internet real, 
    ```
    *Durante las preguntas selecciona:*
    - **Hosting** y **Database** (con barra espaciadora para seleccionar, luego Enter).
-   - Selecciona **Use an existing project** y elige tu proyecto `dj-interactive-event`.
+   - Selecciona **Use an existing project** y elige tu proyecto `DJVIP`.
    - Para Database, deja el archivo por defecto (`database.rules.json`).
    - Para Hosting: ¿Qué carpeta usar para producción? Escribe `dist` (muy importante).
    - ¿Configurar como Single Page App? Escribe `y` (Sí).
@@ -194,7 +194,7 @@ Para que los teléfonos móviles lean el código QR a través de internet real, 
    ```bash
    firebase deploy
    ```
-6. **¡Listo!** Firebase te entregará una URL pública tipo `https://dj-interactive-event.web.app`. Esa será tu URL de cabina. La URL del público será `https://dj-interactive-event.web.app/?event=nombre-de-tu-evento`.
+6. **¡Listo!** Firebase te entregará una URL pública tipo `https://DJVIP.web.app`. Esa será tu URL de cabina. La URL del público será `https://DJVIP.web.app/?event=nombre-de-tu-evento`.
 
 ---
 
@@ -223,7 +223,7 @@ El dashboard cuenta con Web Push Notifications para que no te pierdas de nada au
 #### En Apple Safari (Mac):
 1. Abre Safari y ve a **Ajustes** (o presiona `Cmd + ,`).
 2. Ve a la pestaña **Sitios web** y en la columna de la izquierda selecciona **Notificaciones**.
-3. Busca la URL de tu plataforma (Ej. `dj-interactive-event.web.app`) y selecciona **Permitir** en el menú desplegable.
+3. Busca la URL de tu plataforma (Ej. `DJVIP.web.app`) y selecciona **Permitir** en el menú desplegable.
 
 ---
 
