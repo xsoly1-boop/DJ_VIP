@@ -155,7 +155,7 @@ if [ "$JAVA_OK" -eq 1 ] && [ -d "android" ]; then
     set -e
     
     APK_SRC="android/app/build/outputs/apk/release/app-release.apk"
-    APK_DEST="${OUTPUT_DIR}/DJ-Panel-v${VERSION}-android.apk"
+    APK_DEST="${OUTPUT_DIR}/DJ-Panel-Pro-v${VERSION}-android.apk"
     
     if [ $APK_EXIT -eq 0 ] && [ -f "$APK_SRC" ]; then
         cp "$APK_SRC" "$APK_DEST"
@@ -171,7 +171,7 @@ if [ "$JAVA_OK" -eq 1 ] && [ -d "android" ]; then
         cd ..
         set -e
         APK_SRC_DBG="android/app/build/outputs/apk/debug/app-debug.apk"
-        APK_DEST_DBG="${OUTPUT_DIR}/DJ-Panel-v${VERSION}-android-debug.apk"
+        APK_DEST_DBG="${OUTPUT_DIR}/DJ-Panel-Pro-v${VERSION}-android-debug.apk"
         if [ $DBG_EXIT -eq 0 ] && [ -f "$APK_SRC_DBG" ]; then
             cp "$APK_SRC_DBG" "$APK_DEST_DBG"
             log_result "Android APK (debug)" "OK" "$APK_DEST_DBG"
@@ -210,7 +210,7 @@ if [ $MAC_ARM_EXIT -eq 0 ]; then
         DMG_ARM=$(find dist-desktop -maxdepth 1 -name "*.dmg" 2>/dev/null | head -1)
     fi
     if [ -n "$DMG_ARM" ]; then
-        DMG_ARM_DEST="${OUTPUT_DIR}/DJ-Panel-v${VERSION}-macOS-Silicon.dmg"
+        DMG_ARM_DEST="${OUTPUT_DIR}/DJ-Panel-Pro-v${VERSION}-macOS-Silicon.dmg"
         cp "$DMG_ARM" "$DMG_ARM_DEST"
         # Firma ad-hoc
         codesign --force --sign - "$DMG_ARM_DEST" 2>/dev/null || true
@@ -245,7 +245,7 @@ if [ $MAC_UNI_EXIT -eq 0 ]; then
         DMG_UNI=$(find dist-desktop -maxdepth 1 -name "*.dmg" 2>/dev/null | head -1)
     fi
     if [ -n "$DMG_UNI" ]; then
-        DMG_UNI_DEST="${OUTPUT_DIR}/DJ-Panel-v${VERSION}-macOS-Universal.dmg"
+        DMG_UNI_DEST="${OUTPUT_DIR}/DJ-Panel-Pro-v${VERSION}-macOS-Universal.dmg"
         cp "$DMG_UNI" "$DMG_UNI_DEST"
         codesign --force --sign - "$DMG_UNI_DEST" 2>/dev/null || true
         log_result "macOS Universal DMG" "OK" "$DMG_UNI_DEST"
@@ -276,7 +276,7 @@ set -e
 if [ $MAC_X64_EXIT -eq 0 ]; then
     DMG_X64=$(find dist-desktop -maxdepth 1 -name "*.dmg" 2>/dev/null | head -1)
     if [ -n "$DMG_X64" ]; then
-        DMG_X64_DEST="${OUTPUT_DIR}/DJ-Panel-v${VERSION}-macOS-10.14-Intel.dmg"
+        DMG_X64_DEST="${OUTPUT_DIR}/DJ-Panel-Pro-v${VERSION}-macOS-10.14-Intel.dmg"
         cp "$DMG_X64" "$DMG_X64_DEST"
         codesign --force --sign - "$DMG_X64_DEST" 2>/dev/null || true
         log_result "macOS 10.14 Intel DMG" "OK" "$DMG_X64_DEST"
@@ -308,7 +308,7 @@ set -e
 if [ $WIN_EXIT -eq 0 ]; then
     EXE_FILE=$(find dist-desktop -maxdepth 1 -name "*.exe" 2>/dev/null | head -1)
     if [ -n "$EXE_FILE" ]; then
-        EXE_DEST="${OUTPUT_DIR}/DJ-Panel-v${VERSION}-Windows-x64-Setup.exe"
+        EXE_DEST="${OUTPUT_DIR}/DJ-Panel-Pro-v${VERSION}-Windows-x64-Setup.exe"
         cp "$EXE_FILE" "$EXE_DEST"
         log_result "Windows x64 EXE" "OK" "$EXE_DEST"
         echo -e "  ${GREEN}✅ Windows EXE completado${RESET}"
