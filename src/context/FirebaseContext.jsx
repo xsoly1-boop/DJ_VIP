@@ -587,12 +587,65 @@ export const FirebaseProvider = ({ children }) => {
         } else {
           document.documentElement.style.setProperty('--base-font-size', '1rem');
         }
+
+        // Configurar tema de fondo (Skin)
+        const bgSkin = data.bgSkin || 'default';
+        if (bgSkin === 'skin1') {
+          // Charcoal
+          document.documentElement.style.setProperty('--bg-color', '#383636');
+          document.documentElement.style.setProperty('--surface-color', 'rgba(20, 20, 20, 0.7)');
+          document.documentElement.style.setProperty('--surface-border', 'rgba(255, 255, 255, 0.1)');
+          document.documentElement.style.setProperty('--text-primary', '#ffffff');
+          document.documentElement.style.setProperty('--text-secondary', '#cbd5e1');
+          document.documentElement.style.setProperty('--text-muted', '#94a3b8');
+        } else if (bgSkin === 'skin2') {
+          // Deep Purple
+          document.documentElement.style.setProperty('--bg-color', '#380357');
+          document.documentElement.style.setProperty('--surface-color', 'rgba(22, 1, 36, 0.75)');
+          document.documentElement.style.setProperty('--surface-border', 'rgba(255, 255, 255, 0.12)');
+          document.documentElement.style.setProperty('--text-primary', '#ffffff');
+          document.documentElement.style.setProperty('--text-secondary', '#e2d9f3');
+          document.documentElement.style.setProperty('--text-muted', '#bda8e4');
+        } else if (bgSkin === 'skin3') {
+          // Deep Blue
+          document.documentElement.style.setProperty('--bg-color', '#032557');
+          document.documentElement.style.setProperty('--surface-color', 'rgba(1, 15, 38, 0.75)');
+          document.documentElement.style.setProperty('--surface-border', 'rgba(255, 255, 255, 0.12)');
+          document.documentElement.style.setProperty('--text-primary', '#ffffff');
+          document.documentElement.style.setProperty('--text-secondary', '#d0e1fd');
+          document.documentElement.style.setProperty('--text-muted', '#a1c5fb');
+        } else if (bgSkin === 'skin4') {
+          // Pitch Black
+          document.documentElement.style.setProperty('--bg-color', '#000000');
+          document.documentElement.style.setProperty('--surface-color', 'rgba(18, 18, 24, 0.75)');
+          document.documentElement.style.setProperty('--surface-border', 'rgba(255, 255, 255, 0.08)');
+          document.documentElement.style.setProperty('--text-primary', '#f8fafc');
+          document.documentElement.style.setProperty('--text-secondary', '#94a3b8');
+          document.documentElement.style.setProperty('--text-muted', '#64748b');
+        } else if (bgSkin === 'skin5') {
+          // Deep Maroon
+          document.documentElement.style.setProperty('--bg-color', '#3f020a');
+          document.documentElement.style.setProperty('--surface-color', 'rgba(28, 1, 5, 0.75)');
+          document.documentElement.style.setProperty('--surface-border', 'rgba(255, 255, 255, 0.12)');
+          document.documentElement.style.setProperty('--text-primary', '#ffffff');
+          document.documentElement.style.setProperty('--text-secondary', '#fcdbdc');
+          document.documentElement.style.setProperty('--text-muted', '#f7a9ac');
+        } else {
+          // Default
+          document.documentElement.style.setProperty('--bg-color', '#060609');
+          document.documentElement.style.setProperty('--surface-color', 'rgba(18, 18, 24, 0.65)');
+          document.documentElement.style.setProperty('--surface-border', 'rgba(255, 255, 255, 0.08)');
+          document.documentElement.style.setProperty('--text-primary', '#f8fafc');
+          document.documentElement.style.setProperty('--text-secondary', '#94a3b8');
+          document.documentElement.style.setProperty('--text-muted', '#64748b');
+        }
       } else {
         setEventSettings({
           title: 'Mi Gran Evento VIP',
           logoUrl: '',
           themeColor: '#7c3aed',
           themeColorSecondary: '#06b6d4',
+          bgSkin: 'default',
           djName: 'DJ MasterMix',
           webName: 'DJ a la Carta',
           eventType: 'Otro',
@@ -604,6 +657,12 @@ export const FirebaseProvider = ({ children }) => {
           mercadopagoLink: '',
           dedicationsEnabled: false
         });
+        document.documentElement.style.setProperty('--bg-color', '#060609');
+        document.documentElement.style.setProperty('--surface-color', 'rgba(18, 18, 24, 0.65)');
+        document.documentElement.style.setProperty('--surface-border', 'rgba(255, 255, 255, 0.08)');
+        document.documentElement.style.setProperty('--text-primary', '#f8fafc');
+        document.documentElement.style.setProperty('--text-secondary', '#94a3b8');
+        document.documentElement.style.setProperty('--text-muted', '#64748b');
       }
     });
     return () => unsubscribe();

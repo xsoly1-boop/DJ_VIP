@@ -69,6 +69,7 @@ export default function DjDashboard() {
   const [fontFamily, setFontFamily] = useState(eventSettings.fontFamily || 'Outfit');
   const [fontSize, setFontSize] = useState(eventSettings.fontSize || 'medium');
   const [logoSize, setLogoSize] = useState(eventSettings.logoSize || 'medium');
+  const [bgSkinInput, setBgSkinInput] = useState(eventSettings.bgSkin || 'default');
 
   // Propinas
   const [tipsEnabledInput, setTipsEnabledInput] = useState(eventSettings.tipsEnabled || false);
@@ -654,6 +655,7 @@ export default function DjDashboard() {
     setFontFamily(eventSettings.fontFamily || 'Outfit');
     setFontSize(eventSettings.fontSize || 'medium');
     setLogoSize(eventSettings.logoSize || 'medium');
+    setBgSkinInput(eventSettings.bgSkin || 'default');
     setTipsEnabledInput(eventSettings.tipsEnabled || false);
     setPaypalUsernameInput(eventSettings.paypalUsername || '');
     setMercadopagoLinkInput(eventSettings.mercadopagoLink || '');
@@ -951,6 +953,7 @@ export default function DjDashboard() {
         date: dateInput,
         themeColor: primaryColor,
         themeColorSecondary: secondaryColor,
+        bgSkin: bgSkinInput,
         productionUrl: productionUrl.trim().replace(/\/$/, ''),
         fontFamily,
         fontSize,
@@ -2297,6 +2300,68 @@ export default function DjDashboard() {
                       </div>
                     </div>
                   </div>
+                </div>
+
+                {/* Personalización de Fondo (Skins) */}
+                <div style={{ borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: '20px' }}>
+                  <label className="form-label" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    🎨 Tema / Color de Fondo
+                    {!(userProfile?.selectedPlan === 'vip' || userProfile?.selectedPlan === 'eventual') && (
+                      <span style={{ fontSize: '0.65rem', color: 'var(--warning-color)', background: 'rgba(245,158,11,0.1)', padding: '2px 6px', borderRadius: '4px', fontWeight: '700', display: 'flex', alignItems: 'center', gap: '3px' }}>
+                        🔒 EXCLUSIVO VIP / EVENTUAL
+                      </span>
+                    )}
+                  </label>
+                  <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginBottom: '12px' }}>
+                    Personaliza el fondo del sitio y del panel del público con una paleta de alto contraste.
+                  </p>
+                  
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(130px, 1fr))', gap: '10px' }}>
+                    {[
+                      { key: 'default', name: 'Original', color: '#060609' },
+                      { key: 'skin1', name: 'Carbón', color: '#383636' },
+                      { key: 'skin2', name: 'Púrpura', color: '#380357' },
+                      { key: 'skin3', name: 'Azul', color: '#032557' },
+                      { key: 'skin4', name: 'Negro', color: '#000000' },
+                      { key: 'skin5', name: 'Guinda', color: '#3f020a' }
+                    ].map((skin) => {
+                      const isSelected = bgSkinInput === skin.key;
+                      const isVipOrEventual = userProfile?.selectedPlan === 'vip' || userProfile?.selectedPlan === 'eventual';
+                      return (
+                        <button
+                          key={skin.key}
+                          type="button"
+                          disabled={!isVipOrEventual}
+                          onClick={() => {
+                            setBgSkinInput(skin.key);
+                            showToast(`Tema seleccionado: ${skin.name}`);
+                          }}
+                          style={{
+                            display: 'flex',
+                            flexDirection: 'column',
+                            alignItems: 'center',
+                            gap: '8px',
+                            padding: '12px',
+                            borderRadius: 'var(--radius-md)',
+                            background: isSelected ? 'rgba(255,255,255,0.06)' : 'rgba(255,255,255,0.02)',
+                            border: isSelected ? '2px solid var(--primary-color)' : '1px solid var(--surface-border)',
+                            cursor: isVipOrEventual ? 'pointer' : 'not-allowed',
+                            opacity: isVipOrEventual ? 1 : 0.5,
+                            transition: 'all 0.2s ease',
+                            textAlign: 'center'
+                          }}
+                        >
+                          <div style={{ width: '28px', height: '28px', borderRadius: 'var(--radius-full)', background: skin.color, border: '2px solid rgba(255,255,255,0.2)', boxShadow: isSelected ? '0 0 10px var(--primary-glow)' : 'none' }} />
+                          <span style={{ fontSize: '0.8rem', fontWeight: isSelected ? '700' : '500', color: isSelected ? 'var(--primary-color)' : 'var(--text-primary)' }}>{skin.name}</span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                  {!(userProfile?.selectedPlan === 'vip' || userProfile?.selectedPlan === 'eventual') && (
+                    <p style={{ fontSize: '0.75rem', color: 'var(--warning-color)', marginTop: '8px' }}>
+                      💡 Mejora tu plan a <strong>VIP</strong> o adquiere un pase <strong>Eventual</strong> en la sección de planes para desbloquear esta personalización.
+                    </p>
+                  )}
                 </div>
 
                 {/* Tipografía y Escala */}
