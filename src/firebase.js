@@ -5,7 +5,8 @@ import {
   signOut as realSignOut, 
   onAuthStateChanged as realAuthChanged,
   reauthenticateWithCredential,
-  EmailAuthProvider
+  EmailAuthProvider,
+  createUserWithEmailAndPassword as realCreateUser
 } from 'firebase/auth';
 import { 
   getDatabase, 
@@ -1321,6 +1322,47 @@ export const signInWithEmailAndPassword = async (authInstance, email, password) 
   localStorage.setItem('mock_auth_user', JSON.stringify(mockUser));
   localStorage.setItem('mock_auth_password', password);
   window.dispatchEvent(new CustomEvent('mock-auth-change', { detail: mockUser }));
+  return { user: mockUser };
+};
+
+export const createUserWithEmailAndPassword = async (authInstance, email, password) => {
+  if (!isMockMode) {
+    return realCreateUser(authInstance, email, password);
+  }
+
+  const savedAccountsStr = localStorage.getItem('mock_accounts');
+  let accounts = [];
+  if (savedAccountsStr) {
+    try { accounts = JSON.parse(savedAccountsStr); } catch (e) {}
+  }
+  
+  if (accounts.some(a => a.email.toLowerCase() === email.toLowerCase())) {
+    throw new Error('auth/email-already-in-use: El correo ya está registrado.');
+  }
+
+  const newUid = 'uid-' + Date.now() + '-' + Math.random().toString(36).substr(2, 6);
+  const newAccount = {
+    email,
+    password,
+    uid: newUid,
+    displayName: email.split('@')[0],
+    isAdmin: false
+  };
+
+  accounts.push(newAccount);
+  localStorage.setItem('mock_accounts', JSON.stringify(accounts));
+
+  const mockUser = {
+    uid: newUid,
+    email,
+    displayName: newAccount.displayName,
+    isAdmin: false
+  };
+  auth.currentUser = mockUser;
+  localStorage.setItem('mock_auth_user', JSON.stringify(mockUser));
+  localStorage.setItem('mock_auth_password', password);
+  window.dispatchEvent(new CustomEvent('mock-auth-change', { detail: mockUser }));
+
   return { user: mockUser };
 };
 

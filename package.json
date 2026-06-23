@@ -11,13 +11,21 @@
     "preview": "vite preview",
     "electron:dev": "concurrently -k \"npm run dev\" \"cross-env ELECTRON_DEV=true electron .\"",
     "electron:build": "npm run build && electron-builder",
-    "test": "node scratch/test_admin.js && node scratch/test_autocomplete.js && node scratch/test_queue_deduplication.js"
+    "test": "node scratch/test_admin.js && node scratch/test_autocomplete.js && node scratch/test_queue_deduplication.js && node scratch/test_admin_subscriptions.cjs"
   },
   "dependencies": {
     "@capacitor/android": "^8.4.1",
     "@capacitor/ios": "^8.4.1",
+    "@paypal/checkout-server-sdk": "^1.0.3",
+    "body-parser": "^2.3.0",
+    "cors": "^2.8.6",
+    "dotenv": "^17.4.2",
+    "express": "^5.2.1",
     "firebase": "^12.15.0",
+    "firebase-admin": "^11.11.0",
     "lucide-react": "^1.21.0",
+    "mercadopago": "^3.1.0",
+    "node-fetch": "^2.7.0",
     "qrcode.react": "^4.2.0",
     "react": "^19.2.6",
     "react-dom": "^19.2.6"
@@ -41,7 +49,7 @@
   },
   "build": {
     "appId": "com.dj.interactive.platform",
-    "productName": "DJ Panel",
+    "productName": "DJ Panel Pro",
     "copyright": "Copyright © 2026 DJ a la Carta",
     "directories": {
       "output": "dist-desktop",
@@ -84,6 +92,30 @@
         "width": 500,
         "height": 400
       }
+    },
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": ["x64"]
+        }
+      ],
+      "icon": "build-resources/icon.ico"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "installerIcon": "build-resources/icon.ico",
+      "uninstallerIcon": "build-resources/icon.ico",
+      "installerHeaderIcon": "build-resources/icon.ico",
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "DJ Panel Pro"
+    },
+    "linux": {
+      "target": ["AppImage"],
+      "category": "Audio",
+      "icon": "build-resources/icon.png"
     }
   },
   "description": "Esta plataforma conecta al público de un evento musical con el DJ en tiempo real, permitiendo enviar peticiones de canciones, votar por temas populares de la audiencia, aprender de forma dinámica de los gustos musicales (autocompletado evolutivo) y personalizar visualmente la cabina con marca blanca.",

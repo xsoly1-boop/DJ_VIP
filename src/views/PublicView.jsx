@@ -64,6 +64,7 @@ export default function PublicView() {
 
   // Estados de confirmación de duplicados
   const [showConfirmDuplicateModal, setShowConfirmDuplicateModal] = useState(false);
+  const [showLimitModal, setShowLimitModal] = useState(false);
   const [pendingDuplicateRequest, setPendingDuplicateRequest] = useState(null);
 
   // Géneros aprendidos dinámicamente del historial de peticiones y autocompletado
@@ -360,7 +361,11 @@ export default function PublicView() {
       }, 8000);
     } catch (err) {
       console.error(err);
-      showToast('Error al enviar la petición. Inténtalo de nuevo.');
+      if (err.message && err.message.includes('Has alcanzado el límite del plan activado')) {
+        setShowLimitModal(true);
+      } else {
+        showToast(err.message || 'Error al enviar la petición. Inténtalo de nuevo.');
+      }
     }
   };
 
@@ -1474,6 +1479,68 @@ export default function PublicView() {
                 }}
               >
                 No, cancelar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal de Límite de Peticiones */}
+      {showLimitModal && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          zIndex: 1100,
+          background: 'rgba(5, 5, 10, 0.85)',
+          backdropFilter: 'blur(8px)',
+          display: 'flex',
+          justifyContent: 'center',
+          alignItems: 'center',
+          padding: '20px'
+        }}>
+          <div className="glass-panel animate-slide-in" style={{
+            maxWidth: '400px',
+            width: '100%',
+            padding: '24px',
+            borderRadius: 'var(--radius-lg)',
+            border: '1px solid var(--danger-color)',
+            boxShadow: '0 0 25px rgba(239, 68, 68, 0.3)',
+            textAlign: 'center',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '16px'
+          }}>
+            <div className="flex-center" style={{
+              width: '50px',
+              height: '50px',
+              borderRadius: 'var(--radius-full)',
+              background: 'rgba(239, 68, 68, 0.15)',
+              margin: '0 auto',
+              color: 'var(--danger-color)'
+            }}>
+              <ShieldAlert size={24} />
+            </div>
+            
+            <div>
+              <h3 style={{ fontSize: '1.2rem', fontWeight: '700', color: 'var(--text-primary)', marginBottom: '8px' }}>
+                Límite de Peticiones
+              </h3>
+              <p style={{ fontSize: '0.95rem', color: 'var(--text-secondary)', lineHeight: '1.5' }}>
+                Has alcanzado el límite del plan activado
+              </p>
+            </div>
+
+            <div style={{ marginTop: '8px' }}>
+              <button
+                type="button"
+                className="btn btn-primary"
+                onClick={() => setShowLimitModal(false)}
+                style={{ width: '100%', padding: '12px', background: 'var(--danger-color)', border: 'none' }}
+              >
+                Entendido
               </button>
             </div>
           </div>

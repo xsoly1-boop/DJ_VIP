@@ -12,7 +12,7 @@ function createWindow() {
     height: 850,
     minWidth: 800,
     minHeight: 600,
-    title: "DJ Panel",
+    title: "DJ Panel Pro",
     titleBarStyle: 'default',
     webPreferences: {
       nodeIntegration: false,
@@ -37,13 +37,13 @@ function createWindow() {
   // Configurar menú básico para macOS
   const template = [
     {
-      label: 'DJ App',
+      label: 'DJ Panel Pro',
       submenu: [
-        { label: 'Acerca de DJ App', role: 'about' },
+        { label: 'Acerca de DJ Panel Pro', role: 'about' },
         { type: 'separator' },
         { label: 'Servicios', role: 'services' },
         { type: 'separator' },
-        { label: 'Ocultar DJ App', accelerator: 'Command+H', role: 'hide' },
+        { label: 'Ocultar DJ Panel Pro', accelerator: 'Command+H', role: 'hide' },
         { label: 'Ocultar Otros', accelerator: 'Command+Shift+H', role: 'hideothers' },
         { label: 'Mostrar Todo', role: 'unhide' },
         { type: 'separator' },

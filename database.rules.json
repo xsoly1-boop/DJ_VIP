@@ -3,6 +3,16 @@
     ".read": "auth != null && auth.token.email == 'dj@admin.com'",
     ".write": "auth != null && auth.token.email == 'dj@admin.com'",
 
+    // Configuración global accesible
+    "config": {
+      "plans": {
+        ".read": "true"
+      },
+      "public_payment_info": {
+        ".read": "auth != null"
+      }
+    },
+
     // Registro público de eventos → mapea qué DJ es el dueño de cada evento
     "events_registry": {
       "$eventId": {
@@ -18,6 +28,12 @@
       ".write": "auth != null && auth.token.email == 'dj@admin.com'",
       
       "$uid": {
+        ".read": "auth != null && (auth.uid == $uid || auth.token.email == 'dj@admin.com')",
+        ".write": "auth != null && ((auth.uid == $uid && !data.exists()) || auth.token.email == 'dj@admin.com')",
+        "profile": {
+          ".read": "true",
+          ".write": "auth != null && (auth.uid == $uid || auth.token.email == 'dj@admin.com')"
+        },
         "events_index": {
           ".read": "auth != null && (auth.uid == $uid || auth.token.email == 'dj@admin.com')",
           "$eventId": {
@@ -56,6 +72,15 @@
             }
           }
         }
+      }
+    },
+
+    // Suscripciones pendientes de validación
+    "pending_subscriptions": {
+      ".read": "auth != null && auth.token.email == 'dj@admin.com'",
+      "$uid": {
+        ".read": "auth != null && (auth.uid == $uid || auth.token.email == 'dj@admin.com')",
+        ".write": "auth != null && (auth.uid == $uid || auth.token.email == 'dj@admin.com')"
       }
     },
 

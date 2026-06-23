@@ -6,7 +6,7 @@ import {
   Music, LogOut, Settings, Calendar, Download, RefreshCw, 
   Trash2, Plus, Play, Check, X, Bell, BellOff, Volume2, 
   Sparkles, Sliders, Users, Layers, ShieldCheck, Database,
-  Link, AlertTriangle, ShieldAlert, ArrowLeft, UserCog, Edit, UserPlus, Mail, Lock, User,
+  Link, AlertTriangle, ShieldAlert, ArrowLeft, UserCog, Edit, UserPlus, Mail, Lock, User, CreditCard,
   LayoutGrid, ExternalLink, Image, Search, Megaphone, Star
 } from 'lucide-react';
 
@@ -43,7 +43,11 @@ export default function DjDashboard() {
     updateDjAccount,
     uploadLogo,
     getDatabaseBackup,
-    ratingsStats
+    ratingsStats,
+    userProfile,
+    selectPlan,
+    plansConfig,
+    updatePlansConfig
   } = useFirebase();
 
   // Estados Locales
@@ -101,6 +105,7 @@ export default function DjDashboard() {
   const [editDjDisplayName, setEditDjDisplayName] = useState('');
   const [editDjEmail, setEditDjEmail] = useState('');
   const [editDjPassword, setEditDjPassword] = useState('');
+  const [editDjPlan, setEditDjPlan] = useState('free');
   const [editDjLoading, setEditDjLoading] = useState(false);
 
   // Confirmación de borrado de evento
@@ -202,6 +207,183 @@ export default function DjDashboard() {
     } catch (err) {
       console.error(err);
       showToast("❌ Error al guardar la edición");
+    }
+  };
+
+  // Admin Master: Personalización de planes
+  const [editingPlanTab, setEditingPlanTab] = useState('free'); // 'free' | 'premium' | 'vip'
+  const [tempPlansConfig, setTempPlansConfig] = useState(null);
+  const [savePlansLoading, setSavePlansLoading] = useState(false);
+  const [showCreatePlanForm, setShowCreatePlanForm] = useState(false);
+  const [newPlanKey, setNewPlanKey] = useState('');
+  const [newPlanName, setNewPlanName] = useState('');
+
+  const handleCreateNewPlan = () => {
+    const key = newPlanKey.toLowerCase().replace(/[^a-z0-9_-]/g, '').trim();
+    const name = newPlanName.trim();
+    if (!key) {
+      showToast("⚠️ El identificador único del plan no puede estar vacío");
+      return;
+    }
+    if (!name) {
+      showToast("⚠️ El nombre del plan no puede estar vacío");
+      return;
+    }
+    if (tempPlansConfig && tempPlansConfig[key]) {
+      showToast("⚠️ Este plan ya existe");
+      return;
+    }
+    
+    setTempPlansConfig(prev => ({
+      ...prev,
+      [key]: {
+        name,
+        price: "0",
+        billing: "mes",
+        currency: "USD",
+        description: "Nuevo plan personalizado.",
+        maxRequests: 0,
+        duration: 1,
+        durationUnit: "meses",
+        benefits: ["Nuevo beneficio"],
+        restrictions: ["Sin restricciones"]
+      }
+    }));
+    
+    setEditingPlanTab(key);
+    setShowCreatePlanForm(false);
+    setNewPlanKey("");
+    setNewPlanName("");
+    showToast(`✅ Plan "${name}" creado localmente. Completa sus campos y haz clic en Guardar.`);
+  };
+
+  const handleDeletePlan = (planKey) => {
+    if (planKey === 'free' || planKey === 'premium' || planKey === 'vip') {
+      showToast("⚠️ No puedes eliminar los planes principales (Demo, Premium, VIP).");
+      return;
+    }
+    if (window.confirm(`¿Estás seguro de que deseas eliminar el plan "${tempPlansConfig[planKey]?.name || planKey}"?`)) {
+      setTempPlansConfig(prev => {
+        const copy = { ...prev };
+        delete copy[planKey];
+        return copy;
+      });
+      setEditingPlanTab('free');
+      showToast("🗑️ Plan eliminado localmente. Recuerda guardar los cambios.");
+    }
+  };
+
+  useEffect(() => {
+    if (plansConfig && !tempPlansConfig) {
+      setTempPlansConfig(plansConfig);
+    }
+  }, [plansConfig, tempPlansConfig]);
+
+  const handleAddPlanBenefit = (planKey) => {
+    setTempPlansConfig(prev => {
+      const current = prev?.[planKey] || {};
+      const benefits = [...(current.benefits || [])];
+      benefits.push("");
+      return {
+        ...prev,
+        [planKey]: {
+          ...current,
+          benefits
+        }
+      };
+    });
+  };
+
+  const handleEditPlanBenefit = (planKey, index, val) => {
+    setTempPlansConfig(prev => {
+      const current = prev?.[planKey] || {};
+      const benefits = [...(current.benefits || [])];
+      benefits[index] = val;
+      return {
+        ...prev,
+        [planKey]: {
+          ...current,
+          benefits
+        }
+      };
+    });
+  };
+
+  const handleDeletePlanBenefit = (planKey, index) => {
+    setTempPlansConfig(prev => {
+      const current = prev?.[planKey] || {};
+      const benefits = (current.benefits || []).filter((_, i) => i !== index);
+      return {
+        ...prev,
+        [planKey]: {
+          ...current,
+          benefits
+        }
+      };
+    });
+  };
+
+  const handleAddPlanRestriction = (planKey) => {
+    setTempPlansConfig(prev => {
+      const current = prev?.[planKey] || {};
+      const restrictions = [...(current.restrictions || [])];
+      restrictions.push("");
+      return {
+        ...prev,
+        [planKey]: {
+          ...current,
+          restrictions
+        }
+      };
+    });
+  };
+
+  const handleEditPlanRestriction = (planKey, index, val) => {
+    setTempPlansConfig(prev => {
+      const current = prev?.[planKey] || {};
+      const restrictions = [...(current.restrictions || [])];
+      restrictions[index] = val;
+      return {
+        ...prev,
+        [planKey]: {
+          ...current,
+          restrictions
+        }
+      };
+    });
+  };
+
+  const handleDeletePlanRestriction = (planKey, index) => {
+    setTempPlansConfig(prev => {
+      const current = prev?.[planKey] || {};
+      const restrictions = (current.restrictions || []).filter((_, i) => i !== index);
+      return {
+        ...prev,
+        [planKey]: {
+          ...current,
+          restrictions
+        }
+      };
+    });
+  };
+
+  const handleSavePlansConfig = async (e) => {
+    e.preventDefault();
+    setSavePlansLoading(true);
+    try {
+      const cleanedConfig = JSON.parse(JSON.stringify(tempPlansConfig));
+      for (const planKey in cleanedConfig) {
+        cleanedConfig[planKey].benefits = (cleanedConfig[planKey].benefits || []).map(b => b.trim()).filter(Boolean);
+        cleanedConfig[planKey].restrictions = (cleanedConfig[planKey].restrictions || []).map(r => r.trim()).filter(Boolean);
+      }
+      await updatePlansConfig(cleanedConfig);
+      setTempPlansConfig(cleanedConfig);
+      showToast("✅ Configuración de planes guardada con éxito");
+    } catch (err) {
+      console.error(err);
+      showToast("❌ Error al guardar la configuración: " + err.message);
+    } finally {
+      setSavePlansLoading(false);
     }
   };
 
@@ -578,6 +760,10 @@ export default function DjDashboard() {
       newKeys.forEach(key => {
         const req = requests[key];
         if (req && req.status === 'pending') {
+          // Evitar alertas para peticiones antiguas al iniciar sesión o recargar la página
+          const isRecent = req.timestamp && Math.abs(Date.now() - req.timestamp) < 30000;
+          if (!isRecent) return;
+
           playNotificationSound(selectedTone);
           
           if (visualAlertEnabled) {
@@ -971,14 +1157,166 @@ export default function DjDashboard() {
     }
     setEditDjLoading(true);
     try {
-      await updateDjAccount(uid, editDjEmail.trim(), editDjDisplayName.trim(), editDjPassword.trim() || null);
-      showToast('✅ Datos de registro actualizados correctamente');
+      await updateDjAccount(uid, editDjEmail.trim(), editDjDisplayName.trim(), editDjPassword.trim() || null, editDjPlan);
+      showToast('✅ Datos de registro y plan actualizados correctamente');
       setEditingDjUid(null);
       setEditDjPassword('');
     } catch (err) {
       showToast(`❌ Error al actualizar: ${err.message || ''}`);
     } finally {
       setEditDjLoading(false);
+    }
+  };
+
+  // Delete a DJ user account (admin only)
+  const handleDeleteDjAccount = async (uid) => {
+    try {
+      const API_BASE = window.location.hostname === 'localhost' ? 'http://localhost:4000' : '';
+      const res = await fetch(`${API_BASE}/api/admin/deleteUser`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ uid, secret: import.meta.env.VITE_ADMIN_MASTER_SECRET }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        showToast(`✅ Usuario ${uid} eliminado`);
+        // Reload to refresh list
+        window.location.reload();
+      } else {
+        showToast(`❌ Error al eliminar: ${data.error || "unknown"}`);
+      }
+    } catch (e) {
+      showToast(`❌ Error de red: ${e.message}`);
+    }
+  };
+
+  // --- ESTADOS PARA GESTIÓN DE SUSCRIPCIONES (ADMIN MASTER) ---
+  const [paymentConfig, setPaymentConfig] = useState({
+    paypalClientId: '',
+    paypalClientSecret: '',
+    paypalMode: 'sandbox',
+    mercadopagoPublicKey: '',
+    mercadopagoAccessToken: '',
+    adminClabe: ''
+  });
+  const [saveConfigLoading, setSaveConfigLoading] = useState(false);
+  const [pendingSubs, setPendingSubs] = useState([]);
+  const [pendingSubsLoading, setPendingSubsLoading] = useState(false);
+
+  const fetchPaymentConfig = async () => {
+    try {
+      const secret = import.meta.env.VITE_ADMIN_MASTER_SECRET;
+      const API_BASE = window.location.hostname === 'localhost' ? 'http://localhost:4000' : '';
+      const res = await fetch(`${API_BASE}/api/admin/getPaymentConfig`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ secret }),
+      });
+      const data = await res.json();
+      if (data.success && data.config) {
+        setPaymentConfig(data.config);
+      }
+    } catch (e) {
+      console.error('Error fetching payment config', e);
+    }
+  };
+
+  const fetchPendingSubscriptions = async () => {
+    setPendingSubsLoading(true);
+    try {
+      const secret = import.meta.env.VITE_ADMIN_MASTER_SECRET;
+      const API_BASE = window.location.hostname === 'localhost' ? 'http://localhost:4000' : '';
+      const res = await fetch(`${API_BASE}/api/admin/listPendingSubscriptions`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ secret }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        setPendingSubs(data.pendingSubscriptions || []);
+      }
+    } catch (e) {
+      console.error('Error fetching pending subscriptions', e);
+    } finally {
+      setPendingSubsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (isAdminMaster && activeTab === 'admin') {
+      fetchPaymentConfig();
+      fetchPendingSubscriptions();
+    }
+  }, [isAdminMaster, activeTab]);
+
+  const handleSavePaymentConfig = async (e) => {
+    e.preventDefault();
+    setSaveConfigLoading(true);
+    try {
+      const secret = import.meta.env.VITE_ADMIN_MASTER_SECRET;
+      const API_BASE = window.location.hostname === 'localhost' ? 'http://localhost:4000' : '';
+      const res = await fetch(`${API_BASE}/api/admin/savePaymentConfig`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ secret, config: paymentConfig }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        alert('Configuración de pasarelas de pago guardada con éxito.');
+      } else {
+        throw new Error(data.error);
+      }
+    } catch (e) {
+      console.error(e);
+      alert('Error al guardar configuración: ' + e.message);
+    } finally {
+      setSaveConfigLoading(false);
+    }
+  };
+
+  const handleApproveSub = async (uid, plan) => {
+    if (!window.confirm(`¿Aprobar el plan ${plan.toUpperCase()} para este usuario?`)) return;
+    try {
+      const secret = import.meta.env.VITE_ADMIN_MASTER_SECRET;
+      const API_BASE = window.location.hostname === 'localhost' ? 'http://localhost:4000' : '';
+      const res = await fetch(`${API_BASE}/api/admin/approveSubscription`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ secret, uid, plan }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        alert('Suscripción aprobada con éxito.');
+        fetchPendingSubscriptions();
+      } else {
+        throw new Error(data.error);
+      }
+    } catch (e) {
+      console.error(e);
+      alert('Error al aprobar: ' + e.message);
+    }
+  };
+
+  const handleRejectSub = async (uid) => {
+    if (!window.confirm('¿Rechazar el comprobante de este usuario? Su estado volverá a Pago Pendiente.')) return;
+    try {
+      const secret = import.meta.env.VITE_ADMIN_MASTER_SECRET;
+      const API_BASE = window.location.hostname === 'localhost' ? 'http://localhost:4000' : '';
+      const res = await fetch(`${API_BASE}/api/admin/rejectSubscription`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ secret, uid }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        alert('Suscripción rechazada.');
+        fetchPendingSubscriptions();
+      } else {
+        throw new Error(data.error);
+      }
+    } catch (e) {
+      console.error(e);
+      alert('Error al rechazar: ' + e.message);
     }
   };
 
@@ -1051,7 +1389,11 @@ export default function DjDashboard() {
     const requestsCount = Object.values(userData?.events || {}).reduce((sum, ev) => {
       return sum + Object.keys(ev?.requests || {}).length;
     }, 0);
-    return { uid, eventsCount, requestsCount, djName, eventTitles, email };
+    
+    const currentPlan = userData?.profile?.selectedPlan || userData?.profile?.subscriptionStatus || 'free';
+    const expiresAt = userData?.profile?.expiresAt || 0;
+    
+    return { uid, eventsCount, requestsCount, djName, eventTitles, email, currentPlan, expiresAt };
   });
 
   return (
@@ -1153,6 +1495,9 @@ export default function DjDashboard() {
                 ? <span style={{ color: 'var(--warning-color)' }}>Viendo: {impersonatingUid}</span>
                 : <>Evento: <strong style={{ color: 'var(--secondary-color)' }}>{eventSettings.title}</strong></>
               }
+            </p>
+            <p style={{ fontSize: '0.75rem', color: '#facc15', fontWeight: '600', marginTop: '2px', letterSpacing: '0.5px' }}>
+              📋 Plan activo: {plansConfig?.[(userProfile?.selectedPlan || 'free')]?.name || 'Plan Demo'}
             </p>
           </div>
         </div>
@@ -2883,8 +3228,59 @@ export default function DjDashboard() {
                     )}
                   </div>
                 </div>
-
               </div>
+
+              {/* SECCIÓN DE MEJORA DE PLAN */}
+              {!(isAdminMaster && !impersonatingUid) && (
+                <div 
+                  className="glass-panel" 
+                  style={{ 
+                    marginTop: '32px', 
+                    padding: '24px', 
+                    borderRadius: 'var(--radius-lg)', 
+                    border: '1px solid rgba(124, 58, 237, 0.25)', 
+                    background: 'rgba(124, 58, 237, 0.03)',
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    flexWrap: 'wrap',
+                    gap: '20px'
+                  }}
+                >
+                  <div>
+                    <h3 style={{ fontSize: '1.15rem', color: '#fff', marginBottom: '6px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <Sparkles size={18} color="var(--primary-color)" />
+                      Tu Plan Actual: <span style={{ color: 'var(--primary-color)', fontWeight: 'bold', textTransform: 'uppercase' }}>{plansConfig?.[userProfile?.selectedPlan || 'free']?.name || userProfile?.selectedPlan || 'demo/gratis'}</span>
+                    </h3>
+                    <p style={{ color: 'var(--text-secondary)', fontSize: '0.85rem', margin: 0, maxWidth: '500px' }}>
+                      {(!userProfile?.selectedPlan || userProfile?.selectedPlan === 'free') && `Estás usando el ${plansConfig?.free?.name || 'Plan Demo'} con límites. Pásate a ${plansConfig?.premium?.name || 'Premium'} para marca blanca, logo y peticiones ilimitadas.`}
+                      {userProfile?.selectedPlan === 'premium' && `Tienes acceso a ${plansConfig?.premium?.name || 'Plan Premium'}. Pásate a ${plansConfig?.vip?.name || 'VIP'} para soporte técnico prioritario 24/7 y eventos simultáneos.`}
+                      {userProfile?.selectedPlan === 'vip' && `¡Tienes el ${plansConfig?.vip?.name || 'Plan VIP'} con acceso y soporte total habilitados! Gracias por confiar en nosotros.`}
+                    </p>
+                  </div>
+                  
+                  {userProfile?.selectedPlan !== 'vip' && (
+                    <button
+                      onClick={() => selectPlan('pending_plan')}
+                      className="btn btn-primary"
+                      style={{
+                        background: 'linear-gradient(135deg, #7c3aed 0%, #4f46e5 100%)',
+                        border: 'none',
+                        padding: '12px 24px',
+                        fontWeight: 'bold',
+                        fontSize: '0.9rem',
+                        cursor: 'pointer',
+                        borderRadius: 'var(--radius-md)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '8px'
+                      }}
+                    >
+                      <Sparkles size={16} /> Mejorar / Cambiar Plan
+                    </button>
+                  )}
+                </div>
+              )}
             </div>
           )}
 
@@ -3080,6 +3476,499 @@ export default function DjDashboard() {
                 Acceso total a todas las cuentas de DJ registradas en la plataforma. Solo visible para <strong style={{ color: 'var(--warning-color)' }}>dj@admin.com</strong>.
               </p>
 
+              {/* Botón para gestionar suscripciones */}
+              <div style={{ marginBottom: '28px', display: 'flex', gap: '12px' }}>
+                <button
+                  onClick={() => window.location.href = '/subscriptions'}
+                  className="btn btn-primary"
+                  style={{
+                    background: 'linear-gradient(135deg, #7c3aed 0%, #4f46e5 100%)',
+                    border: 'none',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '8px',
+                    padding: '10px 18px',
+                    fontSize: '0.9rem',
+                    fontWeight: 'bold',
+                    cursor: 'pointer',
+                    borderRadius: 'var(--radius-md)'
+                  }}
+                >
+                  <CreditCard size={16} /> Gestionar Todas las Suscripciones
+                </button>
+              </div>
+
+              {/* === SECCIÓN: VALIDACIÓN DE PAGOS PENDIENTES === */}
+              <div style={{ marginBottom: '28px', border: '1px solid rgba(16, 185, 129, 0.2)', borderRadius: 'var(--radius-md)', overflow: 'hidden' }}>
+                <div style={{ padding: '14px 20px', background: 'rgba(16, 185, 129, 0.06)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <span style={{ fontWeight: '700', fontSize: '0.95rem', display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--success-color)' }}>
+                    <CreditCard size={16} /> Suscripciones Pendientes de Validación ({pendingSubs.length})
+                  </span>
+                  <button 
+                    onClick={fetchPendingSubscriptions} 
+                    className="btn btn-secondary" 
+                    style={{ padding: '4px 8px', fontSize: '0.75rem', height: '24px' }}
+                    disabled={pendingSubsLoading}
+                  >
+                    <RefreshCw size={12} className={pendingSubsLoading ? 'animate-spin' : ''} /> Actualizar
+                  </button>
+                </div>
+
+                <div style={{ padding: '20px' }}>
+                  {pendingSubsLoading ? (
+                    <div style={{ textAlign: 'center', padding: '20px', color: 'var(--text-muted)' }}>Cargando solicitudes...</div>
+                  ) : pendingSubs.length === 0 ? (
+                    <div style={{ textAlign: 'center', padding: '20px', color: 'var(--text-muted)', fontSize: '0.85rem' }}>
+                      No hay solicitudes de pago pendientes de verificación.
+                    </div>
+                  ) : (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+                      {pendingSubs.map((sub) => (
+                        <div key={sub.uid} className="glass-panel" style={{ padding: '16px', borderRadius: 'var(--radius-md)', border: '1px solid rgba(255, 255, 255, 0.05)' }}>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', flexWrap: 'wrap', gap: '12px', marginBottom: '12px' }}>
+                            <div>
+                              <h5 style={{ margin: '0 0 4px 0', fontSize: '0.95rem', color: '#fff' }}>{sub.displayName || 'DJ sin nombre'}</h5>
+                              <p style={{ margin: 0, fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
+                                Email: <strong>{sub.email}</strong> | Teléfono: <strong>{sub.phone || 'No especificado'}</strong>
+                              </p>
+                            </div>
+                            <div style={{ textAlign: 'right' }}>
+                              <span style={{
+                                background: 'rgba(124, 58, 237, 0.15)',
+                                color: 'var(--primary-color)',
+                                padding: '3px 8px',
+                                borderRadius: '4px',
+                                fontSize: '0.75rem',
+                                fontWeight: 'bold'
+                              }}>
+                                PLAN: {sub.selectedPlan?.toUpperCase()}
+                              </span>
+                            </div>
+                          </div>
+                          
+                          <div style={{
+                            background: 'rgba(255, 255, 255, 0.02)',
+                            padding: '10px 14px',
+                            borderRadius: 'var(--radius-sm)',
+                            fontSize: '0.8rem',
+                            marginBottom: '14px',
+                            border: '1px solid var(--surface-border)',
+                            display: 'grid',
+                            gridTemplateColumns: '1fr 1fr',
+                            gap: '8px'
+                          }}>
+                            <div><strong>Pasarela:</strong> {sub.gateway?.toUpperCase()}</div>
+                            <div><strong>ID Transacción:</strong> <code style={{ color: 'var(--warning-color)' }}>{sub.transactionId}</code></div>
+                            <div style={{ gridColumn: 'span 2' }}>
+                              <strong>Fecha de envío:</strong> {new Date(sub.submittedAt).toLocaleString()}
+                            </div>
+                          </div>
+
+                          <div style={{ display: 'flex', gap: '10px' }}>
+                            <button
+                              onClick={() => handleApproveSub(sub.uid, sub.selectedPlan || 'premium')}
+                              className="btn btn-primary"
+                              style={{ padding: '6px 14px', fontSize: '0.8rem', height: '32px', background: 'var(--success-color)', border: 'none' }}
+                            >
+                              Aprobar Pago y Activar
+                            </button>
+                            <button
+                              onClick={() => handleRejectSub(sub.uid)}
+                              className="btn btn-secondary"
+                              style={{ padding: '6px 14px', fontSize: '0.8rem', height: '32px', color: 'var(--danger-color)', borderColor: 'rgba(239, 68, 68, 0.3)' }}
+                            >
+                              Rechazar Pago
+                            </button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* === SECCIÓN: CONFIGURACIÓN DE PASARELAS DE PAGO === */}
+              <div style={{ marginBottom: '28px', border: '1px solid rgba(124, 58, 237, 0.2)', borderRadius: 'var(--radius-md)', overflow: 'hidden' }}>
+                <div style={{ padding: '14px 20px', background: 'rgba(124, 58, 237, 0.06)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <span style={{ fontWeight: '700', fontSize: '0.95rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <Sliders size={16} color="var(--primary-color)" /> Configuración de Pasarelas de Pago (PayPal / Mercado Pago)
+                  </span>
+                </div>
+
+                <form onSubmit={handleSavePaymentConfig} style={{ padding: '20px', display: 'flex', flexDirection: 'column', gap: '20px' }}>
+                  {/* PayPal Config */}
+                  <div>
+                    <h5 style={{ fontSize: '0.85rem', color: '#fff', borderBottom: '1px solid var(--surface-border)', paddingBottom: '6px', marginBottom: '12px' }}>Credenciales de PayPal</h5>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '14px' }}>
+                      <div className="form-group" style={{ marginBottom: 0 }}>
+                        <label className="form-label">PayPal Client ID</label>
+                        <input
+                          type="text" className="input-field"
+                          placeholder="Client ID de PayPal"
+                          value={paymentConfig.paypalClientId || ''}
+                          onChange={(e) => setPaymentConfig({ ...paymentConfig, paypalClientId: e.target.value })}
+                        />
+                      </div>
+                      <div className="form-group" style={{ marginBottom: 0 }}>
+                        <label className="form-label">PayPal Client Secret</label>
+                        <input
+                          type="password" className="input-field"
+                          placeholder="Client Secret de PayPal"
+                          value={paymentConfig.paypalClientSecret || ''}
+                          onChange={(e) => setPaymentConfig({ ...paymentConfig, paypalClientSecret: e.target.value })}
+                        />
+                      </div>
+                      <div className="form-group" style={{ marginBottom: 0 }}>
+                        <label className="form-label">Modo PayPal</label>
+                        <select
+                          className="input-field animate-slide-in"
+                          value={paymentConfig.paypalMode || 'sandbox'}
+                          onChange={(e) => setPaymentConfig({ ...paymentConfig, paypalMode: e.target.value })}
+                          style={{ width: '100%' }}
+                        >
+                          <option value="sandbox">Sandbox (Pruebas)</option>
+                          <option value="live">Live (Producción)</option>
+                        </select>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Mercado Pago Config */}
+                  <div>
+                    <h5 style={{ fontSize: '0.85rem', color: '#fff', borderBottom: '1px solid var(--surface-border)', paddingBottom: '6px', marginBottom: '12px' }}>Credenciales de Mercado Pago</h5>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '14px' }}>
+                      <div className="form-group" style={{ marginBottom: 0 }}>
+                        <label className="form-label">Mercado Pago Public Key</label>
+                        <input
+                          type="text" className="input-field"
+                          placeholder="Public Key de Mercado Pago"
+                          value={paymentConfig.mercadopagoPublicKey || ''}
+                          onChange={(e) => setPaymentConfig({ ...paymentConfig, mercadopagoPublicKey: e.target.value })}
+                        />
+                      </div>
+                      <div className="form-group" style={{ marginBottom: 0 }}>
+                        <label className="form-label">Mercado Pago Access Token</label>
+                        <input
+                          type="password" className="input-field"
+                          placeholder="Access Token de Mercado Pago"
+                          value={paymentConfig.mercadopagoAccessToken || ''}
+                          onChange={(e) => setPaymentConfig({ ...paymentConfig, mercadopagoAccessToken: e.target.value })}
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Transferencia Bancaria */}
+                  <div>
+                    <h5 style={{ fontSize: '0.85rem', color: '#fff', borderBottom: '1px solid var(--surface-border)', paddingBottom: '6px', marginBottom: '12px' }}>Datos para Transferencia Bancaria (Moneda Local)</h5>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '14px' }}>
+                      <div className="form-group" style={{ marginBottom: 0 }}>
+                        <label className="form-label">CLABE Interbancaria de Recepción (18 dígitos)</label>
+                        <input
+                          type="text" className="input-field"
+                          placeholder="Ingresa la CLABE de tu cuenta bancaria"
+                          value={paymentConfig.adminClabe || ''}
+                          onChange={(e) => setPaymentConfig({ ...paymentConfig, adminClabe: e.target.value })}
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  <div style={{ display: 'flex', gap: '10px' }}>
+                    <button type="submit" className="btn btn-primary" disabled={saveConfigLoading} style={{ padding: '10px 20px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      {saveConfigLoading ? <><RefreshCw size={14} className="animate-spin" /> Guardando...</> : <><Check size={14} /> Guardar Cambios de Pasarela</>}
+                    </button>
+                  </div>
+                </form>
+              </div>
+
+              {/* === SECCIÓN: PERSONALIZACIÓN DE PLANES DE SUSCRIPCIÓN === */}
+              {tempPlansConfig && (
+                <div style={{ marginBottom: '28px', border: '1px solid rgba(124, 58, 237, 0.2)', borderRadius: 'var(--radius-md)', overflow: 'hidden' }}>
+                  <div style={{ padding: '14px 20px', background: 'rgba(124, 58, 237, 0.06)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <span style={{ fontWeight: '700', fontSize: '0.95rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <Sparkles size={16} color="var(--primary-color)" /> Personalización de Planes de Suscripción (Solo Admin Master)
+                    </span>
+                  </div>
+
+                  <div style={{ padding: '20px' }}>
+                    {/* Tabs de Selección de Plan */}
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', borderBottom: '1px solid var(--surface-border)', paddingBottom: '10px', flexWrap: 'wrap', gap: '10px' }}>
+                      <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                        {Object.keys(tempPlansConfig).map((planKey) => (
+                          <button
+                            key={planKey}
+                            type="button"
+                            className={`btn ${editingPlanTab === planKey ? 'btn-primary' : 'btn-secondary'}`}
+                            onClick={() => setEditingPlanTab(planKey)}
+                            style={{ fontSize: '0.85rem', padding: '6px 12px' }}
+                          >
+                            {tempPlansConfig[planKey]?.name || planKey.toUpperCase()}
+                          </button>
+                        ))}
+                      </div>
+
+                      <button
+                        type="button"
+                        className="btn btn-secondary"
+                        onClick={() => setShowCreatePlanForm(v => !v)}
+                        style={{ fontSize: '0.8rem', padding: '6px 12px', border: '1px solid rgba(16, 185, 129, 0.3)', color: 'var(--success-color)' }}
+                      >
+                        <Plus size={14} /> Crear Nuevo Plan
+                      </button>
+                    </div>
+
+                    {showCreatePlanForm && (
+                      <div className="glass-panel" style={{ padding: '16px', marginBottom: '20px', display: 'flex', flexDirection: 'column', gap: '12px', border: '1px solid rgba(16, 185, 129, 0.2)', background: 'rgba(16, 185, 129, 0.02)' }}>
+                        <h4 style={{ fontSize: '0.85rem', color: '#fff', margin: 0 }}>Crear Nuevo Plan de Suscripción</h4>
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '12px' }}>
+                          <div className="form-group" style={{ marginBottom: 0 }}>
+                            <label className="form-label" style={{ fontSize: '0.7rem' }}>Identificador Único (ej. platino)</label>
+                            <input
+                              type="text"
+                              className="input-field"
+                              placeholder="identificador_único"
+                              value={newPlanKey}
+                              onChange={(e) => setNewPlanKey(e.target.value)}
+                              style={{ height: '32px', fontSize: '0.85rem' }}
+                            />
+                          </div>
+                          <div className="form-group" style={{ marginBottom: 0 }}>
+                            <label className="form-label" style={{ fontSize: '0.7rem' }}>Nombre del Plan (ej. Plan Platino)</label>
+                            <input
+                              type="text"
+                              className="input-field"
+                              placeholder="Nombre visible"
+                              value={newPlanName}
+                              onChange={(e) => setNewPlanName(e.target.value)}
+                              style={{ height: '32px', fontSize: '0.85rem' }}
+                            />
+                          </div>
+                        </div>
+                        <div style={{ display: 'flex', gap: '10px' }}>
+                          <button
+                            type="button"
+                            className="btn btn-primary"
+                            onClick={handleCreateNewPlan}
+                            style={{ padding: '6px 12px', fontSize: '0.8rem', background: 'var(--success-color)', border: 'none' }}
+                          >
+                            Crear Plan
+                          </button>
+                          <button
+                            type="button"
+                            className="btn btn-secondary"
+                            onClick={() => { setShowCreatePlanForm(false); setNewPlanKey(""); setNewPlanName(""); }}
+                            style={{ padding: '6px 12px', fontSize: '0.8rem' }}
+                          >
+                            Cancelar
+                          </button>
+                        </div>
+                      </div>
+                    )}
+
+                    <form onSubmit={handleSavePlansConfig} style={{ display: 'flex', flexDirection: 'column', gap: '18px' }}>
+                      {/* Inputs básicos */}
+                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '14px' }}>
+                        <div className="form-group" style={{ marginBottom: 0 }}>
+                          <label className="form-label">Nombre del Plan</label>
+                          <input
+                            type="text" className="input-field"
+                            value={tempPlansConfig[editingPlanTab]?.name || ''}
+                            onChange={(e) => setTempPlansConfig({
+                              ...tempPlansConfig,
+                              [editingPlanTab]: { ...tempPlansConfig[editingPlanTab], name: e.target.value }
+                            })}
+                          />
+                        </div>
+                        <div className="form-group" style={{ marginBottom: 0 }}>
+                          <label className="form-label">Precio</label>
+                          <input
+                            type="text" className="input-field"
+                            value={tempPlansConfig[editingPlanTab]?.price || ''}
+                            onChange={(e) => setTempPlansConfig({
+                              ...tempPlansConfig,
+                              [editingPlanTab]: { ...tempPlansConfig[editingPlanTab], price: e.target.value }
+                            })}
+                          />
+                        </div>
+                        <div className="form-group" style={{ marginBottom: 0 }}>
+                          <label className="form-label">Moneda (ej. USD, MXN)</label>
+                          <input
+                            type="text" className="input-field"
+                            placeholder="USD"
+                            value={tempPlansConfig[editingPlanTab]?.currency || ''}
+                            onChange={(e) => setTempPlansConfig({
+                              ...tempPlansConfig,
+                              [editingPlanTab]: { ...tempPlansConfig[editingPlanTab], currency: e.target.value.toUpperCase() }
+                            })}
+                          />
+                        </div>
+                        <div className="form-group" style={{ marginBottom: 0 }}>
+                          <label className="form-label">Periodo / Cobro (ej. mes, gratis)</label>
+                          <input
+                            type="text" className="input-field"
+                            value={tempPlansConfig[editingPlanTab]?.billing || ''}
+                            onChange={(e) => setTempPlansConfig({
+                              ...tempPlansConfig,
+                              [editingPlanTab]: { ...tempPlansConfig[editingPlanTab], billing: e.target.value }
+                            })}
+                          />
+                        </div>
+                        <div className="form-group" style={{ marginBottom: 0 }}>
+                          <label className="form-label">Límite de Peticiones (0 = ilimitado)</label>
+                          <input
+                            type="number" min="0" className="input-field"
+                            value={tempPlansConfig[editingPlanTab]?.maxRequests !== undefined ? tempPlansConfig[editingPlanTab].maxRequests : (editingPlanTab === 'free' ? 15 : 0)}
+                            onChange={(e) => setTempPlansConfig({
+                              ...tempPlansConfig,
+                              [editingPlanTab]: { ...tempPlansConfig[editingPlanTab], maxRequests: parseInt(e.target.value, 10) || 0 }
+                            })}
+                          />
+                        </div>
+                        <div className="form-group" style={{ marginBottom: 0 }}>
+                          <label className="form-label">Duración (Ej. 1, 24)</label>
+                          <input
+                            type="number" min="0" className="input-field"
+                            value={tempPlansConfig[editingPlanTab]?.duration !== undefined ? tempPlansConfig[editingPlanTab].duration : 1}
+                            onChange={(e) => setTempPlansConfig({
+                              ...tempPlansConfig,
+                              [editingPlanTab]: { ...tempPlansConfig[editingPlanTab], duration: parseInt(e.target.value, 10) || 0 }
+                            })}
+                          />
+                        </div>
+                        <div className="form-group" style={{ marginBottom: 0 }}>
+                          <label className="form-label">Unidad de Duración</label>
+                          <select
+                            className="input-field"
+                            value={tempPlansConfig[editingPlanTab]?.durationUnit || 'meses'}
+                            onChange={(e) => setTempPlansConfig({
+                              ...tempPlansConfig,
+                              [editingPlanTab]: { ...tempPlansConfig[editingPlanTab], durationUnit: e.target.value }
+                            })}
+                            style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid var(--surface-border)', color: '#fff', height: '48px', padding: '10px 14px' }}
+                          >
+                            <option value="horas">Horas</option>
+                            <option value="días">Días</option>
+                            <option value="meses">Meses</option>
+                          </select>
+                        </div>
+                      </div>
+
+                      <div className="form-group">
+                        <label className="form-label">Descripción</label>
+                        <textarea
+                          className="input-field"
+                          rows={2}
+                          value={tempPlansConfig[editingPlanTab]?.description || ''}
+                          onChange={(e) => setTempPlansConfig({
+                            ...tempPlansConfig,
+                            [editingPlanTab]: { ...tempPlansConfig[editingPlanTab], description: e.target.value }
+                          })}
+                          style={{ resize: 'vertical', minHeight: '60px', padding: '10px' }}
+                        />
+                      </div>
+
+                      {/* Lista de Beneficios */}
+                      <div style={{ borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: '16px' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+                          <span style={{ fontSize: '0.85rem', color: '#fff', fontWeight: 'bold' }}>Beneficios Exclusivos</span>
+                          <button
+                            type="button"
+                            className="btn btn-secondary"
+                            onClick={() => handleAddPlanBenefit(editingPlanTab)}
+                            style={{ padding: '4px 8px', fontSize: '0.75rem', display: 'flex', alignItems: 'center', gap: '4px' }}
+                          >
+                            <Plus size={12} /> Añadir Beneficio
+                          </button>
+                        </div>
+
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                          {(tempPlansConfig[editingPlanTab]?.benefits || []).map((benefit, idx) => (
+                            <div key={`ben-${idx}`} style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                              <input
+                                type="text" className="input-field"
+                                value={benefit}
+                                placeholder="ej. Peticiones ilimitadas de canciones"
+                                onChange={(e) => handleEditPlanBenefit(editingPlanTab, idx, e.target.value)}
+                                style={{ flex: 1, height: '32px', fontSize: '0.85rem' }}
+                              />
+                              <button
+                                type="button"
+                                className="btn btn-secondary"
+                                onClick={() => handleDeletePlanBenefit(editingPlanTab, idx)}
+                                style={{ padding: '6px', height: '32px', width: '32px', display: 'flex', justifyContent: 'center', alignItems: 'center', color: 'var(--danger-color)', borderColor: 'rgba(239, 68, 68, 0.2)' }}
+                              >
+                                <Trash2 size={14} />
+                              </button>
+                            </div>
+                          ))}
+                          {(tempPlansConfig[editingPlanTab]?.benefits || []).length === 0 && (
+                            <p style={{ fontSize: '0.78rem', color: 'var(--text-muted)', margin: 0, fontStyle: 'italic' }}>No hay beneficios agregados a este plan.</p>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Lista de Restricciones */}
+                      <div style={{ borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: '16px' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+                          <span style={{ fontSize: '0.85rem', color: '#fff', fontWeight: 'bold' }}>Restricciones / Límites</span>
+                          <button
+                            type="button"
+                            className="btn btn-secondary"
+                            onClick={() => handleAddPlanRestriction(editingPlanTab)}
+                            style={{ padding: '4px 8px', fontSize: '0.75rem', display: 'flex', alignItems: 'center', gap: '4px' }}
+                          >
+                            <Plus size={12} /> Añadir Restricción
+                          </button>
+                        </div>
+
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                          {(tempPlansConfig[editingPlanTab]?.restrictions || []).map((restriction, idx) => (
+                            <div key={`rest-${idx}`} style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                              <input
+                                type="text" className="input-field"
+                                value={restriction}
+                                placeholder="ej. Límite de 15 peticiones simultáneas"
+                                onChange={(e) => handleEditPlanRestriction(editingPlanTab, idx, e.target.value)}
+                                style={{ flex: 1, height: '32px', fontSize: '0.85rem' }}
+                              />
+                              <button
+                                type="button"
+                                className="btn btn-secondary"
+                                onClick={() => handleDeletePlanRestriction(editingPlanTab, idx)}
+                                style={{ padding: '6px', height: '32px', width: '32px', display: 'flex', justifyContent: 'center', alignItems: 'center', color: 'var(--danger-color)', borderColor: 'rgba(239, 68, 68, 0.2)' }}
+                              >
+                                <Trash2 size={14} />
+                              </button>
+                            </div>
+                          ))}
+                          {(tempPlansConfig[editingPlanTab]?.restrictions || []).length === 0 && (
+                            <p style={{ fontSize: '0.78rem', color: 'var(--text-muted)', margin: 0, fontStyle: 'italic' }}>No hay restricciones agregadas a este plan.</p>
+                          )}
+                        </div>
+                      </div>
+
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '10px', marginTop: '10px', borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: '16px', flexWrap: 'wrap' }}>
+                        <button type="submit" className="btn btn-primary" disabled={savePlansLoading} style={{ padding: '10px 20px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                          {savePlansLoading ? <><RefreshCw size={14} className="animate-spin" /> Guardando...</> : <><Check size={14} /> Guardar Configuración de Planes</>}
+                        </button>
+                        
+                        {editingPlanTab !== 'free' && editingPlanTab !== 'premium' && editingPlanTab !== 'vip' && (
+                          <button
+                            type="button"
+                            className="btn btn-secondary"
+                            onClick={() => handleDeletePlan(editingPlanTab)}
+                            style={{ padding: '10px 20px', color: 'var(--danger-color)', borderColor: 'rgba(239, 68, 68, 0.3)', display: 'flex', alignItems: 'center', gap: '6px' }}
+                          >
+                            <Trash2 size={14} /> Eliminar Plan
+                          </button>
+                        )}
+                      </div>
+                    </form>
+                  </div>
+                </div>
+              )}
+
               {/* === SECCIÓN: AGREGAR NUEVO DJ === */}
               <div style={{ marginBottom: '28px', border: '1px solid rgba(124,58,237,0.2)', borderRadius: 'var(--radius-md)', overflow: 'hidden' }}>
                 <div
@@ -3173,7 +4062,7 @@ export default function DjDashboard() {
                 </div>
               ) : (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                  {adminUsersList.map(({ uid, eventsCount, requestsCount, djName, eventTitles, email }) => (
+                  {adminUsersList.map(({ uid, eventsCount, requestsCount, djName, eventTitles, email, currentPlan, expiresAt }) => (
                     <div key={uid} className="glass-panel animate-slide-in" style={{
                       padding: '20px 24px', borderRadius: 'var(--radius-md)',
                       display: 'flex', flexDirection: 'column', gap: '14px',
@@ -3204,6 +4093,21 @@ export default function DjDashboard() {
                                     onChange={(e) => setEditDjEmail(e.target.value)}
                                     style={{ padding: '4px 8px', fontSize: '0.8rem', height: '28px' }}
                                   />
+                                </div>
+                                <div className="form-group" style={{ marginBottom: 0 }}>
+                                  <label className="form-label" style={{ fontSize: '0.7rem' }}>Plan del DJ</label>
+                                  <select
+                                    className="input-field"
+                                    value={editDjPlan}
+                                    onChange={(e) => setEditDjPlan(e.target.value)}
+                                    style={{ padding: '4px 8px', fontSize: '0.8rem', height: '28px', background: 'var(--surface-color)', color: '#fff', border: '1px solid rgba(255,255,255,0.15)' }}
+                                  >
+                                    {Object.keys(plansConfig || DEFAULT_PLANS_CONFIG).map(planKey => (
+                                      <option key={planKey} value={planKey}>
+                                        {plansConfig?.[planKey]?.name || planKey}
+                                      </option>
+                                    ))}
+                                  </select>
                                 </div>
                                 <div className="form-group" style={{ marginBottom: 0 }}>
                                   <label className="form-label" style={{ fontSize: '0.7rem' }}>Nueva Contraseña (Opcional)</label>
@@ -3247,6 +4151,27 @@ export default function DjDashboard() {
                                   <Mail size={11} /> {email}
                                 </p>
                               )}
+                              {uid !== 'uid-admin-master' && (
+                                <div style={{ marginTop: '6px', display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                                  <span style={{
+                                    background: currentPlan === 'free' ? 'rgba(255,255,255,0.06)' : 'rgba(124, 58, 237, 0.12)',
+                                    color: currentPlan === 'free' ? 'var(--text-secondary)' : 'var(--primary-color)',
+                                    border: currentPlan === 'free' ? '1px solid rgba(255,255,255,0.1)' : '1px solid rgba(124,58,237,0.25)',
+                                    padding: '2px 8px',
+                                    borderRadius: '4px',
+                                    fontSize: '0.72rem',
+                                    fontWeight: '600',
+                                    textTransform: 'uppercase'
+                                  }}>
+                                    Plan: {plansConfig?.[currentPlan]?.name || currentPlan}
+                                  </span>
+                                  {expiresAt > 0 && (
+                                    <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>
+                                      (Expira: {new Date(expiresAt).toLocaleString()})
+                                    </span>
+                                  )}
+                                </div>
+                              )}
                             </div>
                           )}
                         </div>
@@ -3269,6 +4194,7 @@ export default function DjDashboard() {
                                   setEditDjDisplayName(djName);
                                   setEditDjEmail(email);
                                   setEditDjPassword('');
+                                  setEditDjPlan(currentPlan || 'free');
                                 }}
                                 className="btn btn-secondary"
                                 style={{ padding: '8px 12px', fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: '6px', border: '1px solid rgba(255,255,255,0.1)' }}
@@ -3282,6 +4208,13 @@ export default function DjDashboard() {
                               >
                                 <UserCog size={14} /> Ver Panel
                               </button>
+                               <button
+                                 onClick={() => handleDeleteDjAccount(uid)}
+                                 className="btn btn-danger"
+                                 style={{ padding: '8px 12px', fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: '6px', border: '1px solid rgba(255,0,0,0.3)' }}
+                               >
+                                 <Trash2 size={14} /> Eliminar
+                               </button>
                             </div>
                           )}
                         </div>

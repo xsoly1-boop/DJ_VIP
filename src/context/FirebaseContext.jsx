@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { initializeApp, getApps, deleteApp } from 'firebase/app';
-import { getAuth, createUserWithEmailAndPassword as firebaseCreateUser } from 'firebase/auth';
+import { getAuth } from 'firebase/auth';
 import { 
   auth, 
   database, 
@@ -10,6 +10,7 @@ import {
   onAuthStateChanged,
   signInWithEmailAndPassword,
   signOut,
+  createUserWithEmailAndPassword,
   reauthenticateUser,
   ref,
   onValue,
@@ -33,6 +34,89 @@ export const useFirebase = () => {
     throw new Error('useFirebase debe usarse dentro de un FirebaseProvider');
   }
   return context;
+};
+
+const DEFAULT_PLANS_CONFIG = {
+  free: {
+    name: "Plan Demo",
+    price: "0",
+    billing: "gratis",
+    currency: "USD",
+    description: "Prueba las funciones básicas de la plataforma.",
+    maxRequests: 5,
+    duration: 0,
+    durationUnit: "meses",
+    benefits: [
+      "Cola de peticiones básicas",
+      "QR de evento estándar",
+      "Límite de 5 peticiones"
+    ],
+    restrictions: [
+      "Sin marca blanca",
+      "Límite de 5 peticiones",
+      "Sin soporte prioritario"
+    ]
+  },
+  premium: {
+    name: "Plan Premium",
+    price: "9.90",
+    billing: "mes",
+    currency: "USD",
+    description: "Ideal para DJs profesionales que tocan en vivo.",
+    maxRequests: 0,
+    duration: 1,
+    durationUnit: "meses",
+    benefits: [
+      "Todo lo de Demo",
+      "Peticiones ilimitadas de canciones",
+      "Personalización de marca (Marca blanca)",
+      "Logotipo y colores personalizados",
+      "Estadísticas de eventos en tiempo real"
+    ],
+    restrictions: [
+      "Un solo evento activo simultáneo",
+      "Sin soporte 24/7 prioritario"
+    ]
+  },
+  vip: {
+    name: "Plan VIP",
+    price: "19.90",
+    billing: "mes",
+    currency: "USD",
+    description: "Para agencias, antros y DJs de eventos de gran escala.",
+    maxRequests: 0,
+    duration: 1,
+    durationUnit: "meses",
+    benefits: [
+      "Todo lo de Premium",
+      "Soporte multievento simultáneo",
+      "Soporte técnico prioritario 24/7",
+      "Descarga de respaldos de eventos"
+    ],
+    restrictions: [
+      "Ninguna restricción"
+    ]
+  },
+  eventual: {
+    name: "Eventual",
+    price: "4.90",
+    billing: "24 horas",
+    currency: "USD",
+    description: "Acceso ilimitado por un evento o día completo.",
+    maxRequests: 0,
+    duration: 24,
+    durationUnit: "horas",
+    benefits: [
+      "Todo ilimitado",
+      "Peticiones ilimitadas de canciones",
+      "Personalización de marca (Marca blanca)",
+      "Válido por 24 horas continuas"
+    ],
+    restrictions: [
+      "Expira a las 24 horas de la activación",
+      "Regresa al Plan Demo al expirar"
+    ]
+  }
 };
 
 // --- CONSTANTES DE RESTABLECIMIENTO PARA LA CUENTA DEMO ---
@@ -267,9 +351,16 @@ export const FirebaseProvider = ({ children }) => {
   const [ratingsData, setRatingsData] = useState([]);
   const [eventsList, setEventsList] = useState([]);
   const [allEventsData, setAllEventsData] = useState({});
+  const [userProfile, setUserProfile] = useState(null);
 
   // Admin master: lista de todos los usuarios y sus eventos
   const [allUsersData, setAllUsersData] = useState({});
+  const [plansConfig, setPlansConfig] = useState(DEFAULT_PLANS_CONFIG);
+  const [publicPaymentInfo, setPublicPaymentInfo] = useState({
+    paypalClientId: '',
+    mercadopagoPublicKey: '',
+    adminClabe: ''
+  });
 
   // UID efectivo: puede ser el propio usuario o, si el admin está impersonando, el del DJ seleccionado
   const [impersonatingUid, setImpersonatingUid] = useState(null);
@@ -293,6 +384,73 @@ export const FirebaseProvider = ({ children }) => {
     });
     return () => unsubscribe();
   }, []);
+
+  // 1d. Escuchar configuración de planes en la base de datos
+  useEffect(() => {
+    const plansRef = ref(database, 'config/plans');
+    const unsubscribe = onValue(plansRef, (snapshot) => {
+      if (snapshot.exists()) {
+        setPlansConfig(snapshot.val());
+      } else {
+        // Inicializar planes por defecto en la base de datos si no existen
+        set(plansRef, DEFAULT_PLANS_CONFIG);
+        setPlansConfig(DEFAULT_PLANS_CONFIG);
+      }
+    });
+    return () => unsubscribe();
+  }, []);
+
+  // 1e. Escuchar información pública de pago en la base de datos
+  useEffect(() => {
+    const paymentInfoRef = ref(database, 'config/public_payment_info');
+    const unsubscribe = onValue(paymentInfoRef, (snapshot) => {
+      if (snapshot.exists()) {
+        setPublicPaymentInfo(snapshot.val());
+      }
+    });
+    return () => unsubscribe();
+  }, []);
+
+  // 1c. Escuchar perfil del usuario (incluyendo subscriptionStatus)
+  useEffect(() => {
+    if (!activeUid) {
+      setUserProfile(null);
+      return;
+    }
+
+    const profileRef = ref(database, `users/${activeUid}/profile`);
+    const unsubscribe = onValue(profileRef, (snapshot) => {
+      if (snapshot.exists()) {
+        const data = snapshot.val();
+        // --- VERIFICACIÓN DE EXPIRACIÓN AUTOMÁTICA ---
+        if (data.activePlan && data.activePlan !== 'free' && data.expiresAt && data.expiresAt > 0 && Date.now() > data.expiresAt) {
+          // El plan ha expirado. Regresar al Plan Demo (free) automáticamente
+          update(profileRef, {
+            subscriptionStatus: 'free',
+            activePlan: 'free',
+            activatedAt: Date.now(),
+            expiresAt: 0
+          });
+          return;
+        }
+        setUserProfile(data);
+      } else {
+        // En caso de que no exista el perfil (ej. cuenta recién creada por auth sin datos)
+        // crear perfil por defecto
+        const defaultProfile = {
+          email: user?.email || '',
+          displayName: user?.displayName || user?.email?.split('@')[0] || 'DJ MasterMix',
+          phone: '',
+          subscriptionStatus: 'pending_plan',
+          createdAt: Date.now()
+        };
+        set(profileRef, defaultProfile);
+        setUserProfile(defaultProfile);
+      }
+    });
+
+    return () => unsubscribe();
+  }, [activeUid, user]);
 
   // 1b. Asegurar que el evento por defecto del DJ esté registrado en events_registry y settings
   useEffect(() => {
@@ -555,6 +713,168 @@ export const FirebaseProvider = ({ children }) => {
     return signInWithEmailAndPassword(auth, email, password);
   };
 
+  const registerDJ = async (email, password, phone, displayName) => {
+    // 1. Crear el usuario
+    const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+    const registeredUser = userCredential.user;
+    const uid = registeredUser.uid;
+
+    const initialProfile = {
+      email,
+      displayName: displayName || email.split('@')[0],
+      phone: phone || '',
+      subscriptionStatus: 'pending_plan', // Redirigirá a selección de plan
+      createdAt: Date.now()
+    };
+
+    // 2. Guardar en la base de datos
+    if (isMockMode) {
+      const dbData = JSON.parse(localStorage.getItem('mock_rtdb_v2') || '{}');
+      if (!dbData.users) dbData.users = {};
+      dbData.users[uid] = {
+        profile: initialProfile,
+        events: {
+          'default-event': {
+            settings: {
+              djName: initialProfile.displayName,
+              title: 'Mi Gran Evento VIP',
+              theme: 'dark',
+              brandEnabled: false,
+              brandName: '',
+              brandLogo: ''
+            },
+            requests: {},
+            played_requests: {}
+          }
+        },
+        events_index: {
+          'default-event': {
+            id: 'default-event',
+            title: 'Mi Gran Evento VIP',
+            djName: initialProfile.displayName,
+            active: true
+          }
+        }
+      };
+      if (!dbData.events_registry) dbData.events_registry = {};
+      dbData.events_registry['default-event-' + uid] = {
+        ownerUid: uid,
+        title: 'Mi Gran Evento VIP',
+        djName: initialProfile.displayName
+      };
+      localStorage.setItem('mock_rtdb_v2', JSON.stringify(dbData));
+      
+      if (syncChannel) syncChannel.postMessage({ type: 'DB_UPDATE' });
+    } else {
+      // Guardar perfil en RTDB real
+      const profileRef = ref(database, `users/${uid}/profile`);
+      await set(profileRef, initialProfile);
+
+      // Crear evento inicial
+      const defaultSettingsRef = ref(database, `users/${uid}/events/default-event/settings`);
+      await set(defaultSettingsRef, {
+        djName: initialProfile.displayName,
+        title: 'Mi Gran Evento VIP',
+        theme: 'dark',
+        brandEnabled: false,
+        brandName: '',
+        brandLogo: ''
+      });
+
+      const defaultIndexRef = ref(database, `users/${uid}/events_index/default-event`);
+      await set(defaultIndexRef, {
+        id: 'default-event',
+        title: 'Mi Gran Evento VIP',
+        djName: initialProfile.displayName,
+        active: true
+      });
+
+      const registryRef = ref(database, `events_registry/default-event-${uid}`);
+      await set(registryRef, {
+        ownerUid: uid,
+        title: 'Mi Gran Evento VIP',
+        djName: initialProfile.displayName
+      });
+    }
+
+    return registeredUser;
+  };
+
+  const selectPlan = async (planName) => {
+    if (!activeUid) return;
+    const profileRef = ref(database, `users/${activeUid}/profile`);
+    
+    if (planName === 'pending_plan') {
+      await update(profileRef, {
+        selectedPlan: null,
+        subscriptionStatus: 'pending_plan'
+      });
+      return;
+    }
+
+    const planConfig = plansConfig?.[planName];
+    const price = planConfig ? parseFloat(planConfig.price) : 0;
+    
+    let updates = {
+      selectedPlan: planName
+    };
+    
+    if (price === 0 || planName === 'free') {
+      // El plan es gratuito o es el plan Demo, activarlo inmediatamente
+      const duration = planConfig ? parseInt(planConfig.duration, 10) || 0 : 0;
+      const durationUnit = planConfig ? planConfig.durationUnit || 'meses' : 'meses';
+      
+      let msToAdd = 0;
+      if (duration > 0) {
+        if (durationUnit === 'hours' || durationUnit === 'horas') {
+          msToAdd = duration * 60 * 60 * 1000;
+        } else if (durationUnit === 'days' || durationUnit === 'días') {
+          msToAdd = duration * 24 * 60 * 60 * 1000;
+        } else if (durationUnit === 'months' || durationUnit === 'meses') {
+          msToAdd = duration * 30 * 24 * 60 * 60 * 1000;
+        } else {
+          msToAdd = duration * 24 * 60 * 60 * 1000;
+        }
+      }
+      
+      updates.subscriptionStatus = 'free';
+      updates.activePlan = planName;
+      updates.activatedAt = Date.now();
+      updates.expiresAt = msToAdd > 0 ? Date.now() + msToAdd : 0;
+    } else {
+      // Plan de cobro -> mandar a pasarela
+      updates.subscriptionStatus = 'pending_payment';
+    }
+    
+    await update(profileRef, updates);
+  };
+
+  const submitPaymentProof = async (gateway, transactionId) => {
+    if (!activeUid) return;
+    
+    const profileRef = ref(database, `users/${activeUid}/profile`);
+    await update(profileRef, {
+      subscriptionStatus: 'pending_validation',
+      paymentDetails: {
+        gateway,
+        transactionId,
+        submittedAt: Date.now()
+      }
+    });
+
+    const pendingRef = ref(database, `pending_subscriptions/${activeUid}`);
+    await set(pendingRef, {
+      uid: activeUid,
+      email: userProfile?.email || user?.email || '',
+      phone: userProfile?.phone || '',
+      displayName: userProfile?.displayName || '',
+      selectedPlan: userProfile?.selectedPlan || 'premium',
+      gateway,
+      transactionId,
+      submittedAt: Date.now()
+    });
+  };
+
   const logoutDJ = async () => {
     setImpersonatingUid(null);
     return signOut(auth);
@@ -655,6 +975,38 @@ export const FirebaseProvider = ({ children }) => {
     }
 
     // 2. Si no existe, crear la nueva petición
+    let maxRequests = 5; // Fallback de seguridad por defecto para plan Demo
+    try {
+      const profileRef = ref(database, `users/${targetUid}/profile`);
+      const profileSnap = await get(profileRef);
+      const ownerProfile = profileSnap.exists() ? profileSnap.val() : null;
+      const planKey = ownerProfile?.selectedPlan || 'free';
+      
+      const planDetails = plansConfig?.[planKey] || DEFAULT_PLANS_CONFIG[planKey] || DEFAULT_PLANS_CONFIG.free;
+      maxRequests = planDetails && planDetails.maxRequests !== undefined 
+        ? parseInt(planDetails.maxRequests, 10) 
+        : (planKey === 'free' ? 5 : 0);
+    } catch (e) {
+      console.warn("Fallo al obtener plan del perfil, aplicando límite por defecto (5):", e);
+      maxRequests = 5;
+    }
+
+    if (maxRequests > 0) {
+      // Contar TODAS las peticiones: activas (en cola) + ya reproducidas
+      const requestsRefToCheck = ref(database, `users/${targetUid}/events/${targetEventId}/requests`);
+      const requestsSnap = await get(requestsRefToCheck);
+      const activeCount = requestsSnap.exists() ? Object.keys(requestsSnap.val()).length : 0;
+
+      const playedRefToCheck = ref(database, `users/${targetUid}/events/${targetEventId}/played_requests`);
+      const playedSnap = await get(playedRefToCheck);
+      const playedCount = playedSnap.exists() ? Object.keys(playedSnap.val()).length : 0;
+
+      const totalRequests = activeCount + playedCount;
+      if (totalRequests >= maxRequests) {
+        throw new Error('Has alcanzado el límite del plan activado');
+      }
+    }
+
     const requestsRef = ref(database, `users/${targetUid}/events/${targetEventId}/requests`);
     const newRequest = {
       title: cleanTitle || 'Tema no especificado',
@@ -1024,7 +1376,8 @@ export const FirebaseProvider = ({ children }) => {
     });
 
     // Actualizar registro público si existe
-    const registryRef = ref(database, `events_registry/${eventId}`);
+    const targetRegistryId = eventId === 'default-event' ? `default-event-${activeUid}` : eventId;
+    const registryRef = ref(database, `events_registry/${targetRegistryId}`);
     await update(registryRef, {
       title,
       djName: djName || 'DJ MasterMix',
@@ -1370,7 +1723,7 @@ export const FirebaseProvider = ({ children }) => {
   };
 
   // Editar datos de registro DJ (solo Admin Master)
-  const updateDjAccount = async (uid, newEmail, newDisplayName, newPassword) => {
+  const updateDjAccount = async (uid, newEmail, newDisplayName, newPassword, newPlan) => {
     if (!isAdminMaster) {
       throw new Error('Solo el Administrador Master puede editar cuentas.');
     }
@@ -1381,6 +1734,7 @@ export const FirebaseProvider = ({ children }) => {
         if (newEmail) allAccounts[accountIdx].email = newEmail;
         if (newDisplayName) allAccounts[accountIdx].displayName = newDisplayName;
         if (newPassword) allAccounts[accountIdx].password = newPassword;
+        if (newPlan) allAccounts[accountIdx].selectedPlan = newPlan;
         localStorage.setItem('mock_accounts', JSON.stringify(allAccounts));
       }
       
@@ -1391,6 +1745,42 @@ export const FirebaseProvider = ({ children }) => {
         if (newEmail) dbData.users[uid].profile.email = newEmail;
         if (newDisplayName) dbData.users[uid].profile.displayName = newDisplayName;
         if (newPassword) dbData.users[uid].profile.password = newPassword;
+        
+        if (newPlan) {
+          let duration = 30;
+          let durationUnit = 'days';
+          const planDetails = plansConfig?.[newPlan] || DEFAULT_PLANS_CONFIG[newPlan];
+          if (planDetails) {
+            duration = parseInt(planDetails.duration, 10) || 30;
+            durationUnit = planDetails.durationUnit || 'days';
+          }
+          let msToAdd = 0;
+          if (newPlan !== 'free') {
+            if (durationUnit === 'hours' || durationUnit === 'horas') {
+              msToAdd = duration * 60 * 60 * 1000;
+            } else if (durationUnit === 'days' || durationUnit === 'días') {
+              msToAdd = duration * 24 * 60 * 60 * 1000;
+            } else if (durationUnit === 'months' || durationUnit === 'meses') {
+              msToAdd = duration * 30 * 24 * 60 * 60 * 1000;
+            } else {
+              msToAdd = duration * 24 * 60 * 60 * 1000;
+            }
+          }
+          const expiresAt = msToAdd > 0 ? (Date.now() + msToAdd) : 0;
+
+          dbData.users[uid].profile.selectedPlan = newPlan;
+          dbData.users[uid].profile.subscriptionStatus = newPlan;
+          dbData.users[uid].profile.activePlan = newPlan;
+          dbData.users[uid].profile.activatedAt = newPlan === 'free' ? 0 : Date.now();
+          dbData.users[uid].profile.expiresAt = expiresAt;
+          
+          if (newPlan === 'free') {
+            dbData.users[uid].profile.paymentRejectedReason = null;
+            dbData.users[uid].profile.transactionId = null;
+            dbData.users[uid].profile.gateway = null;
+            dbData.users[uid].profile.submittedAt = null;
+          }
+        }
 
         // También actualizar el djName del evento por defecto si existe
         if (dbData.users[uid].events_index && dbData.users[uid].events_index['default-event']) {
@@ -1403,6 +1793,11 @@ export const FirebaseProvider = ({ children }) => {
           dbData.events_registry['default-event-' + uid].djName = newDisplayName;
         }
       }
+
+      if (dbData.pending_subscriptions && dbData.pending_subscriptions[uid]) {
+        delete dbData.pending_subscriptions[uid];
+      }
+
       localStorage.setItem('mock_rtdb_v2', JSON.stringify(dbData));
 
       // Sincronizar
@@ -1416,6 +1811,47 @@ export const FirebaseProvider = ({ children }) => {
     if (newEmail) updates.email = newEmail;
     if (newDisplayName) updates.displayName = newDisplayName;
     if (newPassword) updates.password = newPassword; // guardado para registro administrativo
+
+    if (newPlan) {
+      let duration = 30;
+      let durationUnit = 'days';
+      const planDetails = plansConfig?.[newPlan] || DEFAULT_PLANS_CONFIG[newPlan];
+      if (planDetails) {
+        duration = parseInt(planDetails.duration, 10) || 30;
+        durationUnit = planDetails.durationUnit || 'days';
+      }
+      let msToAdd = 0;
+      if (newPlan !== 'free') {
+        if (durationUnit === 'hours' || durationUnit === 'horas') {
+          msToAdd = duration * 60 * 60 * 1000;
+        } else if (durationUnit === 'days' || durationUnit === 'días') {
+          msToAdd = duration * 24 * 60 * 60 * 1000;
+        } else if (durationUnit === 'months' || durationUnit === 'meses') {
+          msToAdd = duration * 30 * 24 * 60 * 60 * 1000;
+        } else {
+          msToAdd = duration * 24 * 60 * 60 * 1000;
+        }
+      }
+      const expiresAt = msToAdd > 0 ? (Date.now() + msToAdd) : 0;
+
+      updates.selectedPlan = newPlan;
+      updates.subscriptionStatus = newPlan;
+      updates.activePlan = newPlan;
+      updates.activatedAt = newPlan === 'free' ? 0 : Date.now();
+      updates.expiresAt = expiresAt;
+
+      if (newPlan === 'free') {
+        updates.paymentRejectedReason = null;
+        updates.transactionId = null;
+        updates.gateway = null;
+        updates.submittedAt = null;
+      }
+
+      // Eliminar de solicitudes de suscripción pendientes
+      const pendingSubRef = ref(database, `pending_subscriptions/${uid}`);
+      await set(pendingSubRef, null);
+    }
+
     await update(profileRef, updates);
 
     // Actualizar también settings e index del default-event si es necesario
@@ -1444,9 +1880,19 @@ export const FirebaseProvider = ({ children }) => {
     }
   };
 
+  const updatePlansConfig = async (newPlansConfig) => {
+    if (!isAdminMaster) throw new Error("Acceso denegado: Solo el administrador master puede realizar esta acción.");
+    const plansRef = ref(database, 'config/plans');
+    await set(plansRef, newPlansConfig);
+  };
+
   return (
     <FirebaseContext.Provider value={{
+      plansConfig,
+      updatePlansConfig,
+      publicPaymentInfo,
       user,
+      userProfile,
       authLoading,
       isMock: isMockMode,
       isAdminMaster,
@@ -1461,6 +1907,9 @@ export const FirebaseProvider = ({ children }) => {
       allEventsData,
       allUsersData,
       loginDJ,
+      registerDJ,
+      selectPlan,
+      submitPaymentProof,
       logoutDJ,
       impersonateUser,
       stopImpersonating,

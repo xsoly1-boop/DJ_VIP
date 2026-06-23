@@ -3,9 +3,12 @@ import { FirebaseProvider, useFirebase } from './context/FirebaseContext';
 import PublicView from './views/PublicView';
 import LoginView from './views/LoginView';
 import DjDashboard from './views/DjDashboard';
+import AdminSubscriptions from './views/AdminSubscriptions';
+import PlanSelection from './views/PlanSelection';
+import PaymentView from './views/PaymentView';
 
 function AppContent() {
-  const { user, authLoading, changeEvent } = useFirebase();
+  const { user, userProfile, authLoading, changeEvent, isAdminMaster } = useFirebase();
 
   // Enrutar basado en parámetros de búsqueda de la URL (?event=nombre-evento)
   const queryParams = new URLSearchParams(window.location.search);
@@ -38,8 +41,26 @@ function AppContent() {
     return <PublicView />;
   }
 
-  // 2. Caso DJ: URL normal
+  // 2. Caso Admin Subscriptions
+  if (window.location.pathname === '/subscriptions' && user && isAdminMaster) {
+    return <AdminSubscriptions />;
+  }
+
+  // 3. Caso DJ: URL normal
   if (user) {
+    if (isAdminMaster) {
+      return <DjDashboard />;
+    }
+
+    const status = userProfile?.subscriptionStatus || 'pending_plan';
+    
+    if (status === 'pending_plan') {
+      return <PlanSelection />;
+    }
+    if (status === 'pending_payment' || status === 'pending_validation') {
+      return <PaymentView />;
+    }
+
     return <DjDashboard />;
   } else {
     return <LoginView />;

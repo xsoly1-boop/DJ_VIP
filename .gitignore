@@ -39,3 +39,4 @@ release/
 *.keystore
 *.jks
 .vercel
+serviceAccountKey.json
