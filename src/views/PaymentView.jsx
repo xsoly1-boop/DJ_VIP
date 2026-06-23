@@ -11,7 +11,7 @@ export default function PaymentView() {
 
   const planName = userProfile?.selectedPlan || 'premium';
   const planDetails = plansConfig?.[planName];
-  const price = planDetails ? `${planDetails.price} ${planDetails.currency || 'USD'}` : (planName === 'vip' ? '19.90 USD' : '9.90 USD');
+  const price = planDetails ? `$${planDetails.price} ${planDetails.currency || 'MXN'}` : (planName === 'vip' ? '$549 MXN' : '$299 MXN');
 
   const handleBackToPlans = async () => {
     try {
@@ -171,7 +171,7 @@ export default function PaymentView() {
                   }}
                 >
                   <div style={{ color: '#003087', fontSize: '1.1rem', fontWeight: '800' }}>PayPal</div>
-                  <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>Paga en USD</span>
+                  <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>Paga en MXN</span>
                 </button>
 
                 <button

@@ -41,7 +41,7 @@ const DEFAULT_PLANS_CONFIG = {
     name: "Plan Demo",
     price: "0",
     billing: "gratis",
-    currency: "USD",
+    currency: "MXN",
     description: "Prueba las funciones básicas de la plataforma.",
     maxRequests: 35,
     duration: 0,
@@ -59,9 +59,9 @@ const DEFAULT_PLANS_CONFIG = {
   },
   premium: {
     name: "Plan Premium",
-    price: "9.90",
+    price: "299",
     billing: "mes",
-    currency: "USD",
+    currency: "MXN",
     description: "Ideal para DJs profesionales que tocan en vivo.",
     maxRequests: 80,
     duration: 1,
@@ -80,9 +80,9 @@ const DEFAULT_PLANS_CONFIG = {
   },
   vip: {
     name: "Plan VIP",
-    price: "19.90",
+    price: "549",
     billing: "mes",
-    currency: "USD",
+    currency: "MXN",
     description: "Para agencias, antros y DJs de eventos de gran escala.",
     maxRequests: 0,
     duration: 1,
@@ -99,9 +99,9 @@ const DEFAULT_PLANS_CONFIG = {
   },
   eventual: {
     name: "Eventual",
-    price: "4.90",
+    price: "99",
     billing: "24 horas",
-    currency: "USD",
+    currency: "MXN",
     description: "Acceso ilimitado por un evento o día completo.",
     maxRequests: 0,
     duration: 24,
@@ -902,6 +902,39 @@ export const FirebaseProvider = ({ children }) => {
       return;
     }
 
+    // Prevenir downgrade del plan contratado
+    const currentActivePlan = userProfile?.activePlan || 'free';
+    const planWeights = {
+      'free': 0,
+      'eventual': 1,
+      'premium': 2,
+      'vip': 3
+    };
+
+    const selectedWeight = planWeights[planName] !== undefined ? planWeights[planName] : -1;
+    const currentWeight = planWeights[currentActivePlan] !== undefined ? planWeights[currentActivePlan] : 0;
+
+    // REGLA ESTRICTA: Si la cuenta tiene una suscripción de pago (premium, vip, eventual),
+    // está estrictamente prohibido cambiarse al plan Demo (free).
+    const isCurrentPaid = currentActivePlan !== 'free';
+    if (isCurrentPaid && planName === 'free') {
+      await update(profileRef, {
+        selectedPlan: currentActivePlan,
+        subscriptionStatus: currentActivePlan
+      });
+      return;
+    }
+
+    if (selectedWeight <= currentWeight) {
+      // Si el plan seleccionado es menor o igual al plan activo actual,
+      // no permitimos el cambio/downgrade y redirigimos al panel del DJ
+      await update(profileRef, {
+        selectedPlan: currentActivePlan,
+        subscriptionStatus: currentActivePlan
+      });
+      return;
+    }
+
     const planConfig = plansConfig?.[planName];
     const price = planConfig ? parseFloat(planConfig.price) : 0;
     
@@ -1077,11 +1110,13 @@ export const FirebaseProvider = ({ children }) => {
 
     // 2. Si no existe, crear la nueva petición
     let maxRequests = 35; // Fallback de seguridad por defecto para plan Demo
+    let strictLimitEnabled = true;
     try {
       const profileRef = ref(database, `users/${targetUid}/profile`);
       const profileSnap = await get(profileRef);
       const ownerProfile = profileSnap.exists() ? profileSnap.val() : null;
-      const planKey = ownerProfile?.selectedPlan || 'free';
+      const planKey = ownerProfile?.activePlan || ownerProfile?.selectedPlan || 'free';
+      strictLimitEnabled = ownerProfile?.strictLimitEnabled !== false;
 
       if (planKey === 'free') {
         maxRequests = ownerProfile?.demoLimit !== undefined ? parseInt(ownerProfile.demoLimit, 10) : 35;
@@ -1096,7 +1131,7 @@ export const FirebaseProvider = ({ children }) => {
       maxRequests = 35;
     }
 
-    if (maxRequests > 0) {
+    if (strictLimitEnabled && maxRequests > 0) {
       // Contar TODAS las peticiones sin importar estado:
       // - requests: pendiente, en reproduccion, aceptada, rechazada
       // - played_requests: ya reproducidas / archivadas
@@ -1110,7 +1145,7 @@ export const FirebaseProvider = ({ children }) => {
 
       const totalRequests = activeCount + playedCount;
       if (totalRequests >= maxRequests) {
-        throw new Error('El plan contratado por el DJ ha alcanzado su límite');
+        throw new Error('El plan contratado por el DJ ha alcanzado su límite de peticiones.');
       }
     }
 
@@ -1830,11 +1865,12 @@ export const FirebaseProvider = ({ children }) => {
   };
 
   // Editar datos de registro DJ (solo Admin Master)
-  const updateDjAccount = async (uid, newEmail, newDisplayName, newPassword, newPlan, demoLimit) => {
+  const updateDjAccount = async (uid, newEmail, newDisplayName, newPassword, newPlan, demoLimit, strictLimitEnabled) => {
     if (!isAdminMaster) {
       throw new Error('Solo el Administrador Master puede editar cuentas.');
     }
     if (isMockMode) {
+      const dbData = JSON.parse(localStorage.getItem('mock_rtdb_v2') || '{}');
       const allAccounts = JSON.parse(localStorage.getItem('mock_accounts') || '[]');
       const accountIdx = allAccounts.findIndex(a => a.uid === uid);
       if (accountIdx !== -1) {
@@ -1843,17 +1879,18 @@ export const FirebaseProvider = ({ children }) => {
         if (newPassword) allAccounts[accountIdx].password = newPassword;
         if (newPlan) allAccounts[accountIdx].selectedPlan = newPlan;
         if (demoLimit !== undefined) allAccounts[accountIdx].demoLimit = demoLimit;
+        if (strictLimitEnabled !== undefined) allAccounts[accountIdx].strictLimitEnabled = strictLimitEnabled;
         localStorage.setItem('mock_accounts', JSON.stringify(allAccounts));
       }
       
       // Actualizar también en RTDB mock
-      const dbData = JSON.parse(localStorage.getItem('mock_rtdb_v2') || '{}');
       if (dbData.users && dbData.users[uid]) {
         if (!dbData.users[uid].profile) dbData.users[uid].profile = {};
         if (newEmail) dbData.users[uid].profile.email = newEmail;
         if (newDisplayName) dbData.users[uid].profile.displayName = newDisplayName;
         if (newPassword) dbData.users[uid].profile.password = newPassword;
         if (demoLimit !== undefined) dbData.users[uid].profile.demoLimit = demoLimit;
+        if (strictLimitEnabled !== undefined) dbData.users[uid].profile.strictLimitEnabled = strictLimitEnabled;
         
         if (newPlan) {
           let duration = 30;
@@ -1963,6 +2000,10 @@ export const FirebaseProvider = ({ children }) => {
 
     if (demoLimit !== undefined) {
       updates.demoLimit = demoLimit;
+    }
+
+    if (strictLimitEnabled !== undefined) {
+      updates.strictLimitEnabled = strictLimitEnabled;
     }
 
     await update(profileRef, updates);

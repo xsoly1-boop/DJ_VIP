@@ -104,7 +104,7 @@ export default function PlanSelection() {
                 </h3>
                 <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem', marginBottom: '20px' }}>{plan.config.description}</p>
                 <div style={{ fontSize: '2.0rem', fontWeight: 'bold', marginBottom: '25px', color: 'var(--primary-color)' }}>
-                  {plan.config.price === "0" ? "Gratis" : `${plan.config.price} ${plan.config.currency || 'USD'}`} <span style={{ fontSize: '0.9rem', color: 'var(--text-muted)', fontWeight: 'normal' }}>/ {plan.config.billing}</span>
+                  {plan.config.price === "0" ? "Gratis" : `$${plan.config.price} ${plan.config.currency || 'MXN'}`} <span style={{ fontSize: '0.9rem', color: 'var(--text-muted)', fontWeight: 'normal' }}>/ {plan.config.billing}</span>
                 </div>
                 
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>

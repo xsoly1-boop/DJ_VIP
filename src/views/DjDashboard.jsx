@@ -109,6 +109,7 @@ export default function DjDashboard() {
   const [editDjPassword, setEditDjPassword] = useState('');
   const [editDjPlan, setEditDjPlan] = useState('free');
   const [editDjDemoLimit, setEditDjDemoLimit] = useState(35);
+  const [editDjStrictLimit, setEditDjStrictLimit] = useState(true);
   const [editDjLoading, setEditDjLoading] = useState(false);
 
   // Confirmación de borrado de evento
@@ -243,7 +244,7 @@ export default function DjDashboard() {
         name,
         price: "0",
         billing: "mes",
-        currency: "USD",
+        currency: "MXN",
         description: "Nuevo plan personalizado.",
         maxRequests: 35,
         duration: 1,
@@ -1171,7 +1172,7 @@ export default function DjDashboard() {
     }
     setEditDjLoading(true);
     try {
-      await updateDjAccount(uid, editDjEmail.trim(), editDjDisplayName.trim(), editDjPassword.trim() || null, editDjPlan, editDjPlan === 'free' ? editDjDemoLimit : null);
+      await updateDjAccount(uid, editDjEmail.trim(), editDjDisplayName.trim(), editDjPassword.trim() || null, editDjPlan, editDjPlan === 'free' ? editDjDemoLimit : null, editDjPlan === 'free' || editDjPlan === 'premium' ? editDjStrictLimit : null);
       showToast('✅ Datos de registro y plan actualizados correctamente');
       setEditingDjUid(null);
       setEditDjPassword('');
@@ -1407,8 +1408,9 @@ export default function DjDashboard() {
     const currentPlan = uid === 'uid-admin-master' ? 'vip' : (userData?.profile?.selectedPlan || userData?.profile?.subscriptionStatus || 'free');
     const expiresAt = userData?.profile?.expiresAt || 0;
     const demoLimit = userData?.profile?.demoLimit || 5;
+    const strictLimitEnabled = userData?.profile?.strictLimitEnabled !== false;
     
-    return { uid, eventsCount, requestsCount, djName, eventTitles, email, currentPlan, expiresAt, demoLimit };
+    return { uid, eventsCount, requestsCount, djName, eventTitles, email, currentPlan, expiresAt, demoLimit, strictLimitEnabled };
   });
 
   return (
@@ -4068,10 +4070,10 @@ export default function DjDashboard() {
                           />
                         </div>
                         <div className="form-group" style={{ marginBottom: 0 }}>
-                          <label className="form-label">Moneda (ej. USD, MXN)</label>
+                          <label className="form-label">Moneda (ej. MXN, USD)</label>
                           <input
                             type="text" className="input-field"
-                            placeholder="USD"
+                            placeholder="MXN"
                             value={tempPlansConfig[editingPlanTab]?.currency || ''}
                             onChange={(e) => setTempPlansConfig({
                               ...tempPlansConfig,
@@ -4338,7 +4340,7 @@ export default function DjDashboard() {
                 </div>
               ) : (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                  {adminUsersList.map(({ uid, eventsCount, requestsCount, djName, eventTitles, email, currentPlan, expiresAt, demoLimit }) => (
+                  {adminUsersList.map(({ uid, eventsCount, requestsCount, djName, eventTitles, email, currentPlan, expiresAt, demoLimit, strictLimitEnabled }) => (
                     <div key={uid} className="glass-panel animate-slide-in" style={{
                       padding: '20px 24px', borderRadius: 'var(--radius-md)',
                       display: 'flex', flexDirection: 'column', gap: '14px',
@@ -4404,6 +4406,20 @@ export default function DjDashboard() {
                                     </select>
                                   </div>
                                 )}
+                                {(editDjPlan === 'free' || editDjPlan === 'premium') && (
+                                  <div className="form-group" style={{ marginBottom: 0, display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                                    <label className="form-label" style={{ fontSize: '0.7rem' }}>Restricción Estricta</label>
+                                    <label style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.8rem', cursor: 'pointer', height: '28px', color: 'var(--text-secondary)' }}>
+                                      <input
+                                        type="checkbox"
+                                        checked={editDjStrictLimit}
+                                        onChange={(e) => setEditDjStrictLimit(e.target.checked)}
+                                        style={{ width: '16px', height: '16px', cursor: 'pointer' }}
+                                      />
+                                      <span>Bloquear si supera límite</span>
+                                    </label>
+                                  </div>
+                                )}
                                 <div className="form-group" style={{ marginBottom: 0 }}>
                                   <label className="form-label" style={{ fontSize: '0.7rem' }}>Nueva Contraseña (Opcional)</label>
                                   <input
@@ -4461,6 +4477,19 @@ export default function DjDashboard() {
                                     Plan: {plansConfig?.[currentPlan]?.name || currentPlan}
                                     {currentPlan === 'free' && ` (Límite: ${demoLimit || 5})`}
                                   </span>
+                                  {(currentPlan === 'free' || currentPlan === 'premium') && (
+                                    <span style={{
+                                      background: strictLimitEnabled ? 'rgba(239,68,68,0.12)' : 'rgba(16,185,129,0.12)',
+                                      color: strictLimitEnabled ? 'var(--danger-color)' : 'var(--success-color)',
+                                      border: strictLimitEnabled ? '1px solid rgba(239,68,68,0.25)' : '1px solid rgba(16,185,129,0.25)',
+                                      padding: '2px 8px',
+                                      borderRadius: '4px',
+                                      fontSize: '0.72rem',
+                                      fontWeight: '600'
+                                    }}>
+                                      {strictLimitEnabled ? '🚫 Límite Estricto' : '🔓 Límite Permisivo'}
+                                    </span>
+                                  )}
                                   {expiresAt > 0 && (
                                     <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>
                                       (Expira: {new Date(expiresAt).toLocaleString()})
@@ -4492,6 +4521,7 @@ export default function DjDashboard() {
                                   setEditDjPassword('');
                                   setEditDjPlan(currentPlan || 'free');
                                   setEditDjDemoLimit(demoLimit || 5);
+                                  setEditDjStrictLimit(strictLimitEnabled !== false);
                                 }}
                                 className="btn btn-secondary"
                                 style={{ padding: '8px 12px', fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: '6px', border: '1px solid rgba(255,255,255,0.1)' }}
