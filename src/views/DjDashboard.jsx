@@ -1444,9 +1444,10 @@ export default function DjDashboard() {
         <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
           <div className="flex-center animate-pulse-glow" style={{
             width: '48px', height: '48px', borderRadius: 'var(--radius-full)',
-            background: 'linear-gradient(135deg, var(--primary-color), var(--secondary-color))'
+            background: 'linear-gradient(135deg, var(--primary-color), var(--secondary-color))',
+            overflow: 'hidden'
           }}>
-            <Music size={22} color="#fff" />
+            <img src="/logo_vinyl.png" alt="DJ Panel Logo" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
           </div>
           <div>
             <h1 style={{ fontSize: '1.5rem', display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>

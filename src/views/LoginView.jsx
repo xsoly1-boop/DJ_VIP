@@ -63,9 +63,10 @@ export default function LoginView() {
           margin: '0 auto 20px',
           borderRadius: 'var(--radius-full)',
           background: 'linear-gradient(135deg, var(--primary-color), var(--secondary-color))',
-          boxShadow: '0 0 20px var(--primary-glow)'
+          boxShadow: '0 0 20px var(--primary-glow)',
+          overflow: 'hidden'
         }}>
-          <Music size={30} color="#fff" />
+          <img src="/logo_vinyl.png" alt="DJ Connect Logo" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
         </div>
 
         <h1 className="glow-text-primary" style={{ fontSize: '1.75rem', marginBottom: '8px' }}>
