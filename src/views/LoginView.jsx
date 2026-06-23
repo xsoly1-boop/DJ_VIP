@@ -66,7 +66,7 @@ export default function LoginView() {
           boxShadow: '0 0 20px var(--primary-glow)',
           overflow: 'hidden'
         }}>
-          <img src="/logo_vinyl.png" alt="DJ Connect Logo" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+          <img src="./logo_vinyl.png" alt="DJ Connect Logo" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
         </div>
 
         <h1 className="glow-text-primary" style={{ fontSize: '1.75rem', marginBottom: '8px' }}>

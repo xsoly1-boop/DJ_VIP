@@ -525,7 +525,7 @@ export default function PublicView() {
             boxShadow: '0 0 15px var(--primary-glow)',
             overflow: 'hidden'
           }}>
-            <img src="/logo_vinyl.png" alt="DJ a la Carta Logo" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+            <img src="./logo_vinyl.png" alt="DJ a la Carta Logo" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
           </div>
         )}
         

@@ -1447,7 +1447,7 @@ export default function DjDashboard() {
             background: 'linear-gradient(135deg, var(--primary-color), var(--secondary-color))',
             overflow: 'hidden'
           }}>
-            <img src="/logo_vinyl.png" alt="DJ Panel Logo" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+            <img src="./logo_vinyl.png" alt="DJ Panel Logo" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
           </div>
           <div>
             <h1 style={{ fontSize: '1.5rem', display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
