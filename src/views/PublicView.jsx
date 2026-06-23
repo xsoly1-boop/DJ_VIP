@@ -285,8 +285,9 @@ export default function PublicView() {
     if (!userOrEmail) return;
     
     let url = '';
+    const currency = eventSettings.tipCurrency || 'MXN';
     if (userOrEmail.includes('@')) {
-      url = `https://www.paypal.com/cgi-bin/webscr?cmd=_xclick&business=${encodeURIComponent(userOrEmail)}&item_name=Propina%20al%20DJ&currency_code=USD`;
+      url = `https://www.paypal.com/cgi-bin/webscr?cmd=_xclick&business=${encodeURIComponent(userOrEmail)}&item_name=Propina%20al%20DJ&currency_code=${currency}`;
     } else {
       url = `https://paypal.me/${userOrEmail}`;
     }

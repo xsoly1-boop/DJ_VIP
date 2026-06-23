@@ -76,6 +76,7 @@ export default function DjDashboard() {
   const [paypalUsernameInput, setPaypalUsernameInput] = useState(eventSettings.paypalUsername || '');
   const [mercadopagoLinkInput, setMercadopagoLinkInput] = useState(eventSettings.mercadopagoLink || '');
   const [clabeInput, setClabeInput] = useState(eventSettings.bankClabe || '');
+  const [tipCurrencyInput, setTipCurrencyInput] = useState(eventSettings.tipCurrency || 'MXN');
   const [dedicationsEnabledInput, setDedicationsEnabledInput] = useState(eventSettings.dedicationsEnabled || false);
   const [customGenresInput, setCustomGenresInput] = useState(eventSettings.customGenres || '');
 
@@ -660,6 +661,7 @@ export default function DjDashboard() {
     setPaypalUsernameInput(eventSettings.paypalUsername || '');
     setMercadopagoLinkInput(eventSettings.mercadopagoLink || '');
     setClabeInput(eventSettings.bankClabe || '');
+    setTipCurrencyInput(eventSettings.tipCurrency || 'MXN');
     setDedicationsEnabledInput(eventSettings.dedicationsEnabled || false);
     setCustomGenresInput(eventSettings.customGenres || '');
     setPromoEnabledInput(eventSettings.promoEnabled || false);
@@ -962,6 +964,7 @@ export default function DjDashboard() {
         paypalUsername: paypalUsernameInput.trim(),
         mercadopagoLink: mercadopagoLinkInput.trim(),
         bankClabe: clabeInput.trim(),
+        tipCurrency: tipCurrencyInput,
         dedicationsEnabled: dedicationsEnabledInput,
         customGenres: customGenresInput.trim()
       });
@@ -987,7 +990,8 @@ export default function DjDashboard() {
         tipsEnabled: tipsEnabledInput,
         paypalUsername: paypalUsernameInput.trim(),
         mercadopagoLink: mercadopagoLinkInput.trim(),
-        bankClabe: clabeInput.trim()
+        bankClabe: clabeInput.trim(),
+        tipCurrency: tipCurrencyInput
       });
       showToast("💾 Configuración de propinas guardada");
     } catch (err) {
@@ -2423,6 +2427,7 @@ export default function DjDashboard() {
                     setPaypalUsernameInput(eventSettings.paypalUsername || '');
                     setMercadopagoLinkInput(eventSettings.mercadopagoLink || '');
                     setClabeInput(eventSettings.bankClabe || '');
+                    setTipCurrencyInput(eventSettings.tipCurrency || 'MXN');
                     setDedicationsEnabledInput(eventSettings.dedicationsEnabled || false);
                     showToast("Revertido a cambios guardados");
                   }}>Descartar Cambios</button>
@@ -3053,6 +3058,25 @@ export default function DjDashboard() {
                             onChange={(e) => setClabeInput(e.target.value)}
                             style={{ fontSize: '0.8rem', padding: '6px 10px', height: '32px' }}
                           />
+                        </div>
+                        <div className="form-group" style={{ marginBottom: '8px' }}>
+                          <label className="form-label" style={{ fontSize: '0.7rem' }}>Moneda para Propinas (Opcional)</label>
+                          <select
+                            className="input-field"
+                            value={tipCurrencyInput}
+                            onChange={(e) => setTipCurrencyInput(e.target.value)}
+                            style={{ fontSize: '0.8rem', padding: '0 10px', height: '32px', cursor: 'pointer', display: 'block', width: '100%', background: 'var(--surface-color)', border: '1px solid var(--surface-border)', borderRadius: 'var(--radius-sm)' }}
+                          >
+                            <option value="MXN">MXN (Peso Mexicano - Predeterminado)</option>
+                            <option value="USD">USD (Dólar Estadounidense)</option>
+                            <option value="EUR">EUR (Euro)</option>
+                            <option value="GBP">GBP (Libra Esterlina)</option>
+                            <option value="CAD">CAD (Dólar Canadiense)</option>
+                            <option value="ARS">ARS (Peso Argentino)</option>
+                            <option value="COP">COP (Peso Colombiano)</option>
+                            <option value="CLP">CLP (Peso Chileno)</option>
+                            <option value="PEN">PEN (Sol Peruano)</option>
+                          </select>
                         </div>
                         <button type="submit" className="btn btn-primary" style={{ padding: '6px 10px', fontSize: '0.75rem', width: '100%', height: '32px', display: 'flex', justifyContent: 'center' }}>
                           Guardar Propinas

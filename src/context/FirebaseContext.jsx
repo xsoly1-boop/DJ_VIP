@@ -655,6 +655,7 @@ export const FirebaseProvider = ({ children }) => {
           tipsEnabled: false,
           paypalUsername: '',
           mercadopagoLink: '',
+          tipCurrency: 'MXN',
           dedicationsEnabled: false
         });
         document.documentElement.style.setProperty('--bg-color', '#060609');
