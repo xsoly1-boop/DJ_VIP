@@ -64,6 +64,7 @@
     "mac": {
       "category": "public.app-category.entertainment",
       "minimumSystemVersion": "10.13",
+      "icon": "build-resources/icon.png",
       "target": [
         "dmg"
       ],
@@ -100,7 +101,8 @@
           "arch": ["x64"]
         }
       ],
-      "icon": "build-resources/icon.ico"
+      "icon": "build-resources/icon.ico",
+      "publisherName": "DJ a la Carta"
     },
     "nsis": {
       "oneClick": false,
