@@ -108,6 +108,7 @@ export default function DjDashboard() {
   const [editDjEmail, setEditDjEmail] = useState('');
   const [editDjPassword, setEditDjPassword] = useState('');
   const [editDjPlan, setEditDjPlan] = useState('free');
+  const [editDjDemoLimit, setEditDjDemoLimit] = useState(5);
   const [editDjLoading, setEditDjLoading] = useState(false);
 
   // Confirmación de borrado de evento
@@ -1164,7 +1165,7 @@ export default function DjDashboard() {
     }
     setEditDjLoading(true);
     try {
-      await updateDjAccount(uid, editDjEmail.trim(), editDjDisplayName.trim(), editDjPassword.trim() || null, editDjPlan);
+      await updateDjAccount(uid, editDjEmail.trim(), editDjDisplayName.trim(), editDjPassword.trim() || null, editDjPlan, editDjPlan === 'free' ? editDjDemoLimit : null);
       showToast('✅ Datos de registro y plan actualizados correctamente');
       setEditingDjUid(null);
       setEditDjPassword('');
@@ -1399,8 +1400,9 @@ export default function DjDashboard() {
     
     const currentPlan = userData?.profile?.selectedPlan || userData?.profile?.subscriptionStatus || 'free';
     const expiresAt = userData?.profile?.expiresAt || 0;
+    const demoLimit = userData?.profile?.demoLimit || 5;
     
-    return { uid, eventsCount, requestsCount, djName, eventTitles, email, currentPlan, expiresAt };
+    return { uid, eventsCount, requestsCount, djName, eventTitles, email, currentPlan, expiresAt, demoLimit };
   });
 
   return (
@@ -1506,6 +1508,7 @@ export default function DjDashboard() {
             </p>
             <p style={{ fontSize: '0.75rem', color: '#facc15', fontWeight: '600', marginTop: '2px', letterSpacing: '0.5px' }}>
               📋 Plan activo: {plansConfig?.[(userProfile?.selectedPlan || 'free')]?.name || 'Plan Demo'}
+              {(!userProfile?.selectedPlan || userProfile?.selectedPlan === 'free') && ` (Límite: ${userProfile?.demoLimit || 5} peticiones)`}
             </p>
           </div>
         </div>
@@ -4330,6 +4333,24 @@ export default function DjDashboard() {
                                     ))}
                                   </select>
                                 </div>
+                                {editDjPlan === 'free' && (
+                                  <div className="form-group" style={{ marginBottom: 0 }}>
+                                    <label className="form-label" style={{ fontSize: '0.7rem' }}>Límite de Peticiones (Demo)</label>
+                                    <select
+                                      className="input-field"
+                                      value={editDjDemoLimit}
+                                      onChange={(e) => setEditDjDemoLimit(parseInt(e.target.value, 10))}
+                                      style={{ padding: '4px 8px', fontSize: '0.8rem', height: '28px', background: 'var(--surface-color)', color: '#fff', border: '1px solid rgba(255,255,255,0.15)', cursor: 'pointer' }}
+                                    >
+                                      <option value={5}>5 Peticiones (Default)</option>
+                                      <option value={15}>15 Peticiones</option>
+                                      <option value={20}>20 Peticiones</option>
+                                      <option value={30}>30 Peticiones</option>
+                                      <option value={35}>35 Peticiones</option>
+                                      <option value={40}>40 Peticiones</option>
+                                    </select>
+                                  </div>
+                                )}
                                 <div className="form-group" style={{ marginBottom: 0 }}>
                                   <label className="form-label" style={{ fontSize: '0.7rem' }}>Nueva Contraseña (Opcional)</label>
                                   <input
@@ -4385,6 +4406,7 @@ export default function DjDashboard() {
                                     textTransform: 'uppercase'
                                   }}>
                                     Plan: {plansConfig?.[currentPlan]?.name || currentPlan}
+                                    {currentPlan === 'free' && ` (Límite: ${demoLimit || 5})`}
                                   </span>
                                   {expiresAt > 0 && (
                                     <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>
@@ -4416,6 +4438,7 @@ export default function DjDashboard() {
                                   setEditDjEmail(email);
                                   setEditDjPassword('');
                                   setEditDjPlan(currentPlan || 'free');
+                                  setEditDjDemoLimit(demoLimit || 5);
                                 }}
                                 className="btn btn-secondary"
                                 style={{ padding: '8px 12px', fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: '6px', border: '1px solid rgba(255,255,255,0.1)' }}

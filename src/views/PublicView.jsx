@@ -65,6 +65,7 @@ export default function PublicView() {
   // Estados de confirmación de duplicados
   const [showConfirmDuplicateModal, setShowConfirmDuplicateModal] = useState(false);
   const [showLimitModal, setShowLimitModal] = useState(false);
+  const [limitModalMessage, setLimitModalMessage] = useState('');
   const [pendingDuplicateRequest, setPendingDuplicateRequest] = useState(null);
 
   // Géneros aprendidos dinámicamente del historial de peticiones y autocompletado
@@ -362,7 +363,8 @@ export default function PublicView() {
       }, 8000);
     } catch (err) {
       console.error(err);
-      if (err.message && err.message.includes('Has alcanzado el límite del plan activado')) {
+      if (err.message && (err.message.includes('límite') || err.message.includes('limite') || err.message.includes('plan activado'))) {
+        setLimitModalMessage(err.message);
         setShowLimitModal(true);
       } else {
         showToast(err.message || 'Error al enviar la petición. Inténtalo de nuevo.');
@@ -1531,7 +1533,7 @@ export default function PublicView() {
                 Límite de Peticiones
               </h3>
               <p style={{ fontSize: '0.95rem', color: 'var(--text-secondary)', lineHeight: '1.5' }}>
-                Has alcanzado el límite del plan activado
+                {limitModalMessage || 'Has alcanzado el límite del plan activado'}
               </p>
             </div>
 

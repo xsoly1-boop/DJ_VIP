@@ -1061,10 +1061,14 @@ export const FirebaseProvider = ({ children }) => {
       const ownerProfile = profileSnap.exists() ? profileSnap.val() : null;
       const planKey = ownerProfile?.selectedPlan || 'free';
       
-      const planDetails = plansConfig?.[planKey] || DEFAULT_PLANS_CONFIG[planKey] || DEFAULT_PLANS_CONFIG.free;
-      maxRequests = planDetails && planDetails.maxRequests !== undefined 
-        ? parseInt(planDetails.maxRequests, 10) 
-        : (planKey === 'free' ? 5 : 0);
+      if (planKey === 'free') {
+        maxRequests = ownerProfile?.demoLimit !== undefined ? parseInt(ownerProfile.demoLimit, 10) : 5;
+      } else {
+        const planDetails = plansConfig?.[planKey] || DEFAULT_PLANS_CONFIG[planKey] || DEFAULT_PLANS_CONFIG.free;
+        maxRequests = planDetails && planDetails.maxRequests !== undefined 
+          ? parseInt(planDetails.maxRequests, 10) 
+          : 0;
+      }
     } catch (e) {
       console.warn("Fallo al obtener plan del perfil, aplicando límite por defecto (5):", e);
       maxRequests = 5;
@@ -1082,7 +1086,7 @@ export const FirebaseProvider = ({ children }) => {
 
       const totalRequests = activeCount + playedCount;
       if (totalRequests >= maxRequests) {
-        throw new Error('Has alcanzado el límite del plan activado');
+        throw new Error('El plan contratado por el DJ ha alcanzado su límite');
       }
     }
 
@@ -1802,7 +1806,7 @@ export const FirebaseProvider = ({ children }) => {
   };
 
   // Editar datos de registro DJ (solo Admin Master)
-  const updateDjAccount = async (uid, newEmail, newDisplayName, newPassword, newPlan) => {
+  const updateDjAccount = async (uid, newEmail, newDisplayName, newPassword, newPlan, demoLimit) => {
     if (!isAdminMaster) {
       throw new Error('Solo el Administrador Master puede editar cuentas.');
     }
@@ -1814,6 +1818,7 @@ export const FirebaseProvider = ({ children }) => {
         if (newDisplayName) allAccounts[accountIdx].displayName = newDisplayName;
         if (newPassword) allAccounts[accountIdx].password = newPassword;
         if (newPlan) allAccounts[accountIdx].selectedPlan = newPlan;
+        if (demoLimit !== undefined) allAccounts[accountIdx].demoLimit = demoLimit;
         localStorage.setItem('mock_accounts', JSON.stringify(allAccounts));
       }
       
@@ -1824,6 +1829,7 @@ export const FirebaseProvider = ({ children }) => {
         if (newEmail) dbData.users[uid].profile.email = newEmail;
         if (newDisplayName) dbData.users[uid].profile.displayName = newDisplayName;
         if (newPassword) dbData.users[uid].profile.password = newPassword;
+        if (demoLimit !== undefined) dbData.users[uid].profile.demoLimit = demoLimit;
         
         if (newPlan) {
           let duration = 30;
@@ -1929,6 +1935,10 @@ export const FirebaseProvider = ({ children }) => {
       // Eliminar de solicitudes de suscripción pendientes
       const pendingSubRef = ref(database, `pending_subscriptions/${uid}`);
       await set(pendingSubRef, null);
+    }
+
+    if (demoLimit !== undefined) {
+      updates.demoLimit = demoLimit;
     }
 
     await update(profileRef, updates);
