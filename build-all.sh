@@ -205,9 +205,9 @@ MAC_ARM_EXIT=$?
 set -e
 
 if [ $MAC_ARM_EXIT -eq 0 ]; then
-    DMG_ARM=$(find dist-desktop -name "*arm64*.dmg" 2>/dev/null | head -1)
+    DMG_ARM=$(find dist-desktop -maxdepth 1 -name "*arm64*.dmg" 2>/dev/null | head -1)
     if [ -z "$DMG_ARM" ]; then
-        DMG_ARM=$(find dist-desktop -name "*.dmg" 2>/dev/null | head -1)
+        DMG_ARM=$(find dist-desktop -maxdepth 1 -name "*.dmg" 2>/dev/null | head -1)
     fi
     if [ -n "$DMG_ARM" ]; then
         DMG_ARM_DEST="${OUTPUT_DIR}/DJ-Panel-v${VERSION}-macOS-Silicon.dmg"
@@ -240,9 +240,9 @@ MAC_UNI_EXIT=$?
 set -e
 
 if [ $MAC_UNI_EXIT -eq 0 ]; then
-    DMG_UNI=$(find dist-desktop -name "*universal*.dmg" 2>/dev/null | head -1)
+    DMG_UNI=$(find dist-desktop -maxdepth 1 -name "*universal*.dmg" 2>/dev/null | head -1)
     if [ -z "$DMG_UNI" ]; then
-        DMG_UNI=$(find dist-desktop -name "*.dmg" 2>/dev/null | head -1)
+        DMG_UNI=$(find dist-desktop -maxdepth 1 -name "*.dmg" 2>/dev/null | head -1)
     fi
     if [ -n "$DMG_UNI" ]; then
         DMG_UNI_DEST="${OUTPUT_DIR}/DJ-Panel-v${VERSION}-macOS-Universal.dmg"
@@ -274,7 +274,7 @@ MAC_X64_EXIT=$?
 set -e
 
 if [ $MAC_X64_EXIT -eq 0 ]; then
-    DMG_X64=$(find dist-desktop -name "*.dmg" 2>/dev/null | head -1)
+    DMG_X64=$(find dist-desktop -maxdepth 1 -name "*.dmg" 2>/dev/null | head -1)
     if [ -n "$DMG_X64" ]; then
         DMG_X64_DEST="${OUTPUT_DIR}/DJ-Panel-v${VERSION}-macOS-10.14-Intel.dmg"
         cp "$DMG_X64" "$DMG_X64_DEST"
@@ -306,7 +306,7 @@ WIN_EXIT=$?
 set -e
 
 if [ $WIN_EXIT -eq 0 ]; then
-    EXE_FILE=$(find dist-desktop -name "*.exe" 2>/dev/null | head -1)
+    EXE_FILE=$(find dist-desktop -maxdepth 1 -name "*.exe" 2>/dev/null | head -1)
     if [ -n "$EXE_FILE" ]; then
         EXE_DEST="${OUTPUT_DIR}/DJ-Panel-v${VERSION}-Windows-x64-Setup.exe"
         cp "$EXE_FILE" "$EXE_DEST"
