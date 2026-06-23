@@ -1643,6 +1643,7 @@ export default function DjDashboard() {
             <button className={`btn ${activeTab === 'settings' ? 'btn-primary' : 'btn-secondary'}`}
               onClick={() => setActiveTab('settings')} style={{ justifyContent: 'flex-start', width: '100%' }}>
               <Settings size={16} /><span>Personalizar mi Panel</span>
+              {(!userProfile?.selectedPlan || userProfile?.selectedPlan === 'free') && <Lock size={14} style={{ marginLeft: 'auto', opacity: 0.6 }} />}
             </button>
             <button className={`btn ${activeTab === 'calendar' ? 'btn-primary' : 'btn-secondary'}`}
               onClick={() => setActiveTab('calendar')} style={{ justifyContent: 'flex-start', width: '100%' }}>
@@ -1656,10 +1657,12 @@ export default function DjDashboard() {
             <button className={`btn ${activeTab === 'optimization' ? 'btn-primary' : 'btn-secondary'}`}
               onClick={() => setActiveTab('optimization')} style={{ justifyContent: 'flex-start', width: '100%' }}>
               <Sliders size={16} /><span>Ajustes de Optimización</span>
+              {(!userProfile?.selectedPlan || userProfile?.selectedPlan === 'free') && <Lock size={14} style={{ marginLeft: 'auto', opacity: 0.6 }} />}
             </button>
             <button className={`btn ${activeTab === 'benefits' ? 'btn-primary' : 'btn-secondary'}`}
               onClick={() => setActiveTab('benefits')} style={{ justifyContent: 'flex-start', width: '100%' }}>
               <Sparkles size={16} /><span>Beneficios para el DJ</span>
+              {(!userProfile?.selectedPlan || userProfile?.selectedPlan === 'free') && <Lock size={14} style={{ marginLeft: 'auto', opacity: 0.6 }} />}
             </button>
             {/* Tab Admin: solo visible para dj@admin.com sin impersonar */}
             {isAdminMaster && !impersonatingUid && (
@@ -2478,7 +2481,52 @@ export default function DjDashboard() {
 
           {/* PANEL AJUSTES DE OPTIMIZACIÓN */}
           {activeTab === 'optimization' && (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+            (!userProfile?.selectedPlan || userProfile?.selectedPlan === 'free') ? (
+              <div className="glass-panel animate-slide-in" style={{ padding: '24px' }}>
+                <h2 style={{ fontSize: '1.25rem', marginBottom: '20px', borderBottom: '1px solid var(--surface-border)', paddingBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <Sliders size={20} color="var(--primary-color)" />
+                  Ajustes de Optimización
+                </h2>
+                <div style={{
+                  padding: '40px 20px',
+                  textAlign: 'center',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  gap: '15px'
+                }}>
+                  <div style={{
+                    width: '60px',
+                    height: '60px',
+                    borderRadius: '50%',
+                    background: 'rgba(245, 158, 11, 0.15)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    color: 'var(--warning-color)',
+                    marginBottom: '10px'
+                  }}>
+                    <Lock size={30} />
+                  </div>
+                  <h3 style={{ fontSize: '1.3rem', fontWeight: 'bold' }}>Función Exclusiva para Planes de Pago</h3>
+                  <p style={{ fontSize: '0.95rem', color: 'var(--text-secondary)', maxWidth: '450px', lineHeight: '1.6' }}>
+                    Los ajustes avanzados de optimización (personalización de géneros musicales, reglas del buscador y corrector ortográfico inteligente) no están disponibles en la cuenta Demo.
+                  </p>
+                  <p style={{ fontSize: '0.85rem', color: 'var(--warning-color)', fontWeight: '600' }}>
+                    Adquiere el Plan Premium, VIP o un pase Eventual para desbloquear esta sección.
+                  </p>
+                  <button
+                    type="button"
+                    className="btn btn-primary"
+                    onClick={() => selectPlan('pending_plan')}
+                    style={{ marginTop: '10px', display: 'flex', alignItems: 'center', gap: '8px' }}
+                  >
+                    📦 Ver Planes de Suscripción
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
               {/* MÓDULO GESTIÓN DE GÉNEROS */}
               <div className="glass-panel" style={{ padding: '24px' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', borderBottom: '1px solid var(--surface-border)', paddingBottom: '16px' }}>
@@ -2851,6 +2899,7 @@ export default function DjDashboard() {
                 )}
               </div>
             </div>
+          )
           )}
 
           {/* PANEL BENEFICIOS PARA EL DJ */}
@@ -2863,9 +2912,49 @@ export default function DjDashboard() {
                 </h2>
               </div>
 
-              <p style={{ fontSize: '0.9rem', color: 'var(--text-secondary)', lineHeight: '1.6', marginBottom: '24px' }}>
-                Nuestra plataforma inteligente está diseñada para optimizar tu flujo de trabajo, mantener la energía en la pista y potenciar tu marca como DJ. A continuación se presentan las características clave y beneficios incluidos:
-              </p>
+              {(!userProfile?.selectedPlan || userProfile?.selectedPlan === 'free') ? (
+                <div style={{
+                  padding: '40px 20px',
+                  textAlign: 'center',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  gap: '15px'
+                }}>
+                  <div style={{
+                    width: '60px',
+                    height: '60px',
+                    borderRadius: '50%',
+                    background: 'rgba(245, 158, 11, 0.15)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    color: 'var(--warning-color)',
+                    marginBottom: '10px'
+                  }}>
+                    <Lock size={30} />
+                  </div>
+                  <h3 style={{ fontSize: '1.3rem', fontWeight: 'bold' }}>Función Exclusiva para Planes de Pago</h3>
+                  <p style={{ fontSize: '0.95rem', color: 'var(--text-secondary)', maxWidth: '450px', lineHeight: '1.6' }}>
+                    La sección de Beneficios Exclusivos para el DJ (que incluye estadísticas detalladas de votación, panel de propinas directas vía PayPal y Mercado Pago, y configuración de monetización) no está disponible en la cuenta Demo.
+                  </p>
+                  <p style={{ fontSize: '0.85rem', color: 'var(--warning-color)', fontWeight: '600' }}>
+                    Adquiere el Plan Premium, VIP o un pase Eventual para desbloquear esta sección.
+                  </p>
+                  <button
+                    type="button"
+                    className="btn btn-primary"
+                    onClick={() => selectPlan('pending_plan')}
+                    style={{ marginTop: '10px', display: 'flex', alignItems: 'center', gap: '8px' }}
+                  >
+                    📦 Ver Planes de Suscripción
+                  </button>
+                </div>
+              ) : (
+                <>
+                  <p style={{ fontSize: '0.9rem', color: 'var(--text-secondary)', lineHeight: '1.6', marginBottom: '24px' }}>
+                    Nuestra plataforma inteligente está diseñada para optimizar tu flujo de trabajo, mantener la energía en la pista y potenciar tu marca como DJ. A continuación se presentan las características clave y beneficios incluidos:
+                  </p>
 
               {/* Grid de 6 Tarjetas de Beneficios */}
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '20px' }}>
@@ -3411,8 +3500,10 @@ export default function DjDashboard() {
                   )}
                 </div>
               )}
-            </div>
+            </>
           )}
+        </div>
+      )}
 
           {/* 3. PANEL CALENDARIO Y GESTIÓN DE EVENTOS */}
           {activeTab === 'calendar' && (
