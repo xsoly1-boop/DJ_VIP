@@ -1557,6 +1557,57 @@ export const FirebaseProvider = ({ children }) => {
     });
   };
 
+  // Validar si el DJ puede borrar las peticiones (restricción por límite de plan dentro de las primeras 8 horas)
+  const checkClearRequestsRestriction = async (targetEventId) => {
+    if (!userBasePath) return;
+    if (isAdminMaster) return; // Administrador Master está exento
+    
+    const planKey = userProfile?.activePlan || userProfile?.selectedPlan || 'free';
+    const restrictedPlans = ['free', 'premium'];
+    if (!restrictedPlans.includes(planKey)) {
+      return;
+    }
+
+    let maxRequests = 35;
+    if (planKey === 'free') {
+      maxRequests = userProfile?.demoLimit !== undefined ? parseInt(userProfile.demoLimit, 10) : 35;
+    } else if (planKey === 'premium') {
+      maxRequests = 80;
+    }
+
+    const requestsRefToCheck = ref(database, `${userBasePath}/events/${targetEventId}/requests`);
+    const requestsSnap = await get(requestsRefToCheck);
+    const activeCount = requestsSnap.exists() ? Object.keys(requestsSnap.val()).length : 0;
+
+    const playedRefToCheck = ref(database, `${userBasePath}/events/${targetEventId}/played_requests`);
+    const playedSnap = await get(playedRefToCheck);
+    const playedCount = playedSnap.exists() ? Object.keys(playedSnap.val()).length : 0;
+
+    const totalRequests = activeCount + playedCount;
+
+    if (totalRequests >= maxRequests) {
+      let createdAt = 0;
+      const eventIndexRef = ref(database, `${userBasePath}/events_index/${targetEventId}`);
+      const eventIndexSnap = await get(eventIndexRef);
+      if (eventIndexSnap.exists()) {
+        createdAt = eventIndexSnap.val()?.createdAt || 0;
+      }
+      
+      if (createdAt > 0) {
+        const elapsed = Date.now() - createdAt;
+        const COOLDOWN_MS = 8 * 60 * 60 * 1000;
+        if (elapsed < COOLDOWN_MS) {
+          const remainingMs = COOLDOWN_MS - elapsed;
+          const remainingH = Math.floor(remainingMs / 3600000);
+          const remainingM = Math.floor((remainingMs % 3600000) / 60000);
+          throw new Error(
+            `No es posible limpiar la lista de peticiones tras alcanzar el límite de tu plan (${maxRequests} peticiones) dentro de las primeras 8 horas del evento. Tiempo restante: ${remainingH}h ${remainingM}min.`
+          );
+        }
+      }
+    }
+  };
+
   // Borrar historial de forma granular y opcional
   const clearHistoryWithOptions = async (options) => {
     if (!userBasePath) throw new Error('No hay sesión activa.');
@@ -1567,6 +1618,7 @@ export const FirebaseProvider = ({ children }) => {
 
     // 1. Borrado de canciones (peticiones) del evento activo
     if (options.songs) {
+      await checkClearRequestsRestriction(currentEventId);
       const requestsRef = ref(database, `${userBasePath}/events/${currentEventId}/requests`);
       if (isDemoAccount && currentEventId === 'default-event') {
         await set(requestsRef, DEMO_REQUESTS);
@@ -1735,6 +1787,8 @@ export const FirebaseProvider = ({ children }) => {
     const targetEventId = (currentEventId && currentEventId.startsWith('default-event'))
       ? 'default-event'
       : currentEventId;
+    
+    await checkClearRequestsRestriction(targetEventId);
     
     const requestsRef = ref(database, `${userBasePath}/events/${targetEventId}/requests`);
     const playedRef = ref(database, `${userBasePath}/events/${targetEventId}/played_requests`);

@@ -1796,7 +1796,7 @@ export default function DjDashboard() {
                           showToast("🧹 Lista de peticiones e historial de reproducidas limpiados con éxito");
                         } catch (err) {
                           console.error(err);
-                          showToast("❌ Error al limpiar la lista");
+                          showToast(`❌ Error: ${err.message || "No se pudo limpiar la lista"}`);
                         }
                       }
                     }}
