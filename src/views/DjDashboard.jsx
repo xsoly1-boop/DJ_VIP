@@ -1094,11 +1094,32 @@ export default function DjDashboard() {
   const handleCreateEvent = async (e) => {
     e.preventDefault();
     if (!newEventTitle.trim()) { showToast('⚠️ El título del evento es requerido'); return; }
-    // Restricción: Plan Premium = máximo 2 eventos
+
+    // ── Restricción: Plan Premium = máximo 2 eventos ──────────────────────────
     if (userProfile?.selectedPlan === 'premium' && eventsList.length >= 2) {
       showToast('⚠️ El plan contratado por el DJ ha alcanzado su límite de 2 eventos. Mejora a VIP para eventos ilimitados.');
       return;
     }
+
+    // ── Verificación preventiva de cooldown 8h (Demo y Premium) ──────────────
+    const planActual = userProfile?.activePlan || userProfile?.selectedPlan || 'free';
+    if (['free', 'premium'].includes(planActual)) {
+      const COOLDOWN_MS = 8 * 60 * 60 * 1000;
+      const latestCreatedAt = eventsList.reduce((max, ev) => {
+        const ts = typeof ev.createdAt === 'number' ? ev.createdAt : 0;
+        return ts > max ? ts : max;
+      }, 0);
+      if (latestCreatedAt > 0 && (Date.now() - latestCreatedAt) < COOLDOWN_MS) {
+        const remainingMs = COOLDOWN_MS - (Date.now() - latestCreatedAt);
+        const remainingH = Math.floor(remainingMs / 3600000);
+        const remainingM = Math.floor((remainingMs % 3600000) / 60000);
+        const planLabel = planActual === 'free' ? 'Demo' : 'Premium';
+        showToast(`⏳ Plan ${planLabel}: solo puedes crear un evento cada 8 horas. Tiempo restante: ${remainingH}h ${remainingM}min.`);
+        return;
+      }
+    }
+    // ─────────────────────────────────────────────────────────────────────────
+
     setCreateEventLoading(true);
 
     try {
@@ -1111,11 +1132,19 @@ export default function DjDashboard() {
       setNewEventType('Otro');
       setShowCreateEventForm(false);
     } catch (err) {
-      showToast(`❌ Error al crear evento: ${err.message || ''}`);
+      // Manejo específico del error de cooldown
+      if (err?.message?.startsWith('COOLDOWN:')) {
+        const tiempoRestante = err.message.replace('COOLDOWN:', '');
+        const planLabel = planActual === 'free' ? 'Demo' : 'Premium';
+        showToast(`⏳ Plan ${planLabel}: solo puedes crear un evento cada 8 horas. Tiempo restante: ${tiempoRestante}.`);
+      } else {
+        showToast(`❌ Error al crear evento: ${err.message || ''}`);
+      }
     } finally {
       setCreateEventLoading(false);
     }
   };
+
 
   // Guardar edición de evento existente
   const handleSaveEditEvent = async (eventId) => {
@@ -3614,12 +3643,45 @@ export default function DjDashboard() {
                       <input type="date" className="input-field" value={newEventDate} onChange={(e) => setNewEventDate(e.target.value)} />
                     </div>
                   </div>
+                  {/* Aviso de cooldown 8h para planes Demo y Premium */}
+                  {(() => {
+                    const planActual = userProfile?.activePlan || userProfile?.selectedPlan || 'free';
+                    if (!['free', 'premium'].includes(planActual)) return null;
+                    const COOLDOWN_MS = 8 * 60 * 60 * 1000;
+                    const latestCreatedAt = eventsList.reduce((max, ev) => {
+                      const ts = typeof ev.createdAt === 'number' ? ev.createdAt : 0;
+                      return ts > max ? ts : max;
+                    }, 0);
+                    if (latestCreatedAt === 0) return null;
+                    const elapsed = Date.now() - latestCreatedAt;
+                    if (elapsed >= COOLDOWN_MS) return null;
+                    const remainingMs = COOLDOWN_MS - elapsed;
+                    const remainingH = Math.floor(remainingMs / 3600000);
+                    const remainingM = Math.floor((remainingMs % 3600000) / 60000);
+                    const planLabel = planActual === 'free' ? 'Demo' : 'Premium';
+                    return (
+                      <div style={{
+                        background: 'rgba(245, 158, 11, 0.1)',
+                        border: '1px solid rgba(245, 158, 11, 0.4)',
+                        borderRadius: 'var(--radius-sm)',
+                        padding: '10px 14px',
+                        fontSize: '0.82rem',
+                        color: '#f59e0b',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '8px'
+                      }}>
+                        ⏳ <span><strong>Plan {planLabel}:</strong> solo un evento cada 8 horas. Tiempo de espera restante: <strong>{remainingH}h {remainingM}min</strong>.</span>
+                      </div>
+                    );
+                  })()}
                   <div style={{ display: 'flex', gap: '10px' }}>
                     <button type="submit" className="btn btn-primary" disabled={createEventLoading}>
                       {createEventLoading ? <><RefreshCw size={14} className="animate-spin" /> Creando...</> : <><Check size={14} /> Crear Evento</>}
                     </button>
                     <button type="button" className="btn btn-secondary" onClick={() => setShowCreateEventForm(false)}>Cancelar</button>
                   </div>
+
                 </form>
               )}
 

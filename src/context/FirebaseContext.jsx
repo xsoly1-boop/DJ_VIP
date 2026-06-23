@@ -1345,6 +1345,36 @@ export const FirebaseProvider = ({ children }) => {
 
   const createNewEvent = async (eventId, title, djName, date, eventType) => {
     if (!userBasePath) return;
+
+    // ── Restricción de cooldown 8 horas (planes free y premium) ──────────────
+    const currentPlan = userProfile?.activePlan || userProfile?.selectedPlan || 'free';
+    const COOLDOWN_PLANS = ['free', 'premium'];
+    const COOLDOWN_MS = 8 * 60 * 60 * 1000; // 8 horas en ms
+
+    if (COOLDOWN_PLANS.includes(currentPlan)) {
+      // Leer el índice de eventos directamente desde Firebase (fuente de verdad)
+      const indexRef2 = ref(database, `${userBasePath}/events_index`);
+      const indexSnap = await get(indexRef2);
+      if (indexSnap.exists()) {
+        const allEvents = Object.values(indexSnap.val());
+        // Obtener el evento creado más recientemente
+        const latestCreatedAt = allEvents.reduce((max, ev) => {
+          const ts = typeof ev.createdAt === 'number' ? ev.createdAt : 0;
+          return ts > max ? ts : max;
+        }, 0);
+        const elapsed = Date.now() - latestCreatedAt;
+        if (latestCreatedAt > 0 && elapsed < COOLDOWN_MS) {
+          const remainingMs = COOLDOWN_MS - elapsed;
+          const remainingH = Math.floor(remainingMs / 3600000);
+          const remainingM = Math.floor((remainingMs % 3600000) / 60000);
+          throw new Error(
+            `COOLDOWN:${remainingH}h ${remainingM}min`
+          );
+        }
+      }
+    }
+    // ─────────────────────────────────────────────────────────────────────────
+
     const eventRef = ref(database, `${userBasePath}/events/${eventId}`);
     const initialEvent = {
       settings: {
