@@ -1638,7 +1638,7 @@ export default function DjDashboard() {
             </button>
             <button className={`btn ${activeTab === 'settings' ? 'btn-primary' : 'btn-secondary'}`}
               onClick={() => setActiveTab('settings')} style={{ justifyContent: 'flex-start', width: '100%' }}>
-              <Settings size={16} /><span>Personalizar mi Pannel</span>
+              <Settings size={16} /><span>Personalizar mi Panel</span>
             </button>
             <button className={`btn ${activeTab === 'calendar' ? 'btn-primary' : 'btn-secondary'}`}
               onClick={() => setActiveTab('calendar')} style={{ justifyContent: 'flex-start', width: '100%' }}>
