@@ -1165,7 +1165,7 @@ export default function DjDashboard() {
       showToast('🗑️ Evento eliminado');
       setDeletingEventId(null);
     } catch (err) {
-      showToast(`❌ Error al eliminar: ${err.message || ''}`);
+      showToast(`❌ Error: ${err.message || ''}`);
     }
   };
 

@@ -1418,6 +1418,34 @@ export const FirebaseProvider = ({ children }) => {
   const deleteEvent = async (eventId) => {
     if (!userBasePath) return;
 
+    // ── Restricción de 8 horas para eliminar/restablecer (planes free y premium) ──
+    if (!isAdminMaster) {
+      const planKey = userProfile?.activePlan || userProfile?.selectedPlan || 'free';
+      const restrictedPlans = ['free', 'premium'];
+      if (restrictedPlans.includes(planKey)) {
+        let createdAt = 0;
+        const eventIndexRef = ref(database, `${userBasePath}/events_index/${eventId}`);
+        const eventIndexSnap = await get(eventIndexRef);
+        if (eventIndexSnap.exists()) {
+          createdAt = eventIndexSnap.val()?.createdAt || 0;
+        }
+
+        if (createdAt > 0) {
+          const elapsed = Date.now() - createdAt;
+          const COOLDOWN_MS = 8 * 60 * 60 * 1000;
+          if (elapsed < COOLDOWN_MS) {
+            const remainingMs = COOLDOWN_MS - elapsed;
+            const remainingH = Math.floor(remainingMs / 3600000);
+            const remainingM = Math.floor((remainingMs % 3600000) / 60000);
+            throw new Error(
+              `No es posible eliminar o restablecer el evento dentro de las primeras 8 horas de haberlo iniciado. Tiempo restante: ${remainingH}h ${remainingM}min.`
+            );
+          }
+        }
+      }
+    }
+    // ─────────────────────────────────────────────────────────────────────────────
+
     const isDemoAccount = (user?.email === DEMO_EMAIL) || 
                           (impersonatingUid && allUsersData[impersonatingUid]?.profile?.email === DEMO_EMAIL) ||
                           (activeUid === DEMO_UID);
@@ -1570,7 +1598,7 @@ export const FirebaseProvider = ({ children }) => {
 
     let maxRequests = 35;
     if (planKey === 'free') {
-      maxRequests = userProfile?.demoLimit !== undefined ? parseInt(userProfile.demoLimit, 10) : 35;
+      maxRequests = 35; // Límite exacto de 35 para el plan demo
     } else if (planKey === 'premium') {
       maxRequests = 80;
     }
