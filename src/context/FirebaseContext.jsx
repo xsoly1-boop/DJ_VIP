@@ -43,7 +43,7 @@ const DEFAULT_PLANS_CONFIG = {
     billing: "gratis",
     currency: "USD",
     description: "Prueba las funciones básicas de la plataforma.",
-    maxRequests: 5,
+    maxRequests: 35,
     duration: 0,
     durationUnit: "meses",
     benefits: [
@@ -63,7 +63,7 @@ const DEFAULT_PLANS_CONFIG = {
     billing: "mes",
     currency: "USD",
     description: "Ideal para DJs profesionales que tocan en vivo.",
-    maxRequests: 0,
+    maxRequests: 80,
     duration: 1,
     durationUnit: "meses",
     benefits: [
@@ -1076,28 +1076,30 @@ export const FirebaseProvider = ({ children }) => {
     }
 
     // 2. Si no existe, crear la nueva petición
-    let maxRequests = 5; // Fallback de seguridad por defecto para plan Demo
+    let maxRequests = 35; // Fallback de seguridad por defecto para plan Demo
     try {
       const profileRef = ref(database, `users/${targetUid}/profile`);
       const profileSnap = await get(profileRef);
       const ownerProfile = profileSnap.exists() ? profileSnap.val() : null;
       const planKey = ownerProfile?.selectedPlan || 'free';
-      
+
       if (planKey === 'free') {
-        maxRequests = ownerProfile?.demoLimit !== undefined ? parseInt(ownerProfile.demoLimit, 10) : 5;
+        maxRequests = ownerProfile?.demoLimit !== undefined ? parseInt(ownerProfile.demoLimit, 10) : 35;
       } else {
         const planDetails = plansConfig?.[planKey] || DEFAULT_PLANS_CONFIG[planKey] || DEFAULT_PLANS_CONFIG.free;
-        maxRequests = planDetails && planDetails.maxRequests !== undefined 
-          ? parseInt(planDetails.maxRequests, 10) 
-          : 0;
+        maxRequests = planDetails && planDetails.maxRequests !== undefined
+          ? parseInt(planDetails.maxRequests, 10)
+          : 0; // 0 = ilimitado (VIP, Eventual)
       }
     } catch (e) {
-      console.warn("Fallo al obtener plan del perfil, aplicando límite por defecto (5):", e);
-      maxRequests = 5;
+      console.warn('Fallo al obtener plan del perfil, aplicando límite por defecto (35):', e);
+      maxRequests = 35;
     }
 
     if (maxRequests > 0) {
-      // Contar TODAS las peticiones: activas (en cola) + ya reproducidas
+      // Contar TODAS las peticiones sin importar estado:
+      // - requests: pendiente, en reproduccion, aceptada, rechazada
+      // - played_requests: ya reproducidas / archivadas
       const requestsRefToCheck = ref(database, `users/${targetUid}/events/${targetEventId}/requests`);
       const requestsSnap = await get(requestsRefToCheck);
       const activeCount = requestsSnap.exists() ? Object.keys(requestsSnap.val()).length : 0;

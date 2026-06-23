@@ -108,7 +108,7 @@ export default function DjDashboard() {
   const [editDjEmail, setEditDjEmail] = useState('');
   const [editDjPassword, setEditDjPassword] = useState('');
   const [editDjPlan, setEditDjPlan] = useState('free');
-  const [editDjDemoLimit, setEditDjDemoLimit] = useState(5);
+  const [editDjDemoLimit, setEditDjDemoLimit] = useState(35);
   const [editDjLoading, setEditDjLoading] = useState(false);
 
   // Confirmación de borrado de evento
@@ -245,7 +245,7 @@ export default function DjDashboard() {
         billing: "mes",
         currency: "USD",
         description: "Nuevo plan personalizado.",
-        maxRequests: 0,
+        maxRequests: 35,
         duration: 1,
         durationUnit: "meses",
         benefits: ["Nuevo beneficio"],
@@ -1093,7 +1093,13 @@ export default function DjDashboard() {
   const handleCreateEvent = async (e) => {
     e.preventDefault();
     if (!newEventTitle.trim()) { showToast('⚠️ El título del evento es requerido'); return; }
+    // Restricción: Plan Premium = máximo 2 eventos
+    if (userProfile?.selectedPlan === 'premium' && eventsList.length >= 2) {
+      showToast('⚠️ El plan contratado por el DJ ha alcanzado su límite de 2 eventos. Mejora a VIP para eventos ilimitados.');
+      return;
+    }
     setCreateEventLoading(true);
+
     try {
       const slug = newEventTitle.trim().toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '') + '-' + Date.now().toString(36);
       await createNewEvent(slug, newEventTitle.trim(), newEventDjName.trim() || djNameInput, newEventDate, newEventType);
@@ -1507,9 +1513,42 @@ export default function DjDashboard() {
               }
             </p>
             <p style={{ fontSize: '0.75rem', color: '#facc15', fontWeight: '600', marginTop: '2px', letterSpacing: '0.5px' }}>
-              📋 Plan activo: {plansConfig?.[(userProfile?.selectedPlan || 'free')]?.name || 'Plan Demo'}
-              {(!userProfile?.selectedPlan || userProfile?.selectedPlan === 'free') && ` (Límite: ${userProfile?.demoLimit || 5} peticiones)`}
+              {(() => {
+                const plan = userProfile?.selectedPlan || 'free';
+                const planName = plansConfig?.[plan]?.name || (plan === 'free' ? 'Plan Demo' : plan);
+                const isFree = !userProfile?.selectedPlan || plan === 'free';
+                const isPremium = plan === 'premium';
+                const maxReq = isFree
+                  ? (userProfile?.demoLimit || 35)
+                  : isPremium
+                    ? (plansConfig?.premium?.maxRequests || 80)
+                    : 0;
+                const usedReq = Object.keys(requests || {}).length + Object.keys(playedRequests || {}).length;
+                if (maxReq > 0) {
+                  const pct = Math.min(100, Math.round((usedReq / maxReq) * 100));
+                  const color = pct >= 90 ? '#ef4444' : pct >= 70 ? '#f97316' : '#facc15';
+                  return (
+                    <span style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                      <span>📋 Plan activo: <strong>{planName}</strong></span>
+                      <span style={{
+                        background: pct >= 90 ? 'rgba(239,68,68,0.15)' : pct >= 70 ? 'rgba(249,115,22,0.15)' : 'rgba(250,204,21,0.1)',
+                        color: color,
+                        padding: '1px 8px',
+                        borderRadius: '20px',
+                        fontSize: '0.7rem',
+                        fontWeight: '700',
+                        border: `1px solid ${color}40`
+                      }}>
+                        {usedReq} / {maxReq} peticiones
+                      </span>
+                      {pct >= 100 && <span style={{ color: '#ef4444', fontSize: '0.7rem' }}>⛔ Límite alcanzado</span>}
+                    </span>
+                  );
+                }
+                return <span>📋 Plan activo: <strong>{planName}</strong> ✨ Peticiones ilimitadas</span>;
+              })()}
             </p>
+
           </div>
         </div>
 
@@ -1660,12 +1699,12 @@ export default function DjDashboard() {
             <button className={`btn ${activeTab === 'optimization' ? 'btn-primary' : 'btn-secondary'}`}
               onClick={() => setActiveTab('optimization')} style={{ justifyContent: 'flex-start', width: '100%' }}>
               <Sliders size={16} /><span>Ajustes de Optimización</span>
-              {(!userProfile?.selectedPlan || userProfile?.selectedPlan === 'free') && <Lock size={14} style={{ marginLeft: 'auto', opacity: 0.6 }} />}
+              {(!userProfile?.selectedPlan || userProfile?.selectedPlan === 'free' || userProfile?.selectedPlan === 'premium') && <Lock size={14} style={{ marginLeft: 'auto', opacity: 0.6 }} />}
             </button>
             <button className={`btn ${activeTab === 'benefits' ? 'btn-primary' : 'btn-secondary'}`}
               onClick={() => setActiveTab('benefits')} style={{ justifyContent: 'flex-start', width: '100%' }}>
               <Sparkles size={16} /><span>Beneficios para el DJ</span>
-              {(!userProfile?.selectedPlan || userProfile?.selectedPlan === 'free') && <Lock size={14} style={{ marginLeft: 'auto', opacity: 0.6 }} />}
+              {(!userProfile?.selectedPlan || userProfile?.selectedPlan === 'free' || userProfile?.selectedPlan === 'premium') && <Lock size={14} style={{ marginLeft: 'auto', opacity: 0.6 }} />}
             </button>
             {/* Tab Admin: solo visible para dj@admin.com sin impersonar */}
             {isAdminMaster && !impersonatingUid && (
@@ -2247,7 +2286,8 @@ export default function DjDashboard() {
                   </div>
                 </div>
 
-                {/* URL de Producción (Vercel) */}
+                {/* URL de Producción (Vercel) - Solo VIP/Eventual */}
+                {userProfile?.selectedPlan !== 'premium' && (
                 <div className="form-group" style={{ borderBottom: '1px solid rgba(255,255,255,0.05)', paddingBottom: '20px' }}>
                   <label className="form-label" style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                     🔗 URL de Producción (Vercel)
@@ -2258,8 +2298,10 @@ export default function DjDashboard() {
                     {productionUrl ? `✅ QR generará: ${productionUrl}/?event=${currentEventId}` : '⚠️ Sin URL configurada el QR no funcionará en la app de escritorio.'}
                   </p>
                 </div>
+                )}
 
-                {/* Nombre de la Web / Plataforma */}
+                {/* Nombre de la Web / Plataforma - Solo VIP/Eventual */}
+                {userProfile?.selectedPlan !== 'premium' && (
                 <div className="form-group" style={{ borderBottom: '1px solid rgba(255,255,255,0.05)', paddingBottom: '20px' }}>
                   <label className="form-label" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                     <Sparkles size={15} color="var(--primary-color)" />
@@ -2276,8 +2318,10 @@ export default function DjDashboard() {
                     Este nombre aparecerá en el título de la pestaña del navegador y en el pie de página de la plataforma.
                   </p>
                 </div>
+                )}
 
-                {/* Tamaño de letra del Nombre de la Plataforma */}
+                {/* Tamaño de letra del Nombre de la Plataforma - Solo VIP/Eventual */}
+                {userProfile?.selectedPlan !== 'premium' && (
                 <div className="form-group" style={{ borderBottom: '1px solid rgba(255,255,255,0.05)', paddingBottom: '20px' }}>
                   <label className="form-label" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                     <Sliders size={15} color="var(--primary-color)" />
@@ -2299,8 +2343,10 @@ export default function DjDashboard() {
                     Ajusta el tamaño del título de la plataforma que se muestra arriba en la vista del cliente.
                   </p>
                 </div>
+                )}
 
-                {/* Títulos */}
+                {/* Títulos y Fecha - Solo VIP/Eventual */}
+                {userProfile?.selectedPlan !== 'premium' && (<>
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
                   <div className="form-group">
                     <label className="form-label">Título del Evento (Público)</label>
@@ -2326,8 +2372,10 @@ export default function DjDashboard() {
                     style={{ maxWidth: '280px' }}
                   />
                 </div>
+                </>)}
 
-                {/* Paleta de Colores */}
+                {/* Paleta de Colores - Solo VIP/Eventual */}
+                {userProfile?.selectedPlan !== 'premium' && (
                 <div style={{ borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: '20px' }}>
                   <label className="form-label">Esquema de Colores Dinámico</label>
                   <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginBottom: '16px' }}>
@@ -2350,8 +2398,8 @@ export default function DjDashboard() {
                     </div>
                   </div>
                 </div>
+                )}
 
-                {/* Personalización de Fondo (Skins) */}
                 <div style={{ borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: '20px' }}>
                   <label className="form-label" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                     🎨 Tema / Color de Fondo
@@ -2413,7 +2461,8 @@ export default function DjDashboard() {
                   )}
                 </div>
 
-                {/* Tipografía y Escala */}
+                {/* Tipografía y Escala - Solo VIP/Eventual */}
+                {userProfile?.selectedPlan !== 'premium' && (<>
                 <div style={{ borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: '20px', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
                   <div className="form-group">
                     <label className="form-label">Tipografía / Fuente del Sitio</label>
@@ -2436,8 +2485,10 @@ export default function DjDashboard() {
                     </select>
                   </div>
                 </div>
+                </>)}
 
-                {/* Módulo de Comentarios o Dedicatorias */}
+                {/* Módulo de Comentarios o Dedicatorias - Solo VIP/Eventual */}
+                {userProfile?.selectedPlan !== 'premium' && (<>
                 <div style={{ borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: '20px' }}>
                   <label className="form-label" style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--primary-color)', fontWeight: '600' }}>
                     💬 Módulo de Dedicatorias y Comentarios
@@ -2459,6 +2510,7 @@ export default function DjDashboard() {
                     </label>
                   </div>
                 </div>
+                </>)}
 
                 <div style={{ display: 'flex', gap: '10px', marginTop: '10px', borderTop: '1px solid var(--surface-border)', paddingTop: '20px' }}>
                   <button type="submit" className="btn btn-primary">Guardar Configuración</button>
@@ -2484,7 +2536,7 @@ export default function DjDashboard() {
 
           {/* PANEL AJUSTES DE OPTIMIZACIÓN */}
           {activeTab === 'optimization' && (
-            (!userProfile?.selectedPlan || userProfile?.selectedPlan === 'free') ? (
+            (!userProfile?.selectedPlan || userProfile?.selectedPlan === 'free' || userProfile?.selectedPlan === 'premium') ? (
               <div className="glass-panel animate-slide-in" style={{ padding: '24px' }}>
                 <h2 style={{ fontSize: '1.25rem', marginBottom: '20px', borderBottom: '1px solid var(--surface-border)', paddingBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
                   <Sliders size={20} color="var(--primary-color)" />
@@ -2915,7 +2967,7 @@ export default function DjDashboard() {
                 </h2>
               </div>
 
-              {(!userProfile?.selectedPlan || userProfile?.selectedPlan === 'free') ? (
+              {(!userProfile?.selectedPlan || userProfile?.selectedPlan === 'free' || userProfile?.selectedPlan === 'premium') ? (
                 <div style={{
                   padding: '40px 20px',
                   textAlign: 'center',
@@ -2939,10 +2991,10 @@ export default function DjDashboard() {
                   </div>
                   <h3 style={{ fontSize: '1.3rem', fontWeight: 'bold' }}>Función Exclusiva para Planes de Pago</h3>
                   <p style={{ fontSize: '0.95rem', color: 'var(--text-secondary)', maxWidth: '450px', lineHeight: '1.6' }}>
-                    La sección de Beneficios Exclusivos para el DJ (que incluye estadísticas detalladas de votación, panel de propinas directas vía PayPal y Mercado Pago, y configuración de monetización) no está disponible en la cuenta Demo.
+                    La sección de Beneficios Exclusivos para el DJ (que incluye estadísticas detalladas de votación, panel de propinas directas vía PayPal y Mercado Pago, y configuración de monetización) no está disponible en tu plan actual.
                   </p>
                   <p style={{ fontSize: '0.85rem', color: 'var(--warning-color)', fontWeight: '600' }}>
-                    Adquiere el Plan Premium, VIP o un pase Eventual para desbloquear esta sección.
+                    Adquiere el Plan VIP o un pase Eventual para desbloquear esta sección.
                   </p>
                   <button
                     type="button"
@@ -4342,12 +4394,13 @@ export default function DjDashboard() {
                                       onChange={(e) => setEditDjDemoLimit(parseInt(e.target.value, 10))}
                                       style={{ padding: '4px 8px', fontSize: '0.8rem', height: '28px', background: 'var(--surface-color)', color: '#fff', border: '1px solid rgba(255,255,255,0.15)', cursor: 'pointer' }}
                                     >
-                                      <option value={5}>5 Peticiones (Default)</option>
+                                      <option value={5}>5 Peticiones</option>
                                       <option value={15}>15 Peticiones</option>
                                       <option value={20}>20 Peticiones</option>
                                       <option value={30}>30 Peticiones</option>
-                                      <option value={35}>35 Peticiones</option>
+                                      <option value={35}>35 Peticiones (Default)</option>
                                       <option value={40}>40 Peticiones</option>
+                                      <option value={70}>70 Peticiones</option>
                                     </select>
                                   </div>
                                 )}
