@@ -2117,7 +2117,46 @@ export default function DjDashboard() {
                 Configuración de Marca Blanca (White-Label)
               </h2>
 
-              <form onSubmit={handleSaveBranding} style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+              {(!userProfile?.selectedPlan || userProfile?.selectedPlan === 'free') ? (
+                <div style={{
+                  padding: '40px 20px',
+                  textAlign: 'center',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  gap: '15px'
+                }}>
+                  <div style={{
+                    width: '60px',
+                    height: '60px',
+                    borderRadius: '50%',
+                    background: 'rgba(245, 158, 11, 0.15)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    color: 'var(--warning-color)',
+                    marginBottom: '10px'
+                  }}>
+                    <Lock size={30} />
+                  </div>
+                  <h3 style={{ fontSize: '1.3rem', fontWeight: 'bold' }}>Función Exclusiva para Planes de Pago</h3>
+                  <p style={{ fontSize: '0.95rem', color: 'var(--text-secondary)', maxWidth: '450px', lineHeight: '1.6' }}>
+                    La personalización de marca blanca (logotipo propio, nombre de plataforma web, colores y tipografía) no está disponible en la cuenta Demo.
+                  </p>
+                  <p style={{ fontSize: '0.85rem', color: 'var(--warning-color)', fontWeight: '600' }}>
+                    Adquiere el Plan Premium, VIP o un pase Eventual para desbloquear esta sección.
+                  </p>
+                  <button
+                    type="button"
+                    className="btn btn-primary"
+                    onClick={() => setActiveTab('benefits')}
+                    style={{ marginTop: '10px', display: 'flex', alignItems: 'center', gap: '8px' }}
+                  >
+                    📦 Ver Planes y Beneficios
+                  </button>
+                </div>
+              ) : (
+                <form onSubmit={handleSaveBranding} style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
 
                 {/* Logo Personalizado */}
                 <div className="form-group" style={{ borderBottom: '1px solid rgba(255,255,255,0.05)', paddingBottom: '20px' }}>
@@ -2433,6 +2472,7 @@ export default function DjDashboard() {
                   }}>Descartar Cambios</button>
                 </div>
               </form>
+              )}
             </div>
           )}
 
