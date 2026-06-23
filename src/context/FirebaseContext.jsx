@@ -441,8 +441,12 @@ export const FirebaseProvider = ({ children }) => {
           email: user?.email || '',
           displayName: user?.displayName || user?.email?.split('@')[0] || 'DJ MasterMix',
           phone: '',
-          subscriptionStatus: 'pending_plan',
-          createdAt: Date.now()
+          selectedPlan: 'free',
+          activePlan: 'free',
+          subscriptionStatus: 'free',
+          createdAt: Date.now(),
+          activatedAt: Date.now(),
+          expiresAt: 0
         };
         set(profileRef, defaultProfile);
         setUserProfile(defaultProfile);
@@ -783,8 +787,12 @@ export const FirebaseProvider = ({ children }) => {
       email,
       displayName: displayName || email.split('@')[0],
       phone: phone || '',
-      subscriptionStatus: 'pending_plan', // Redirigirá a selección de plan
-      createdAt: Date.now()
+      selectedPlan: 'free',
+      activePlan: 'free',
+      subscriptionStatus: 'free', // Comienza con plan Demo directamente
+      createdAt: Date.now(),
+      activatedAt: Date.now(),
+      expiresAt: 0
     };
 
     // 2. Guardar en la base de datos
@@ -907,6 +915,17 @@ export const FirebaseProvider = ({ children }) => {
     }
     
     await update(profileRef, updates);
+  };
+
+  const cancelPlanSelection = async () => {
+    if (!activeUid) return;
+    const profileRef = ref(database, `users/${activeUid}/profile`);
+    const currentActivePlan = userProfile?.activePlan || 'free';
+    
+    await update(profileRef, {
+      selectedPlan: currentActivePlan,
+      subscriptionStatus: currentActivePlan
+    });
   };
 
   const submitPaymentProof = async (gateway, transactionId) => {
@@ -1969,6 +1988,7 @@ export const FirebaseProvider = ({ children }) => {
       loginDJ,
       registerDJ,
       selectPlan,
+      cancelPlanSelection,
       submitPaymentProof,
       logoutDJ,
       impersonateUser,

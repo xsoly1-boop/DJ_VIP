@@ -1,9 +1,9 @@
 import React from 'react';
 import { useFirebase } from '../context/FirebaseContext';
-import { Music, Check, Star, Sparkles, LogOut, X } from 'lucide-react';
+import { Music, Check, Star, Sparkles, LogOut, X, ArrowLeft } from 'lucide-react';
 
 export default function PlanSelection() {
-  const { selectPlan, logoutDJ, plansConfig } = useFirebase();
+  const { selectPlan, cancelPlanSelection, logoutDJ, plansConfig } = useFirebase();
 
   const handleSelectPlan = async (plan) => {
     try {
@@ -145,13 +145,21 @@ export default function PlanSelection() {
         })}
       </div>
 
-      <div style={{ marginTop: '20px' }}>
+      <div style={{ marginTop: '25px', display: 'flex', gap: '15px', justifyContent: 'center', alignItems: 'center', flexWrap: 'wrap' }}>
+        <button
+          onClick={cancelPlanSelection}
+          className="btn btn-primary"
+          style={{ padding: '10px 24px', display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.9rem' }}
+        >
+          <ArrowLeft size={16} /> Regresar al DJ Panel
+        </button>
+        
         <button
           onClick={logoutDJ}
           className="btn btn-secondary"
-          style={{ padding: '8px 16px', display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.85rem' }}
+          style={{ padding: '10px 20px', display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.9rem' }}
         >
-          <LogOut size={14} /> Cerrar Sesión
+          <LogOut size={16} /> Cerrar Sesión
         </button>
       </div>
     </div>
