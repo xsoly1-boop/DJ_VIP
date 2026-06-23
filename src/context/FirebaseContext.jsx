@@ -420,10 +420,32 @@ export const FirebaseProvider = ({ children }) => {
 
     const profileRef = ref(database, `users/${activeUid}/profile`);
     const unsubscribe = onValue(profileRef, (snapshot) => {
+      const isCurrentAdminMaster = activeUid === 'uid-admin-master' || (user && user.email?.toLowerCase() === MASTER_ADMIN_EMAIL.toLowerCase() && activeUid === user.uid);
       if (snapshot.exists()) {
         const data = snapshot.val();
+
+        if (isCurrentAdminMaster) {
+          if (data.selectedPlan !== 'vip' || data.activePlan !== 'vip' || data.subscriptionStatus !== 'vip') {
+            const updated = {
+              ...data,
+              selectedPlan: 'vip',
+              activePlan: 'vip',
+              subscriptionStatus: 'vip',
+              expiresAt: 0
+            };
+            update(profileRef, {
+              selectedPlan: 'vip',
+              activePlan: 'vip',
+              subscriptionStatus: 'vip',
+              expiresAt: 0
+            });
+            setUserProfile(updated);
+            return;
+          }
+        }
+
         // --- VERIFICACIÓN DE EXPIRACIÓN AUTOMÁTICA ---
-        if (data.activePlan && data.activePlan !== 'free' && data.expiresAt && data.expiresAt > 0 && Date.now() > data.expiresAt) {
+        if (!isCurrentAdminMaster && data.activePlan && data.activePlan !== 'free' && data.expiresAt && data.expiresAt > 0 && Date.now() > data.expiresAt) {
           // El plan ha expirado. Regresar al Plan Demo (free) automáticamente
           update(profileRef, {
             subscriptionStatus: 'free',
@@ -441,9 +463,9 @@ export const FirebaseProvider = ({ children }) => {
           email: user?.email || '',
           displayName: user?.displayName || user?.email?.split('@')[0] || 'DJ MasterMix',
           phone: '',
-          selectedPlan: 'free',
-          activePlan: 'free',
-          subscriptionStatus: 'free',
+          selectedPlan: isCurrentAdminMaster ? 'vip' : 'free',
+          activePlan: isCurrentAdminMaster ? 'vip' : 'free',
+          subscriptionStatus: isCurrentAdminMaster ? 'vip' : 'free',
           createdAt: Date.now(),
           activatedAt: Date.now(),
           expiresAt: 0

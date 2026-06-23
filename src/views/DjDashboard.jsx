@@ -1398,7 +1398,7 @@ export default function DjDashboard() {
       return sum + Object.keys(ev?.requests || {}).length;
     }, 0);
     
-    const currentPlan = userData?.profile?.selectedPlan || userData?.profile?.subscriptionStatus || 'free';
+    const currentPlan = uid === 'uid-admin-master' ? 'vip' : (userData?.profile?.selectedPlan || userData?.profile?.subscriptionStatus || 'free');
     const expiresAt = userData?.profile?.expiresAt || 0;
     const demoLimit = userData?.profile?.demoLimit || 5;
     
