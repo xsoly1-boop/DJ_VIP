@@ -615,13 +615,13 @@ export const FirebaseProvider = ({ children }) => {
           document.documentElement.style.setProperty('--text-secondary', '#d0e1fd');
           document.documentElement.style.setProperty('--text-muted', '#a1c5fb');
         } else if (bgSkin === 'skin4') {
-          // Pitch Black
-          document.documentElement.style.setProperty('--bg-color', '#000000');
-          document.documentElement.style.setProperty('--surface-color', 'rgba(18, 18, 24, 0.75)');
-          document.documentElement.style.setProperty('--surface-border', 'rgba(255, 255, 255, 0.08)');
-          document.documentElement.style.setProperty('--text-primary', '#f8fafc');
-          document.documentElement.style.setProperty('--text-secondary', '#94a3b8');
-          document.documentElement.style.setProperty('--text-muted', '#64748b');
+          // Deep Teal
+          document.documentElement.style.setProperty('--bg-color', '#02313f');
+          document.documentElement.style.setProperty('--surface-color', 'rgba(1, 25, 33, 0.75)');
+          document.documentElement.style.setProperty('--surface-border', 'rgba(255, 255, 255, 0.12)');
+          document.documentElement.style.setProperty('--text-primary', '#ffffff');
+          document.documentElement.style.setProperty('--text-secondary', '#cde3ea');
+          document.documentElement.style.setProperty('--text-muted', '#9bc1cc');
         } else if (bgSkin === 'skin5') {
           // Deep Maroon
           document.documentElement.style.setProperty('--bg-color', '#3f020a');
