@@ -4286,7 +4286,7 @@ export default function DjDashboard() {
                 </div>
               ) : (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                  {adminUsersList.map(({ uid, eventsCount, requestsCount, djName, eventTitles, email, currentPlan, expiresAt }) => (
+                  {adminUsersList.map(({ uid, eventsCount, requestsCount, djName, eventTitles, email, currentPlan, expiresAt, demoLimit }) => (
                     <div key={uid} className="glass-panel animate-slide-in" style={{
                       padding: '20px 24px', borderRadius: 'var(--radius-md)',
                       display: 'flex', flexDirection: 'column', gap: '14px',
