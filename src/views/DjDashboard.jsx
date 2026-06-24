@@ -1605,7 +1605,7 @@ export default function DjDashboard() {
 
   const isProUser = userProfile?.selectedPlan === 'pro' || userProfile?.activePlan === 'pro';
   const currentPlan = userProfile?.activePlan || userProfile?.selectedPlan || 'free';
-  const isPrintAllowed = ['vip', 'pro'].includes(currentPlan) || isAdminMaster;
+  const isPrintAllowed = ['vip', 'pro', 'eventual'].includes(currentPlan) || isAdminMaster;
 
   return (
     <>
@@ -2023,7 +2023,7 @@ export default function DjDashboard() {
                 className="btn btn-secondary"
                 onClick={() => {
                   if (!isPrintAllowed) {
-                    showToast("🔒 La impresión de tarjetas QR en tamaño A4 es una función exclusiva para planes VIP y PRO. ¡Mejora tu plan para desbloquearla!");
+                    showToast("🔒 La impresión de tarjetas QR en tamaño A4 es una función exclusiva para planes VIP, PRO y Eventual. ¡Mejora tu plan para desbloquearla!");
                   } else {
                     window.print();
                   }
