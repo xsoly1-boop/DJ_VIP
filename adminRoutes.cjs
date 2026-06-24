@@ -10,11 +10,12 @@ if (!process.env.VITE_ADMIN_MASTER_SECRET) {
 }
 
 // Initialize Firebase Admin SDK
+let firebaseInitError = null;
 const admin = require('firebase-admin');
 if (!admin.apps.length) {
   try {
     if (process.env.FIREBASE_SERVICE_ACCOUNT) {
-      const serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT);
+      const serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT.trim());
       if (serviceAccount.private_key) {
         serviceAccount.private_key = serviceAccount.private_key.replace(/\\n/g, '\n');
       }
@@ -31,7 +32,7 @@ if (!admin.apps.length) {
     }
   } catch (e) {
     console.error('Firebase admin initialization failed: ', e);
-    // In development, you may create a placeholder key file.
+    firebaseInitError = e;
   }
 }
 
@@ -216,7 +217,7 @@ router.post('/deleteUser', async (req, res) => {
   if (!isFirebaseInitialized && process.env.VERCEL) {
     return res.status(500).json({ 
       success: false, 
-      error: 'El backend en Vercel no está conectado a Firebase (falta configurar o corregir la variable FIREBASE_SERVICE_ACCOUNT en el dashboard de Vercel).' 
+      error: `El backend en Vercel no está conectado a Firebase (falta configurar o corregir la variable FIREBASE_SERVICE_ACCOUNT en el dashboard de Vercel). Detalle del error: ${firebaseInitError ? firebaseInitError.message : 'No se detectó la variable de entorno o no se pudo cargar.'}` 
     });
   }
   try {
