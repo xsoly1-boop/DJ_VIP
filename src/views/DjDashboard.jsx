@@ -5716,6 +5716,8 @@ export default function DjDashboard() {
               </form>
             </div>
           )}
+        </div>
+      )}
 
           {activeTab === 'revenue' && isAdminMaster && !impersonatingUid && (() => {
             try {
@@ -6084,8 +6086,6 @@ export default function DjDashboard() {
             }
           })()}
 
-        </div>
-      )}
       </div>
 
       {/* SECCIÓN DE IMPRESIÓN (OCULTA EN PANTALLA) */}
