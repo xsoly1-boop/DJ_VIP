@@ -52,6 +52,111 @@ export default function PlanSelection() {
         </p>
       </div>
 
+      {bonusPlan && (
+        <div className="glass-panel" style={{
+          width: '100%',
+          maxWidth: '1000px',
+          padding: '30px',
+          borderRadius: 'var(--radius-lg)',
+          border: '1px solid rgba(212, 175, 55, 0.25)',
+          background: 'linear-gradient(135deg, rgba(212, 175, 55, 0.04), rgba(255, 255, 255, 0.01))',
+          display: 'flex',
+          flexDirection: 'row',
+          flexWrap: 'wrap',
+          gap: '24px',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          boxShadow: '0 8px 32px 0 rgba(0, 0, 0, 0.2)'
+        }}>
+          <div style={{ flex: '2 1 500px', display: 'flex', flexDirection: 'column', gap: '14px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
+              <div style={{
+                background: 'linear-gradient(135deg, #d4af37, #f3e5ab)',
+                color: '#1a1a1a',
+                fontSize: '0.65rem',
+                fontWeight: '800',
+                padding: '4px 10px',
+                borderRadius: '20px',
+                textTransform: 'uppercase',
+                letterSpacing: '1px'
+              }}>
+                Add-on / Suscripción Independiente
+              </div>
+              <h3 style={{ fontSize: '1.35rem', margin: 0, color: '#fff', display: 'flex', alignItems: 'center', gap: '8px', fontWeight: 'bold' }}>
+                {bonusPlan.config.name} <Sparkles size={18} color="#d4af37" fill="#d4af37" />
+              </h3>
+            </div>
+            
+            <p style={{ color: 'var(--text-secondary)', fontSize: '0.88rem', margin: 0, lineHeight: '1.5' }}>
+              {bonusPlan.config.description}
+            </p>
+
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '16px', marginTop: '6px' }}>
+              <div>
+                <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px', display: 'block', marginBottom: '8px', fontWeight: 'bold' }}>Beneficios del Complemento:</span>
+                <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: '8px', fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
+                  {bonusPlan.config.benefits && bonusPlan.config.benefits.map((benefit, i) => (
+                    <li key={`b-${i}`} style={{ display: 'flex', alignItems: 'flex-start', gap: '8px' }}>
+                      <Check size={14} color="#d4af37" style={{ marginTop: '2px', flexShrink: 0 }} /> <span>{benefit}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+              {bonusPlan.config.restrictions && bonusPlan.config.restrictions.length > 0 && (
+                <div>
+                  <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px', display: 'block', marginBottom: '8px', fontWeight: 'bold' }}>Requisitos del Sistema:</span>
+                  <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: '8px', fontSize: '0.82rem', color: 'var(--text-muted)' }}>
+                    {bonusPlan.config.restrictions.map((restriction, i) => (
+                      <li key={`r-${i}`} style={{ display: 'flex', alignItems: 'flex-start', gap: '8px', opacity: 0.85 }}>
+                        <X size={14} color="var(--danger-color)" style={{ marginTop: '2px', flexShrink: 0 }} /> <span>{restriction}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+            </div>
+          </div>
+
+          <div style={{ 
+            flex: '1 1 220px', 
+            display: 'flex', 
+            flexDirection: 'column', 
+            alignItems: 'center', 
+            justifyContent: 'center', 
+            gap: '15px', 
+            padding: '10px 20px',
+            minWidth: '200px',
+            borderLeft: '1px solid rgba(255, 255, 255, 0.06)'
+          }}>
+            <div style={{ textAlign: 'center' }}>
+              <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', display: 'block', marginBottom: '2px' }}>Inversión Única</span>
+              <div style={{ fontSize: '2.1rem', fontWeight: 'bold', color: '#d4af37' }}>
+                ${bonusPlan.config.price} <span style={{ fontSize: '0.9rem', color: 'var(--text-muted)', fontWeight: 'normal' }}>{bonusPlan.config.currency || 'MXN'}</span>
+              </div>
+              <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', display: 'block', marginTop: '2px' }}>Vigente por {bonusPlan.config.billing}</span>
+            </div>
+            
+            <button
+              onClick={() => handleSelectPlan(bonusPlan.key)}
+              className="btn btn-primary"
+              style={{ 
+                width: '100%', 
+                padding: '11px',
+                background: 'linear-gradient(135deg, #d4af37, #b8860b)',
+                border: 'none',
+                color: '#1a1a1a',
+                fontWeight: 'bold',
+                boxShadow: '0 4px 14px rgba(212, 175, 55, 0.15)',
+                cursor: 'pointer',
+                transition: 'all 0.2s ease-in-out'
+              }}
+            >
+              {bonusPlan.buttonText}
+            </button>
+          </div>
+        </div>
+      )}
+
       <div style={{
         display: 'grid',
         gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
@@ -163,111 +268,6 @@ export default function PlanSelection() {
           );
         })}
       </div>
-
-      {bonusPlan && (
-        <div className="glass-panel" style={{
-          width: '100%',
-          maxWidth: '1000px',
-          padding: '30px',
-          borderRadius: 'var(--radius-lg)',
-          border: '1px solid rgba(212, 175, 55, 0.25)',
-          background: 'linear-gradient(135deg, rgba(212, 175, 55, 0.04), rgba(255, 255, 255, 0.01))',
-          display: 'flex',
-          flexDirection: 'row',
-          flexWrap: 'wrap',
-          gap: '24px',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-          boxShadow: '0 8px 32px 0 rgba(0, 0, 0, 0.2)'
-        }}>
-          <div style={{ flex: '2 1 500px', display: 'flex', flexDirection: 'column', gap: '14px' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
-              <div style={{
-                background: 'linear-gradient(135deg, #d4af37, #f3e5ab)',
-                color: '#1a1a1a',
-                fontSize: '0.65rem',
-                fontWeight: '800',
-                padding: '4px 10px',
-                borderRadius: '20px',
-                textTransform: 'uppercase',
-                letterSpacing: '1px'
-              }}>
-                Add-on / Suscripción Independiente
-              </div>
-              <h3 style={{ fontSize: '1.35rem', margin: 0, color: '#fff', display: 'flex', alignItems: 'center', gap: '8px', fontWeight: 'bold' }}>
-                {bonusPlan.config.name} <Sparkles size={18} color="#d4af37" fill="#d4af37" />
-              </h3>
-            </div>
-            
-            <p style={{ color: 'var(--text-secondary)', fontSize: '0.88rem', margin: 0, lineHeight: '1.5' }}>
-              {bonusPlan.config.description}
-            </p>
-
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '16px', marginTop: '6px' }}>
-              <div>
-                <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px', display: 'block', marginBottom: '8px', fontWeight: 'bold' }}>Beneficios del Complemento:</span>
-                <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: '8px', fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
-                  {bonusPlan.config.benefits && bonusPlan.config.benefits.map((benefit, i) => (
-                    <li key={`b-${i}`} style={{ display: 'flex', alignItems: 'flex-start', gap: '8px' }}>
-                      <Check size={14} color="#d4af37" style={{ marginTop: '2px', flexShrink: 0 }} /> <span>{benefit}</span>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-              {bonusPlan.config.restrictions && bonusPlan.config.restrictions.length > 0 && (
-                <div>
-                  <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px', display: 'block', marginBottom: '8px', fontWeight: 'bold' }}>Requisitos del Sistema:</span>
-                  <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: '8px', fontSize: '0.82rem', color: 'var(--text-muted)' }}>
-                    {bonusPlan.config.restrictions.map((restriction, i) => (
-                      <li key={`r-${i}`} style={{ display: 'flex', alignItems: 'flex-start', gap: '8px', opacity: 0.85 }}>
-                        <X size={14} color="var(--danger-color)" style={{ marginTop: '2px', flexShrink: 0 }} /> <span>{restriction}</span>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              )}
-            </div>
-          </div>
-
-          <div style={{ 
-            flex: '1 1 220px', 
-            display: 'flex', 
-            flexDirection: 'column', 
-            alignItems: 'center', 
-            justifyContent: 'center', 
-            gap: '15px', 
-            padding: '10px 20px',
-            minWidth: '200px',
-            borderLeft: '1px solid rgba(255, 255, 255, 0.06)'
-          }}>
-            <div style={{ textAlign: 'center' }}>
-              <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', display: 'block', marginBottom: '2px' }}>Inversión Única</span>
-              <div style={{ fontSize: '2.1rem', fontWeight: 'bold', color: '#d4af37' }}>
-                ${bonusPlan.config.price} <span style={{ fontSize: '0.9rem', color: 'var(--text-muted)', fontWeight: 'normal' }}>{bonusPlan.config.currency || 'MXN'}</span>
-              </div>
-              <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', display: 'block', marginTop: '2px' }}>Vigente por {bonusPlan.config.billing}</span>
-            </div>
-            
-            <button
-              onClick={() => handleSelectPlan(bonusPlan.key)}
-              className="btn btn-primary"
-              style={{ 
-                width: '100%', 
-                padding: '11px',
-                background: 'linear-gradient(135deg, #d4af37, #b8860b)',
-                border: 'none',
-                color: '#1a1a1a',
-                fontWeight: 'bold',
-                boxShadow: '0 4px 14px rgba(212, 175, 55, 0.15)',
-                cursor: 'pointer',
-                transition: 'all 0.2s ease-in-out'
-              }}
-            >
-              {bonusPlan.buttonText}
-            </button>
-          </div>
-        </div>
-      )}
 
       <div style={{ marginTop: '25px', display: 'flex', gap: '15px', justifyContent: 'center', alignItems: 'center', flexWrap: 'wrap' }}>
         <button
