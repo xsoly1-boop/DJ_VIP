@@ -979,7 +979,8 @@ export const FirebaseProvider = ({ children }) => {
       'free': 0,
       'eventual': 1,
       'premium': 2,
-      'vip': 3
+      'vip': 3,
+      'pro': 4
     };
 
     const selectedWeight = planWeights[planName] !== undefined ? planWeights[planName] : -1;
