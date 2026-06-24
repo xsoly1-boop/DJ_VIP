@@ -3,7 +3,10 @@ import { useFirebase } from '../context/FirebaseContext';
 import { Music, Check, Star, Sparkles, LogOut, X, ArrowLeft } from 'lucide-react';
 
 export default function PlanSelection() {
-  const { selectPlan, cancelPlanSelection, logoutDJ, plansConfig } = useFirebase();
+  const { selectPlan, cancelPlanSelection, logoutDJ, plansConfig, userProfile } = useFirebase();
+
+  const activePlan = userProfile?.activePlan || 'free';
+  const isBonusAllowed = activePlan === 'free' || activePlan === 'premium';
 
   const handleSelectPlan = async (plan) => {
     try {
@@ -137,21 +140,25 @@ export default function PlanSelection() {
             </div>
             
             <button
-              onClick={() => handleSelectPlan(bonusPlan.key)}
-              className="btn btn-primary"
+              onClick={() => isBonusAllowed && handleSelectPlan(bonusPlan.key)}
+              disabled={!isBonusAllowed}
+              className="btn"
               style={{ 
                 width: '100%', 
                 padding: '11px',
-                background: 'linear-gradient(135deg, #d4af37, #b8860b)',
-                border: 'none',
-                color: '#1a1a1a',
+                background: isBonusAllowed 
+                  ? 'linear-gradient(135deg, #d4af37, #b8860b)' 
+                  : 'rgba(255, 255, 255, 0.05)',
+                border: isBonusAllowed ? 'none' : '1px solid rgba(255, 255, 255, 0.1)',
+                color: isBonusAllowed ? '#1a1a1a' : 'var(--text-muted)',
                 fontWeight: 'bold',
-                boxShadow: '0 4px 14px rgba(212, 175, 55, 0.15)',
-                cursor: 'pointer',
+                boxShadow: isBonusAllowed ? '0 4px 14px rgba(212, 175, 55, 0.15)' : 'none',
+                cursor: isBonusAllowed ? 'pointer' : 'not-allowed',
+                opacity: isBonusAllowed ? 1 : 0.5,
                 transition: 'all 0.2s ease-in-out'
               }}
             >
-              {bonusPlan.buttonText}
+              {isBonusAllowed ? bonusPlan.buttonText : 'No aplicable para tu Plan'}
             </button>
           </div>
         </div>

@@ -410,6 +410,33 @@ router.post('/updateUserSubscriptionStatus', async (req, res) => {
   }
   try {
     const db = getFirestoreMock();
+
+    if (status === 'bonus') {
+      const profileSnap = await getDbRef(`users/${uid}/profile`).once('value');
+      if (!profileSnap.exists()) {
+        return res.status(404).json({ success: false, error: 'User profile not found' });
+      }
+      const profile = profileSnap.val();
+      const currentActivePlan = profile.activePlan || 'free';
+      const addedRequests = currentActivePlan === 'free' ? 15 : (currentActivePlan === 'premium' ? 20 : 0);
+      const currentExtra = profile.extraRequests ? parseInt(profile.extraRequests, 10) : 0;
+      
+      const newExtra = currentExtra + addedRequests;
+      const extraExpiresAt = Date.now() + 30 * 24 * 60 * 60 * 1000;
+
+      await db.collection('users').doc(uid).update({ subscriptionStatus: currentActivePlan });
+      await getDbRef(`users/${uid}/profile`).update({
+        subscriptionStatus: currentActivePlan,
+        extraRequests: newExtra,
+        extraRequestsExpiresAt: extraExpiresAt,
+        paymentRejectedReason: null,
+        transactionId: null,
+        gateway: null,
+        submittedAt: null
+      });
+      return res.json({ success: true });
+    }
+
     await db.collection('users').doc(uid).update({ subscriptionStatus: status });
 
     // Also update Realtime Database profile
@@ -562,6 +589,35 @@ router.post('/approveSubscription', async (req, res) => {
     return res.status(400).json({ success: false, error: 'Missing uid or plan' });
   }
   try {
+    if (plan === 'bonus') {
+      const profileSnap = await getDbRef(`users/${uid}/profile`).once('value');
+      if (!profileSnap.exists()) {
+        return res.status(404).json({ success: false, error: 'User profile not found' });
+      }
+      const profile = profileSnap.val();
+      const currentActivePlan = profile.activePlan || 'free';
+      const addedRequests = currentActivePlan === 'free' ? 15 : (currentActivePlan === 'premium' ? 20 : 0);
+      const currentExtra = profile.extraRequests ? parseInt(profile.extraRequests, 10) : 0;
+      
+      const newExtra = currentExtra + addedRequests;
+      const extraExpiresAt = Date.now() + 30 * 24 * 60 * 60 * 1000;
+
+      await getDbRef(`users/${uid}/profile`).update({
+        subscriptionStatus: currentActivePlan,
+        extraRequests: newExtra,
+        extraRequestsExpiresAt: extraExpiresAt,
+        paymentRejectedReason: null,
+        transactionId: null,
+        gateway: null,
+        submittedAt: null
+      });
+
+      // Remove from pending validation list
+      await getDbRef(`pending_subscriptions/${uid}`).remove();
+
+      return res.json({ success: true });
+    }
+
     let duration = 30; // fallback duration: 30
     let durationUnit = 'days'; // fallback unit: days
     try {

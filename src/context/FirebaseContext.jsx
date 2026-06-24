@@ -961,8 +961,21 @@ export const FirebaseProvider = ({ children }) => {
       return;
     }
 
-    // Prevenir downgrade del plan contratado
     const currentActivePlan = userProfile?.activePlan || 'free';
+
+    // Regla del Plan Bonus (Extra): es un add-on independiente
+    if (planName === 'bonus') {
+      if (currentActivePlan !== 'free' && currentActivePlan !== 'premium') {
+        throw new Error('El plan Bonus es un complemento exclusivo para cuentas de Plan Demo o Plan Premium.');
+      }
+      await update(profileRef, {
+        selectedPlan: 'bonus',
+        subscriptionStatus: 'pending_payment'
+      });
+      return;
+    }
+
+    // Prevenir downgrade del plan contratado
     const planWeights = {
       'free': 0,
       'eventual': 1,
