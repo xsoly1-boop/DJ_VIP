@@ -107,7 +107,10 @@ async function createSubscription({ userId, planId, paymentMethod }) {
       const price = parseFloat(planDetails?.price || DEFAULT_PLANS[planId]?.price || 0);
       const currency = planDetails?.currency || DEFAULT_PLANS[planId]?.currency || 'MXN';
 
-      const redirectUrl = process.env.VITE_PUBLIC_URL || 'http://localhost:5173';
+      let redirectUrl = process.env.VITE_PUBLIC_URL || (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'http://localhost:5173');
+      if (redirectUrl && !redirectUrl.startsWith('http://') && !redirectUrl.startsWith('https://')) {
+        redirectUrl = `https://${redirectUrl}`;
+      }
 
       const preference = {
         body: {
