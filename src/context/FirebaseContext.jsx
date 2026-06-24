@@ -42,20 +42,21 @@ const DEFAULT_PLANS_CONFIG = {
     price: "0",
     billing: "6 meses",
     currency: "MXN",
-    description: "Prueba las funciones esenciales para comenzar a interactuar en tus eventos.",
+    description: "La puerta de entrada al control de tus eventos. Prueba la potencia de DJVIP y experimenta la interacción en tiempo real con tu público de forma 100% gratuita.",
     maxRequests: 35,
     duration: 6,
     durationUnit: "meses",
     benefits: [
-      "Cola de peticiones básica",
-      "QR estándar para el público",
-      "35 peticiones de canciones por evento"
+      "Acceso a la plataforma interactiva",
+      "Generador de QR estándar para tu cabina",
+      "Hasta 35 peticiones de canciones por evento",
+      "Cola de peticiones en tiempo real para visualizar solicitudes"
     ],
     restrictions: [
-      "Bloqueo estricto al superar límite",
-      "Sin personalización de marca blanca (logotipos/colores)",
-      "No permite borrar peticiones en las primeras 8 horas",
-      "No permite restablecer o recrear el evento en las primeras 8 horas"
+      "Límite estricto de 35 peticiones por evento",
+      "Sin personalización visual (Logotipo y marca de DJVIP obligatorios)",
+      "Bloqueo de limpieza y reinicio de eventos por 8 horas",
+      "Vigencia del plan limitada a 6 meses"
     ]
   },
   premium: {
@@ -63,20 +64,20 @@ const DEFAULT_PLANS_CONFIG = {
     price: "100",
     billing: "6 meses",
     currency: "MXN",
-    description: "Ideal para DJs profesionales que requieren marca blanca y mayores límites.",
+    description: "Lleva tus eventos al siguiente nivel con mayores límites y personalización. Ideal para DJs profesionales que quieren destacar su marca personal.",
     maxRequests: 80,
     duration: 6,
     durationUnit: "meses",
     benefits: [
-      "Todo lo de Demo",
-      "80 peticiones de canciones por evento",
-      "Personalización de marca blanca (Opción B: URL externa de imagen)",
-      "Acceso a QR personalizado"
+      "Todo lo incluido en el Plan Demo",
+      "Hasta 80 peticiones de canciones por evento",
+      "Personalización de Marca Blanca (Vincula tu logotipo mediante URL externa)",
+      "Acceso a QR personalizado con estilos avanzados",
+      "Soporte estándar vía correo electrónico"
     ],
     restrictions: [
-      "No permite subir logotipos locales (Opción A)",
-      "No permite borrar peticiones en las primeras 8 horas",
-      "No permite restablecer o recrear el evento en las primeras 8 horas"
+      "No permite subir imágenes locales para el logotipo (requiere URL externa)",
+      "Bloqueo de limpieza y reinicio de eventos por 8 horas"
     ]
   },
   vip: {
@@ -84,19 +85,19 @@ const DEFAULT_PLANS_CONFIG = {
     price: "200",
     billing: "6 meses",
     currency: "MXN",
-    description: "Para DJs y eventos de gran escala con personalización total sin restricciones.",
+    description: "La experiencia definitiva de personalización e interacción ilimitada. Diseñado para DJs de élite y eventos masivos que exigen el máximo rendimiento sin límites.",
     maxRequests: 0,
     duration: 6,
     durationUnit: "meses",
     benefits: [
-      "Todo lo de Premium",
-      "Peticiones de canciones ILIMITADAS",
-      "Logotipo personalizado Marca Blanca (Subida local Opción A habilitable)",
-      "Nombre de plataforma y tamaño de letra personalizados",
-      "Descarga de respaldos de eventos en tiempo real"
+      "Todo lo incluido en el Plan Premium",
+      "Peticiones de canciones ILIMITADAS (sin tope por evento)",
+      "Marca Blanca Completa (Personalización del nombre, tipografías y tamaños en pantalla)",
+      "Descarga de respaldos y listas de reproducción del evento en tiempo real",
+      "Soporte prioritario y rápido"
     ],
     restrictions: [
-      "Opción A (subir logo) requiere habilitación del Admin Master"
+      "La subida directa de logotipo local (Opción A) requiere habilitación de seguridad por el Admin Master"
     ]
   },
   pro: {
@@ -105,17 +106,19 @@ const DEFAULT_PLANS_CONFIG = {
     billing: "12 meses",
     currency: "MXN",
     status: "En Desarrollo",
-    description: "¡Próximamente! El plan definitivo para productoras y agencias multievento.",
+    description: "¡Próximamente! La herramienta definitiva para productoras de eventos, discotecas y agencias que gestionan múltiples cabinas y DJs en paralelo.",
     maxRequests: 0,
     duration: 12,
     durationUnit: "meses",
     benefits: [
-      "Multieventos activos en paralelo",
-      "Soporte VIP y asistencia prioritaria 24/7",
-      "Reportes y analíticas avanzadas de eventos"
+      "Se el primero en recibir y probar todas las novedades y actualizaciones.",
+      "Multieventos activos y simultáneos en paralelo",
+      "Soporte VIP dedicado con asistencia prioritaria 24/7",
+      "Reportes estadísticos y analíticas avanzadas del comportamiento del público",
+      "Personalización multi-marca para diferentes DJs"
     ],
     restrictions: [
-      "Actualmente no disponible (En Desarrollo)"
+      "Actualmente en fase de desarrollo activo"
     ]
   },
   bonus: {
@@ -123,18 +126,18 @@ const DEFAULT_PLANS_CONFIG = {
     price: "50",
     billing: "30 días",
     currency: "MXN",
-    description: "Adquiere un paquete extra de peticiones aplicable a tus planes Demo o Premium.",
+    description: "El potenciador ideal para tus eventos especiales. Añade peticiones adicionales de forma inmediata a tus planes activos sin cambiar de suscripción.",
     maxRequests: 0,
     duration: 30,
     durationUnit: "días",
     benefits: [
-      "+15 peticiones extras para plan Demo",
-      "+20 peticiones extras para plan Premium",
-      "Suma directamente a tu plan actual",
-      "Vigencia de 30 días naturales"
+      "+15 peticiones adicionales por evento para usuarios del Plan Demo",
+      "+20 peticiones adicionales por evento para usuarios del Plan Premium",
+      "Suma acumulativa e inmediata sobre tus límites actuales",
+      "Activación instantánea y vigencia extendida de 30 días naturales"
     ],
     restrictions: [
-      "Requiere plan Demo o Premium activo"
+      "Requiere contar con un Plan Demo o Plan Premium activo en la plataforma"
     ]
   },
   eventual: {
@@ -142,17 +145,18 @@ const DEFAULT_PLANS_CONFIG = {
     price: "50",
     billing: "24 horas",
     currency: "MXN",
-    description: "Acceso total e ilimitado para un evento específico de corta duración.",
+    description: "Poder ilimitado por un día. Perfecto para DJs invitados, festivals o eventos corporativos de una sola jornada que requieren máxima capacidad temporal.",
     maxRequests: 0,
     duration: 24,
     durationUnit: "horas",
     benefits: [
-      "Todo ilimitado por 24 horas",
-      "Ideal para eventos de un solo día",
-      "Peticiones ilimitadas"
+      "Acceso ilimitado a todas las herramientas VIP por 24 horas",
+      "Peticiones de canciones ilimitadas durante el evento",
+      "Acceso a QR personalizado y personalización visual básica",
+      "Activación exprés sin contratos a largo plazo"
     ],
     restrictions: [
-      "Vence automáticamente a las 24 horas"
+      "El acceso expira automáticamente transcurridas 24 horas desde la activación"
     ]
   }
 };
