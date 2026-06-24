@@ -71,7 +71,7 @@ const DEFAULT_PLANS_CONFIG = {
     benefits: [
       "Todo lo incluido en el Plan Demo",
       "Hasta 80 peticiones de canciones por evento",
-      "Personalización de Marca Blanca (Vincula tu logotipo mediante URL externa)",
+      "Personalización de Marca (Vincula tu logotipo mediante URL externa)",
       "Acceso a QR personalizado con estilos avanzados",
       "Soporte estándar vía correo electrónico"
     ],
@@ -92,7 +92,7 @@ const DEFAULT_PLANS_CONFIG = {
     benefits: [
       "Todo lo incluido en el Plan Premium",
       "Peticiones de canciones ILIMITADAS (sin tope por evento)",
-      "Marca Blanca Completa (Personalización del nombre, tipografías y tamaños en pantalla)",
+      "Personalización Completa de Marca (Nombre, tipografías y tamaños en pantalla)",
       "Descarga de respaldos y listas de reproducción del evento en tiempo real",
       "Soporte prioritario y rápido"
     ],
@@ -1051,6 +1051,17 @@ export const FirebaseProvider = ({ children }) => {
     await update(profileRef, {
       selectedPlan: currentActivePlan,
       subscriptionStatus: currentActivePlan
+    });
+  };
+
+  const submitFeedback = async (text) => {
+    if (!activeUid) return;
+    const feedbackRef = ref(database, `suggestions/${activeUid}/${Date.now()}`);
+    await set(feedbackRef, {
+      text,
+      email: userProfile?.email || user?.email || '',
+      djName: userProfile?.displayName || '',
+      submittedAt: Date.now()
     });
   };
 
@@ -2611,6 +2622,7 @@ export const FirebaseProvider = ({ children }) => {
       registerDJ,
       selectPlan,
       cancelPlanSelection,
+      submitFeedback,
       submitPaymentProof,
       logoutDJ,
       impersonateUser,

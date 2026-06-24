@@ -58,7 +58,8 @@ export default function DjDashboard() {
     sendSupportMessage,
     markSupportChatAsRead,
     subscribeToSupportChat,
-    subscribeToAllSupportChats
+    subscribeToAllSupportChats,
+    submitFeedback
   } = useFirebase();
 
   // Estados Locales
@@ -148,6 +149,10 @@ export default function DjDashboard() {
   const [addDjLoading, setAddDjLoading] = useState(false);
   const [addDjError, setAddDjError] = useState('');
   const [addDjSuccess, setAddDjSuccess] = useState('');
+
+  // Retroalimentación / Sugerencias
+  const [feedbackText, setFeedbackText] = useState('');
+  const [submittingFeedback, setSubmittingFeedback] = useState(false);
 
   // Alertas / Audio / Notificaciones
   const [soundEnabled, setSoundEnabled] = useState(true);
@@ -1071,7 +1076,7 @@ export default function DjDashboard() {
     }
   };
 
-  // Guardar configuraciones de Marca Blanca
+  // Guardar configuraciones de Marca
   const handleSaveBranding = async (e) => {
     e.preventDefault();
     if (productionUrl && !productionUrl.startsWith('http')) {
@@ -1111,6 +1116,22 @@ export default function DjDashboard() {
       } else {
         showToast(`❌ Error: ${msg.slice(0, 60)}`);
       }
+    }
+  };
+
+  const handleFeedbackSubmit = async (e) => {
+    if (e) e.preventDefault();
+    if (!feedbackText.trim()) return;
+    setSubmittingFeedback(true);
+    try {
+      await submitFeedback(feedbackText.trim());
+      showToast("✅ ¡Sugerencia enviada! Gracias por ayudarnos a mejorar.");
+      setFeedbackText('');
+    } catch (err) {
+      console.error('Error enviando sugerencia:', err);
+      showToast("❌ Error al enviar la sugerencia. Inténtalo de nuevo.");
+    } finally {
+      setSubmittingFeedback(false);
     }
   };
 
@@ -2455,7 +2476,7 @@ export default function DjDashboard() {
             <div className="glass-panel" style={{ padding: '24px' }}>
               <h2 style={{ fontSize: '1.25rem', marginBottom: '20px', borderBottom: '1px solid var(--surface-border)', paddingBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
                 <Sparkles size={20} color="var(--primary-color)" />
-                Configuración de Marca Blanca (White-Label)
+                Configuración de Marca
               </h2>
 
               {(!userProfile?.selectedPlan || userProfile?.selectedPlan === 'free') ? (
@@ -2482,7 +2503,7 @@ export default function DjDashboard() {
                   </div>
                   <h3 style={{ fontSize: '1.3rem', fontWeight: 'bold' }}>Función Exclusiva para Planes de Pago</h3>
                   <p style={{ fontSize: '0.95rem', color: 'var(--text-secondary)', maxWidth: '450px', lineHeight: '1.6' }}>
-                    La personalización de marca blanca (logotipo propio, nombre de plataforma web, colores y tipografía) no está disponible en la cuenta Demo.
+                    La personalización de marca (logotipo propio, nombre de plataforma web, colores y tipografía) no está disponible en la cuenta Demo.
                   </p>
                   <p style={{ fontSize: '0.85rem', color: 'var(--warning-color)', fontWeight: '600' }}>
                     Adquiere el Plan Premium, VIP o un pase Eventual para desbloquear esta sección.
@@ -2504,7 +2525,7 @@ export default function DjDashboard() {
                 <div className="form-group" style={{ borderBottom: '1px solid rgba(255,255,255,0.05)', paddingBottom: '20px' }}>
                   <label className="form-label" style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px' }}>
                     <Image size={15} color="var(--secondary-color)" />
-                    Logotipo Personalizado (Marca Blanca)
+                    Logotipo Personalizado (Marca)
                   </label>
                   <div style={{ display: 'flex', alignItems: 'flex-start', gap: '20px', flexWrap: 'wrap' }}>
                     {/* Vista previa */}
@@ -3846,7 +3867,7 @@ export default function DjDashboard() {
                       Tu Plan Actual: <span style={{ color: 'var(--primary-color)', fontWeight: 'bold', textTransform: 'uppercase' }}>{plansConfig?.[userProfile?.selectedPlan || 'free']?.name || userProfile?.selectedPlan || 'demo/gratis'}</span>
                     </h3>
                     <p style={{ color: 'var(--text-secondary)', fontSize: '0.85rem', margin: 0, maxWidth: '500px' }}>
-                      {(!userProfile?.selectedPlan || userProfile?.selectedPlan === 'free') && `Estás usando el ${plansConfig?.free?.name || 'Plan Demo'} con límites. Pásate a ${plansConfig?.premium?.name || 'Premium'} para marca blanca, logo y peticiones ilimitadas.`}
+                      {(!userProfile?.selectedPlan || userProfile?.selectedPlan === 'free') && `Estás usando el ${plansConfig?.free?.name || 'Plan Demo'} con límites. Pásate a ${plansConfig?.premium?.name || 'Premium'} para personalización de marca, logo y peticiones ilimitadas.`}
                       {userProfile?.selectedPlan === 'premium' && `Tienes acceso a ${plansConfig?.premium?.name || 'Plan Premium'}. Pásate a ${plansConfig?.vip?.name || 'VIP'} para soporte técnico prioritario 24/7 y eventos simultáneos.`}
                       {userProfile?.selectedPlan === 'vip' && `¡Tienes el ${plansConfig?.vip?.name || 'Plan VIP'} con acceso y soporte total habilitados! Gracias por confiar en nosotros.`}
                     </p>
@@ -3876,6 +3897,72 @@ export default function DjDashboard() {
               )}
             </>
           )}
+
+          {/* Sección de Retroalimentación / Sugerencias (Accesible para todos los planes) */}
+          <div style={{
+            marginTop: '32px',
+            paddingTop: '24px',
+            borderTop: '1px solid var(--surface-border)',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '12px',
+            textAlign: 'left'
+          }}>
+            <h3 style={{ fontSize: '1rem', color: '#fff', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '8px', margin: 0 }}>
+              <Sparkles size={16} color="#ec4899" /> Sugerencias para Mejorar la Plataforma
+            </h3>
+            <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', margin: 0, lineHeight: '1.5' }}>
+              ¿Tienes alguna idea o comentario para optimizar DJVIP? Tu opinión es valiosa para nosotros, sin importar tu nivel de plan activo. ¡Déjanos tu sugerencia a continuación!
+            </p>
+            <form onSubmit={handleFeedbackSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginTop: '4px' }}>
+              <textarea
+                value={feedbackText}
+                onChange={(e) => setFeedbackText(e.target.value)}
+                placeholder="Describe tu sugerencia o comentario aquí..."
+                rows={3}
+                required
+                style={{
+                  width: '100%',
+                  background: 'rgba(0, 0, 0, 0.2)',
+                  border: '1px solid var(--surface-border)',
+                  borderRadius: 'var(--radius-md)',
+                  padding: '12px',
+                  color: '#fff',
+                  fontSize: '0.82rem',
+                  fontFamily: 'inherit',
+                  resize: 'none',
+                  outline: 'none',
+                  transition: 'border-color 0.2s'
+                }}
+                onFocus={(e) => e.target.style.borderColor = 'var(--primary-color)'}
+                onBlur={(e) => e.target.style.borderColor = 'var(--surface-border)'}
+              />
+              <button
+                type="submit"
+                disabled={submittingFeedback || !feedbackText.trim()}
+                className="btn btn-primary"
+                style={{
+                  alignSelf: 'flex-start',
+                  padding: '8px 20px',
+                  fontSize: '0.82rem',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                  cursor: (submittingFeedback || !feedbackText.trim()) ? 'not-allowed' : 'pointer',
+                  opacity: (submittingFeedback || !feedbackText.trim()) ? 0.6 : 1,
+                  background: 'linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%)',
+                  border: 'none',
+                  color: '#fff',
+                  fontWeight: 'bold',
+                  borderRadius: 'var(--radius-md)',
+                  boxShadow: '0 4px 12px rgba(124, 58, 237, 0.15)',
+                  transition: 'all 0.2s'
+                }}
+              >
+                {submittingFeedback ? 'Enviando...' : 'Enviar Sugerencia'}
+              </button>
+            </form>
+          </div>
         </div>
       )}
 
@@ -4757,7 +4844,7 @@ export default function DjDashboard() {
                                  )}
                                  {editDjPlan === 'vip' && (
                                    <div className="form-group" style={{ marginBottom: 0, display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                                     <label className="form-label" style={{ fontSize: '0.7rem' }}>Logotipo Marca Blanca</label>
+                                     <label className="form-label" style={{ fontSize: '0.7rem' }}>Logotipo de Marca</label>
                                      <label style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.8rem', cursor: 'pointer', height: '28px', color: 'var(--text-secondary)' }}>
                                        <input
                                          type="checkbox"
@@ -5216,7 +5303,7 @@ export default function DjDashboard() {
                     Plan Activo: <span style={{ textTransform: 'uppercase', color: 'var(--primary-color)' }}>PRO</span> (Cuenta Administrativa)
                   </h4>
                   <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', margin: 0, lineHeight: '1.4' }}>
-                    Como Administrador Master de la plataforma, tu cuenta tiene forzado el plan **PRO** de por vida, lo que te otorga acceso ilimitado a todas las herramientas premium de la plataforma, incluyendo marca blanca, personalización completa y peticiones ilimitadas.
+                    Como Administrador Master de la plataforma, tu cuenta tiene forzado el plan **PRO** de por vida, lo que te otorga acceso ilimitado a todas las herramientas premium de la plataforma, incluyendo marca personalizada, personalización completa y peticiones ilimitadas.
                   </p>
                 </div>
               </div>
