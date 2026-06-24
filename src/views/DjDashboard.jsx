@@ -5697,10 +5697,10 @@ export default function DjDashboard() {
           
           #print-section {
             display: grid !important;
-            grid-template-columns: 105mm 105mm !important;
-            grid-template-rows: 148.5mm 148.5mm !important;
-            width: 210mm !important;
-            height: 297mm !important;
+            grid-template-columns: 50% 50% !important;
+            grid-template-rows: 50% 50% !important;
+            width: 100% !important;
+            height: 100% !important;
             position: absolute !important;
             left: 0 !important;
             top: 0 !important;
@@ -5712,8 +5712,8 @@ export default function DjDashboard() {
           }
 
           .print-quadrant {
-            width: 105mm !important;
-            height: 148.5mm !important;
+            width: 100% !important;
+            height: 100% !important;
             display: flex !important;
             align-items: center !important;
             justify-content: center !important;
@@ -5733,8 +5733,8 @@ export default function DjDashboard() {
           }
 
           .print-card {
-            width: 82.88mm !important;
-            height: 148.5mm !important;
+            height: 92% !important;
+            aspect-ratio: 571 / 1024 !important;
             position: relative !important;
             box-sizing: border-box !important;
             visibility: visible !important;
