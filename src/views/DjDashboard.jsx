@@ -7,7 +7,7 @@ import {
   Trash2, Plus, Play, Check, X, Bell, BellOff, Volume2, 
   Sparkles, Sliders, Users, Layers, ShieldCheck, Database,
   Link, AlertTriangle, ShieldAlert, ArrowLeft, UserCog, Edit, UserPlus, Mail, Lock, User, CreditCard,
-  LayoutGrid, ExternalLink, Image, Search, Megaphone, Star
+  LayoutGrid, ExternalLink, Image, Search, Megaphone, Star, MessageSquare, Send
 } from 'lucide-react';
 
 export default function DjDashboard() {
@@ -49,7 +49,11 @@ export default function DjDashboard() {
     userProfile,
     selectPlan,
     plansConfig,
-    updatePlansConfig
+    updatePlansConfig,
+    sendSupportMessage,
+    markSupportChatAsRead,
+    subscribeToSupportChat,
+    subscribeToAllSupportChats
   } = useFirebase();
 
   // Estados Locales
@@ -146,6 +150,91 @@ export default function DjDashboard() {
   const [androidSoundName, setAndroidSoundName] = useState('Predeterminado del sistema');
   const [notificationsEnabled, setNotificationsEnabled] = useState(false);
   const [toastMessage, setToastMessage] = useState(null);
+
+  // --- SOPORTE CHAT ESTADOS Y EFECTOS ---
+  const [supportChatOpen, setSupportChatOpen] = useState(false);
+  const [supportChatText, setSupportChatText] = useState('');
+  const [supportChatData, setSupportChatData] = useState({ metadata: {}, messages: [] });
+  const supportChatEndRef = useRef(null);
+
+  // Admin Master Soporte Chats
+  const [adminChats, setAdminChats] = useState({});
+  const [adminSelectedChatUid, setAdminSelectedChatUid] = useState(null);
+  const [adminChatText, setAdminChatText] = useState('');
+  const [adminChatData, setAdminChatData] = useState({ metadata: {}, messages: [] });
+  const adminChatEndRef = useRef(null);
+
+  // Efecto para DJ PRO: Suscribirse a su chat de soporte
+  useEffect(() => {
+    if (!supportChatOpen || !user?.uid) return;
+    
+    // Marcar como leído al abrir
+    markSupportChatAsRead(user.uid, 'user');
+    
+    const unsubscribe = subscribeToSupportChat(user.uid, (data) => {
+      setSupportChatData(data);
+    });
+    return () => unsubscribe();
+  }, [supportChatOpen, user?.uid]);
+
+  // Autoscroll para chat del DJ PRO
+  useEffect(() => {
+    if (supportChatOpen && supportChatEndRef.current) {
+      supportChatEndRef.current.scrollIntoView({ behavior: 'smooth' });
+    }
+  }, [supportChatData.messages, supportChatOpen]);
+
+  // Efecto para Admin Master: Suscribirse a la lista de todos los chats
+  useEffect(() => {
+    if (!isAdminMaster || (activeTab !== 'admin' && activeTab !== 'support')) return;
+    const unsubscribe = subscribeToAllSupportChats((chats) => {
+      setAdminChats(chats || {});
+    });
+    return () => unsubscribe();
+  }, [isAdminMaster, activeTab]);
+
+  // Efecto para Admin Master: Suscribirse al chat seleccionado
+  useEffect(() => {
+    if (!isAdminMaster || !adminSelectedChatUid) return;
+    
+    // Marcar como leído al seleccionar
+    markSupportChatAsRead(adminSelectedChatUid, 'admin');
+    
+    const unsubscribe = subscribeToSupportChat(adminSelectedChatUid, (data) => {
+      setAdminChatData(data);
+    });
+    return () => unsubscribe();
+  }, [isAdminMaster, adminSelectedChatUid]);
+
+  // Autoscroll para chat del Admin
+  useEffect(() => {
+    if (adminSelectedChatUid && adminChatEndRef.current) {
+      adminChatEndRef.current.scrollIntoView({ behavior: 'smooth' });
+    }
+  }, [adminChatData.messages, adminSelectedChatUid]);
+
+  const handleSendSupportMessage = async (e) => {
+    e.preventDefault();
+    if (!supportChatText.trim() || !user?.uid) return;
+    try {
+      await sendSupportMessage(user.uid, supportChatText.trim());
+      setSupportChatText('');
+    } catch (e) {
+      showToast('❌ Error al enviar mensaje: ' + e.message);
+    }
+  };
+
+  const handleSendAdminChatMessage = async (e) => {
+    e.preventDefault();
+    if (!adminChatText.trim() || !adminSelectedChatUid) return;
+    try {
+      await sendSupportMessage(adminSelectedChatUid, adminChatText.trim());
+      setAdminChatText('');
+    } catch (e) {
+      showToast('❌ Error al responder: ' + e.message);
+    }
+  };
+
   // Estado DJ en cabina (persiste en Firebase vía eventSettings)
   const [djOnline, setDjOnline] = useState(() => {
     return eventSettings?.djOnline !== undefined ? eventSettings.djOnline : true;
@@ -1835,11 +1924,30 @@ export default function DjDashboard() {
             </button>
             {/* Tab Admin: solo visible para dj@admin.com sin impersonar */}
             {isAdminMaster && !impersonatingUid && (
-              <button className={`btn ${activeTab === 'admin' ? 'btn-primary' : 'btn-secondary'}`}
-                onClick={() => setActiveTab('admin')} style={{ justifyContent: 'flex-start', width: '100%', borderColor: activeTab === 'admin' ? undefined : 'rgba(245,158,11,0.2)' }}>
-                <UserCog size={16} /><span>Panel Admin</span>
-                <span style={{ marginLeft: 'auto', fontSize: '0.65rem', background: 'rgba(245,158,11,0.15)', color: 'var(--warning-color)', padding: '2px 6px', borderRadius: '8px', fontWeight: '700' }}>MASTER</span>
-              </button>
+              <>
+                <button className={`btn ${activeTab === 'admin' ? 'btn-primary' : 'btn-secondary'}`}
+                  onClick={() => setActiveTab('admin')} style={{ justifyContent: 'flex-start', width: '100%', borderColor: activeTab === 'admin' ? undefined : 'rgba(245,158,11,0.2)' }}>
+                  <UserCog size={16} /><span>Panel Admin</span>
+                  <span style={{ marginLeft: 'auto', fontSize: '0.65rem', background: 'rgba(245,158,11,0.15)', color: 'var(--warning-color)', padding: '2px 6px', borderRadius: '8px', fontWeight: '700' }}>MASTER</span>
+                </button>
+                <button className={`btn ${activeTab === 'support' ? 'btn-primary' : 'btn-secondary'}`}
+                  onClick={() => setActiveTab('support')} style={{ justifyContent: 'flex-start', width: '100%', borderColor: activeTab === 'support' ? undefined : 'rgba(124,58,237,0.2)' }}>
+                  <MessageSquare size={16} /><span>Soporte PRO</span>
+                  {Object.values(adminChats || {}).reduce((acc, chat) => acc + (chat.metadata?.unreadCountByAdmin || 0), 0) > 0 && (
+                    <span style={{
+                      marginLeft: 'auto',
+                      fontSize: '0.65rem',
+                      background: 'red',
+                      color: '#fff',
+                      padding: '2px 6px',
+                      borderRadius: '8px',
+                      fontWeight: '700'
+                    }}>
+                      {Object.values(adminChats || {}).reduce((acc, chat) => acc + (chat.metadata?.unreadCountByAdmin || 0), 0)}
+                    </span>
+                  )}
+                </button>
+              </>
             )}
           </nav>
 
@@ -4827,6 +4935,176 @@ export default function DjDashboard() {
               )}
             </div>
           )}
+
+          {/* 5. PANEL SOPORTE PRO (ADMIN MASTER) */}
+          {activeTab === 'support' && isAdminMaster && !impersonatingUid && (
+            <div className="glass-panel" style={{ padding: '24px', minHeight: '600px', display: 'flex', flexDirection: 'column' }}>
+              <h2 style={{ fontSize: '1.25rem', marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <MessageSquare size={20} color="var(--primary-color)" />
+                💬 Soporte Técnico PRO
+              </h2>
+              <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginBottom: '24px', borderBottom: '1px solid var(--surface-border)', paddingBottom: '16px' }}>
+                Atiende las consultas en tiempo real de los DJs con plan <strong style={{ color: 'var(--primary-color)' }}>PRO</strong>.
+              </p>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '300px 1fr', gap: '20px', flex: 1 }}>
+                {/* Columna Izquierda: Lista de chats */}
+                <div style={{ borderRight: '1px solid var(--surface-border)', paddingRight: '16px', display: 'flex', flexDirection: 'column', gap: '10px', maxHeight: '500px', overflowY: 'auto' }}>
+                  <h3 style={{ fontSize: '0.9rem', color: '#fff', marginBottom: '10px' }}>Conversaciones Activas</h3>
+                  {Object.keys(adminChats || {}).length === 0 ? (
+                    <div style={{ padding: '20px', textAlign: 'center', color: 'var(--text-muted)', fontSize: '0.8rem' }}>
+                      No hay chats de soporte iniciados.
+                    </div>
+                  ) : (
+                    Object.entries(adminChats)
+                      .sort((a, b) => (b[1].metadata?.lastTimestamp || 0) - (a[1].metadata?.lastTimestamp || 0))
+                      .map(([uid, chat]) => {
+                        const isSelected = adminSelectedChatUid === uid;
+                        const unreadCount = chat.metadata?.unreadCountByAdmin || 0;
+                        return (
+                          <div
+                            key={uid}
+                            onClick={() => setAdminSelectedChatUid(uid)}
+                            style={{
+                              padding: '12px',
+                              borderRadius: 'var(--radius-md)',
+                              background: isSelected ? 'rgba(124, 58, 237, 0.15)' : 'rgba(255, 255, 255, 0.02)',
+                              border: isSelected ? '1px solid var(--primary-color)' : '1px solid var(--surface-border)',
+                              cursor: 'pointer',
+                              display: 'flex',
+                              justifyContent: 'space-between',
+                              alignItems: 'center',
+                              transition: 'all 0.2s ease'
+                            }}
+                          >
+                            <div style={{ flex: 1, minWidth: 0, marginRight: '8px' }}>
+                              <div style={{ fontWeight: 'bold', fontSize: '0.85rem', color: isSelected ? 'var(--primary-color)' : '#fff', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                                {chat.metadata?.djName || 'DJ PRO'}
+                              </div>
+                              <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', marginTop: '2px' }}>
+                                {chat.metadata?.lastMessage || 'Sin mensajes'}
+                              </div>
+                            </div>
+                            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'end', gap: '4px' }}>
+                              {chat.metadata?.lastTimestamp && (
+                                <span style={{ fontSize: '0.65rem', color: 'var(--text-muted)' }}>
+                                  {new Date(chat.metadata.lastTimestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                </span>
+                              )}
+                              {unreadCount > 0 && (
+                                <span style={{
+                                  background: 'red',
+                                  color: '#fff',
+                                  fontSize: '0.65rem',
+                                  fontWeight: 'bold',
+                                  borderRadius: '50%',
+                                  width: '18px',
+                                  height: '18px',
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  justifyContent: 'center'
+                                }}>
+                                  {unreadCount}
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                        );
+                      })
+                  )}
+                </div>
+
+                {/* Columna Derecha: Chat activo */}
+                <div style={{ display: 'flex', flexDirection: 'column', height: '500px', background: '#0b1329', borderRadius: 'var(--radius-md)', border: '1px solid var(--surface-border)', overflow: 'hidden' }}>
+                  {adminSelectedChatUid ? (
+                    <>
+                      {/* Cabecera del chat seleccionado */}
+                      <div style={{ padding: '12px 16px', background: 'rgba(255,255,255,0.02)', borderBottom: '1px solid var(--surface-border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <div>
+                          <span style={{ fontWeight: 'bold', fontSize: '0.9rem', color: '#fff' }}>
+                            {adminChats[adminSelectedChatUid]?.metadata?.djName || 'DJ PRO'}
+                          </span>
+                          <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', display: 'block' }}>
+                            UID: {adminSelectedChatUid}
+                          </span>
+                        </div>
+                        <button
+                          onClick={() => setAdminSelectedChatUid(null)}
+                          className="btn btn-secondary"
+                          style={{ padding: '4px 8px', fontSize: '0.75rem', height: '24px' }}
+                        >
+                          Cerrar Chat
+                        </button>
+                      </div>
+
+                      {/* Lista de mensajes */}
+                      <div style={{ flex: 1, overflowY: 'auto', padding: '16px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                        {adminChatData.messages.map((msg, index) => {
+                          const isAdmin = msg.senderId === 'uid-admin-master';
+                          return (
+                            <div key={index} style={{ display: 'flex', flexDirection: 'column', alignItems: isAdmin ? 'flex-end' : 'flex-start' }}>
+                              <span style={{ fontSize: '0.65rem', color: 'var(--text-muted)', marginBottom: '2px', padding: '0 4px' }}>
+                                {msg.senderName}
+                              </span>
+                              <div style={{
+                                padding: '8px 12px',
+                                borderRadius: '12px',
+                                fontSize: '0.8rem',
+                                maxWidth: '75%',
+                                wordBreak: 'break-word',
+                                background: isAdmin ? 'linear-gradient(135deg, #7c3aed 0%, #4f46e5 100%)' : 'rgba(255,255,255,0.06)',
+                                color: '#fff',
+                                borderRadius: isAdmin ? '12px 12px 2px 12px' : '12px 12px 12px 2px'
+                              }}>
+                                {msg.text}
+                              </div>
+                              <span style={{ fontSize: '0.6rem', color: 'var(--text-muted)', marginTop: '2px', padding: '0 4px' }}>
+                                {new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                              </span>
+                            </div>
+                          );
+                        })}
+                        <div ref={adminChatEndRef} />
+                      </div>
+
+                      {/* Formulario de envío */}
+                      <form onSubmit={handleSendAdminChatMessage} style={{ padding: '12px', borderTop: '1px solid var(--surface-border)', display: 'flex', gap: '10px', background: 'rgba(0,0,0,0.2)' }}>
+                        <input
+                          type="text"
+                          className="input-field"
+                          placeholder="Escribe una respuesta para el DJ..."
+                          value={adminChatText}
+                          onChange={(e) => setAdminChatText(e.target.value)}
+                          style={{ flex: 1, height: '36px', fontSize: '0.85rem' }}
+                        />
+                        <button
+                          type="submit"
+                          className="btn btn-primary"
+                          style={{
+                            background: 'linear-gradient(135deg, #7c3aed 0%, #4f46e5 100%)',
+                            border: 'none',
+                            padding: '0 16px',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            height: '36px',
+                            cursor: 'pointer'
+                          }}
+                        >
+                          <Send size={14} />
+                        </button>
+                      </form>
+                    </>
+                  ) : (
+                    <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', color: 'var(--text-muted)', gap: '12px' }}>
+                      <MessageSquare size={48} style={{ opacity: 0.3 }} />
+                      <span style={{ fontSize: '0.85rem' }}>Selecciona una conversación de la izquierda para comenzar.</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
         </main>
       </div>
 
@@ -5042,6 +5320,135 @@ export default function DjDashboard() {
           }}>
             {activeVisualAlert.artist}
           </p>
+        </div>
+      )}
+
+      {/* Chat de Soporte Flotante para DJ PRO */}
+      {!isAdminMaster && userProfile?.selectedPlan === 'pro' && (
+        <div style={{ position: 'fixed', bottom: '24px', right: '24px', zIndex: 9999, fontFamily: 'system-ui, sans-serif' }}>
+          {/* Botón Flotante */}
+          <button
+            onClick={() => setSupportChatOpen(!supportChatOpen)}
+            className="flex items-center justify-center rounded-full shadow-lg transition-transform hover:scale-105"
+            style={{
+              width: '60px',
+              height: '60px',
+              background: 'linear-gradient(135deg, #7c3aed 0%, #4f46e5 100%)',
+              color: '#fff',
+              border: 'none',
+              cursor: 'pointer',
+              position: 'relative'
+            }}
+            title="Soporte Técnico"
+          >
+            {supportChatOpen ? <X size={24} /> : <MessageSquare size={24} />}
+            {/* Globo de no leídos */}
+            {!supportChatOpen && supportChatData?.metadata?.unreadCountByUser > 0 && (
+              <span className="absolute top-0 right-0 bg-red-500 text-white rounded-full flex items-center justify-center text-xs font-bold"
+                style={{
+                  width: '20px',
+                  height: '20px',
+                  transform: 'translate(25%, -25%)',
+                  boxShadow: '0 2px 4px rgba(0,0,0,0.2)'
+                }}>
+                {supportChatData.metadata.unreadCountByUser}
+              </span>
+            )}
+          </button>
+
+          {/* Ventana de Chat */}
+          {supportChatOpen && (
+            <div className="flex flex-col bg-slate-900 border border-slate-800 rounded-2xl shadow-2xl overflow-hidden animate-fade-in"
+              style={{
+                position: 'absolute',
+                bottom: '80px',
+                right: 0,
+                width: '360px',
+                height: '480px',
+                color: '#fff'
+              }}>
+              {/* Encabezado */}
+              <div className="px-4 py-3 flex items-center justify-between"
+                style={{
+                  background: 'linear-gradient(135deg, #7c3aed 0%, #4f46e5 100%)'
+                }}>
+                <div>
+                  <h3 className="font-bold text-sm" style={{ margin: 0 }}>💬 Soporte Técnico PRO</h3>
+                  <p className="text-xs text-purple-200" style={{ margin: 0, opacity: 0.8 }}>Respuesta en tiempo real</p>
+                </div>
+                <button
+                  onClick={() => setSupportChatOpen(false)}
+                  className="text-white hover:text-gray-200"
+                  style={{ background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                >
+                  <X size={18} />
+                </button>
+              </div>
+
+              {/* Mensajes */}
+              <div className="flex-1 overflow-y-auto p-4 space-y-3" style={{ background: '#0b1329', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                {(!supportChatData?.messages || supportChatData.messages.length === 0) ? (
+                  <div style={{ height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center', padding: '0 16px', color: 'var(--text-muted)' }}>
+                    <MessageSquare size={36} style={{ marginBottom: '8px', opacity: 0.5 }} />
+                    <p style={{ fontSize: '0.8rem', margin: '0 0 4px 0' }}>¿Tienes dudas o problemas técnicos?</p>
+                    <p style={{ fontSize: '0.7rem', margin: 0, opacity: 0.7 }}>Escríbenos y el Admin Master te atenderá a la brevedad.</p>
+                  </div>
+                ) : (
+                  supportChatData.messages.map((msg, index) => {
+                    const isMe = msg.senderId === user?.uid;
+                    return (
+                      <div key={index} style={{ display: 'flex', flexDirection: 'column', alignItems: isMe ? 'flex-end' : 'flex-start' }}>
+                        <span style={{ fontSize: '0.65rem', color: 'var(--text-muted)', marginBottom: '2px', padding: '0 4px' }}>{msg.senderName}</span>
+                        <div style={{
+                          padding: '8px 12px',
+                          fontSize: '0.8rem',
+                          maxWidth: '85%',
+                          wordBreak: 'break-word',
+                          background: isMe ? '#7c3aed' : '#1e293b',
+                          color: '#fff',
+                          borderRadius: isMe ? '12px 12px 2px 12px' : '12px 12px 12px 2px'
+                        }}>
+                          {msg.text}
+                        </div>
+                        <span style={{ fontSize: '0.6rem', color: 'var(--text-muted)', marginTop: '2px', padding: '0 4px' }}>
+                          {new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                        </span>
+                      </div>
+                    );
+                  })
+                )}
+                <div ref={supportChatEndRef} />
+              </div>
+
+              {/* Input */}
+              <form onSubmit={handleSendSupportMessage} style={{ padding: '12px', borderTop: '1px solid var(--surface-border)', display: 'flex', gap: '10px', background: 'rgba(0,0,0,0.2)' }}>
+                <input
+                  type="text"
+                  value={supportChatText}
+                  onChange={(e) => setSupportChatText(e.target.value)}
+                  placeholder="Escribe tu mensaje..."
+                  style={{ flex: 1, height: '36px', fontSize: '0.85rem', background: 'var(--surface-color)', border: '1px solid var(--surface-border)', borderRadius: 'var(--radius-md)', padding: '0 12px', color: '#fff' }}
+                />
+                <button
+                  type="submit"
+                  style={{
+                    background: 'linear-gradient(135deg, #7c3aed 0%, #4f46e5 100%)',
+                    border: 'none',
+                    padding: '0 12px',
+                    borderRadius: 'var(--radius-md)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    height: '36px',
+                    cursor: 'pointer',
+                    color: '#fff'
+                  }}
+                >
+                  <Send size={14} />
+                </button>
+              </form>
+            </div>
+          )}
         </div>
       )}
     </div>

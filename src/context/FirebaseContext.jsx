@@ -2334,10 +2334,164 @@ export const FirebaseProvider = ({ children }) => {
     await set(plansRef, newPlansConfig);
   };
 
+  // --- CHAT DE SOPORTE INTERNO (USUARIOS PRO / ADMIN MASTER) ---
+
+  const sendSupportMessage = async (userUid, text) => {
+    if (!user) throw new Error("Debes iniciar sesión para chatear.");
+    const senderId = impersonatingUid || user.uid;
+    const isSenderAdmin = senderId === 'uid-admin-master' || user.email === 'dj@admin.com';
+    const finalSenderId = isSenderAdmin ? 'uid-admin-master' : senderId;
+    
+    // 1. Obtener nombre del remitente
+    let senderName = "DJ";
+    if (isSenderAdmin) {
+      senderName = "Soporte (Admin)";
+    } else {
+      senderName = userProfile?.displayName || user.email?.split('@')[0] || "DJ PRO";
+    }
+
+    const messageData = {
+      senderId: finalSenderId,
+      senderName,
+      text,
+      timestamp: Date.now()
+    };
+
+    if (isMockMode) {
+      const dbData = JSON.parse(localStorage.getItem('mock_rtdb_v2') || '{}');
+      if (!dbData.support_chats) dbData.support_chats = {};
+      if (!dbData.support_chats[userUid]) dbData.support_chats[userUid] = { metadata: {}, messages: {} };
+      
+      // Añadir mensaje
+      const msgId = 'msg-' + Date.now() + '-' + Math.random().toString(36).substr(2, 5);
+      dbData.support_chats[userUid].messages[msgId] = messageData;
+
+      // Actualizar metadata
+      if (!dbData.support_chats[userUid].metadata) dbData.support_chats[userUid].metadata = {};
+      const meta = dbData.support_chats[userUid].metadata;
+      meta.djName = isSenderAdmin ? (meta.djName || "DJ PRO") : senderName;
+      meta.lastMessage = text;
+      meta.lastTimestamp = messageData.timestamp;
+      
+      if (isSenderAdmin) {
+        meta.unreadCountByUser = (meta.unreadCountByUser || 0) + 1;
+        meta.unreadCountByAdmin = 0;
+      } else {
+        meta.unreadCountByAdmin = (meta.unreadCountByAdmin || 0) + 1;
+        meta.unreadCountByUser = 0;
+      }
+
+      localStorage.setItem('mock_rtdb_v2', JSON.stringify(dbData));
+      if (syncChannel) syncChannel.postMessage({ type: 'DB_UPDATE' });
+      return;
+    }
+
+    // Firebase real:
+    const messagesRef = ref(database, `support_chats/${userUid}/messages`);
+    const newMsgRef = push(messagesRef);
+    await set(newMsgRef, messageData);
+
+    // Actualizar metadata
+    const metaSnap = await get(ref(database, `support_chats/${userUid}/metadata`));
+    const currentMeta = metaSnap.exists() ? metaSnap.val() : {};
+    
+    const unreadCountByAdmin = isSenderAdmin ? 0 : (currentMeta.unreadCountByAdmin || 0) + 1;
+    const unreadCountByUser = isSenderAdmin ? (currentMeta.unreadCountByUser || 0) + 1 : 0;
+
+    await update(ref(database, `support_chats/${userUid}/metadata`), {
+      djName: isSenderAdmin ? (currentMeta.djName || "DJ PRO") : senderName,
+      lastMessage: text,
+      lastTimestamp: messageData.timestamp,
+      unreadCountByAdmin,
+      unreadCountByUser
+    });
+  };
+
+  const markSupportChatAsRead = async (userUid, readerType) => {
+    if (isMockMode) {
+      const dbData = JSON.parse(localStorage.getItem('mock_rtdb_v2') || '{}');
+      if (dbData.support_chats && dbData.support_chats[userUid] && dbData.support_chats[userUid].metadata) {
+        if (readerType === 'admin') {
+          dbData.support_chats[userUid].metadata.unreadCountByAdmin = 0;
+        } else {
+          dbData.support_chats[userUid].metadata.unreadCountByUser = 0;
+        }
+        localStorage.setItem('mock_rtdb_v2', JSON.stringify(dbData));
+        if (syncChannel) syncChannel.postMessage({ type: 'DB_UPDATE' });
+      }
+      return;
+    }
+
+    const fieldToUpdate = readerType === 'admin' ? 'unreadCountByAdmin' : 'unreadCountByUser';
+    await update(ref(database, `support_chats/${userUid}/metadata`), {
+      [fieldToUpdate]: 0
+    });
+  };
+
+  const subscribeToSupportChat = (userUid, callback) => {
+    if (isMockMode) {
+      const handleSync = () => {
+        const dbData = JSON.parse(localStorage.getItem('mock_rtdb_v2') || '{}');
+        const chatData = dbData.support_chats?.[userUid] || { metadata: {}, messages: {} };
+        const list = Object.values(chatData.messages || {}).sort((a, b) => a.timestamp - b.timestamp);
+        callback({ metadata: chatData.metadata || {}, messages: list });
+      };
+      handleSync();
+      window.addEventListener('storage', handleSync);
+      const interval = setInterval(handleSync, 1000);
+      return () => {
+        window.removeEventListener('storage', handleSync);
+        clearInterval(interval);
+      };
+    }
+
+    const chatRef = ref(database, `support_chats/${userUid}`);
+    const unsubscribe = onValue(chatRef, (snapshot) => {
+      if (snapshot.exists()) {
+        const val = snapshot.val();
+        const list = Object.values(val.messages || {}).sort((a, b) => a.timestamp - b.timestamp);
+        callback({ metadata: val.metadata || {}, messages: list });
+      } else {
+        callback({ metadata: {}, messages: [] });
+      }
+    });
+    return unsubscribe;
+  };
+
+  const subscribeToAllSupportChats = (callback) => {
+    if (isMockMode) {
+      const handleSync = () => {
+        const dbData = JSON.parse(localStorage.getItem('mock_rtdb_v2') || '{}');
+        callback(dbData.support_chats || {});
+      };
+      handleSync();
+      window.addEventListener('storage', handleSync);
+      const interval = setInterval(handleSync, 1000);
+      return () => {
+        window.removeEventListener('storage', handleSync);
+        clearInterval(interval);
+      };
+    }
+
+    const supportChatsRef = ref(database, 'support_chats');
+    const unsubscribe = onValue(supportChatsRef, (snapshot) => {
+      if (snapshot.exists()) {
+        callback(snapshot.val());
+      } else {
+        callback({});
+      }
+    });
+    return unsubscribe;
+  };
+
   return (
     <FirebaseContext.Provider value={{
       plansConfig,
       updatePlansConfig,
+      sendSupportMessage,
+      markSupportChatAsRead,
+      subscribeToSupportChat,
+      subscribeToAllSupportChats,
       publicPaymentInfo,
       user,
       userProfile,

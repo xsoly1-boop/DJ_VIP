@@ -3,6 +3,15 @@
     ".read": "auth != null && auth.token.email == 'dj@admin.com'",
     ".write": "auth != null && auth.token.email == 'dj@admin.com'",
 
+    "support_chats": {
+      ".read": "auth != null && auth.token.email == 'dj@admin.com'",
+      ".write": "auth != null && auth.token.email == 'dj@admin.com'",
+      "$uid": {
+        ".read": "auth != null && (auth.uid == $uid || auth.token.email == 'dj@admin.com')",
+        ".write": "auth != null && (auth.uid == $uid || auth.token.email == 'dj@admin.com')"
+      }
+    },
+
     // Configuración global accesible
     "config": {
       "plans": {
