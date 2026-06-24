@@ -1444,14 +1444,37 @@ export default function DjDashboard() {
     
     const currentPlan = uid === 'uid-admin-master' ? 'vip' : (userData?.profile?.selectedPlan || userData?.profile?.subscriptionStatus || 'free');
     const expiresAt = userData?.profile?.expiresAt || 0;
-    const demoLimit = userData?.profile?.demoLimit !== undefined ? parseInt(userData.profile.demoLimit, 10) : 35;
-    const premiumLimit = userData?.profile?.premiumLimit !== undefined ? parseInt(userData.profile.premiumLimit, 10) : 80;
-    const demoLimitExpiresAt = userData?.profile?.demoLimitExpiresAt || 0;
-    const premiumLimitExpiresAt = userData?.profile?.premiumLimitExpiresAt || 0;
+    const extraRequests = userData?.profile?.extraRequests !== undefined ? parseInt(userData.profile.extraRequests, 10) : 0;
+    const extraRequestsExpiresAt = userData?.profile?.extraRequestsExpiresAt ? parseInt(userData.profile.extraRequestsExpiresAt, 10) : 0;
+    const isExtraValid = extraRequests > 0 && (!extraRequestsExpiresAt || Date.now() <= extraRequestsExpiresAt);
+    const activeExtra = isExtraValid ? extraRequests : 0;
+
+    // Fallback for old accounts
+    let resolvedExtra = activeExtra;
+    if (resolvedExtra === 0) {
+      if (currentPlan === 'free') {
+        const rawLimit = userData?.profile?.demoLimit !== undefined ? parseInt(userData.profile.demoLimit, 10) : 35;
+        const expiresAtVal = userData?.profile?.demoLimitExpiresAt || 0;
+        if (rawLimit > 35 && (!expiresAtVal || Date.now() <= expiresAtVal)) {
+          resolvedExtra = rawLimit - 35;
+        }
+      } else if (currentPlan === 'premium') {
+        const rawLimit = userData?.profile?.premiumLimit !== undefined ? parseInt(userData.profile.premiumLimit, 10) : 80;
+        const expiresAtVal = userData?.profile?.premiumLimitExpiresAt || 0;
+        if (rawLimit > 80 && (!expiresAtVal || Date.now() <= expiresAtVal)) {
+          resolvedExtra = rawLimit - 80;
+        }
+      }
+    }
+
+    const demoLimit = 35 + resolvedExtra;
+    const premiumLimit = 80 + resolvedExtra;
+    const demoLimitExpiresAt = extraRequestsExpiresAt || userData?.profile?.demoLimitExpiresAt || 0;
+    const premiumLimitExpiresAt = extraRequestsExpiresAt || userData?.profile?.premiumLimitExpiresAt || 0;
     const logoUploadEnabled = userData?.profile?.logoUploadEnabled || false;
     const strictLimitEnabled = userData?.profile?.strictLimitEnabled !== false;
     
-    return { uid, eventsCount, requestsCount, djName, eventTitles, email, currentPlan, expiresAt, demoLimit, premiumLimit, demoLimitExpiresAt, premiumLimitExpiresAt, logoUploadEnabled, strictLimitEnabled };
+    return { uid, eventsCount, requestsCount, djName, eventTitles, email, currentPlan, expiresAt, demoLimit, premiumLimit, demoLimitExpiresAt, premiumLimitExpiresAt, logoUploadEnabled, strictLimitEnabled, extraRequests, extraRequestsExpiresAt };
   });
 
   return (
@@ -1564,24 +1587,35 @@ export default function DjDashboard() {
                 let maxReq = 0;
                 let extraQuantity = 0;
 
+                let extraRequests = userProfile?.extraRequests !== undefined ? parseInt(userProfile.extraRequests, 10) : 0;
+                let extraRequestsExpiresAt = userProfile?.extraRequestsExpiresAt ? parseInt(userProfile.extraRequestsExpiresAt, 10) : 0;
+
+                // Fallback for old accounts
+                if (extraRequests === 0) {
+                  if (plan === 'free' && userProfile?.demoLimit !== undefined) {
+                    const rawLimit = parseInt(userProfile.demoLimit, 10);
+                    if (rawLimit > 35) {
+                      extraRequests = rawLimit - 35;
+                      extraRequestsExpiresAt = userProfile.demoLimitExpiresAt ? parseInt(userProfile.demoLimitExpiresAt, 10) : 0;
+                    }
+                  } else if (plan === 'premium' && userProfile?.premiumLimit !== undefined) {
+                    const rawLimit = parseInt(userProfile.premiumLimit, 10);
+                    if (rawLimit > 80) {
+                      extraRequests = rawLimit - 80;
+                      extraRequestsExpiresAt = userProfile.premiumLimitExpiresAt ? parseInt(userProfile.premiumLimitExpiresAt, 10) : 0;
+                    }
+                  }
+                }
+
+                const isExtraValid = extraRequests > 0 && (!extraRequestsExpiresAt || Date.now() <= extraRequestsExpiresAt);
+                const activeExtra = isExtraValid ? extraRequests : 0;
+
                 if (plan === 'free') {
-                  const rawLimit = userProfile?.demoLimit !== undefined ? parseInt(userProfile.demoLimit, 10) : 35;
-                  const expiresAt = userProfile?.demoLimitExpiresAt ? parseInt(userProfile.demoLimitExpiresAt, 10) : 0;
-                  if (rawLimit > 35 && expiresAt && Date.now() > expiresAt) {
-                    maxReq = 35;
-                  } else {
-                    maxReq = rawLimit;
-                    if (rawLimit > 35) extraQuantity = rawLimit - 35;
-                  }
+                  maxReq = 35 + activeExtra;
+                  extraQuantity = activeExtra;
                 } else if (plan === 'premium') {
-                  const rawLimit = userProfile?.premiumLimit !== undefined ? parseInt(userProfile.premiumLimit, 10) : 80;
-                  const expiresAt = userProfile?.premiumLimitExpiresAt ? parseInt(userProfile.premiumLimitExpiresAt, 10) : 0;
-                  if (rawLimit > 80 && expiresAt && Date.now() > expiresAt) {
-                    maxReq = 80;
-                  } else {
-                    maxReq = rawLimit;
-                    if (rawLimit > 80) extraQuantity = rawLimit - 80;
-                  }
+                  maxReq = 80 + activeExtra;
+                  extraQuantity = activeExtra;
                 } else if (plan === 'vip') {
                   maxReq = 0;
                 }
@@ -2296,8 +2330,8 @@ export default function DjDashboard() {
               ) : (
                 <form onSubmit={handleSaveBranding} style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
 
-                {/* Logo Personalizado - Solo visible para Admin Master o si está habilitado para el usuario VIP */}
-                {(isAdminMaster || (userProfile?.selectedPlan === 'vip' && userProfile?.logoUploadEnabled)) && (
+                {/* Logo Personalizado - Visible para Admin Master, Premium y VIP */}
+                {(isAdminMaster || userProfile?.selectedPlan === 'premium' || userProfile?.selectedPlan === 'vip') && (
                 <div className="form-group" style={{ borderBottom: '1px solid rgba(255,255,255,0.05)', paddingBottom: '20px' }}>
                   <label className="form-label" style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px' }}>
                     <Image size={15} color="var(--secondary-color)" />
@@ -2315,22 +2349,26 @@ export default function DjDashboard() {
                     {/* Controles de Subida / URL */}
                     <div style={{ flex: 1, minWidth: '250px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
                       
-                      {/* Opción A: Subir Archivo */}
-                      <div>
-                        <span style={{ fontSize: '0.8rem', fontWeight: '600', display: 'block', marginBottom: '6px', color: 'var(--text-primary)' }}>
-                          Opción A: Subir desde tu computadora
-                        </span>
-                        <input
-                          type="file"
-                          accept="image/*"
-                          onChange={handleLogoUpload}
-                          style={{ fontSize: '0.85rem' }}
-                        />
-                      </div>
+                      {/* Opción A: Subir Archivo - Solo Admin Master o VIP con logoUploadEnabled */}
+                      {(isAdminMaster || (userProfile?.selectedPlan === 'vip' && userProfile?.logoUploadEnabled)) && (
+                        <div>
+                          <span style={{ fontSize: '0.8rem', fontWeight: '600', display: 'block', marginBottom: '6px', color: 'var(--text-primary)' }}>
+                            Opción A: Subir desde tu computadora
+                          </span>
+                          <input
+                            type="file"
+                            accept="image/*"
+                            onChange={handleLogoUpload}
+                            style={{ fontSize: '0.85rem' }}
+                          />
+                        </div>
+                      )}
 
-                      <div style={{ height: '1px', background: 'rgba(255,255,255,0.05)', margin: '4px 0' }} />
+                      {(isAdminMaster || (userProfile?.selectedPlan === 'vip' && userProfile?.logoUploadEnabled)) && (
+                        <div style={{ height: '1px', background: 'rgba(255,255,255,0.05)', margin: '4px 0' }} />
+                      )}
 
-                      {/* Opción B: URL Externa */}
+                      {/* Opción B: URL Externa - Visible para Premium, VIP y Admin Master */}
                       <div>
                         <span style={{ fontSize: '0.8rem', fontWeight: '600', display: 'block', marginBottom: '6px', color: 'var(--text-primary)' }}>
                           Opción B: URL externa de imagen
@@ -4514,20 +4552,23 @@ export default function DjDashboard() {
                                   </select>
                                 </div>
                                 {editDjPlan === 'free' && (
-                                  <div className="form-group" style={{ marginBottom: 0 }}>
-                                    <label className="form-label" style={{ fontSize: '0.7rem' }}>LÍMITE DE PETICIONES (DEMO)</label>
-                                    <select
-                                      className="input-field"
-                                      value={editDjDemoLimit}
-                                      onChange={(e) => setEditDjDemoLimit(parseInt(e.target.value, 10))}
-                                      style={{ padding: '4px 8px', fontSize: '0.8rem', height: '28px', background: 'var(--surface-color)', color: '#fff', border: '1px solid rgba(255,255,255,0.15)', cursor: 'pointer' }}
-                                    >
-                                      <option value={35}>35 Peticiones (Default)</option>
-                                      <option value={50}>50 Peticiones</option>
-                                      <option value={60}>60 Peticiones</option>
-                                    </select>
-                                  </div>
-                                )}
+                                   <div className="form-group" style={{ marginBottom: 0 }}>
+                                     <label className="form-label" style={{ fontSize: '0.7rem' }}>LÍMITE DE PETICIONES (DEMO)</label>
+                                     <select
+                                       className="input-field"
+                                       value={editDjDemoLimit}
+                                       onChange={(e) => setEditDjDemoLimit(parseInt(e.target.value, 10))}
+                                       style={{ padding: '4px 8px', fontSize: '0.8rem', height: '28px', background: 'var(--surface-color)', color: '#fff', border: '1px solid rgba(255,255,255,0.15)', cursor: 'pointer' }}
+                                     >
+                                       <option value={35}>35 Peticiones (Default)</option>
+                                       <option value={50}>50 Peticiones</option>
+                                       <option value={60}>60 Peticiones</option>
+                                       {![35, 50, 60].includes(editDjDemoLimit) && (
+                                         <option value={editDjDemoLimit}>{editDjDemoLimit} Peticiones</option>
+                                       )}
+                                     </select>
+                                   </div>
+                                 )}
                                  {editDjPlan === 'vip' && (
                                    <div className="form-group" style={{ marginBottom: 0, display: 'flex', flexDirection: 'column', gap: '4px' }}>
                                      <label className="form-label" style={{ fontSize: '0.7rem' }}>Logotipo Marca Blanca</label>
@@ -4554,6 +4595,9 @@ export default function DjDashboard() {
                                       <option value={80}>80 Peticiones (Default)</option>
                                       <option value={100}>100 Peticiones</option>
                                       <option value={120}>120 Peticiones</option>
+                                      {![80, 100, 120].includes(editDjPremiumLimit) && (
+                                        <option value={editDjPremiumLimit}>{editDjPremiumLimit} Peticiones</option>
+                                      )}
                                     </select>
                                   </div>
                                 )}

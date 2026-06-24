@@ -1118,22 +1118,33 @@ export const FirebaseProvider = ({ children }) => {
       const planKey = ownerProfile?.activePlan || ownerProfile?.selectedPlan || 'free';
       strictLimitEnabled = ownerProfile?.strictLimitEnabled !== false;
 
+      let extraRequests = ownerProfile?.extraRequests !== undefined ? parseInt(ownerProfile.extraRequests, 10) : 0;
+      let extraRequestsExpiresAt = ownerProfile?.extraRequestsExpiresAt ? parseInt(ownerProfile.extraRequestsExpiresAt, 10) : 0;
+
+      // Fallback for old accounts
+      if (extraRequests === 0) {
+        if (planKey === 'free' && ownerProfile?.demoLimit !== undefined) {
+          const rawLimit = parseInt(ownerProfile.demoLimit, 10);
+          if (rawLimit > 35) {
+            extraRequests = rawLimit - 35;
+            extraRequestsExpiresAt = ownerProfile.demoLimitExpiresAt ? parseInt(ownerProfile.demoLimitExpiresAt, 10) : 0;
+          }
+        } else if (planKey === 'premium' && ownerProfile?.premiumLimit !== undefined) {
+          const rawLimit = parseInt(ownerProfile.premiumLimit, 10);
+          if (rawLimit > 80) {
+            extraRequests = rawLimit - 80;
+            extraRequestsExpiresAt = ownerProfile.premiumLimitExpiresAt ? parseInt(ownerProfile.premiumLimitExpiresAt, 10) : 0;
+          }
+        }
+      }
+
+      const isExtraValid = extraRequests > 0 && (!extraRequestsExpiresAt || Date.now() <= extraRequestsExpiresAt);
+      const activeExtra = isExtraValid ? extraRequests : 0;
+
       if (planKey === 'free') {
-        const rawLimit = ownerProfile?.demoLimit !== undefined ? parseInt(ownerProfile.demoLimit, 10) : 35;
-        const expiresAt = ownerProfile?.demoLimitExpiresAt ? parseInt(ownerProfile.demoLimitExpiresAt, 10) : 0;
-        if (rawLimit > 35 && expiresAt && Date.now() > expiresAt) {
-          maxRequests = 35;
-        } else {
-          maxRequests = rawLimit;
-        }
+        maxRequests = 35 + activeExtra;
       } else if (planKey === 'premium') {
-        const rawLimit = ownerProfile?.premiumLimit !== undefined ? parseInt(ownerProfile.premiumLimit, 10) : 80;
-        const expiresAt = ownerProfile?.premiumLimitExpiresAt ? parseInt(ownerProfile.premiumLimitExpiresAt, 10) : 0;
-        if (rawLimit > 80 && expiresAt && Date.now() > expiresAt) {
-          maxRequests = 80;
-        } else {
-          maxRequests = rawLimit;
-        }
+        maxRequests = 80 + activeExtra;
       } else {
         const planDetails = plansConfig?.[planKey] || DEFAULT_PLANS_CONFIG[planKey] || DEFAULT_PLANS_CONFIG.free;
         maxRequests = planDetails && planDetails.maxRequests !== undefined
@@ -1610,23 +1621,34 @@ export const FirebaseProvider = ({ children }) => {
       return;
     }
 
+    let extraRequests = userProfile?.extraRequests !== undefined ? parseInt(userProfile.extraRequests, 10) : 0;
+    let extraRequestsExpiresAt = userProfile?.extraRequestsExpiresAt ? parseInt(userProfile.extraRequestsExpiresAt, 10) : 0;
+
+    // Fallback for old accounts
+    if (extraRequests === 0) {
+      if (planKey === 'free' && userProfile?.demoLimit !== undefined) {
+        const rawLimit = parseInt(userProfile.demoLimit, 10);
+        if (rawLimit > 35) {
+          extraRequests = rawLimit - 35;
+          extraRequestsExpiresAt = userProfile.demoLimitExpiresAt ? parseInt(userProfile.demoLimitExpiresAt, 10) : 0;
+        }
+      } else if (planKey === 'premium' && userProfile?.premiumLimit !== undefined) {
+        const rawLimit = parseInt(userProfile.premiumLimit, 10);
+        if (rawLimit > 80) {
+          extraRequests = rawLimit - 80;
+          extraRequestsExpiresAt = userProfile.premiumLimitExpiresAt ? parseInt(userProfile.premiumLimitExpiresAt, 10) : 0;
+        }
+      }
+    }
+
+    const isExtraValid = extraRequests > 0 && (!extraRequestsExpiresAt || Date.now() <= extraRequestsExpiresAt);
+    const activeExtra = isExtraValid ? extraRequests : 0;
+
     let maxRequests = 35;
     if (planKey === 'free') {
-      const rawLimit = userProfile?.demoLimit !== undefined ? parseInt(userProfile.demoLimit, 10) : 35;
-      const expiresAt = userProfile?.demoLimitExpiresAt ? parseInt(userProfile.demoLimitExpiresAt, 10) : 0;
-      if (rawLimit > 35 && expiresAt && Date.now() > expiresAt) {
-        maxRequests = 35;
-      } else {
-        maxRequests = rawLimit;
-      }
+      maxRequests = 35 + activeExtra;
     } else if (planKey === 'premium') {
-      const rawLimit = userProfile?.premiumLimit !== undefined ? parseInt(userProfile.premiumLimit, 10) : 80;
-      const expiresAt = userProfile?.premiumLimitExpiresAt ? parseInt(userProfile.premiumLimitExpiresAt, 10) : 0;
-      if (rawLimit > 80 && expiresAt && Date.now() > expiresAt) {
-        maxRequests = 80;
-      } else {
-        maxRequests = rawLimit;
-      }
+      maxRequests = 80 + activeExtra;
     }
 
     const requestsRefToCheck = ref(database, `${userBasePath}/events/${targetEventId}/requests`);
@@ -2012,18 +2034,48 @@ export const FirebaseProvider = ({ children }) => {
       const allAccounts = JSON.parse(localStorage.getItem('mock_accounts') || '[]');
       const accountIdx = allAccounts.findIndex(a => a.uid === uid);
       if (accountIdx !== -1) {
+        const currentProfile = dbData.users?.[uid]?.profile || allAccounts[accountIdx] || {};
+        let extraRequests = currentProfile.extraRequests !== undefined ? parseInt(currentProfile.extraRequests, 10) : 0;
+        let extraRequestsExpiresAt = currentProfile.extraRequestsExpiresAt ? parseInt(currentProfile.extraRequestsExpiresAt, 10) : 0;
+
+        const targetPlan = newPlan || currentProfile.selectedPlan || 'free';
+
+        if (targetPlan === 'free') {
+          if (demoLimit !== undefined && demoLimit !== null) {
+            const val = parseInt(demoLimit, 10);
+            if (val > 35) {
+              extraRequests = val - 35;
+              extraRequestsExpiresAt = Date.now() + 30 * 24 * 60 * 60 * 1000;
+            } else {
+              extraRequests = 0;
+              extraRequestsExpiresAt = 0;
+            }
+          }
+        } else if (targetPlan === 'premium') {
+          if (premiumLimit !== undefined && premiumLimit !== null) {
+            const val = parseInt(premiumLimit, 10);
+            if (val > 80) {
+              extraRequests = val - 80;
+              extraRequestsExpiresAt = Date.now() + 30 * 24 * 60 * 60 * 1000;
+            } else {
+              extraRequests = 0;
+              extraRequestsExpiresAt = 0;
+            }
+          }
+        }
+
         if (newEmail) allAccounts[accountIdx].email = newEmail;
         if (newDisplayName) allAccounts[accountIdx].displayName = newDisplayName;
         if (newPassword) allAccounts[accountIdx].password = newPassword;
         if (newPlan) allAccounts[accountIdx].selectedPlan = newPlan;
-        if (demoLimit !== undefined) {
-          allAccounts[accountIdx].demoLimit = demoLimit;
-          allAccounts[accountIdx].demoLimitExpiresAt = (demoLimit > 35) ? (Date.now() + 30 * 24 * 60 * 60 * 1000) : 0;
-        }
-        if (premiumLimit !== undefined) {
-          allAccounts[accountIdx].premiumLimit = premiumLimit;
-          allAccounts[accountIdx].premiumLimitExpiresAt = (premiumLimit > 80) ? (Date.now() + 30 * 24 * 60 * 60 * 1000) : 0;
-        }
+        
+        allAccounts[accountIdx].extraRequests = extraRequests;
+        allAccounts[accountIdx].extraRequestsExpiresAt = extraRequestsExpiresAt;
+        allAccounts[accountIdx].demoLimit = 35 + extraRequests;
+        allAccounts[accountIdx].demoLimitExpiresAt = extraRequestsExpiresAt;
+        allAccounts[accountIdx].premiumLimit = 80 + extraRequests;
+        allAccounts[accountIdx].premiumLimitExpiresAt = extraRequestsExpiresAt;
+
         if (logoUploadEnabled !== undefined) {
           allAccounts[accountIdx].logoUploadEnabled = logoUploadEnabled;
         }
@@ -2034,21 +2086,25 @@ export const FirebaseProvider = ({ children }) => {
       // Actualizar también en RTDB mock
       if (dbData.users && dbData.users[uid]) {
         if (!dbData.users[uid].profile) dbData.users[uid].profile = {};
-        if (newEmail) dbData.users[uid].profile.email = newEmail;
-        if (newDisplayName) dbData.users[uid].profile.displayName = newDisplayName;
-        if (newPassword) dbData.users[uid].profile.password = newPassword;
-        if (demoLimit !== undefined) {
-          dbData.users[uid].profile.demoLimit = demoLimit;
-          dbData.users[uid].profile.demoLimitExpiresAt = (demoLimit > 35) ? (Date.now() + 30 * 24 * 60 * 60 * 1000) : 0;
+        const profile = dbData.users[uid].profile;
+        if (newEmail) profile.email = newEmail;
+        if (newDisplayName) profile.displayName = newDisplayName;
+        if (newPassword) profile.password = newPassword;
+        
+        const accountIdx = allAccounts.findIndex(a => a.uid === uid);
+        if (accountIdx !== -1) {
+          profile.extraRequests = allAccounts[accountIdx].extraRequests;
+          profile.extraRequestsExpiresAt = allAccounts[accountIdx].extraRequestsExpiresAt;
+          profile.demoLimit = allAccounts[accountIdx].demoLimit;
+          profile.demoLimitExpiresAt = allAccounts[accountIdx].demoLimitExpiresAt;
+          profile.premiumLimit = allAccounts[accountIdx].premiumLimit;
+          profile.premiumLimitExpiresAt = allAccounts[accountIdx].premiumLimitExpiresAt;
         }
-        if (premiumLimit !== undefined) {
-          dbData.users[uid].profile.premiumLimit = premiumLimit;
-          dbData.users[uid].profile.premiumLimitExpiresAt = (premiumLimit > 80) ? (Date.now() + 30 * 24 * 60 * 60 * 1000) : 0;
-        }
+        
         if (logoUploadEnabled !== undefined) {
-          dbData.users[uid].profile.logoUploadEnabled = logoUploadEnabled;
+          profile.logoUploadEnabled = logoUploadEnabled;
         }
-        if (strictLimitEnabled !== undefined) dbData.users[uid].profile.strictLimitEnabled = strictLimitEnabled;
+        if (strictLimitEnabled !== undefined) profile.strictLimitEnabled = strictLimitEnabled;
         
         if (newPlan) {
           let duration = 30;
@@ -2072,17 +2128,17 @@ export const FirebaseProvider = ({ children }) => {
           }
           const expiresAt = msToAdd > 0 ? (Date.now() + msToAdd) : 0;
 
-          dbData.users[uid].profile.selectedPlan = newPlan;
-          dbData.users[uid].profile.subscriptionStatus = newPlan;
-          dbData.users[uid].profile.activePlan = newPlan;
-          dbData.users[uid].profile.activatedAt = newPlan === 'free' ? 0 : Date.now();
-          dbData.users[uid].profile.expiresAt = expiresAt;
+          profile.selectedPlan = newPlan;
+          profile.subscriptionStatus = newPlan;
+          profile.activePlan = newPlan;
+          profile.activatedAt = newPlan === 'free' ? 0 : Date.now();
+          profile.expiresAt = expiresAt;
           
           if (newPlan === 'free') {
-            dbData.users[uid].profile.paymentRejectedReason = null;
-            dbData.users[uid].profile.transactionId = null;
-            dbData.users[uid].profile.gateway = null;
-            dbData.users[uid].profile.submittedAt = null;
+            profile.paymentRejectedReason = null;
+            profile.transactionId = null;
+            profile.gateway = null;
+            profile.submittedAt = null;
           }
         }
 
@@ -2111,6 +2167,38 @@ export const FirebaseProvider = ({ children }) => {
 
     // En Firebase real:
     const profileRef = ref(database, `users/${uid}/profile`);
+    const profileSnap = await get(profileRef);
+    const currentProfile = profileSnap.exists() ? profileSnap.val() : {};
+
+    let extraRequests = currentProfile.extraRequests !== undefined ? parseInt(currentProfile.extraRequests, 10) : 0;
+    let extraRequestsExpiresAt = currentProfile.extraRequestsExpiresAt ? parseInt(currentProfile.extraRequestsExpiresAt, 10) : 0;
+
+    const targetPlan = newPlan || currentProfile.selectedPlan || 'free';
+
+    if (targetPlan === 'free') {
+      if (demoLimit !== undefined && demoLimit !== null) {
+        const val = parseInt(demoLimit, 10);
+        if (val > 35) {
+          extraRequests = val - 35;
+          extraRequestsExpiresAt = Date.now() + 30 * 24 * 60 * 60 * 1000;
+        } else {
+          extraRequests = 0;
+          extraRequestsExpiresAt = 0;
+        }
+      }
+    } else if (targetPlan === 'premium') {
+      if (premiumLimit !== undefined && premiumLimit !== null) {
+        const val = parseInt(premiumLimit, 10);
+        if (val > 80) {
+          extraRequests = val - 80;
+          extraRequestsExpiresAt = Date.now() + 30 * 24 * 60 * 60 * 1000;
+        } else {
+          extraRequests = 0;
+          extraRequestsExpiresAt = 0;
+        }
+      }
+    }
+
     const updates = {};
     if (newEmail) updates.email = newEmail;
     if (newDisplayName) updates.displayName = newDisplayName;
@@ -2156,15 +2244,13 @@ export const FirebaseProvider = ({ children }) => {
       await set(pendingSubRef, null);
     }
 
-    if (demoLimit !== undefined) {
-      updates.demoLimit = demoLimit;
-      updates.demoLimitExpiresAt = (demoLimit > 35) ? (Date.now() + 30 * 24 * 60 * 60 * 1000) : 0;
-    }
-
-    if (premiumLimit !== undefined) {
-      updates.premiumLimit = premiumLimit;
-      updates.premiumLimitExpiresAt = (premiumLimit > 80) ? (Date.now() + 30 * 24 * 60 * 60 * 1000) : 0;
-    }
+    // Set unified limits in profile
+    updates.extraRequests = extraRequests;
+    updates.extraRequestsExpiresAt = extraRequestsExpiresAt;
+    updates.demoLimit = 35 + extraRequests;
+    updates.demoLimitExpiresAt = extraRequestsExpiresAt;
+    updates.premiumLimit = 80 + extraRequests;
+    updates.premiumLimitExpiresAt = extraRequestsExpiresAt;
 
     if (logoUploadEnabled !== undefined) {
       updates.logoUploadEnabled = logoUploadEnabled;
