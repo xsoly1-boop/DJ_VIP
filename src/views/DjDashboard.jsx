@@ -5748,7 +5748,7 @@ export default function DjDashboard() {
             position: absolute !important;
             left: 50% !important;
             top: 50% !important;
-            transform: translate(-50%, -50%) rotate(90deg) !important;
+            transform: translate(-50%, -50%) rotate(-90deg) !important;
             transform-origin: center !important;
             box-sizing: border-box !important;
             visibility: visible !important;
