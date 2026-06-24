@@ -5892,7 +5892,7 @@ export default function DjDashboard() {
             color: 'var(--text-secondary)'
           }}>
             <Sparkles size={13} color="var(--primary-color)" />
-            Plataforma creada por <strong style={{ color: 'var(--primary-color)' }}>Dorian Najera</strong>
+            Plataforma creada por <strong style={{ color: 'var(--primary-color)' }}>DN Estudio</strong>
           </span>
         </p>
         <p style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginTop: '6px', opacity: 0.6 }}>
