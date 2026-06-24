@@ -1,7 +1,40 @@
 // paymentService.cjs – abstraction over PayPal and MercadoPago SDKs (CommonJS)
 const paypal = require('@paypal/checkout-server-sdk');
-const mercadopago = require('mercadopago');
+const { MercadoPagoConfig, Preference } = require('mercadopago');
 const admin = require('firebase-admin');
+
+const DEFAULT_PLANS = {
+  free: { name: 'Plan Demo', price: 0, currency: 'MXN' },
+  premium: { name: 'Plan Premium', price: 100, currency: 'MXN' },
+  vip: { name: 'Plan VIP', price: 200, currency: 'MXN' },
+  pro: { name: 'Plan PRO', price: 400, currency: 'MXN' },
+  bonus: { name: 'Plan Bonus (Extra)', price: 50, currency: 'MXN' },
+  eventual: { name: 'Eventual', price: 50, currency: 'MXN' }
+};
+
+// Helper to fetch dynamic plan details
+async function getPlanDetails(planId) {
+  if (admin.apps.length === 0) {
+    try {
+      const fs = require('fs');
+      const path = require('path');
+      const mockDbPath = path.join(__dirname, 'scratch/mock_backend_db.json');
+      if (fs.existsSync(mockDbPath)) {
+        const db = JSON.parse(fs.readFileSync(mockDbPath, 'utf8'));
+        return db.config?.plans?.[planId] || null;
+      }
+    } catch (e) {}
+    return null;
+  }
+  
+  try {
+    const snapshot = await admin.database().ref(`config/plans/${planId}`).once('value');
+    return snapshot.val() || null;
+  } catch (e) {
+    console.error(`Error fetching dynamic plan details for ${planId}`, e);
+    return null;
+  }
+}
 
 // Helper to fetch gateways config dynamically from database or local fallback
 async function getPaymentConfig() {
@@ -63,26 +96,48 @@ async function createSubscription({ userId, planId, paymentMethod }) {
     }
 
     try {
-      if (typeof mercadopago.configure === 'function') {
-        mercadopago.configure({
-          access_token: accessToken,
-        });
-      } else {
-        mercadopago.config = {
-          access_token: accessToken,
-        };
-      }
-    } catch (e) {
-      console.warn('MercadoPago configuration error:', e.message);
-    }
+      const client = new MercadoPagoConfig({
+        accessToken: accessToken
+      });
+      const preferenceClient = new Preference(client);
 
-    const preference = {
-      payer_email: `${userId}@example.com`,
-      back_url: process.env.VITE_PUBLIC_URL || 'http://localhost:5173',
-      external_reference: planId,
-    };
-    const response = await mercadopago.preferences.create(preference);
-    return response.body;
+      // Get plan details dynamically from database
+      const planDetails = await getPlanDetails(planId);
+      const planName = planDetails?.name || `Plan ${planId.toUpperCase()}`;
+      const price = parseFloat(planDetails?.price || DEFAULT_PLANS[planId]?.price || 0);
+      const currency = planDetails?.currency || DEFAULT_PLANS[planId]?.currency || 'MXN';
+
+      const redirectUrl = process.env.VITE_PUBLIC_URL || 'http://localhost:5173';
+
+      const preference = {
+        body: {
+          items: [
+            {
+              title: planName,
+              quantity: 1,
+              unit_price: price,
+              currency_id: currency
+            }
+          ],
+          payer: {
+            email: `${userId}@example.com`
+          },
+          back_urls: {
+            success: redirectUrl,
+            failure: redirectUrl,
+            pending: redirectUrl
+          },
+          auto_return: 'approved',
+          external_reference: planId
+        }
+      };
+
+      const response = await preferenceClient.create(preference);
+      return { id: response.id, init_point: response.init_point };
+    } catch (e) {
+      console.error('MercadoPago preference creation error:', e);
+      throw e;
+    }
   } else {
     throw new Error('Unsupported payment method');
   }

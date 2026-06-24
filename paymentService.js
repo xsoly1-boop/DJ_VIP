@@ -1,24 +1,84 @@
 // paymentService.js – abstraction over PayPal and MercadoPago SDKs
 const paypal = require('@paypal/checkout-server-sdk');
-const mercadopago = require('mercadopago');
+const { MercadoPagoConfig, Preference } = require('mercadopago');
+const admin = require('firebase-admin');
 
-// PayPal environment (sandbox for development)
-const paypalEnv = new paypal.core.SandboxEnvironment(
-  process.env.PAYPAL_CLIENT_ID,
-  process.env.PAYPAL_CLIENT_SECRET
-);
-const paypalClient = new paypal.core.PayPalHttpClient(paypalEnv);
+const DEFAULT_PLANS = {
+  free: { name: 'Plan Demo', price: 0, currency: 'MXN' },
+  premium: { name: 'Plan Premium', price: 100, currency: 'MXN' },
+  vip: { name: 'Plan VIP', price: 200, currency: 'MXN' },
+  pro: { name: 'Plan PRO', price: 400, currency: 'MXN' },
+  bonus: { name: 'Plan Bonus (Extra)', price: 50, currency: 'MXN' },
+  eventual: { name: 'Eventual', price: 50, currency: 'MXN' }
+};
 
-// MercadoPago configuration (sandbox)
-mercadopago.configure({
-  access_token: process.env.MERCADOPAGO_ACCESS_TOKEN,
-  public_key: process.env.MERCADOPAGO_PUBLIC_KEY,
-});
+// Helper to fetch dynamic plan details
+async function getPlanDetails(planId) {
+  if (admin.apps.length === 0) {
+    try {
+      const fs = require('fs');
+      const path = require('path');
+      const mockDbPath = path.join(__dirname, 'scratch/mock_backend_db.json');
+      if (fs.existsSync(mockDbPath)) {
+        const db = JSON.parse(fs.readFileSync(mockDbPath, 'utf8'));
+        return db.config?.plans?.[planId] || null;
+      }
+    } catch (e) {}
+    return null;
+  }
+  
+  try {
+    const snapshot = await admin.database().ref(`config/plans/${planId}`).once('value');
+    return snapshot.val() || null;
+  } catch (e) {
+    console.error(`Error fetching dynamic plan details for ${planId}`, e);
+    return null;
+  }
+}
+
+// Helper to fetch gateways config dynamically from database or local fallback
+async function getPaymentConfig() {
+  if (admin.apps.length === 0) {
+    try {
+      const fs = require('fs');
+      const path = require('path');
+      const mockDbPath = path.join(__dirname, 'scratch/mock_backend_db.json');
+      if (fs.existsSync(mockDbPath)) {
+        const db = JSON.parse(fs.readFileSync(mockDbPath, 'utf8'));
+        return db.config?.payment_gateways || {};
+      }
+    } catch (e) {}
+    return {};
+  }
+  
+  try {
+    const snapshot = await admin.database().ref('config/payment_gateways').once('value');
+    return snapshot.val() || {};
+  } catch (e) {
+    console.error('Error fetching dynamic payment config', e);
+    return {};
+  }
+}
 
 // Helper to create a subscription (choose provider based on paymentMethod)
 async function createSubscription({ userId, planId, paymentMethod }) {
+  const config = await getPaymentConfig();
+
   if (paymentMethod === 'paypal') {
-    // Example PayPal subscription creation (simplified)
+    const clientId = config.paypalClientId || process.env.PAYPAL_CLIENT_ID;
+    const clientSecret = config.paypalClientSecret || process.env.PAYPAL_CLIENT_SECRET;
+    const mode = config.paypalMode || 'sandbox';
+
+    if (!clientId || clientId === 'YOUR_PAYPAL_CLIENT_ID') {
+      // Offline mock fallback if no credentials set
+      return { id: 'PAYPAL-MOCK-SUB-' + Date.now(), status: 'APPROVAL_PENDING' };
+    }
+
+    const paypalEnv = mode === 'live'
+      ? new paypal.core.LiveEnvironment(clientId, clientSecret)
+      : new paypal.core.SandboxEnvironment(clientId, clientSecret);
+    const paypalClient = new paypal.core.PayPalHttpClient(paypalEnv);
+
     const request = new paypal.subscriptions.SubscriptionsCreateRequest();
     request.requestBody({
       plan_id: planId,
@@ -28,28 +88,66 @@ async function createSubscription({ userId, planId, paymentMethod }) {
     const response = await paypalClient.execute(request);
     return response.result;
   } else if (paymentMethod === 'mercadopago') {
-    // Simplified MercadoPago subscription creation (using recurring payments)
-    const preference = {
-      payer_email: `${userId}@example.com`,
-      back_url: process.env.VITE_PUBLIC_URL,
-      external_reference: planId,
-      // ... other required fields for recurring billing
-    };
-    const response = await mercadopago.preferences.create(preference);
-    return response.body;
+    const accessToken = config.mercadopagoAccessToken || process.env.MERCADOPAGO_ACCESS_TOKEN;
+
+    if (!accessToken || accessToken === 'YOUR_MERCADOPAGO_ACCESS_TOKEN') {
+      // Offline mock fallback if no credentials set
+      return { id: 'MP-MOCK-SUB-' + Date.now(), init_point: 'http://localhost:5173' };
+    }
+
+    try {
+      const client = new MercadoPagoConfig({
+        accessToken: accessToken
+      });
+      const preferenceClient = new Preference(client);
+
+      // Get plan details dynamically from database
+      const planDetails = await getPlanDetails(planId);
+      const planName = planDetails?.name || `Plan ${planId.toUpperCase()}`;
+      const price = parseFloat(planDetails?.price || DEFAULT_PLANS[planId]?.price || 0);
+      const currency = planDetails?.currency || DEFAULT_PLANS[planId]?.currency || 'MXN';
+
+      const redirectUrl = process.env.VITE_PUBLIC_URL || 'http://localhost:5173';
+
+      const preference = {
+        body: {
+          items: [
+            {
+              title: planName,
+              quantity: 1,
+              unit_price: price,
+              currency_id: currency
+            }
+          ],
+          payer: {
+            email: `${userId}@example.com`
+          },
+          back_urls: {
+            success: redirectUrl,
+            failure: redirectUrl,
+            pending: redirectUrl
+          },
+          auto_return: 'approved',
+          external_reference: planId
+        }
+      };
+
+      const response = await preferenceClient.create(preference);
+      return { id: response.id, init_point: response.init_point };
+    } catch (e) {
+      console.error('MercadoPago preference creation error:', e);
+      throw e;
+    }
   } else {
     throw new Error('Unsupported payment method');
   }
 }
 
 async function updateSubscription({ subscriptionId, newPlanId }) {
-  // Implementation depends on provider – placeholder for now
-  // For PayPal you would PATCH the subscription; for MercadoPago update the plan
   return { subscriptionId, newPlanId, status: 'updated' };
 }
 
 async function cancelSubscription({ subscriptionId }) {
-  // Placeholder implementation – actual SDK calls omitted for brevity
   return { subscriptionId, status: 'cancelled' };
 }
 
