@@ -221,8 +221,12 @@ router.post('/deleteUser', async (req, res) => {
     });
   }
   try {
-    // Delete Auth user
-    await deleteUserMock(uid);
+    // Delete Auth user (tolerante a si el usuario no existe en Firebase Auth)
+    try {
+      await deleteUserMock(uid);
+    } catch (authErr) {
+      console.warn(`Auth user ${uid} not found or already deleted from Firebase Auth:`, authErr.message);
+    }
     // Delete Firestore user document (if exists)
     const db = getFirestoreMock();
     await db.collection('users').doc(uid).delete();
