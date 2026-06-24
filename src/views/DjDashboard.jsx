@@ -43,6 +43,7 @@ export default function DjDashboard() {
     allEventsData,
     createDjAccount,
     updateDjAccount,
+    updateAdminProfile,
     uploadLogo,
     getDatabaseBackup,
     ratingsStats,
@@ -163,6 +164,38 @@ export default function DjDashboard() {
   const [adminChatText, setAdminChatText] = useState('');
   const [adminChatData, setAdminChatData] = useState({ metadata: {}, messages: [] });
   const adminChatEndRef = useRef(null);
+
+  // Perfil del Admin Master
+  const [adminAlias, setAdminAlias] = useState('');
+  const [adminWhatsapp, setAdminWhatsapp] = useState('');
+  const [adminCallmebotApiKey, setAdminCallmebotApiKey] = useState('');
+  const [saveAdminProfileLoading, setSaveAdminProfileLoading] = useState(false);
+
+  // Sincronizar campos cuando cargue el perfil del admin
+  useEffect(() => {
+    if (isAdminMaster && userProfile) {
+      setAdminAlias(userProfile.displayName || '');
+      setAdminWhatsapp(userProfile.whatsapp || '');
+      setAdminCallmebotApiKey(userProfile.callmebotApiKey || '');
+    }
+  }, [userProfile, isAdminMaster]);
+
+  const handleSaveAdminProfile = async (e) => {
+    e.preventDefault();
+    if (!adminAlias.trim()) {
+      showToast('⚠️ El Nombre o Alias es requerido.');
+      return;
+    }
+    setSaveAdminProfileLoading(true);
+    try {
+      await updateAdminProfile(adminAlias.trim(), adminWhatsapp.trim(), adminCallmebotApiKey.trim());
+      showToast('✅ Perfil guardado correctamente.');
+    } catch (err) {
+      showToast('❌ Error al guardar perfil: ' + err.message);
+    } finally {
+      setSaveAdminProfileLoading(false);
+    }
+  };
 
   // Efecto para DJ PRO: Suscribirse a su chat de soporte
   useEffect(() => {
@@ -1531,7 +1564,7 @@ export default function DjDashboard() {
       return sum + Object.keys(ev?.requests || {}).length;
     }, 0);
     
-    const currentPlan = uid === 'uid-admin-master' ? 'vip' : (userData?.profile?.selectedPlan || userData?.profile?.subscriptionStatus || 'free');
+    const currentPlan = uid === 'uid-admin-master' ? 'pro' : (userData?.profile?.selectedPlan || userData?.profile?.subscriptionStatus || 'free');
     const expiresAt = userData?.profile?.expiresAt || 0;
     const extraRequests = userData?.profile?.extraRequests !== undefined ? parseInt(userData.profile.extraRequests, 10) : 0;
     const extraRequestsExpiresAt = userData?.profile?.extraRequestsExpiresAt ? parseInt(userData.profile.extraRequestsExpiresAt, 10) : 0;
@@ -1946,6 +1979,10 @@ export default function DjDashboard() {
                       {Object.values(adminChats || {}).reduce((acc, chat) => acc + (chat.metadata?.unreadCountByAdmin || 0), 0)}
                     </span>
                   )}
+                </button>
+                <button className={`btn ${activeTab === 'admin_profile' ? 'btn-primary' : 'btn-secondary'}`}
+                  onClick={() => setActiveTab('admin_profile')} style={{ justifyContent: 'flex-start', width: '100%', borderColor: activeTab === 'admin_profile' ? undefined : 'rgba(124,58,237,0.2)' }}>
+                  <User size={16} /><span>Mi Perfil Admin</span>
                 </button>
               </>
             )}
@@ -5103,6 +5140,118 @@ export default function DjDashboard() {
                   )}
                 </div>
               </div>
+            </div>
+          )}
+
+          {/* 6. PERFIL DEL ADMIN MASTER */}
+          {activeTab === 'admin_profile' && isAdminMaster && !impersonatingUid && (
+            <div className="glass-panel animate-fade-in" style={{ padding: '32px', maxWidth: '800px', margin: '0 auto' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '24px', borderBottom: '1px solid var(--surface-border)', paddingBottom: '16px' }}>
+                <div style={{ width: '48px', height: '48px', borderRadius: '50%', background: 'rgba(124, 58, 237, 0.1)', border: '1px solid rgba(124, 58, 237, 0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <User size={20} color="var(--primary-color)" />
+                </div>
+                <div>
+                  <h2 style={{ fontSize: '1.4rem', margin: 0, color: '#fff' }}>Perfil del Administrador Master</h2>
+                  <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', margin: 0 }}>Gestiona tus datos de contacto y la clave de notificaciones de WhatsApp.</p>
+                </div>
+              </div>
+
+              {/* Detalle del Plan PRO Forzado */}
+              <div style={{
+                background: 'linear-gradient(135deg, rgba(124, 58, 237, 0.1) 0%, rgba(79, 70, 229, 0.1) 100%)',
+                border: '1px solid rgba(124, 58, 237, 0.25)',
+                borderRadius: 'var(--radius-md)',
+                padding: '20px',
+                marginBottom: '28px',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '16px'
+              }}>
+                <div style={{ background: 'rgba(124, 58, 237, 0.2)', padding: '10px', borderRadius: '12px', color: 'var(--primary-color)' }}>
+                  <Sparkles size={24} />
+                </div>
+                <div>
+                  <h4 style={{ fontSize: '0.95rem', margin: '0 0 4px 0', color: '#fff', fontWeight: 'bold' }}>
+                    Plan Activo: <span style={{ textTransform: 'uppercase', color: 'var(--primary-color)' }}>PRO</span> (Cuenta Administrativa)
+                  </h4>
+                  <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', margin: 0, lineHeight: '1.4' }}>
+                    Como Administrador Master de la plataforma, tu cuenta tiene forzado el plan **PRO** de por vida, lo que te otorga acceso ilimitado a todas las herramientas premium de la plataforma, incluyendo marca blanca, personalización completa y peticiones ilimitadas.
+                  </p>
+                </div>
+              </div>
+
+              {/* Formulario de Configuración */}
+              <form onSubmit={handleSaveAdminProfile} style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
+                  <div className="form-group" style={{ marginBottom: 0 }}>
+                    <label className="form-label" style={{ fontWeight: '600' }}>Nombre o Alias Administrador</label>
+                    <input
+                      type="text"
+                      className="input-field"
+                      placeholder="ej. Admin General"
+                      value={adminAlias}
+                      onChange={(e) => setAdminAlias(e.target.value)}
+                      required
+                    />
+                    <p style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginTop: '4px' }}>Este nombre será visible en las respuestas del chat de soporte.</p>
+                  </div>
+
+                  <div className="form-group" style={{ marginBottom: 0 }}>
+                    <label className="form-label" style={{ fontWeight: '600' }}>WhatsApp (Formato Internacional)</label>
+                    <input
+                      type="text"
+                      className="input-field"
+                      placeholder="ej. 5215512345678"
+                      value={adminWhatsapp}
+                      onChange={(e) => setAdminWhatsapp(e.target.value)}
+                    />
+                    <p style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginTop: '4px' }}>Debe incluir código de país sin el signo '+' ni espacios (ej: 521 para México, 34 para España).</p>
+                  </div>
+                </div>
+
+                <div className="form-group">
+                  <label className="form-label" style={{ fontWeight: '600', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    CallMeBot API Key
+                    <span style={{ fontSize: '0.75rem', fontWeight: 'normal', color: 'var(--primary-color)' }}>
+                      (<a href="https://www.callmebot.com/blog/free-api-whatsapp-messages/" target="_blank" rel="noopener noreferrer" style={{ color: 'inherit', textDecoration: 'underline' }}>Obtén tu API Key gratis aquí</a>)
+                    </span>
+                  </label>
+                  <input
+                    type="password"
+                    className="input-field"
+                    placeholder="Clave de CallMeBot"
+                    value={adminCallmebotApiKey}
+                    onChange={(e) => setAdminCallmebotApiKey(e.target.value)}
+                  />
+                  <p style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginTop: '4px' }}>Para recibir alertas por WhatsApp ante nuevos mensajes de soporte, agrega tu número a CallMeBot en WhatsApp, obtén tu API Key e ingrésala aquí.</p>
+                </div>
+
+                <div style={{ borderTop: '1px solid var(--surface-border)', paddingTop: '20px', display: 'flex', justifyContent: 'flex-end' }}>
+                  <button
+                    type="submit"
+                    className="btn btn-primary"
+                    disabled={saveAdminProfileLoading}
+                    style={{
+                      background: 'linear-gradient(135deg, #7c3aed 0%, #4f46e5 100%)',
+                      border: 'none',
+                      padding: '12px 24px',
+                      fontSize: '0.9rem',
+                      fontWeight: 'bold',
+                      borderRadius: 'var(--radius-md)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '8px',
+                      cursor: 'pointer'
+                    }}
+                  >
+                    {saveAdminProfileLoading ? (
+                      <><RefreshCw size={16} className="animate-spin" /> Guardando...</>
+                    ) : (
+                      <><Check size={16} /> Guardar Perfil Admin</>
+                    )}
+                  </button>
+                </div>
+              </form>
             </div>
           )}
         </main>

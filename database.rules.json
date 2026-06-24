@@ -19,6 +19,10 @@
       },
       "public_payment_info": {
         ".read": "auth != null"
+      },
+      "admin_contact": {
+        ".read": "auth != null",
+        ".write": "auth != null && auth.token.email == 'dj@admin.com'"
       }
     },
 

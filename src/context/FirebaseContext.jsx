@@ -465,18 +465,18 @@ export const FirebaseProvider = ({ children }) => {
         const data = snapshot.val();
 
         if (isCurrentAdminMaster) {
-          if (data.selectedPlan !== 'vip' || data.activePlan !== 'vip' || data.subscriptionStatus !== 'vip') {
+          if (data.selectedPlan !== 'pro' || data.activePlan !== 'pro' || data.subscriptionStatus !== 'pro') {
             const updated = {
               ...data,
-              selectedPlan: 'vip',
-              activePlan: 'vip',
-              subscriptionStatus: 'vip',
+              selectedPlan: 'pro',
+              activePlan: 'pro',
+              subscriptionStatus: 'pro',
               expiresAt: 0
             };
             update(profileRef, {
-              selectedPlan: 'vip',
-              activePlan: 'vip',
-              subscriptionStatus: 'vip',
+              selectedPlan: 'pro',
+              activePlan: 'pro',
+              subscriptionStatus: 'pro',
               expiresAt: 0
             });
             setUserProfile(updated);
@@ -503,9 +503,9 @@ export const FirebaseProvider = ({ children }) => {
           email: user?.email || '',
           displayName: user?.displayName || user?.email?.split('@')[0] || 'DJ MasterMix',
           phone: '',
-          selectedPlan: isCurrentAdminMaster ? 'vip' : 'free',
-          activePlan: isCurrentAdminMaster ? 'vip' : 'free',
-          subscriptionStatus: isCurrentAdminMaster ? 'vip' : 'free',
+          selectedPlan: isCurrentAdminMaster ? 'pro' : 'free',
+          activePlan: isCurrentAdminMaster ? 'pro' : 'free',
+          subscriptionStatus: isCurrentAdminMaster ? 'pro' : 'free',
           createdAt: Date.now(),
           activatedAt: Date.now(),
           expiresAt: 0
@@ -2382,6 +2382,17 @@ export const FirebaseProvider = ({ children }) => {
       }
 
       localStorage.setItem('mock_rtdb_v2', JSON.stringify(dbData));
+      
+      // Enviar notificación por WhatsApp si el remitente no es admin
+      if (!isSenderAdmin) {
+        const adminContact = dbData.config?.admin_contact;
+        if (adminContact?.whatsapp && adminContact?.callmebotApiKey) {
+          const msg = `💬 Soporte PRO: El DJ "${senderName}" escribió:\n"${text}"`;
+          const url = `https://api.callmebot.com/whatsapp.php?phone=${adminContact.whatsapp.trim()}&text=${encodeURIComponent(msg)}&apikey=${adminContact.callmebotApiKey.trim()}`;
+          fetch(url).catch(e => console.error("Error en CallMeBot mock:", e));
+        }
+      }
+
       if (syncChannel) syncChannel.postMessage({ type: 'DB_UPDATE' });
       return;
     }
@@ -2405,6 +2416,63 @@ export const FirebaseProvider = ({ children }) => {
       unreadCountByAdmin,
       unreadCountByUser
     });
+
+    // Enviar notificación por WhatsApp si el remitente no es admin
+    if (!isSenderAdmin) {
+      try {
+        const contactSnap = await get(ref(database, 'config/admin_contact'));
+        if (contactSnap.exists()) {
+          const adminContact = contactSnap.val();
+          if (adminContact.whatsapp && adminContact.callmebotApiKey) {
+            const msg = `💬 Soporte PRO: El DJ "${senderName}" escribió:\n"${text}"`;
+            const url = `https://api.callmebot.com/whatsapp.php?phone=${adminContact.whatsapp.trim()}&text=${encodeURIComponent(msg)}&apikey=${adminContact.callmebotApiKey.trim()}`;
+            fetch(url).catch(e => console.error("Error en CallMeBot real:", e));
+          }
+        }
+      } catch (err) {
+        console.error("Error al enviar notificación de WhatsApp:", err);
+      }
+    }
+  };
+
+  const updateAdminProfile = async (alias, whatsapp, callmebotApiKey) => {
+    if (!user) throw new Error("Debes iniciar sesión.");
+    if (!isAdminMaster) throw new Error("Acceso denegado: Solo el administrador master puede realizar esta acción.");
+    
+    const contactData = {
+      displayName: alias,
+      whatsapp: whatsapp || '',
+      callmebotApiKey: callmebotApiKey || ''
+    };
+
+    if (isMockMode) {
+      const dbData = JSON.parse(localStorage.getItem('mock_rtdb_v2') || '{}');
+      if (!dbData.users) dbData.users = {};
+      if (!dbData.users[user.uid]) dbData.users[user.uid] = { profile: {} };
+      if (!dbData.users[user.uid].profile) dbData.users[user.uid].profile = {};
+      
+      dbData.users[user.uid].profile.displayName = alias;
+      dbData.users[user.uid].profile.whatsapp = whatsapp;
+      dbData.users[user.uid].profile.callmebotApiKey = callmebotApiKey;
+      
+      if (!dbData.config) dbData.config = {};
+      dbData.config.admin_contact = contactData;
+      
+      localStorage.setItem('mock_rtdb_v2', JSON.stringify(dbData));
+      if (syncChannel) syncChannel.postMessage({ type: 'DB_UPDATE' });
+      return;
+    }
+
+    // Firebase real:
+    const profileRef = ref(database, `users/${user.uid}/profile`);
+    await update(profileRef, {
+      displayName: alias,
+      whatsapp: whatsapp || '',
+      callmebotApiKey: callmebotApiKey || ''
+    });
+
+    const contactRef = ref(database, 'config/admin_contact');
+    await set(contactRef, contactData);
   };
 
   const markSupportChatAsRead = async (userUid, readerType) => {
@@ -2530,6 +2598,7 @@ export const FirebaseProvider = ({ children }) => {
       clearHistoryWithOptions,
       createDjAccount,
       updateDjAccount,
+      updateAdminProfile,
       updateActiveRequest,
       updateAutocompleteSong,
       deleteAutocompleteSong,
