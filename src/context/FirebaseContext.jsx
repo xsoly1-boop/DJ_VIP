@@ -718,6 +718,7 @@ export const FirebaseProvider = ({ children }) => {
           document.documentElement.style.setProperty('--text-secondary', '#94a3b8');
           document.documentElement.style.setProperty('--text-muted', '#64748b');
         }
+        document.documentElement.setAttribute('data-skin', bgSkin);
       } else {
         setEventSettings({
           title: 'Mi Gran Evento VIP',
@@ -743,6 +744,7 @@ export const FirebaseProvider = ({ children }) => {
         document.documentElement.style.setProperty('--text-primary', '#f8fafc');
         document.documentElement.style.setProperty('--text-secondary', '#94a3b8');
         document.documentElement.style.setProperty('--text-muted', '#64748b');
+        document.documentElement.setAttribute('data-skin', 'default');
       }
     });
     return () => unsubscribe();

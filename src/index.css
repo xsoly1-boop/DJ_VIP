@@ -364,3 +364,11 @@ p {
   background: linear-gradient(135deg, var(--surface-color), rgba(250, 204, 21, 0.02)) !important;
 }
 
+/* Aplicar marco dorado animado globalmente a todos los paneles en el tema de Lujo */
+[data-skin="skin_luxury"] .glass-panel {
+  animation: proGoldFrameGlow 6s infinite ease-in-out;
+  border: 1px solid rgba(250, 204, 21, 0.45) !important;
+  background: linear-gradient(135deg, var(--surface-color), rgba(250, 204, 21, 0.02)) !important;
+}
+
+
