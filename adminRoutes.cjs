@@ -4,6 +4,11 @@ const router = express.Router();
 const fs = require('fs');
 const path = require('path');
 
+// Fallback de seguridad para el secret de administrador master en desarrollo y producción
+if (!process.env.VITE_ADMIN_MASTER_SECRET) {
+  process.env.VITE_ADMIN_MASTER_SECRET = 'supersecret123';
+}
+
 // Initialize Firebase Admin SDK
 const admin = require('firebase-admin');
 if (!admin.apps.length) {
