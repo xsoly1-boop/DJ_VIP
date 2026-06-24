@@ -105,8 +105,7 @@ const DEFAULT_PLANS_CONFIG = {
     price: "400",
     billing: "12 meses",
     currency: "MXN",
-    status: "En Desarrollo",
-    description: "¡Próximamente! La herramienta definitiva para productoras de eventos, discotecas y agencias que gestionan múltiples cabinas y DJs en paralelo.",
+    description: "La herramienta definitiva para productoras de eventos, discotecas y agencias que gestionan múltiples cabinas y DJs en paralelo.",
     maxRequests: 0,
     duration: 12,
     durationUnit: "meses",
@@ -118,7 +117,7 @@ const DEFAULT_PLANS_CONFIG = {
       "Personalización multi-marca para diferentes DJs"
     ],
     restrictions: [
-      "Actualmente en fase de desarrollo activo"
+      "Ninguna"
     ]
   },
   bonus: {
