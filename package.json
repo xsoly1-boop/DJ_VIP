@@ -71,7 +71,8 @@
       "hardenedRuntime": false,
       "gatekeeperAssess": false,
       "identity": null,
-      "type": "distribution"
+      "type": "distribution",
+      "mergeASARs": false
     },
     "dmg": {
       "title": "DJ Control Panel ${version}",
