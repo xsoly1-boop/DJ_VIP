@@ -11,7 +11,11 @@ import {
 } from 'lucide-react';
 
 export default function DjDashboard() {
-  const API_BASE = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' || window.location.protocol === 'file:' || !window.location.hostname) ? 'http://localhost:4000' : '';
+  const API_BASE = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
+    ? 'http://localhost:4000'
+    : (window.location.protocol === 'file:' || !window.location.hostname)
+      ? (import.meta.env.DEV ? 'http://localhost:4000' : (import.meta.env.VITE_PUBLIC_URL ? import.meta.env.VITE_PUBLIC_URL.replace(/\/$/, '') : 'https://dj-vip.vercel.app'))
+      : '';
 
   const { 
     user, 
