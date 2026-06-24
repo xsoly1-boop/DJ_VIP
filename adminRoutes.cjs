@@ -7,13 +7,20 @@ const path = require('path');
 // Initialize Firebase Admin SDK
 const admin = require('firebase-admin');
 if (!admin.apps.length) {
-  // Ensure serviceAccountKey.json exists in project root
   try {
-    const serviceAccount = require('./serviceAccountKey.json');
-    admin.initializeApp({
-      credential: admin.credential.cert(serviceAccount),
-      databaseURL: process.env.VITE_FIREBASE_DATABASE_URL
-    });
+    if (process.env.FIREBASE_SERVICE_ACCOUNT) {
+      const serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT);
+      admin.initializeApp({
+        credential: admin.credential.cert(serviceAccount),
+        databaseURL: process.env.VITE_FIREBASE_DATABASE_URL
+      });
+    } else {
+      const serviceAccount = require('./serviceAccountKey.json');
+      admin.initializeApp({
+        credential: admin.credential.cert(serviceAccount),
+        databaseURL: process.env.VITE_FIREBASE_DATABASE_URL
+      });
+    }
   } catch (e) {
     console.error('Firebase admin initialization failed: ', e);
     // In development, you may create a placeholder key file.
