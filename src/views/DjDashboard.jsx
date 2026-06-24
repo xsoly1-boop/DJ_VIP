@@ -7,7 +7,7 @@ import {
   Trash2, Plus, Play, Check, X, Bell, BellOff, Volume2, 
   Sparkles, Sliders, Users, Layers, ShieldCheck, Database,
   Link, AlertTriangle, ShieldAlert, ArrowLeft, UserCog, Edit, UserPlus, Mail, Lock, User, CreditCard,
-  LayoutGrid, ExternalLink, Image, Search, Megaphone, Star, MessageSquare, Send
+  LayoutGrid, ExternalLink, Image, Search, Megaphone, Star, MessageSquare, Send, Printer
 } from 'lucide-react';
 
 export default function DjDashboard() {
@@ -1604,9 +1604,12 @@ export default function DjDashboard() {
   });
 
   const isProUser = userProfile?.selectedPlan === 'pro' || userProfile?.activePlan === 'pro';
+  const currentPlan = userProfile?.activePlan || userProfile?.selectedPlan || 'free';
+  const isPrintAllowed = ['vip', 'pro', 'eventual', 'premium'].includes(currentPlan) || isAdminMaster;
 
   return (
-    <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '24px 15px' }}>
+    <>
+      <div className="no-print" style={{ maxWidth: '1200px', margin: '0 auto', padding: '24px 15px' }}>
       
       {/* Toast */}
       {toastMessage && (
@@ -2016,6 +2019,21 @@ export default function DjDashboard() {
               <a href={publicEventUrl} target="_blank" rel="noreferrer" className="btn btn-primary" style={{ width: '100%', padding: '10px', textDecoration: 'none', justifyContent: 'center' }}>
                 <ExternalLink size={14} /><span>Abrir Panel del Público</span>
               </a>
+              <button
+                className="btn btn-secondary"
+                onClick={() => {
+                  if (!isPrintAllowed) {
+                    showToast("🔒 La impresión de tarjetas QR en tamaño A4 es una función exclusiva para planes VIP, PRO, Eventual y Premium. ¡Mejora tu plan para desbloquearla!");
+                  } else {
+                    window.print();
+                  }
+                }}
+                style={{ width: '100%', padding: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}
+              >
+                <Printer size={14} />
+                <span>Imprimir Tarjetas QR (A4)</span>
+                {!isPrintAllowed && <Lock size={12} style={{ marginLeft: 'auto', opacity: 0.6 }} />}
+              </button>
               <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', wordBreak: 'break-all', marginTop: '4px' }}>
                 {publicEventUrl}
               </div>
@@ -5623,6 +5641,117 @@ export default function DjDashboard() {
           )}
         </div>
       )}
-    </div>
+      </div>
+
+      {/* SECCIÓN DE IMPRESIÓN (OCULTA EN PANTALLA) */}
+      <div id="print-section">
+        {[1, 2, 3, 4].map((i) => (
+          <div key={i} className="print-quadrant">
+            <div className="print-card">
+              <div className="print-qr-overlay">
+                <QRCodeSVG value={publicEventUrl} size={150} level={"H"} includeMargin={false} />
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      <style>{`
+        @media screen {
+          #print-section {
+            display: none !important;
+          }
+        }
+        @media print {
+          @page {
+            size: A4 portrait !important;
+            margin: 0 !important;
+          }
+          
+          html, body {
+            margin: 0 !important;
+            padding: 0 !important;
+            background: #ffffff !important;
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
+            color-adjust: exact !important;
+          }
+          
+          .no-print,
+          #root > *:not(#print-section) {
+            display: none !important;
+          }
+          
+          #print-section {
+            display: grid !important;
+            grid-template-columns: 105mm 105mm !important;
+            grid-template-rows: 148.5mm 148.5mm !important;
+            width: 210mm !important;
+            height: 297mm !important;
+            position: absolute !important;
+            left: 0 !important;
+            top: 0 !important;
+            margin: 0 !important;
+            padding: 0 !important;
+            background: #ffffff !important;
+            box-sizing: border-box !important;
+            visibility: visible !important;
+          }
+
+          .print-quadrant {
+            width: 105mm !important;
+            height: 148.5mm !important;
+            display: flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            position: relative !important;
+            box-sizing: border-box !important;
+            border-right: 1px dashed rgba(0, 0, 0, 0.15) !important;
+            border-bottom: 1px dashed rgba(0, 0, 0, 0.15) !important;
+            visibility: visible !important;
+          }
+
+          /* Quitar bordes para los límites exteriores de la hoja A4 */
+          .print-quadrant:nth-child(2n) {
+            border-right: none !important;
+          }
+          .print-quadrant:nth-child(n+3) {
+            border-bottom: none !important;
+          }
+
+          .print-card {
+            width: 100mm !important;
+            height: 58.33mm !important;
+            background-image: url('/template_card.png') !important;
+            background-size: 100% 100% !important;
+            background-position: center !important;
+            background-repeat: no-repeat !important;
+            position: relative !important;
+            box-sizing: border-box !important;
+            visibility: visible !important;
+          }
+
+          .print-qr-overlay {
+            position: absolute !important;
+            left: 41.25% !important;
+            top: 24.43% !important;
+            width: 25.5% !important;
+            height: 42.71% !important;
+            display: flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            background: #ffffff !important;
+            visibility: visible !important;
+          }
+
+          .print-qr-overlay svg {
+            width: 100% !important;
+            height: 100% !important;
+            display: block !important;
+            visibility: visible !important;
+          }
+        }
+      `}</style>
+    </>
   );
 }
