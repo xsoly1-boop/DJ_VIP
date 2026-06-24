@@ -5372,353 +5372,6 @@ export default function DjDashboard() {
               </div>
             </div>
           )}
-        </main>
-      </div>
-
-      {/* MODAL: BORRAR HISTORIAL SELECCIONADO */}
-      {showClearModal && (
-        <div style={{ position: 'fixed', inset: 0, zIndex: 2000, background: 'rgba(0,0,0,0.85)', backdropFilter: 'blur(8px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}>
-          <div className="glass-panel" style={{ maxWidth: '520px', width: '100%', padding: '32px', borderRadius: 'var(--radius-lg)', border: '1px solid rgba(239,68,68,0.3)', boxShadow: '0 0 40px rgba(239,68,68,0.15)', display: 'flex', flexDirection: 'column', gap: '20px' }}>
-            
-            <div style={{ textAlign: 'center' }}>
-              <div style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: '72px', height: '72px', borderRadius: 'var(--radius-full)', background: 'rgba(239,68,68,0.1)', border: '2px solid rgba(239,68,68,0.3)', marginBottom: '12px' }}>
-                <AlertTriangle size={36} color="var(--danger-color)" />
-              </div>
-              <h2 style={{ fontSize: '1.4rem', color: 'var(--danger-color)', marginBottom: '8px' }}>⚠️ Borrado de Historial</h2>
-              <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', lineHeight: '1.5' }}>
-                Selecciona los elementos que deseas <strong style={{ color: 'var(--danger-color)' }}>eliminar permanentemente</strong> de tu cuenta.
-              </p>
-            </div>
-
-            {/* Checkboxes de opciones */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', background: 'rgba(255,255,255,0.02)', padding: '16px', borderRadius: 'var(--radius-md)', border: '1px solid rgba(255,255,255,0.06)' }}>
-              
-              <label style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer', userSelect: 'none', fontSize: '0.9rem' }}>
-                <input
-                  type="checkbox"
-                  checked={clearOptionSongs}
-                  onChange={(e) => { setClearOptionSongs(e.target.checked); setClearErrorMsg(''); }}
-                  style={{ width: '18px', height: '18px', accentColor: 'var(--danger-color)' }}
-                />
-                <span>🗑️ Todas las peticiones de canciones</span>
-              </label>
-
-              <label style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer', userSelect: 'none', fontSize: '0.9rem' }}>
-                <input
-                  type="checkbox"
-                  checked={clearOptionGenres}
-                  onChange={(e) => { setClearOptionGenres(e.target.checked); setClearErrorMsg(''); }}
-                  style={{ width: '18px', height: '18px', accentColor: 'var(--danger-color)' }}
-                />
-                <span>🗑️ Historial de géneros aprendidos</span>
-              </label>
-
-              <label style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer', userSelect: 'none', fontSize: '0.9rem' }}>
-                <input
-                  type="checkbox"
-                  checked={clearOptionArtists}
-                  onChange={(e) => { setClearOptionArtists(e.target.checked); setClearErrorMsg(''); }}
-                  style={{ width: '18px', height: '18px', accentColor: 'var(--danger-color)' }}
-                />
-                <span>🗑️ Historial de artistas registrados</span>
-              </label>
-
-
-
-              <label style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer', userSelect: 'none', fontSize: '0.9rem' }}>
-                <input
-                  type="checkbox"
-                  checked={clearOptionAutocomplete}
-                  onChange={(e) => { setClearOptionAutocomplete(e.target.checked); setClearErrorMsg(''); }}
-                  style={{ width: '18px', height: '18px', accentColor: 'var(--danger-color)' }}
-                />
-                <span>🗑️ Catálogo de autocompletado</span>
-              </label>
-
-              <label style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer', userSelect: 'none', fontSize: '0.9rem' }}>
-                <input
-                  type="checkbox"
-                  checked={clearOptionCalendar}
-                  onChange={(e) => { setClearOptionCalendar(e.target.checked); setClearErrorMsg(''); }}
-                  style={{ width: '18px', height: '18px', accentColor: 'var(--danger-color)' }}
-                />
-                <span>🗑️ Calendario completo (todos los eventos)</span>
-              </label>
-
-            </div>
-
-            <div className="form-group">
-              <label className="form-label" style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.85rem' }}>
-                <ShieldAlert size={14} /> Para confirmar, escribe la palabra clave <strong style={{ color: 'var(--danger-color)' }}>clear</strong>
-              </label>
-              <input
-                type="text"
-                className="input-field"
-                placeholder='Escribe "clear" aquí...'
-                value={clearWordConfirm}
-                onChange={(e) => { setClearWordConfirm(e.target.value); setClearErrorMsg(''); }}
-                onKeyDown={(e) => e.key === 'Enter' && handleClearHistory()}
-                style={{ borderColor: clearErrorMsg ? 'var(--danger-color)' : undefined }}
-                autoFocus
-              />
-              {clearErrorMsg && (
-                <p style={{ color: 'var(--danger-color)', fontSize: '0.8rem', marginTop: '6px' }}>{clearErrorMsg}</p>
-              )}
-            </div>
-
-            <div style={{ display: 'flex', gap: '12px' }}>
-              <button className="btn btn-secondary" style={{ flex: 1 }}
-                onClick={() => {
-                  setShowClearModal(false);
-                  setClearWordConfirm('');
-                  setClearOptionSongs(false);
-                  setClearOptionGenres(false);
-                  setClearOptionArtists(false);
-                  setClearOptionAutocomplete(false);
-                  setClearOptionCalendar(false);
-                  setClearErrorMsg('');
-                }}
-                disabled={clearingHistory}>
-                Cancelar
-              </button>
-              <button className="btn btn-danger" style={{ flex: 1, background: 'rgba(239,68,68,0.15)', border: '1px solid rgba(239,68,68,0.4)', color: 'var(--danger-color)' }}
-                onClick={handleClearHistory} disabled={clearingHistory || !clearWordConfirm.trim()}>
-                {clearingHistory ? (
-                  <><RefreshCw size={14} className="animate-spin" /> Borrando...</>
-                ) : (
-                  <><Trash2 size={14} /> Ejecutar Borrado</>
-                )}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-
-
-      {/* CRÉDITOS DEL CREADOR */}
-      <footer style={{
-        marginTop: '40px',
-        paddingTop: '20px',
-        borderTop: '1px solid rgba(255,255,255,0.06)',
-        textAlign: 'center',
-        paddingBottom: '16px'
-      }}>
-        <p style={{
-          fontSize: '0.8rem',
-          color: 'var(--text-muted)',
-          letterSpacing: '0.5px',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          gap: '8px'
-        }}>
-          <span style={{
-            display: 'inline-flex',
-            alignItems: 'center',
-            gap: '6px',
-            background: 'linear-gradient(135deg, rgba(124,58,237,0.08), rgba(6,182,212,0.08))',
-            border: '1px solid rgba(124,58,237,0.15)',
-            padding: '6px 14px',
-            borderRadius: 'var(--radius-full)',
-            fontWeight: '600',
-            color: 'var(--text-secondary)'
-          }}>
-            <Sparkles size={13} color="var(--primary-color)" />
-            Plataforma creada por <strong style={{ color: 'var(--primary-color)' }}>Dorian Najera</strong>
-          </span>
-        </p>
-        <p style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginTop: '6px', opacity: 0.6 }}>
-          {eventSettings.webName || 'DJ a la Carta'} © {new Date().getFullYear()} — Todos los derechos reservados
-        </p>
-      </footer>
-
-      {/* Alerta Visual a Pantalla Completa */}
-      {activeVisualAlert && (
-        <div className="animate-fade-in" style={{
-          position: 'fixed',
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
-          zIndex: 9999,
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-          justifyContent: 'center',
-          background: activeVisualAlert.type === 'repeat' 
-            ? 'rgba(239, 68, 68, 0.96)' // Red
-            : activeVisualAlert.type === 'dedication'
-              ? 'rgba(245, 158, 11, 0.96)' // Orange
-              : 'rgba(16, 185, 129, 0.96)', // Green
-          color: '#fff',
-          textAlign: 'center',
-          padding: '30px'
-        }}>
-          <h1 style={{
-            fontSize: '4.5rem',
-            fontWeight: '800',
-            marginBottom: '20px',
-            textTransform: 'uppercase',
-            letterSpacing: '0.05em',
-            textShadow: '0 4px 20px rgba(0,0,0,0.5)',
-            color: '#fff'
-          }}>
-            {activeVisualAlert.type === 'repeat' 
-              ? 'Petición para repetir' 
-              : activeVisualAlert.type === 'dedication'
-                ? 'Petición Dedicada'
-                : 'Petición Agregada'}
-          </h1>
-          <p style={{
-            fontSize: '2.5rem',
-            fontWeight: '600',
-            color: 'rgba(255,255,255,0.95)',
-            marginBottom: '10px',
-            textShadow: '0 2px 10px rgba(0,0,0,0.4)'
-          }}>
-            "{activeVisualAlert.title}"
-          </p>
-          <p style={{
-            fontSize: '1.8rem',
-            fontWeight: '400',
-            color: 'rgba(255,255,255,0.85)',
-            textShadow: '0 2px 8px rgba(0,0,0,0.4)'
-          }}>
-            {activeVisualAlert.artist}
-          </p>
-        </div>
-      )}
-
-      {/* Chat de Soporte Flotante para DJ PRO */}
-      {!isAdminMaster && userProfile?.selectedPlan === 'pro' && (
-        <div style={{ position: 'fixed', bottom: '24px', right: '24px', zIndex: 9999, fontFamily: 'system-ui, sans-serif' }}>
-          {/* Botón Flotante */}
-          <button
-            onClick={() => setSupportChatOpen(!supportChatOpen)}
-            className="flex items-center justify-center rounded-full shadow-lg transition-transform hover:scale-105"
-            style={{
-              width: '60px',
-              height: '60px',
-              background: 'linear-gradient(135deg, #7c3aed 0%, #4f46e5 100%)',
-              color: '#fff',
-              border: 'none',
-              cursor: 'pointer',
-              position: 'relative'
-            }}
-            title="Soporte Técnico"
-          >
-            {supportChatOpen ? <X size={24} /> : <MessageSquare size={24} />}
-            {/* Globo de no leídos */}
-            {!supportChatOpen && supportChatData?.metadata?.unreadCountByUser > 0 && (
-              <span className="absolute top-0 right-0 bg-red-500 text-white rounded-full flex items-center justify-center text-xs font-bold"
-                style={{
-                  width: '20px',
-                  height: '20px',
-                  transform: 'translate(25%, -25%)',
-                  boxShadow: '0 2px 4px rgba(0,0,0,0.2)'
-                }}>
-                {supportChatData.metadata.unreadCountByUser}
-              </span>
-            )}
-          </button>
-
-          {/* Ventana de Chat */}
-          {supportChatOpen && (
-            <div className="flex flex-col bg-slate-900 border border-slate-800 rounded-2xl shadow-2xl overflow-hidden animate-fade-in"
-              style={{
-                position: 'absolute',
-                bottom: '80px',
-                right: 0,
-                width: '360px',
-                height: '480px',
-                color: '#fff'
-              }}>
-              {/* Encabezado */}
-              <div className="px-4 py-3 flex items-center justify-between"
-                style={{
-                  background: 'linear-gradient(135deg, #7c3aed 0%, #4f46e5 100%)'
-                }}>
-                <div>
-                  <h3 className="font-bold text-sm" style={{ margin: 0 }}>💬 Soporte Técnico PRO</h3>
-                  <p className="text-xs text-purple-200" style={{ margin: 0, opacity: 0.8 }}>Respuesta en tiempo real</p>
-                </div>
-                <button
-                  onClick={() => setSupportChatOpen(false)}
-                  className="text-white hover:text-gray-200"
-                  style={{ background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-                >
-                  <X size={18} />
-                </button>
-              </div>
-
-              {/* Mensajes */}
-              <div className="flex-1 overflow-y-auto p-4 space-y-3" style={{ background: '#0b1329', display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                {(!supportChatData?.messages || supportChatData.messages.length === 0) ? (
-                  <div style={{ height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center', padding: '0 16px', color: 'var(--text-muted)' }}>
-                    <MessageSquare size={36} style={{ marginBottom: '8px', opacity: 0.5 }} />
-                    <p style={{ fontSize: '0.8rem', margin: '0 0 4px 0' }}>¿Tienes dudas o problemas técnicos?</p>
-                    <p style={{ fontSize: '0.7rem', margin: 0, opacity: 0.7 }}>Escríbenos y el Admin Master te atenderá a la brevedad.</p>
-                  </div>
-                ) : (
-                  supportChatData.messages.map((msg, index) => {
-                    const isMe = msg.senderId === user?.uid;
-                    return (
-                      <div key={index} style={{ display: 'flex', flexDirection: 'column', alignItems: isMe ? 'flex-end' : 'flex-start' }}>
-                        <span style={{ fontSize: '0.65rem', color: 'var(--text-muted)', marginBottom: '2px', padding: '0 4px' }}>{msg.senderName}</span>
-                        <div style={{
-                          padding: '8px 12px',
-                          fontSize: '0.8rem',
-                          maxWidth: '85%',
-                          wordBreak: 'break-word',
-                          background: isMe ? '#7c3aed' : '#1e293b',
-                          color: '#fff',
-                          borderRadius: isMe ? '12px 12px 2px 12px' : '12px 12px 12px 2px'
-                        }}>
-                          {msg.text}
-                        </div>
-                        <span style={{ fontSize: '0.6rem', color: 'var(--text-muted)', marginTop: '2px', padding: '0 4px' }}>
-                          {new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                        </span>
-                      </div>
-                    );
-                  })
-                )}
-                <div ref={supportChatEndRef} />
-              </div>
-
-              {/* Input */}
-              <form onSubmit={handleSendSupportMessage} style={{ padding: '12px', borderTop: '1px solid var(--surface-border)', display: 'flex', gap: '10px', background: 'rgba(0,0,0,0.2)' }}>
-                <input
-                  type="text"
-                  value={supportChatText}
-                  onChange={(e) => setSupportChatText(e.target.value)}
-                  placeholder="Escribe tu mensaje..."
-                  style={{ flex: 1, height: '36px', fontSize: '0.85rem', background: 'var(--surface-color)', border: '1px solid var(--surface-border)', borderRadius: 'var(--radius-md)', padding: '0 12px', color: '#fff' }}
-                />
-                <button
-                  type="submit"
-                  style={{
-                    background: 'linear-gradient(135deg, #7c3aed 0%, #4f46e5 100%)',
-                    border: 'none',
-                    padding: '0 12px',
-                    borderRadius: 'var(--radius-md)',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    height: '36px',
-                    cursor: 'pointer',
-                    color: '#fff'
-                  }}
-                >
-                  <Send size={14} />
-                </button>
-              </form>
-            </div>
-          )}
-        </div>
-      )}
-
           {activeTab === 'revenue' && isAdminMaster && !impersonatingUid && (() => {
             try {
               // ---- Lógica de cálculo financiero ----
@@ -6085,6 +5738,355 @@ export default function DjDashboard() {
               );
             }
           })()}
+
+        </main>
+      </div>
+
+      {/* MODAL: BORRAR HISTORIAL SELECCIONADO */}
+      {showClearModal && (
+        <div style={{ position: 'fixed', inset: 0, zIndex: 2000, background: 'rgba(0,0,0,0.85)', backdropFilter: 'blur(8px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}>
+          <div className="glass-panel" style={{ maxWidth: '520px', width: '100%', padding: '32px', borderRadius: 'var(--radius-lg)', border: '1px solid rgba(239,68,68,0.3)', boxShadow: '0 0 40px rgba(239,68,68,0.15)', display: 'flex', flexDirection: 'column', gap: '20px' }}>
+            
+            <div style={{ textAlign: 'center' }}>
+              <div style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: '72px', height: '72px', borderRadius: 'var(--radius-full)', background: 'rgba(239,68,68,0.1)', border: '2px solid rgba(239,68,68,0.3)', marginBottom: '12px' }}>
+                <AlertTriangle size={36} color="var(--danger-color)" />
+              </div>
+              <h2 style={{ fontSize: '1.4rem', color: 'var(--danger-color)', marginBottom: '8px' }}>⚠️ Borrado de Historial</h2>
+              <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', lineHeight: '1.5' }}>
+                Selecciona los elementos que deseas <strong style={{ color: 'var(--danger-color)' }}>eliminar permanentemente</strong> de tu cuenta.
+              </p>
+            </div>
+
+            {/* Checkboxes de opciones */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', background: 'rgba(255,255,255,0.02)', padding: '16px', borderRadius: 'var(--radius-md)', border: '1px solid rgba(255,255,255,0.06)' }}>
+              
+              <label style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer', userSelect: 'none', fontSize: '0.9rem' }}>
+                <input
+                  type="checkbox"
+                  checked={clearOptionSongs}
+                  onChange={(e) => { setClearOptionSongs(e.target.checked); setClearErrorMsg(''); }}
+                  style={{ width: '18px', height: '18px', accentColor: 'var(--danger-color)' }}
+                />
+                <span>🗑️ Todas las peticiones de canciones</span>
+              </label>
+
+              <label style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer', userSelect: 'none', fontSize: '0.9rem' }}>
+                <input
+                  type="checkbox"
+                  checked={clearOptionGenres}
+                  onChange={(e) => { setClearOptionGenres(e.target.checked); setClearErrorMsg(''); }}
+                  style={{ width: '18px', height: '18px', accentColor: 'var(--danger-color)' }}
+                />
+                <span>🗑️ Historial de géneros aprendidos</span>
+              </label>
+
+              <label style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer', userSelect: 'none', fontSize: '0.9rem' }}>
+                <input
+                  type="checkbox"
+                  checked={clearOptionArtists}
+                  onChange={(e) => { setClearOptionArtists(e.target.checked); setClearErrorMsg(''); }}
+                  style={{ width: '18px', height: '18px', accentColor: 'var(--danger-color)' }}
+                />
+                <span>🗑️ Historial de artistas registrados</span>
+              </label>
+
+
+
+              <label style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer', userSelect: 'none', fontSize: '0.9rem' }}>
+                <input
+                  type="checkbox"
+                  checked={clearOptionAutocomplete}
+                  onChange={(e) => { setClearOptionAutocomplete(e.target.checked); setClearErrorMsg(''); }}
+                  style={{ width: '18px', height: '18px', accentColor: 'var(--danger-color)' }}
+                />
+                <span>🗑️ Catálogo de autocompletado</span>
+              </label>
+
+              <label style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer', userSelect: 'none', fontSize: '0.9rem' }}>
+                <input
+                  type="checkbox"
+                  checked={clearOptionCalendar}
+                  onChange={(e) => { setClearOptionCalendar(e.target.checked); setClearErrorMsg(''); }}
+                  style={{ width: '18px', height: '18px', accentColor: 'var(--danger-color)' }}
+                />
+                <span>🗑️ Calendario completo (todos los eventos)</span>
+              </label>
+
+            </div>
+
+            <div className="form-group">
+              <label className="form-label" style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.85rem' }}>
+                <ShieldAlert size={14} /> Para confirmar, escribe la palabra clave <strong style={{ color: 'var(--danger-color)' }}>clear</strong>
+              </label>
+              <input
+                type="text"
+                className="input-field"
+                placeholder='Escribe "clear" aquí...'
+                value={clearWordConfirm}
+                onChange={(e) => { setClearWordConfirm(e.target.value); setClearErrorMsg(''); }}
+                onKeyDown={(e) => e.key === 'Enter' && handleClearHistory()}
+                style={{ borderColor: clearErrorMsg ? 'var(--danger-color)' : undefined }}
+                autoFocus
+              />
+              {clearErrorMsg && (
+                <p style={{ color: 'var(--danger-color)', fontSize: '0.8rem', marginTop: '6px' }}>{clearErrorMsg}</p>
+              )}
+            </div>
+
+            <div style={{ display: 'flex', gap: '12px' }}>
+              <button className="btn btn-secondary" style={{ flex: 1 }}
+                onClick={() => {
+                  setShowClearModal(false);
+                  setClearWordConfirm('');
+                  setClearOptionSongs(false);
+                  setClearOptionGenres(false);
+                  setClearOptionArtists(false);
+                  setClearOptionAutocomplete(false);
+                  setClearOptionCalendar(false);
+                  setClearErrorMsg('');
+                }}
+                disabled={clearingHistory}>
+                Cancelar
+              </button>
+              <button className="btn btn-danger" style={{ flex: 1, background: 'rgba(239,68,68,0.15)', border: '1px solid rgba(239,68,68,0.4)', color: 'var(--danger-color)' }}
+                onClick={handleClearHistory} disabled={clearingHistory || !clearWordConfirm.trim()}>
+                {clearingHistory ? (
+                  <><RefreshCw size={14} className="animate-spin" /> Borrando...</>
+                ) : (
+                  <><Trash2 size={14} /> Ejecutar Borrado</>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+
+
+      {/* CRÉDITOS DEL CREADOR */}
+      <footer style={{
+        marginTop: '40px',
+        paddingTop: '20px',
+        borderTop: '1px solid rgba(255,255,255,0.06)',
+        textAlign: 'center',
+        paddingBottom: '16px'
+      }}>
+        <p style={{
+          fontSize: '0.8rem',
+          color: 'var(--text-muted)',
+          letterSpacing: '0.5px',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          gap: '8px'
+        }}>
+          <span style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: '6px',
+            background: 'linear-gradient(135deg, rgba(124,58,237,0.08), rgba(6,182,212,0.08))',
+            border: '1px solid rgba(124,58,237,0.15)',
+            padding: '6px 14px',
+            borderRadius: 'var(--radius-full)',
+            fontWeight: '600',
+            color: 'var(--text-secondary)'
+          }}>
+            <Sparkles size={13} color="var(--primary-color)" />
+            Plataforma creada por <strong style={{ color: 'var(--primary-color)' }}>Dorian Najera</strong>
+          </span>
+        </p>
+        <p style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginTop: '6px', opacity: 0.6 }}>
+          {eventSettings.webName || 'DJ a la Carta'} © {new Date().getFullYear()} — Todos los derechos reservados
+        </p>
+      </footer>
+
+      {/* Alerta Visual a Pantalla Completa */}
+      {activeVisualAlert && (
+        <div className="animate-fade-in" style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          zIndex: 9999,
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'center',
+          background: activeVisualAlert.type === 'repeat' 
+            ? 'rgba(239, 68, 68, 0.96)' // Red
+            : activeVisualAlert.type === 'dedication'
+              ? 'rgba(245, 158, 11, 0.96)' // Orange
+              : 'rgba(16, 185, 129, 0.96)', // Green
+          color: '#fff',
+          textAlign: 'center',
+          padding: '30px'
+        }}>
+          <h1 style={{
+            fontSize: '4.5rem',
+            fontWeight: '800',
+            marginBottom: '20px',
+            textTransform: 'uppercase',
+            letterSpacing: '0.05em',
+            textShadow: '0 4px 20px rgba(0,0,0,0.5)',
+            color: '#fff'
+          }}>
+            {activeVisualAlert.type === 'repeat' 
+              ? 'Petición para repetir' 
+              : activeVisualAlert.type === 'dedication'
+                ? 'Petición Dedicada'
+                : 'Petición Agregada'}
+          </h1>
+          <p style={{
+            fontSize: '2.5rem',
+            fontWeight: '600',
+            color: 'rgba(255,255,255,0.95)',
+            marginBottom: '10px',
+            textShadow: '0 2px 10px rgba(0,0,0,0.4)'
+          }}>
+            "{activeVisualAlert.title}"
+          </p>
+          <p style={{
+            fontSize: '1.8rem',
+            fontWeight: '400',
+            color: 'rgba(255,255,255,0.85)',
+            textShadow: '0 2px 8px rgba(0,0,0,0.4)'
+          }}>
+            {activeVisualAlert.artist}
+          </p>
+        </div>
+      )}
+
+      {/* Chat de Soporte Flotante para DJ PRO */}
+      {!isAdminMaster && userProfile?.selectedPlan === 'pro' && (
+        <div style={{ position: 'fixed', bottom: '24px', right: '24px', zIndex: 9999, fontFamily: 'system-ui, sans-serif' }}>
+          {/* Botón Flotante */}
+          <button
+            onClick={() => setSupportChatOpen(!supportChatOpen)}
+            className="flex items-center justify-center rounded-full shadow-lg transition-transform hover:scale-105"
+            style={{
+              width: '60px',
+              height: '60px',
+              background: 'linear-gradient(135deg, #7c3aed 0%, #4f46e5 100%)',
+              color: '#fff',
+              border: 'none',
+              cursor: 'pointer',
+              position: 'relative'
+            }}
+            title="Soporte Técnico"
+          >
+            {supportChatOpen ? <X size={24} /> : <MessageSquare size={24} />}
+            {/* Globo de no leídos */}
+            {!supportChatOpen && supportChatData?.metadata?.unreadCountByUser > 0 && (
+              <span className="absolute top-0 right-0 bg-red-500 text-white rounded-full flex items-center justify-center text-xs font-bold"
+                style={{
+                  width: '20px',
+                  height: '20px',
+                  transform: 'translate(25%, -25%)',
+                  boxShadow: '0 2px 4px rgba(0,0,0,0.2)'
+                }}>
+                {supportChatData.metadata.unreadCountByUser}
+              </span>
+            )}
+          </button>
+
+          {/* Ventana de Chat */}
+          {supportChatOpen && (
+            <div className="flex flex-col bg-slate-900 border border-slate-800 rounded-2xl shadow-2xl overflow-hidden animate-fade-in"
+              style={{
+                position: 'absolute',
+                bottom: '80px',
+                right: 0,
+                width: '360px',
+                height: '480px',
+                color: '#fff'
+              }}>
+              {/* Encabezado */}
+              <div className="px-4 py-3 flex items-center justify-between"
+                style={{
+                  background: 'linear-gradient(135deg, #7c3aed 0%, #4f46e5 100%)'
+                }}>
+                <div>
+                  <h3 className="font-bold text-sm" style={{ margin: 0 }}>💬 Soporte Técnico PRO</h3>
+                  <p className="text-xs text-purple-200" style={{ margin: 0, opacity: 0.8 }}>Respuesta en tiempo real</p>
+                </div>
+                <button
+                  onClick={() => setSupportChatOpen(false)}
+                  className="text-white hover:text-gray-200"
+                  style={{ background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                >
+                  <X size={18} />
+                </button>
+              </div>
+
+              {/* Mensajes */}
+              <div className="flex-1 overflow-y-auto p-4 space-y-3" style={{ background: '#0b1329', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                {(!supportChatData?.messages || supportChatData.messages.length === 0) ? (
+                  <div style={{ height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center', padding: '0 16px', color: 'var(--text-muted)' }}>
+                    <MessageSquare size={36} style={{ marginBottom: '8px', opacity: 0.5 }} />
+                    <p style={{ fontSize: '0.8rem', margin: '0 0 4px 0' }}>¿Tienes dudas o problemas técnicos?</p>
+                    <p style={{ fontSize: '0.7rem', margin: 0, opacity: 0.7 }}>Escríbenos y el Admin Master te atenderá a la brevedad.</p>
+                  </div>
+                ) : (
+                  supportChatData.messages.map((msg, index) => {
+                    const isMe = msg.senderId === user?.uid;
+                    return (
+                      <div key={index} style={{ display: 'flex', flexDirection: 'column', alignItems: isMe ? 'flex-end' : 'flex-start' }}>
+                        <span style={{ fontSize: '0.65rem', color: 'var(--text-muted)', marginBottom: '2px', padding: '0 4px' }}>{msg.senderName}</span>
+                        <div style={{
+                          padding: '8px 12px',
+                          fontSize: '0.8rem',
+                          maxWidth: '85%',
+                          wordBreak: 'break-word',
+                          background: isMe ? '#7c3aed' : '#1e293b',
+                          color: '#fff',
+                          borderRadius: isMe ? '12px 12px 2px 12px' : '12px 12px 12px 2px'
+                        }}>
+                          {msg.text}
+                        </div>
+                        <span style={{ fontSize: '0.6rem', color: 'var(--text-muted)', marginTop: '2px', padding: '0 4px' }}>
+                          {new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                        </span>
+                      </div>
+                    );
+                  })
+                )}
+                <div ref={supportChatEndRef} />
+              </div>
+
+              {/* Input */}
+              <form onSubmit={handleSendSupportMessage} style={{ padding: '12px', borderTop: '1px solid var(--surface-border)', display: 'flex', gap: '10px', background: 'rgba(0,0,0,0.2)' }}>
+                <input
+                  type="text"
+                  value={supportChatText}
+                  onChange={(e) => setSupportChatText(e.target.value)}
+                  placeholder="Escribe tu mensaje..."
+                  style={{ flex: 1, height: '36px', fontSize: '0.85rem', background: 'var(--surface-color)', border: '1px solid var(--surface-border)', borderRadius: 'var(--radius-md)', padding: '0 12px', color: '#fff' }}
+                />
+                <button
+                  type="submit"
+                  style={{
+                    background: 'linear-gradient(135deg, #7c3aed 0%, #4f46e5 100%)',
+                    border: 'none',
+                    padding: '0 12px',
+                    borderRadius: 'var(--radius-md)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    height: '36px',
+                    cursor: 'pointer',
+                    color: '#fff'
+                  }}
+                >
+                  <Send size={14} />
+                </button>
+              </form>
+            </div>
+          )}
+        </div>
+      )}
+
+
 
       </div>
 
