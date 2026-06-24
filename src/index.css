@@ -339,3 +339,28 @@ p {
 .animate-fade-in {
   animation: fadeIn 0.2s ease-out forwards;
 }
+
+/* Marco dorado animado y sutil para usuarios PRO */
+@keyframes proGoldFrameGlow {
+  0%, 100% {
+    border-color: rgba(250, 204, 21, 0.45);
+    box-shadow: 
+      0 4px 20px rgba(0, 0, 0, 0.3), 
+      0 0 12px rgba(250, 204, 21, 0.15), 
+      inset 0 0 8px rgba(250, 204, 21, 0.04);
+  }
+  50% {
+    border-color: rgba(245, 158, 11, 0.85);
+    box-shadow: 
+      0 4px 25px rgba(0, 0, 0, 0.45), 
+      0 0 22px rgba(245, 158, 11, 0.45), 
+      inset 0 0 16px rgba(245, 158, 11, 0.15);
+  }
+}
+
+.pro-gold-frame {
+  animation: proGoldFrameGlow 6s infinite ease-in-out;
+  border: 1px solid rgba(250, 204, 21, 0.45) !important;
+  background: linear-gradient(135deg, var(--surface-color), rgba(250, 204, 21, 0.02)) !important;
+}
+

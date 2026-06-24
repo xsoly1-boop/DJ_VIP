@@ -1599,6 +1599,8 @@ export default function DjDashboard() {
     return { uid, eventsCount, requestsCount, djName, eventTitles, email, currentPlan, expiresAt, demoLimit, premiumLimit, demoLimitExpiresAt, premiumLimitExpiresAt, logoUploadEnabled, strictLimitEnabled, extraRequests, extraRequestsExpiresAt };
   });
 
+  const isProUser = userProfile?.selectedPlan === 'pro' || userProfile?.activePlan === 'pro';
+
   return (
     <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '24px 15px' }}>
       
@@ -1639,7 +1641,7 @@ export default function DjDashboard() {
       )}
 
       {/* HEADER DE CABINA */}
-      <header className="glass-panel" style={{
+      <header className={`glass-panel ${isProUser ? 'pro-gold-frame' : ''}`} style={{
         padding: '20px 30px', borderRadius: 'var(--radius-lg)',
         display: 'flex', justifyContent: 'space-between', alignItems: 'center',
         flexWrap: 'wrap', gap: '20px', marginBottom: '24px'
@@ -2681,9 +2683,9 @@ export default function DjDashboard() {
                 <div style={{ borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: '20px' }}>
                   <label className="form-label" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                     🎨 Tema / Color de Fondo
-                    {!(userProfile?.selectedPlan === 'vip' || userProfile?.selectedPlan === 'eventual') && (
+                    {!(userProfile?.selectedPlan === 'vip' || userProfile?.selectedPlan === 'eventual' || isProUser) && (
                       <span style={{ fontSize: '0.65rem', color: 'var(--warning-color)', background: 'rgba(245,158,11,0.1)', padding: '2px 6px', borderRadius: '4px', fontWeight: '700', display: 'flex', alignItems: 'center', gap: '3px' }}>
-                        🔒 EXCLUSIVO VIP / EVENTUAL
+                        🔒 EXCLUSIVO VIP / EVENTUAL / PRO
                       </span>
                     )}
                   </label>
@@ -2692,50 +2694,67 @@ export default function DjDashboard() {
                   </p>
                   
                   <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(130px, 1fr))', gap: '10px' }}>
-                    {[
-                      { key: 'default', name: 'Original', color: '#060609' },
-                      { key: 'skin1', name: 'Carbón', color: '#383636' },
-                      { key: 'skin2', name: 'Púrpura', color: '#380357' },
-                      { key: 'skin3', name: 'Azul', color: '#032557' },
-                      { key: 'skin4', name: 'Turquesa', color: '#02313f' },
-                      { key: 'skin5', name: 'Guinda', color: '#3f020a' }
-                    ].map((skin) => {
-                      const isSelected = bgSkinInput === skin.key;
-                      const isVipOrEventual = userProfile?.selectedPlan === 'vip' || userProfile?.selectedPlan === 'eventual';
-                      return (
-                        <button
-                          key={skin.key}
-                          type="button"
-                          disabled={!isVipOrEventual}
-                          onClick={() => {
-                            setBgSkinInput(skin.key);
-                            showToast(`Tema seleccionado: ${skin.name}`);
-                          }}
-                          style={{
-                            display: 'flex',
-                            flexDirection: 'column',
-                            alignItems: 'center',
-                            gap: '8px',
-                            padding: '12px',
-                            borderRadius: 'var(--radius-md)',
-                            background: isSelected ? 'rgba(255,255,255,0.06)' : 'rgba(255,255,255,0.02)',
-                            border: isSelected ? '2px solid var(--primary-color)' : '1px solid var(--surface-border)',
-                            cursor: isVipOrEventual ? 'pointer' : 'not-allowed',
-                            opacity: isVipOrEventual ? 1 : 0.5,
-                            transition: 'all 0.2s ease',
-                            textAlign: 'center'
-                          }}
-                        >
-                          <div style={{ width: '28px', height: '28px', borderRadius: 'var(--radius-full)', background: skin.color, border: '2px solid rgba(255,255,255,0.2)', boxShadow: isSelected ? '0 0 10px var(--primary-glow)' : 'none' }} />
-                          <span style={{ fontSize: '0.8rem', fontWeight: isSelected ? '700' : '500', color: isSelected ? 'var(--primary-color)' : 'var(--text-primary)' }}>{skin.name}</span>
-                        </button>
-                      );
-                    })}
+                    {(() => {
+                      const isSkinUnlocked = (skinKey) => {
+                        if (skinKey === 'default') return true;
+                        if (skinKey === 'skin_luxury') return isProUser;
+                        return ['vip', 'eventual', 'pro'].includes(userProfile?.selectedPlan) || ['vip', 'eventual', 'pro'].includes(userProfile?.activePlan);
+                      };
+
+                      return [
+                        { key: 'default', name: 'Original', color: '#060609' },
+                        { key: 'skin1', name: 'Carbón', color: '#383636' },
+                        { key: 'skin2', name: 'Púrpura', color: '#380357' },
+                        { key: 'skin3', name: 'Azul', color: '#032557' },
+                        { key: 'skin4', name: 'Turquesa', color: '#02313f' },
+                        { key: 'skin5', name: 'Guinda', color: '#3f020a' },
+                        { key: 'skin_luxury', name: 'Lujo (Oro & Plata)', color: '#d4af37' }
+                      ].map((skin) => {
+                        const isSelected = bgSkinInput === skin.key;
+                        const unlocked = isSkinUnlocked(skin.key);
+                        return (
+                          <button
+                            key={skin.key}
+                            type="button"
+                            disabled={!unlocked}
+                            onClick={() => {
+                              setBgSkinInput(skin.key);
+                              showToast(`Tema seleccionado: ${skin.name}`);
+                            }}
+                            style={{
+                              display: 'flex',
+                              flexDirection: 'column',
+                              alignItems: 'center',
+                              gap: '8px',
+                              padding: '12px',
+                              borderRadius: 'var(--radius-md)',
+                              background: isSelected ? 'rgba(255,255,255,0.06)' : 'rgba(255,255,255,0.02)',
+                              border: isSelected ? '2px solid var(--primary-color)' : '1px solid var(--surface-border)',
+                              cursor: unlocked ? 'pointer' : 'not-allowed',
+                              opacity: unlocked ? 1 : 0.4,
+                              transition: 'all 0.2s ease',
+                              textAlign: 'center'
+                            }}
+                          >
+                            <div style={{ width: '28px', height: '28px', borderRadius: 'var(--radius-full)', background: skin.color, border: '2px solid rgba(255,255,255,0.2)', boxShadow: isSelected ? '0 0 10px var(--primary-glow)' : 'none' }} />
+                            <span style={{ fontSize: '0.8rem', fontWeight: isSelected ? '700' : '500', color: isSelected ? 'var(--primary-color)' : 'var(--text-primary)', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                              {skin.name} {!unlocked && '🔒'}
+                            </span>
+                          </button>
+                        );
+                      });
+                    })()}
                   </div>
-                  {!(userProfile?.selectedPlan === 'vip' || userProfile?.selectedPlan === 'eventual') && (
+                  {!(userProfile?.selectedPlan === 'vip' || userProfile?.selectedPlan === 'eventual' || isProUser) ? (
                     <p style={{ fontSize: '0.75rem', color: 'var(--warning-color)', marginTop: '8px' }}>
-                      💡 Mejora tu plan a <strong>VIP</strong> o adquiere un pase <strong>Eventual</strong> en la sección de planes para desbloquear esta personalización.
+                      💡 Mejora tu plan a <strong>VIP</strong>, <strong>PRO</strong> o adquiere un pase <strong>Eventual</strong> en la sección de planes para desbloquear esta personalización.
                     </p>
+                  ) : (
+                    !isProUser && (
+                      <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '8px' }}>
+                        👑 Adquiere el plan <strong>PRO</strong> para desbloquear el exclusivo tema <strong>Lujo (Oro & Plata)</strong>.
+                      </p>
+                    )
                   )}
                 </div>
 

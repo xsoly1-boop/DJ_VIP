@@ -696,6 +696,19 @@ export const FirebaseProvider = ({ children }) => {
           document.documentElement.style.setProperty('--text-primary', '#ffffff');
           document.documentElement.style.setProperty('--text-secondary', '#fcdbdc');
           document.documentElement.style.setProperty('--text-muted', '#f7a9ac');
+        } else if (bgSkin === 'skin_luxury') {
+          // Luxury (Black, Gold & Silver)
+          document.documentElement.style.setProperty('--bg-color', '#050505');
+          document.documentElement.style.setProperty('--surface-color', 'rgba(12, 12, 14, 0.85)');
+          document.documentElement.style.setProperty('--surface-border', 'rgba(212, 175, 55, 0.2)');
+          document.documentElement.style.setProperty('--text-primary', '#f3f4f6');
+          document.documentElement.style.setProperty('--text-secondary', '#cbd5e1');
+          document.documentElement.style.setProperty('--text-muted', '#9ca3af');
+          // Gold & Silver branding override
+          document.documentElement.style.setProperty('--primary-color', '#d4af37');
+          document.documentElement.style.setProperty('--primary-glow', 'rgba(212, 175, 55, 0.35)');
+          document.documentElement.style.setProperty('--secondary-color', '#cbd5e1');
+          document.documentElement.style.setProperty('--secondary-glow', 'rgba(203, 213, 225, 0.35)');
         } else {
           // Default
           document.documentElement.style.setProperty('--bg-color', '#060609');
