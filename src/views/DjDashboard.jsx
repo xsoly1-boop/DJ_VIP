@@ -38,6 +38,7 @@ export default function DjDashboard() {
     updateAutocompleteSong,
     deleteAutocompleteSong,
     allUsersData,
+    allSuggestions,
     eventsList,
     deleteEvent,
     archiveEvent,
@@ -50,6 +51,7 @@ export default function DjDashboard() {
     updateAdminProfile,
     uploadLogo,
     getDatabaseBackup,
+    deleteSuggestion,
     ratingsStats,
     userProfile,
     selectPlan,
@@ -5382,6 +5384,81 @@ export default function DjDashboard() {
                   </button>
                 </div>
               </form>
+
+              {/* === SECCIÓN: SUGERENCIAS Y RETROALIMENTACIÓN === */}
+              <div style={{ marginTop: '40px', borderTop: '1px solid var(--surface-border)', paddingTop: '28px' }}>
+                <h3 style={{ fontSize: '1.2rem', fontWeight: '700', marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--primary-color)' }}>
+                  <MessageSquare size={20} /> Buzón de Sugerencias y Retroalimentación
+                </h3>
+                <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginBottom: '20px' }}>
+                  Comentarios y sugerencias enviadas por los DJs para la mejora continua de la plataforma.
+                </p>
+
+                {(() => {
+                  const suggestionsArray = Object.keys(allSuggestions || {}).reduce((acc, djUid) => {
+                    const djSuggs = allSuggestions[djUid] || {};
+                    const items = Object.keys(djSuggs).map(timestamp => ({
+                      djUid,
+                      timestamp: parseInt(timestamp, 10),
+                      ...djSuggs[timestamp]
+                    }));
+                    return [...acc, ...items];
+                  }, []).sort((a, b) => b.timestamp - a.timestamp);
+
+                  if (suggestionsArray.length === 0) {
+                    return (
+                      <div style={{ padding: '24px', textAlign: 'center', background: 'rgba(255,255,255,0.02)', border: '1px dashed var(--surface-border)', borderRadius: 'var(--radius-md)', color: 'var(--text-muted)', fontSize: '0.9rem' }}>
+                        No hay sugerencias en el buzón todavía.
+                      </div>
+                    );
+                  }
+
+                  return (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', maxHeight: '500px', overflowY: 'auto', paddingRight: '4px' }}>
+                      {suggestionsArray.map((item) => (
+                        <div key={`${item.djUid}-${item.timestamp}`} style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid var(--surface-border)', borderRadius: 'var(--radius-md)', padding: '16px', position: 'relative' }}>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '10px', marginBottom: '10px' }}>
+                            <div>
+                              <strong style={{ fontSize: '0.9rem', color: '#fff', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                <User size={14} color="var(--primary-color)" /> {item.djName || 'DJ Sin Nombre'}
+                              </strong>
+                              <span style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '6px', marginTop: '2px' }}>
+                                <Mail size={12} style={{ opacity: 0.7 }} /> {item.email || 'Correo no disponible'}
+                              </span>
+                            </div>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                              <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                <Calendar size={12} /> {new Date(item.timestamp).toLocaleString()}
+                              </span>
+                              <button
+                                type="button"
+                                onClick={async () => {
+                                  if (window.confirm("¿Estás seguro de que deseas eliminar esta sugerencia?")) {
+                                    try {
+                                      await deleteSuggestion(item.djUid, item.timestamp);
+                                      showToast("🗑️ Sugerencia eliminada exitosamente");
+                                    } catch (err) {
+                                      showToast(`❌ Error: ${err.message}`);
+                                    }
+                                  }
+                                }}
+                                className="btn btn-secondary"
+                                style={{ padding: '4px 8px', fontSize: '0.75rem', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', minWidth: 'auto', border: '1px solid rgba(255,0,0,0.25)', color: '#ef4444' }}
+                                title="Eliminar Sugerencia"
+                              >
+                                <Trash2 size={12} />
+                              </button>
+                            </div>
+                          </div>
+                          <div style={{ background: 'rgba(0,0,0,0.15)', borderLeft: '3px solid var(--primary-color)', padding: '12px', borderRadius: '4px', fontSize: '0.85rem', color: 'var(--text-primary)', lineHeight: '1.4', whiteSpace: 'pre-wrap' }}>
+                            {item.text}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  );
+                })()}
+              </div>
             </div>
           )}
         </main>

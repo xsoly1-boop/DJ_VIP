@@ -396,6 +396,7 @@ export const FirebaseProvider = ({ children }) => {
 
   // Admin master: lista de todos los usuarios y sus eventos
   const [allUsersData, setAllUsersData] = useState({});
+  const [allSuggestions, setAllSuggestions] = useState({});
   const [plansConfig, setPlansConfig] = useState(DEFAULT_PLANS_CONFIG);
   const [publicPaymentInfo, setPublicPaymentInfo] = useState({
     paypalClientId: '',
@@ -846,6 +847,20 @@ export const FirebaseProvider = ({ children }) => {
         setAllUsersData(snapshot.val());
       } else {
         setAllUsersData({});
+      }
+    });
+    return () => unsubscribe();
+  }, [isAdminMaster, impersonatingUid]);
+
+  // 6b. Admin master: escuchar todas las sugerencias de retroalimentación
+  useEffect(() => {
+    if (!isAdminMaster || impersonatingUid) return;
+    const suggestionsRef = ref(database, 'suggestions');
+    const unsubscribe = onValue(suggestionsRef, (snapshot) => {
+      if (snapshot.exists()) {
+        setAllSuggestions(snapshot.val());
+      } else {
+        setAllSuggestions({});
       }
     });
     return () => unsubscribe();
@@ -2371,6 +2386,14 @@ export const FirebaseProvider = ({ children }) => {
     }
   };
 
+  const deleteSuggestion = async (djUid, timestamp) => {
+    if (!isAdminMaster || impersonatingUid) {
+      throw new Error("Acceso denegado: Solo el administrador master puede realizar esta acción.");
+    }
+    const suggestionRef = ref(database, `suggestions/${djUid}/${timestamp}`);
+    await set(suggestionRef, null);
+  };
+
   const updatePlansConfig = async (newPlansConfig) => {
     if (!isAdminMaster) throw new Error("Acceso denegado: Solo el administrador master puede realizar esta acción.");
     const plansRef = ref(database, 'config/plans');
@@ -2619,6 +2642,7 @@ export const FirebaseProvider = ({ children }) => {
       eventsList,
       allEventsData,
       allUsersData,
+      allSuggestions,
       loginDJ,
       registerDJ,
       selectPlan,
@@ -2647,6 +2671,7 @@ export const FirebaseProvider = ({ children }) => {
       updateAutocompleteSong,
       deleteAutocompleteSong,
       getDatabaseBackup,
+      deleteSuggestion,
       submitRating,
       ratingsData,
       ratingsStats
