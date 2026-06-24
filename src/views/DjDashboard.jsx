@@ -4310,101 +4310,6 @@ export default function DjDashboard() {
                 </div>
               </div>
 
-              {/* === SECCIÓN: CONFIGURACIÓN DE PASARELAS DE PAGO === */}
-              <div style={{ marginBottom: '28px', border: '1px solid rgba(124, 58, 237, 0.2)', borderRadius: 'var(--radius-md)', overflow: 'hidden' }}>
-                <div style={{ padding: '14px 20px', background: 'rgba(124, 58, 237, 0.06)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <span style={{ fontWeight: '700', fontSize: '0.95rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <Sliders size={16} color="var(--primary-color)" /> Configuración de Pasarelas de Pago (PayPal / Mercado Pago)
-                  </span>
-                </div>
-
-                <form onSubmit={handleSavePaymentConfig} style={{ padding: '20px', display: 'flex', flexDirection: 'column', gap: '20px' }}>
-                  {/* PayPal Config */}
-                  <div>
-                    <h5 style={{ fontSize: '0.85rem', color: '#fff', borderBottom: '1px solid var(--surface-border)', paddingBottom: '6px', marginBottom: '12px' }}>Credenciales de PayPal</h5>
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '14px' }}>
-                      <div className="form-group" style={{ marginBottom: 0 }}>
-                        <label className="form-label">PayPal Client ID</label>
-                        <input
-                          type="text" className="input-field"
-                          placeholder="Client ID de PayPal"
-                          value={paymentConfig.paypalClientId || ''}
-                          onChange={(e) => setPaymentConfig({ ...paymentConfig, paypalClientId: e.target.value })}
-                        />
-                      </div>
-                      <div className="form-group" style={{ marginBottom: 0 }}>
-                        <label className="form-label">PayPal Client Secret</label>
-                        <input
-                          type="password" className="input-field"
-                          placeholder="Client Secret de PayPal"
-                          value={paymentConfig.paypalClientSecret || ''}
-                          onChange={(e) => setPaymentConfig({ ...paymentConfig, paypalClientSecret: e.target.value })}
-                        />
-                      </div>
-                      <div className="form-group" style={{ marginBottom: 0 }}>
-                        <label className="form-label">Modo PayPal</label>
-                        <select
-                          className="input-field animate-slide-in"
-                          value={paymentConfig.paypalMode || 'sandbox'}
-                          onChange={(e) => setPaymentConfig({ ...paymentConfig, paypalMode: e.target.value })}
-                          style={{ width: '100%' }}
-                        >
-                          <option value="sandbox">Sandbox (Pruebas)</option>
-                          <option value="live">Live (Producción)</option>
-                        </select>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Mercado Pago Config */}
-                  <div>
-                    <h5 style={{ fontSize: '0.85rem', color: '#fff', borderBottom: '1px solid var(--surface-border)', paddingBottom: '6px', marginBottom: '12px' }}>Credenciales de Mercado Pago</h5>
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '14px' }}>
-                      <div className="form-group" style={{ marginBottom: 0 }}>
-                        <label className="form-label">Mercado Pago Public Key</label>
-                        <input
-                          type="text" className="input-field"
-                          placeholder="Public Key de Mercado Pago"
-                          value={paymentConfig.mercadopagoPublicKey || ''}
-                          onChange={(e) => setPaymentConfig({ ...paymentConfig, mercadopagoPublicKey: e.target.value })}
-                        />
-                      </div>
-                      <div className="form-group" style={{ marginBottom: 0 }}>
-                        <label className="form-label">Mercado Pago Access Token</label>
-                        <input
-                          type="password" className="input-field"
-                          placeholder="Access Token de Mercado Pago"
-                          value={paymentConfig.mercadopagoAccessToken || ''}
-                          onChange={(e) => setPaymentConfig({ ...paymentConfig, mercadopagoAccessToken: e.target.value })}
-                        />
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Transferencia Bancaria */}
-                  <div>
-                    <h5 style={{ fontSize: '0.85rem', color: '#fff', borderBottom: '1px solid var(--surface-border)', paddingBottom: '6px', marginBottom: '12px' }}>Datos para Transferencia Bancaria (Moneda Local)</h5>
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '14px' }}>
-                      <div className="form-group" style={{ marginBottom: 0 }}>
-                        <label className="form-label">CLABE Interbancaria de Recepción (18 dígitos)</label>
-                        <input
-                          type="text" className="input-field"
-                          placeholder="Ingresa la CLABE de tu cuenta bancaria"
-                          value={paymentConfig.adminClabe || ''}
-                          onChange={(e) => setPaymentConfig({ ...paymentConfig, adminClabe: e.target.value })}
-                        />
-                      </div>
-                    </div>
-                  </div>
-
-                  <div style={{ display: 'flex', gap: '10px' }}>
-                    <button type="submit" className="btn btn-primary" disabled={saveConfigLoading} style={{ padding: '10px 20px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                      {saveConfigLoading ? <><RefreshCw size={14} className="animate-spin" /> Guardando...</> : <><Check size={14} /> Guardar Cambios de Pasarela</>}
-                    </button>
-                  </div>
-                </form>
-              </div>
-
               {/* === SECCIÓN: PERSONALIZACIÓN DE PLANES DE SUSCRIPCIÓN === */}
               {tempPlansConfig && (
                 <div style={{ marginBottom: '28px', border: '1px solid rgba(124, 58, 237, 0.2)', borderRadius: 'var(--radius-md)', overflow: 'hidden' }}>
@@ -6059,6 +5964,101 @@ export default function DjDashboard() {
                     )}
                   </div>
 
+                </div>
+
+                {/* === SECCIÓN: CONFIGURACIÓN DE PASARELAS DE PAGO === */}
+                <div style={{ marginTop: '28px', border: '1px solid rgba(16, 185, 129, 0.2)', borderRadius: 'var(--radius-lg)', overflow: 'hidden', background: 'rgba(255, 255, 255, 0.02)' }}>
+                  <div style={{ padding: '14px 20px', background: 'rgba(16, 185, 129, 0.06)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid rgba(16, 185, 129, 0.1)' }}>
+                    <span style={{ fontWeight: '700', fontSize: '0.95rem', display: 'flex', alignItems: 'center', gap: '8px', color: '#fff' }}>
+                      <Sliders size={16} color="var(--success-color)" /> Configuración de Pasarelas de Pago (PayPal / Mercado Pago)
+                    </span>
+                  </div>
+
+                  <form onSubmit={handleSavePaymentConfig} style={{ padding: '20px', display: 'flex', flexDirection: 'column', gap: '20px' }}>
+                    {/* PayPal Config */}
+                    <div>
+                      <h5 style={{ fontSize: '0.85rem', color: '#fff', borderBottom: '1px solid var(--surface-border)', paddingBottom: '6px', marginBottom: '12px' }}>Credenciales de PayPal</h5>
+                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '14px' }}>
+                        <div className="form-group" style={{ marginBottom: 0 }}>
+                          <label className="form-label">PayPal Client ID</label>
+                          <input
+                            type="text" className="input-field"
+                            placeholder="Client ID de PayPal"
+                            value={paymentConfig.paypalClientId || ''}
+                            onChange={(e) => setPaymentConfig({ ...paymentConfig, paypalClientId: e.target.value })}
+                          />
+                        </div>
+                        <div className="form-group" style={{ marginBottom: 0 }}>
+                          <label className="form-label">PayPal Client Secret</label>
+                          <input
+                            type="password" className="input-field"
+                            placeholder="Client Secret de PayPal"
+                            value={paymentConfig.paypalClientSecret || ''}
+                            onChange={(e) => setPaymentConfig({ ...paymentConfig, paypalClientSecret: e.target.value })}
+                          />
+                        </div>
+                        <div className="form-group" style={{ marginBottom: 0 }}>
+                          <label className="form-label">Modo PayPal</label>
+                          <select
+                            className="input-field"
+                            value={paymentConfig.paypalMode || 'sandbox'}
+                            onChange={(e) => setPaymentConfig({ ...paymentConfig, paypalMode: e.target.value })}
+                            style={{ width: '100%' }}
+                          >
+                            <option value="sandbox">Sandbox (Pruebas)</option>
+                            <option value="live">Live (Producción)</option>
+                          </select>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Mercado Pago Config */}
+                    <div>
+                      <h5 style={{ fontSize: '0.85rem', color: '#fff', borderBottom: '1px solid var(--surface-border)', paddingBottom: '6px', marginBottom: '12px' }}>Credenciales de Mercado Pago</h5>
+                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '14px' }}>
+                        <div className="form-group" style={{ marginBottom: 0 }}>
+                          <label className="form-label">Mercado Pago Public Key</label>
+                          <input
+                            type="text" className="input-field"
+                            placeholder="Public Key de Mercado Pago"
+                            value={paymentConfig.mercadopagoPublicKey || ''}
+                            onChange={(e) => setPaymentConfig({ ...paymentConfig, mercadopagoPublicKey: e.target.value })}
+                          />
+                        </div>
+                        <div className="form-group" style={{ marginBottom: 0 }}>
+                          <label className="form-label">Mercado Pago Access Token</label>
+                          <input
+                            type="password" className="input-field"
+                            placeholder="Access Token de Mercado Pago"
+                            value={paymentConfig.mercadopagoAccessToken || ''}
+                            onChange={(e) => setPaymentConfig({ ...paymentConfig, mercadopagoAccessToken: e.target.value })}
+                          />
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Transferencia Bancaria */}
+                    <div>
+                      <h5 style={{ fontSize: '0.85rem', color: '#fff', borderBottom: '1px solid var(--surface-border)', paddingBottom: '6px', marginBottom: '12px' }}>Datos para Transferencia Bancaria (Moneda Local)</h5>
+                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '14px' }}>
+                        <div className="form-group" style={{ marginBottom: 0 }}>
+                          <label className="form-label">CLABE Interbancaria de Recepción (18 dígitos)</label>
+                          <input
+                            type="text" className="input-field"
+                            placeholder="Ingresa la CLABE de tu cuenta bancaria"
+                            value={paymentConfig.adminClabe || ''}
+                            onChange={(e) => setPaymentConfig({ ...paymentConfig, adminClabe: e.target.value })}
+                          />
+                        </div>
+                      </div>
+                    </div>
+
+                    <div style={{ display: 'flex', gap: '10px' }}>
+                      <button type="submit" className="btn btn-primary" disabled={saveConfigLoading} style={{ padding: '10px 20px', display: 'flex', alignItems: 'center', gap: '8px', borderColor: 'rgba(16, 185, 129, 0.3)' }}>
+                        {saveConfigLoading ? <><RefreshCw size={14} className="animate-spin" /> Guardando...</> : <><Check size={14} /> Guardar Cambios de Pasarela</>}
+                      </button>
+                    </div>
+                  </form>
                 </div>
 
               </div>
