@@ -97,6 +97,15 @@
       }
     },
 
+    // Sugerencias de usuarios para mejorar la plataforma
+    "suggestions": {
+      ".read": "auth != null && auth.token.email == 'dj@admin.com'",
+      "$uid": {
+        ".read": "auth != null && (auth.uid == $uid || auth.token.email == 'dj@admin.com')",
+        ".write": "auth != null && (auth.uid == $uid || auth.token.email == 'dj@admin.com')"
+      }
+    },
+
     // Rutas heredadas para mantener compatibilidad hacia atrás
     "events": {
       "$eventId": {
