@@ -15,6 +15,9 @@ if (!admin.apps.length) {
   try {
     if (process.env.FIREBASE_SERVICE_ACCOUNT) {
       const serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT);
+      if (serviceAccount.private_key) {
+        serviceAccount.private_key = serviceAccount.private_key.replace(/\\n/g, '\n');
+      }
       admin.initializeApp({
         credential: admin.credential.cert(serviceAccount),
         databaseURL: process.env.VITE_FIREBASE_DATABASE_URL
@@ -209,6 +212,12 @@ router.post('/deleteUser', async (req, res) => {
   }
   if (!uid) {
     return res.status(400).json({ success: false, error: 'Missing uid' });
+  }
+  if (!isFirebaseInitialized && process.env.VERCEL) {
+    return res.status(500).json({ 
+      success: false, 
+      error: 'El backend en Vercel no está conectado a Firebase (falta configurar o corregir la variable FIREBASE_SERVICE_ACCOUNT en el dashboard de Vercel).' 
+    });
   }
   try {
     // Delete Auth user
