@@ -2723,20 +2723,20 @@ export default function DjDashboard() {
                             }}
                             style={{
                               display: 'flex',
-                              flexDirection: 'column',
+                              flexDirection: 'row',
                               alignItems: 'center',
-                              gap: '8px',
-                              padding: '12px',
+                              gap: '10px',
+                              padding: '8px 12px',
                               borderRadius: 'var(--radius-md)',
                               background: isSelected ? 'rgba(255,255,255,0.06)' : 'rgba(255,255,255,0.02)',
                               border: isSelected ? '2px solid var(--primary-color)' : '1px solid var(--surface-border)',
                               cursor: unlocked ? 'pointer' : 'not-allowed',
                               opacity: unlocked ? 1 : 0.4,
                               transition: 'all 0.2s ease',
-                              textAlign: 'center'
+                              textAlign: 'left'
                             }}
                           >
-                            <div style={{ width: '28px', height: '28px', borderRadius: 'var(--radius-full)', background: skin.color, border: '2px solid rgba(255,255,255,0.2)', boxShadow: isSelected ? '0 0 10px var(--primary-glow)' : 'none' }} />
+                            <div style={{ width: '18px', height: '18px', borderRadius: 'var(--radius-full)', background: skin.color, border: '2px solid rgba(255,255,255,0.2)', boxShadow: isSelected ? '0 0 10px var(--primary-glow)' : 'none', flexShrink: 0 }} />
                             <span style={{ fontSize: '0.8rem', fontWeight: isSelected ? '700' : '500', color: isSelected ? 'var(--primary-color)' : 'var(--text-primary)', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
                               {skin.name} {!unlocked && '🔒'}
                             </span>
