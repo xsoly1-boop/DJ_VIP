@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { useFirebase } from '../context/FirebaseContext';
 import { MOCK_ACCOUNTS, MASTER_ADMIN_EMAIL } from '../firebase';
 import { QRCodeSVG, QRCodeCanvas } from 'qrcode.react';
@@ -7,7 +7,8 @@ import {
   Trash2, Plus, Play, Check, X, Bell, BellOff, Volume2, 
   Sparkles, Sliders, Users, Layers, ShieldCheck, Database,
   Link, AlertTriangle, ShieldAlert, ArrowLeft, UserCog, Edit, UserPlus, Mail, Lock, User, CreditCard,
-  LayoutGrid, ExternalLink, Image, Search, Megaphone, Star, MessageSquare, Send, Printer
+  LayoutGrid, ExternalLink, Image, Search, Megaphone, Star, MessageSquare, Send, Printer,
+  TrendingUp, DollarSign, BarChart2, ArrowUpCircle, Download as DownloadIcon, Clock, CreditCard as CardIcon
 } from 'lucide-react';
 
 export default function DjDashboard() {
@@ -2015,6 +2016,11 @@ export default function DjDashboard() {
                 <button className={`btn ${activeTab === 'admin_profile' ? 'btn-primary' : 'btn-secondary'}`}
                   onClick={() => setActiveTab('admin_profile')} style={{ justifyContent: 'flex-start', width: '100%', borderColor: activeTab === 'admin_profile' ? undefined : 'rgba(124,58,237,0.2)' }}>
                   <User size={16} /><span>Mi Perfil Admin</span>
+                </button>
+                <button className={`btn ${activeTab === 'revenue' ? 'btn-primary' : 'btn-secondary'}`}
+                  onClick={() => setActiveTab('revenue')} style={{ justifyContent: 'flex-start', width: '100%', borderColor: activeTab === 'revenue' ? undefined : 'rgba(16,185,129,0.2)' }}>
+                  <TrendingUp size={16} /><span>Finanzas</span>
+                  <span style={{ marginLeft: 'auto', fontSize: '0.65rem', background: 'rgba(16,185,129,0.15)', color: 'var(--success-color)', padding: '2px 6px', borderRadius: '8px', fontWeight: '700' }}>INGRESOS</span>
                 </button>
               </>
             )}
@@ -5805,6 +5811,260 @@ export default function DjDashboard() {
               </form>
             </div>
           )}
+
+          {/* ======= 7. FINANZAS / ESTADÍSTICAS DE INGRESOS ======= */}
+          {activeTab === 'revenue' && isAdminMaster && !impersonatingUid && (() => {
+            // ---- Lógica de cálculo financiero ----
+            const PAID_PLANS = ['premium', 'vip', 'pro', 'bonus', 'eventual'];
+            const usersArr = Object.values(allUsersData || {});
+
+            // Usuarios con plan de pago activo
+            const activePayingUsers = usersArr.filter(({ profile }) => {
+              const plan = profile?.activePlan;
+              return plan && PAID_PLANS.includes(plan);
+            });
+
+            // Total recaudado (suma de precios de planes activos)
+            let totalRevenue = 0;
+            const byPlan = {};
+            const activations = [];
+
+            activePayingUsers.forEach(({ profile }) => {
+              const plan = profile?.activePlan;
+              const price = parseFloat(plansConfig?.[plan]?.price || 0);
+              const currency = plansConfig?.[plan]?.currency || 'MXN';
+              totalRevenue += price;
+              if (!byPlan[plan]) byPlan[plan] = { count: 0, subtotal: 0, price, currency, name: plansConfig?.[plan]?.name || plan };
+              byPlan[plan].count++;
+              byPlan[plan].subtotal += price;
+              activations.push({ ...profile, plan, price });
+            });
+
+            // Ordenar activaciones más recientes primero
+            activations.sort((a, b) => (b.activatedAt || 0) - (a.activatedAt || 0));
+
+            // Suscripciones pendientes de validación
+            const pendingUsers = usersArr.filter(({ profile }) =>
+              profile?.subscriptionStatus === 'pending_validation'
+            );
+            const pendingRevenue = pendingUsers.reduce((acc, { profile }) => {
+              return acc + parseFloat(plansConfig?.[profile?.selectedPlan]?.price || 0);
+            }, 0);
+
+            const avgRevenue = activePayingUsers.length > 0 ? (totalRevenue / activePayingUsers.length) : 0;
+
+            // --- Exportar CSV ---
+            const exportCSV = () => {
+              const rows = [
+                ['Plan', 'DJ Name', 'Email', 'Gateway', 'Transaction ID', 'Activado', 'Expira', 'Monto MXN'],
+                ...activations.map(p => [
+                  p.plan?.toUpperCase() || '',
+                  p.djName || p.displayName || '',
+                  p.email || '',
+                  p.gateway || '',
+                  p.transactionId || '',
+                  p.activatedAt ? new Date(p.activatedAt).toLocaleString('es-MX') : '',
+                  p.expiresAt && p.expiresAt > 0 ? new Date(p.expiresAt).toLocaleString('es-MX') : 'Sin expiración',
+                  p.price || 0
+                ])
+              ];
+              const csv = rows.map(r => r.join(',')).join('\n');
+              const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+              const url = URL.createObjectURL(blob);
+              const a = document.createElement('a');
+              a.href = url;
+              a.download = `djvip_ingresos_${new Date().toISOString().split('T')[0]}.csv`;
+              a.click();
+              URL.revokeObjectURL(url);
+            };
+
+            const kpiCard = (icon, label, value, sub, color, bgColor) => (
+              <div style={{
+                flex: '1 1 200px',
+                background: bgColor || 'rgba(255,255,255,0.03)',
+                border: `1px solid ${color}33`,
+                borderRadius: 'var(--radius-lg)',
+                padding: '22px 24px',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '8px',
+                position: 'relative',
+                overflow: 'hidden',
+                minWidth: '170px'
+              }}>
+                <div style={{ position: 'absolute', top: 0, right: 0, width: '80px', height: '80px', background: `radial-gradient(circle at top right, ${color}18, transparent 70%)`, pointerEvents: 'none' }} />
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                  <div style={{ width: '36px', height: '36px', borderRadius: '50%', background: `${color}18`, border: `1px solid ${color}44`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    {React.cloneElement(icon, { size: 18, color })}
+                  </div>
+                  <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px', fontWeight: '600' }}>{label}</span>
+                </div>
+                <div style={{ fontSize: '1.8rem', fontWeight: '800', color: '#fff', lineHeight: 1 }}>{value}</div>
+                {sub && <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{sub}</div>}
+              </div>
+            );
+
+            return (
+              <div className="animate-fade-in" style={{ maxWidth: '1100px', margin: '0 auto' }}>
+                {/* Encabezado */}
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '28px', flexWrap: 'wrap', gap: '12px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+                    <div style={{ width: '48px', height: '48px', borderRadius: '50%', background: 'rgba(16,185,129,0.1)', border: '1px solid rgba(16,185,129,0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                      <TrendingUp size={22} color="var(--success-color)" />
+                    </div>
+                    <div>
+                      <h2 style={{ fontSize: '1.4rem', margin: 0, color: '#fff' }}>Estadísticas Financieras</h2>
+                      <p style={{ fontSize: '0.82rem', color: 'var(--text-muted)', margin: 0 }}>Ingresos de la plataforma · Solo visible para Admin Master</p>
+                    </div>
+                  </div>
+                  <button
+                    onClick={exportCSV}
+                    className="btn btn-secondary"
+                    style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '9px 16px', fontSize: '0.85rem', borderColor: 'rgba(16,185,129,0.3)', color: 'var(--success-color)' }}
+                  >
+                    <DownloadIcon size={14} /> Exportar CSV
+                  </button>
+                </div>
+
+                {/* KPI Cards */}
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '16px', marginBottom: '28px' }}>
+                  {kpiCard(<DollarSign />, 'Total Recaudado', `$${totalRevenue.toLocaleString('es-MX', { minimumFractionDigits: 2 })} MXN`, `${activePayingUsers.length} suscripción${activePayingUsers.length !== 1 ? 'es' : ''} activa${activePayingUsers.length !== 1 ? 's' : ''}`, '#10b981', 'rgba(16,185,129,0.05)')}
+                  {kpiCard(<Users />, 'DJs con Plan Activo', activePayingUsers.length, `de ${usersArr.length} DJs registrados`, '#7c3aed', 'rgba(124,58,237,0.05)')}
+                  {kpiCard(<BarChart2 />, 'Promedio por Suscriptor', activePayingUsers.length > 0 ? `$${avgRevenue.toLocaleString('es-MX', { minimumFractionDigits: 2 })}` : '—', 'MXN por DJ activo', '#06b6d4', 'rgba(6,182,212,0.05)')}
+                  {kpiCard(<Clock />, 'Pendientes de Validar', pendingUsers.length, pendingRevenue > 0 ? `$${pendingRevenue.toLocaleString('es-MX', { minimumFractionDigits: 2 })} MXN potenciales` : 'Sin ingresos pendientes', '#f59e0b', 'rgba(245,158,11,0.05)')}
+                </div>
+
+                {/* Desglose por plan */}
+                <div className="glass-panel" style={{ padding: '24px', borderRadius: 'var(--radius-lg)', marginBottom: '24px' }}>
+                  <h3 style={{ fontSize: '1rem', fontWeight: '700', color: '#fff', marginBottom: '18px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <BarChart2 size={16} color="var(--primary-color)" /> Desglose por Plan
+                  </h3>
+                  {Object.keys(byPlan).length === 0 ? (
+                    <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', textAlign: 'center', padding: '20px 0' }}>No hay suscripciones de pago activas.</p>
+                  ) : (
+                    <div style={{ overflowX: 'auto' }}>
+                      <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.88rem' }}>
+                        <thead>
+                          <tr style={{ borderBottom: '1px solid var(--surface-border)' }}>
+                            {['Plan', 'Nombre', 'Suscriptores', 'Precio Unit.', 'Subtotal', '% del Total'].map(h => (
+                              <th key={h} style={{ padding: '10px 14px', textAlign: 'left', color: 'var(--text-muted)', fontWeight: '600', fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.5px' }}>{h}</th>
+                            ))}
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {Object.entries(byPlan).sort((a, b) => b[1].subtotal - a[1].subtotal).map(([planKey, d]) => {
+                            const pct = totalRevenue > 0 ? ((d.subtotal / totalRevenue) * 100).toFixed(1) : 0;
+                            const planColors = { premium: '#7c3aed', vip: '#06b6d4', pro: '#f59e0b', bonus: '#d4af37', eventual: '#10b981' };
+                            const col = planColors[planKey] || '#6b7280';
+                            return (
+                              <tr key={planKey} style={{ borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
+                                <td style={{ padding: '12px 14px' }}>
+                                  <span style={{ background: `${col}22`, color: col, border: `1px solid ${col}44`, borderRadius: '6px', padding: '3px 10px', fontSize: '0.75rem', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.5px' }}>{planKey}</span>
+                                </td>
+                                <td style={{ padding: '12px 14px', color: 'var(--text-secondary)' }}>{d.name}</td>
+                                <td style={{ padding: '12px 14px', color: '#fff', fontWeight: '700', textAlign: 'center' }}>{d.count}</td>
+                                <td style={{ padding: '12px 14px', color: 'var(--text-secondary)' }}>${d.price.toFixed(2)} {d.currency}</td>
+                                <td style={{ padding: '12px 14px', color: 'var(--success-color)', fontWeight: '700' }}>${d.subtotal.toLocaleString('es-MX', { minimumFractionDigits: 2 })} {d.currency}</td>
+                                <td style={{ padding: '12px 14px' }}>
+                                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                    <div style={{ flex: 1, height: '6px', background: 'rgba(255,255,255,0.07)', borderRadius: '3px', overflow: 'hidden' }}>
+                                      <div style={{ width: `${pct}%`, height: '100%', background: `linear-gradient(90deg, ${col}, ${col}aa)`, borderRadius: '3px', transition: 'width 0.6s ease' }} />
+                                    </div>
+                                    <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)', minWidth: '40px' }}>{pct}%</span>
+                                  </div>
+                                </td>
+                              </tr>
+                            );
+                          })}
+                        </tbody>
+                        <tfoot>
+                          <tr style={{ borderTop: '2px solid var(--surface-border)' }}>
+                            <td colSpan={2} style={{ padding: '14px', color: 'var(--text-muted)', fontWeight: '700', fontSize: '0.85rem' }}>TOTAL</td>
+                            <td style={{ padding: '14px', color: '#fff', fontWeight: '700', textAlign: 'center' }}>{activePayingUsers.length}</td>
+                            <td />
+                            <td style={{ padding: '14px', color: 'var(--success-color)', fontWeight: '800', fontSize: '1rem' }}>${totalRevenue.toLocaleString('es-MX', { minimumFractionDigits: 2 })} MXN</td>
+                            <td style={{ padding: '14px', color: 'var(--text-muted)' }}>100%</td>
+                          </tr>
+                        </tfoot>
+                      </table>
+                    </div>
+                  )}
+                </div>
+
+                {/* Activaciones recientes + Pendientes en 2 columnas */}
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(340px, 1fr))', gap: '20px' }}>
+
+                  {/* Activaciones recientes */}
+                  <div className="glass-panel" style={{ padding: '24px', borderRadius: 'var(--radius-lg)' }}>
+                    <h3 style={{ fontSize: '1rem', fontWeight: '700', color: '#fff', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <ArrowUpCircle size={16} color="var(--success-color)" /> Activaciones Recientes
+                    </h3>
+                    {activations.length === 0 ? (
+                      <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem', textAlign: 'center', padding: '16px 0' }}>Sin activaciones registradas.</p>
+                    ) : (
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', maxHeight: '360px', overflowY: 'auto' }}>
+                        {activations.slice(0, 20).map((p, i) => {
+                          const planColors = { premium: '#7c3aed', vip: '#06b6d4', pro: '#f59e0b', bonus: '#d4af37', eventual: '#10b981' };
+                          const col = planColors[p.plan] || '#6b7280';
+                          return (
+                            <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '10px 12px', background: 'rgba(255,255,255,0.02)', borderRadius: 'var(--radius-md)', border: '1px solid rgba(255,255,255,0.04)' }}>
+                              <div style={{ width: '36px', height: '36px', borderRadius: '50%', background: `${col}18`, border: `1px solid ${col}44`, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                                <span style={{ fontSize: '0.7rem', fontWeight: '800', color: col }}>{(p.plan || '?')[0].toUpperCase()}</span>
+                              </div>
+                              <div style={{ flex: 1, minWidth: 0 }}>
+                                <div style={{ fontSize: '0.85rem', color: '#fff', fontWeight: '600', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{p.djName || p.displayName || p.email || 'DJ'}</div>
+                                <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{p.email}</div>
+                              </div>
+                              <div style={{ textAlign: 'right', flexShrink: 0 }}>
+                                <div style={{ fontSize: '0.8rem', fontWeight: '700', color: 'var(--success-color)' }}>${p.price.toFixed(0)}</div>
+                                <span style={{ fontSize: '0.68rem', background: `${col}22`, color: col, border: `1px solid ${col}44`, borderRadius: '4px', padding: '1px 6px' }}>{p.plan?.toUpperCase()}</span>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Pendientes de validación */}
+                  <div className="glass-panel" style={{ padding: '24px', borderRadius: 'var(--radius-lg)' }}>
+                    <h3 style={{ fontSize: '1rem', fontWeight: '700', color: '#fff', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <Clock size={16} color="#f59e0b" /> Pagos Pendientes de Validación
+                    </h3>
+                    {pendingUsers.length === 0 ? (
+                      <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem', textAlign: 'center', padding: '16px 0' }}>No hay pagos pendientes. ✅</p>
+                    ) : (
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', maxHeight: '360px', overflowY: 'auto' }}>
+                        {pendingUsers.map(({ profile }, i) => {
+                          const plan = profile?.selectedPlan || 'pending';
+                          const price = parseFloat(plansConfig?.[plan]?.price || 0);
+                          const gwLabel = { paypal: 'PayPal', mercadopago: 'MercadoPago', transfer: 'Transferencia' }[profile?.gateway] || profile?.gateway || '—';
+                          return (
+                            <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '10px 12px', background: 'rgba(245,158,11,0.03)', borderRadius: 'var(--radius-md)', border: '1px solid rgba(245,158,11,0.15)' }}>
+                              <div style={{ width: '36px', height: '36px', borderRadius: '50%', background: 'rgba(245,158,11,0.1)', border: '1px solid rgba(245,158,11,0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                                <CardIcon size={16} color="#f59e0b" />
+                              </div>
+                              <div style={{ flex: 1, minWidth: 0 }}>
+                                <div style={{ fontSize: '0.85rem', color: '#fff', fontWeight: '600', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{profile?.djName || profile?.displayName || profile?.email || 'DJ'}</div>
+                                <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>{gwLabel} · {profile?.transactionId || '—'}</div>
+                              </div>
+                              <div style={{ textAlign: 'right', flexShrink: 0 }}>
+                                <div style={{ fontSize: '0.8rem', fontWeight: '700', color: '#f59e0b' }}>${price.toFixed(0)} MXN</div>
+                                <span style={{ fontSize: '0.68rem', background: 'rgba(245,158,11,0.1)', color: '#f59e0b', border: '1px solid rgba(245,158,11,0.3)', borderRadius: '4px', padding: '1px 6px' }}>{plan?.toUpperCase()}</span>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+
+                </div>
+
+              </div>
+            );
+          })()}
+
         </div>
       )}
       </div>
