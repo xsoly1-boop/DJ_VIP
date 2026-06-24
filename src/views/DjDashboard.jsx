@@ -5052,34 +5052,36 @@ export default function DjDashboard() {
               )}
 
               {/* === SECCIÓN: RESPALDO DE BASE DE DATOS === */}
-              <div style={{ marginTop: '28px', padding: '20px', border: '1px solid rgba(16,185,129,0.25)', background: 'rgba(16,185,129,0.03)', borderRadius: 'var(--radius-md)' }}>
-                <h3 style={{ fontSize: '1.05rem', fontWeight: '700', marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '8px', color: '#10b981' }}>
-                  <Database size={18} /> Copia de Seguridad y Respaldo de Base de Datos
-                </h3>
-                <p style={{ fontSize: '0.82rem', color: 'var(--text-secondary)', lineHeight: '1.5', marginBottom: '16px' }}>
-                  Descarga una copia de seguridad completa de la base de datos en formato JSON. Este archivo incluye todas las cuentas de DJ registradas, la configuración de todos los eventos, el historial de peticiones de canciones y el catálogo global de autocompletado.
-                </p>
-                <button
-                  onClick={handleDownloadBackup}
-                  disabled={backupLoading}
-                  className="btn btn-primary"
-                  style={{
-                    background: 'linear-gradient(135deg, #10b981, #059669)',
-                    border: 'none',
-                    boxShadow: '0 4px 12px rgba(16,185,129,0.2)',
-                    padding: '10px 20px',
-                    fontSize: '0.85rem',
-                    fontWeight: '600',
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    gap: '8px',
-                    height: 'auto'
-                  }}
-                >
-                  {backupLoading ? <RefreshCw size={14} className="animate-spin" /> : <Download size={14} />}
-                  {backupLoading ? 'Generando Copia...' : 'Descargar Respaldo Completo (JSON)'}
-                </button>
-              </div>
+              {isAdminMaster && !impersonatingUid && (
+                <div style={{ marginTop: '28px', padding: '20px', border: '1px solid rgba(16,185,129,0.25)', background: 'rgba(16,185,129,0.03)', borderRadius: 'var(--radius-md)' }}>
+                  <h3 style={{ fontSize: '1.05rem', fontWeight: '700', marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '8px', color: '#10b981' }}>
+                    <Database size={18} /> Copia de Seguridad y Respaldo de Base de Datos
+                  </h3>
+                  <p style={{ fontSize: '0.82rem', color: 'var(--text-secondary)', lineHeight: '1.5', marginBottom: '16px' }}>
+                    Descarga una copia de seguridad completa de la base de datos en formato JSON. Este archivo incluye todas las cuentas de DJ registradas, la configuración de todos los eventos, el historial de peticiones de canciones y el catálogo global de autocompletado.
+                  </p>
+                  <button
+                    onClick={handleDownloadBackup}
+                    disabled={backupLoading}
+                    className="btn btn-primary"
+                    style={{
+                      background: 'linear-gradient(135deg, #10b981, #059669)',
+                      border: 'none',
+                      boxShadow: '0 4px 12px rgba(16,185,129,0.2)',
+                      padding: '10px 20px',
+                      fontSize: '0.85rem',
+                      fontWeight: '600',
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '8px',
+                      height: 'auto'
+                    }}
+                  >
+                    {backupLoading ? <RefreshCw size={14} className="animate-spin" /> : <Download size={14} />}
+                    {backupLoading ? 'Generando Copia...' : 'Descargar Respaldo Completo (JSON)'}
+                  </button>
+                </div>
+              )}
 
               {/* Info de cuentas mock */}
               {isMock && (

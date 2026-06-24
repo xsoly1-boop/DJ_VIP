@@ -2359,7 +2359,7 @@ export const FirebaseProvider = ({ children }) => {
   };
 
   const getDatabaseBackup = async () => {
-    if (!isAdminMaster) {
+    if (!isAdminMaster || impersonatingUid) {
       throw new Error("No autorizado: solo el administrador master puede realizar respaldos.");
     }
     const rootRef = ref(database, '/');
