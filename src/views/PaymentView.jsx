@@ -3,6 +3,7 @@ import { useFirebase } from '../context/FirebaseContext';
 import { CreditCard, CheckCircle, ArrowLeft, LogOut, Check, RefreshCw } from 'lucide-react';
 
 export default function PaymentView() {
+  const API_BASE = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' || window.location.protocol === 'file:' || !window.location.hostname) ? 'http://localhost:4000' : '';
   const { userProfile, selectPlan, submitPaymentProof, logoutDJ, plansConfig, publicPaymentInfo } = useFirebase();
   const [gateway, setGateway] = useState('');
   const [transactionId, setTransactionId] = useState('');
@@ -30,7 +31,7 @@ export default function PaymentView() {
     setLoading(true);
     try {
       // Llamar al backend para simular la preferencia/creación
-      const res = await fetch('http://localhost:4000/api/subscription/create', {
+      const res = await fetch(`${API_BASE}/api/subscription/create`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

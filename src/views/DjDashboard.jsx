@@ -11,6 +11,8 @@ import {
 } from 'lucide-react';
 
 export default function DjDashboard() {
+  const API_BASE = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' || window.location.protocol === 'file:' || !window.location.hostname) ? 'http://localhost:4000' : '';
+
   const { 
     user, 
     logoutDJ, 
@@ -1215,7 +1217,6 @@ export default function DjDashboard() {
   // Delete a DJ user account (admin only)
   const handleDeleteDjAccount = async (uid) => {
     try {
-      const API_BASE = window.location.hostname === 'localhost' ? 'http://localhost:4000' : '';
       const res = await fetch(`${API_BASE}/api/admin/deleteUser`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -1250,7 +1251,6 @@ export default function DjDashboard() {
   const fetchPaymentConfig = async () => {
     try {
       const secret = import.meta.env.VITE_ADMIN_MASTER_SECRET;
-      const API_BASE = window.location.hostname === 'localhost' ? 'http://localhost:4000' : '';
       const res = await fetch(`${API_BASE}/api/admin/getPaymentConfig`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -1269,7 +1269,6 @@ export default function DjDashboard() {
     setPendingSubsLoading(true);
     try {
       const secret = import.meta.env.VITE_ADMIN_MASTER_SECRET;
-      const API_BASE = window.location.hostname === 'localhost' ? 'http://localhost:4000' : '';
       const res = await fetch(`${API_BASE}/api/admin/listPendingSubscriptions`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -1298,7 +1297,6 @@ export default function DjDashboard() {
     setSaveConfigLoading(true);
     try {
       const secret = import.meta.env.VITE_ADMIN_MASTER_SECRET;
-      const API_BASE = window.location.hostname === 'localhost' ? 'http://localhost:4000' : '';
       const res = await fetch(`${API_BASE}/api/admin/savePaymentConfig`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -1322,7 +1320,6 @@ export default function DjDashboard() {
     if (!window.confirm(`¿Aprobar el plan ${plan.toUpperCase()} para este usuario?`)) return;
     try {
       const secret = import.meta.env.VITE_ADMIN_MASTER_SECRET;
-      const API_BASE = window.location.hostname === 'localhost' ? 'http://localhost:4000' : '';
       const res = await fetch(`${API_BASE}/api/admin/approveSubscription`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -1345,7 +1342,6 @@ export default function DjDashboard() {
     if (!window.confirm('¿Rechazar el comprobante de este usuario? Su estado volverá a Pago Pendiente.')) return;
     try {
       const secret = import.meta.env.VITE_ADMIN_MASTER_SECRET;
-      const API_BASE = window.location.hostname === 'localhost' ? 'http://localhost:4000' : '';
       const res = await fetch(`${API_BASE}/api/admin/rejectSubscription`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },

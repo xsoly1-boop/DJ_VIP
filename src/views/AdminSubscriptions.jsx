@@ -1,13 +1,14 @@
 import React, { useEffect, useState } from 'react';
 
 const AdminSubscriptions = () => {
+  const API_BASE = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' || window.location.protocol === 'file:' || !window.location.hostname) ? 'http://localhost:4000' : '';
   const [subscriptions, setSubscriptions] = useState([]);
   const [loading, setLoading] = useState(true);
   const secret = import.meta.env.VITE_ADMIN_MASTER_SECRET;
 
   const fetchSubscriptions = async () => {
     try {
-      const res = await fetch('http://localhost:4000/api/admin/listSubscriptions', {
+      const res = await fetch(`${API_BASE}/api/admin/listSubscriptions`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ secret }),
@@ -31,7 +32,7 @@ const AdminSubscriptions = () => {
     let updates;
     try { updates = JSON.parse(updatesStr); } catch (e) { alert('Invalid JSON'); return; }
     try {
-      const res = await fetch('http://localhost:4000/api/admin/updateSubscription', {
+      const res = await fetch(`${API_BASE}/api/admin/updateSubscription`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ secret, subscriptionId: sub.id, updates }),
@@ -49,7 +50,7 @@ const AdminSubscriptions = () => {
   const handleDelete = async (sub) => {
     if (!window.confirm('Delete subscription?')) return;
     try {
-      const res = await fetch('http://localhost:4000/api/admin/deleteSubscription', {
+      const res = await fetch(`${API_BASE}/api/admin/deleteSubscription`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ secret, subscriptionId: sub.id }),
