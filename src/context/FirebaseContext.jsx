@@ -1119,7 +1119,21 @@ export const FirebaseProvider = ({ children }) => {
       strictLimitEnabled = ownerProfile?.strictLimitEnabled !== false;
 
       if (planKey === 'free') {
-        maxRequests = ownerProfile?.demoLimit !== undefined ? parseInt(ownerProfile.demoLimit, 10) : 35;
+        const rawLimit = ownerProfile?.demoLimit !== undefined ? parseInt(ownerProfile.demoLimit, 10) : 35;
+        const expiresAt = ownerProfile?.demoLimitExpiresAt ? parseInt(ownerProfile.demoLimitExpiresAt, 10) : 0;
+        if (rawLimit > 35 && expiresAt && Date.now() > expiresAt) {
+          maxRequests = 35;
+        } else {
+          maxRequests = rawLimit;
+        }
+      } else if (planKey === 'vip') {
+        const rawLimit = ownerProfile?.vipLimit !== undefined ? parseInt(ownerProfile.vipLimit, 10) : 80;
+        const expiresAt = ownerProfile?.vipLimitExpiresAt ? parseInt(ownerProfile.vipLimitExpiresAt, 10) : 0;
+        if (rawLimit > 80 && expiresAt && Date.now() > expiresAt) {
+          maxRequests = 80;
+        } else {
+          maxRequests = rawLimit;
+        }
       } else {
         const planDetails = plansConfig?.[planKey] || DEFAULT_PLANS_CONFIG[planKey] || DEFAULT_PLANS_CONFIG.free;
         maxRequests = planDetails && planDetails.maxRequests !== undefined
@@ -1598,7 +1612,13 @@ export const FirebaseProvider = ({ children }) => {
 
     let maxRequests = 35;
     if (planKey === 'free') {
-      maxRequests = 35; // Límite exacto de 35 para el plan demo
+      const rawLimit = userProfile?.demoLimit !== undefined ? parseInt(userProfile.demoLimit, 10) : 35;
+      const expiresAt = userProfile?.demoLimitExpiresAt ? parseInt(userProfile.demoLimitExpiresAt, 10) : 0;
+      if (rawLimit > 35 && expiresAt && Date.now() > expiresAt) {
+        maxRequests = 35;
+      } else {
+        maxRequests = rawLimit;
+      }
     } else if (planKey === 'premium') {
       maxRequests = 80;
     }
@@ -1977,7 +1997,7 @@ export const FirebaseProvider = ({ children }) => {
   };
 
   // Editar datos de registro DJ (solo Admin Master)
-  const updateDjAccount = async (uid, newEmail, newDisplayName, newPassword, newPlan, demoLimit, strictLimitEnabled) => {
+  const updateDjAccount = async (uid, newEmail, newDisplayName, newPassword, newPlan, demoLimit, strictLimitEnabled, vipLimit) => {
     if (!isAdminMaster) {
       throw new Error('Solo el Administrador Master puede editar cuentas.');
     }
@@ -1990,7 +2010,14 @@ export const FirebaseProvider = ({ children }) => {
         if (newDisplayName) allAccounts[accountIdx].displayName = newDisplayName;
         if (newPassword) allAccounts[accountIdx].password = newPassword;
         if (newPlan) allAccounts[accountIdx].selectedPlan = newPlan;
-        if (demoLimit !== undefined) allAccounts[accountIdx].demoLimit = demoLimit;
+        if (demoLimit !== undefined) {
+          allAccounts[accountIdx].demoLimit = demoLimit;
+          allAccounts[accountIdx].demoLimitExpiresAt = (demoLimit > 35) ? (Date.now() + 30 * 24 * 60 * 60 * 1000) : 0;
+        }
+        if (vipLimit !== undefined) {
+          allAccounts[accountIdx].vipLimit = vipLimit;
+          allAccounts[accountIdx].vipLimitExpiresAt = (vipLimit > 80) ? (Date.now() + 30 * 24 * 60 * 60 * 1000) : 0;
+        }
         if (strictLimitEnabled !== undefined) allAccounts[accountIdx].strictLimitEnabled = strictLimitEnabled;
         localStorage.setItem('mock_accounts', JSON.stringify(allAccounts));
       }
@@ -2001,7 +2028,14 @@ export const FirebaseProvider = ({ children }) => {
         if (newEmail) dbData.users[uid].profile.email = newEmail;
         if (newDisplayName) dbData.users[uid].profile.displayName = newDisplayName;
         if (newPassword) dbData.users[uid].profile.password = newPassword;
-        if (demoLimit !== undefined) dbData.users[uid].profile.demoLimit = demoLimit;
+        if (demoLimit !== undefined) {
+          dbData.users[uid].profile.demoLimit = demoLimit;
+          dbData.users[uid].profile.demoLimitExpiresAt = (demoLimit > 35) ? (Date.now() + 30 * 24 * 60 * 60 * 1000) : 0;
+        }
+        if (vipLimit !== undefined) {
+          dbData.users[uid].profile.vipLimit = vipLimit;
+          dbData.users[uid].profile.vipLimitExpiresAt = (vipLimit > 80) ? (Date.now() + 30 * 24 * 60 * 60 * 1000) : 0;
+        }
         if (strictLimitEnabled !== undefined) dbData.users[uid].profile.strictLimitEnabled = strictLimitEnabled;
         
         if (newPlan) {
@@ -2112,6 +2146,12 @@ export const FirebaseProvider = ({ children }) => {
 
     if (demoLimit !== undefined) {
       updates.demoLimit = demoLimit;
+      updates.demoLimitExpiresAt = (demoLimit > 35) ? (Date.now() + 30 * 24 * 60 * 60 * 1000) : 0;
+    }
+
+    if (vipLimit !== undefined) {
+      updates.vipLimit = vipLimit;
+      updates.vipLimitExpiresAt = (vipLimit > 80) ? (Date.now() + 30 * 24 * 60 * 60 * 1000) : 0;
     }
 
     if (strictLimitEnabled !== undefined) {

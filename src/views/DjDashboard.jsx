@@ -111,6 +111,7 @@ export default function DjDashboard() {
   const [editDjPassword, setEditDjPassword] = useState('');
   const [editDjPlan, setEditDjPlan] = useState('free');
   const [editDjDemoLimit, setEditDjDemoLimit] = useState(35);
+  const [editDjVipLimit, setEditDjVipLimit] = useState(80);
   const [editDjStrictLimit, setEditDjStrictLimit] = useState(true);
   const [editDjLoading, setEditDjLoading] = useState(false);
 
@@ -1203,7 +1204,16 @@ export default function DjDashboard() {
     }
     setEditDjLoading(true);
     try {
-      await updateDjAccount(uid, editDjEmail.trim(), editDjDisplayName.trim(), editDjPassword.trim() || null, editDjPlan, editDjPlan === 'free' ? editDjDemoLimit : null, editDjPlan === 'free' || editDjPlan === 'premium' ? editDjStrictLimit : null);
+      await updateDjAccount(
+        uid, 
+        editDjEmail.trim(), 
+        editDjDisplayName.trim(), 
+        editDjPassword.trim() || null, 
+        editDjPlan, 
+        editDjPlan === 'free' ? editDjDemoLimit : null, 
+        editDjPlan === 'free' || editDjPlan === 'premium' ? editDjStrictLimit : null,
+        editDjPlan === 'vip' ? editDjVipLimit : null
+      );
       showToast('✅ Datos de registro y plan actualizados correctamente');
       setEditingDjUid(null);
       setEditDjPassword('');
@@ -1432,10 +1442,13 @@ export default function DjDashboard() {
     
     const currentPlan = uid === 'uid-admin-master' ? 'vip' : (userData?.profile?.selectedPlan || userData?.profile?.subscriptionStatus || 'free');
     const expiresAt = userData?.profile?.expiresAt || 0;
-    const demoLimit = userData?.profile?.demoLimit || 5;
+    const demoLimit = userData?.profile?.demoLimit !== undefined ? parseInt(userData.profile.demoLimit, 10) : 35;
+    const vipLimit = userData?.profile?.vipLimit !== undefined ? parseInt(userData.profile.vipLimit, 10) : 80;
+    const demoLimitExpiresAt = userData?.profile?.demoLimitExpiresAt || 0;
+    const vipLimitExpiresAt = userData?.profile?.vipLimitExpiresAt || 0;
     const strictLimitEnabled = userData?.profile?.strictLimitEnabled !== false;
     
-    return { uid, eventsCount, requestsCount, djName, eventTitles, email, currentPlan, expiresAt, demoLimit, strictLimitEnabled };
+    return { uid, eventsCount, requestsCount, djName, eventTitles, email, currentPlan, expiresAt, demoLimit, vipLimit, demoLimitExpiresAt, vipLimitExpiresAt, strictLimitEnabled };
   });
 
   return (
@@ -1545,11 +1558,31 @@ export default function DjDashboard() {
                 const planName = plansConfig?.[plan]?.name || (plan === 'free' ? 'Plan Demo' : plan);
                 const isFree = !userProfile?.selectedPlan || plan === 'free';
                 const isPremium = plan === 'premium';
-                const maxReq = isFree
-                  ? (userProfile?.demoLimit || 35)
-                  : isPremium
-                    ? (plansConfig?.premium?.maxRequests || 80)
-                    : 0;
+                let maxReq = 0;
+                let extraQuantity = 0;
+
+                if (plan === 'free') {
+                  const rawLimit = userProfile?.demoLimit !== undefined ? parseInt(userProfile.demoLimit, 10) : 35;
+                  const expiresAt = userProfile?.demoLimitExpiresAt ? parseInt(userProfile.demoLimitExpiresAt, 10) : 0;
+                  if (rawLimit > 35 && expiresAt && Date.now() > expiresAt) {
+                    maxReq = 35;
+                  } else {
+                    maxReq = rawLimit;
+                    if (rawLimit > 35) extraQuantity = rawLimit - 35;
+                  }
+                } else if (plan === 'vip') {
+                  const rawLimit = userProfile?.vipLimit !== undefined ? parseInt(userProfile.vipLimit, 10) : 80;
+                  const expiresAt = userProfile?.vipLimitExpiresAt ? parseInt(userProfile.vipLimitExpiresAt, 10) : 0;
+                  if (rawLimit > 80 && expiresAt && Date.now() > expiresAt) {
+                    maxReq = 80;
+                  } else {
+                    maxReq = rawLimit;
+                    if (rawLimit > 80) extraQuantity = rawLimit - 80;
+                  }
+                } else if (plan === 'premium') {
+                  maxReq = 80;
+                }
+
                 const usedReq = Object.keys(requests || {}).length + Object.keys(playedRequests || {}).length;
                 if (maxReq > 0) {
                   const pct = Math.min(100, Math.round((usedReq / maxReq) * 100));
@@ -1557,6 +1590,36 @@ export default function DjDashboard() {
                   return (
                     <span style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
                       <span>📋 Plan activo: <strong>{planName}</strong></span>
+                      {extraQuantity > 0 && (
+                        <button
+                          onClick={() => showToast(`⚡ Tienes ${extraQuantity} peticiones extra contratadas por 30 días.`)}
+                          style={{
+                            fontSize: '0.7rem',
+                            padding: '3px 8px',
+                            borderRadius: '8px',
+                            fontWeight: '700',
+                            border: '1px solid rgba(59, 130, 246, 0.45)',
+                            background: 'rgba(59, 130, 246, 0.15)',
+                            color: '#60a5fa',
+                            cursor: 'pointer',
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: '4px',
+                            whiteSpace: 'nowrap',
+                            transition: 'all 0.2s ease',
+                          }}
+                          onMouseEnter={(e) => {
+                            e.currentTarget.style.background = 'rgba(59, 130, 246, 0.25)';
+                            e.currentTarget.style.border = '1px solid rgba(59, 130, 246, 0.6)';
+                          }}
+                          onMouseLeave={(e) => {
+                            e.currentTarget.style.background = 'rgba(59, 130, 246, 0.15)';
+                            e.currentTarget.style.border = '1px solid rgba(59, 130, 246, 0.45)';
+                          }}
+                        >
+                          +{extraQuantity}
+                        </button>
+                      )}
                       <span style={{
                         background: pct >= 90 ? 'rgba(239,68,68,0.15)' : pct >= 70 ? 'rgba(249,115,22,0.15)' : 'rgba(250,204,21,0.1)',
                         color: color,
@@ -2313,8 +2376,8 @@ export default function DjDashboard() {
                   </div>
                 </div>
 
-                {/* URL de Producción (Vercel) - Solo VIP/Eventual */}
-                {userProfile?.selectedPlan !== 'premium' && (
+                {/* URL de Producción (Vercel) - Solo VIP/Eventual y solo visible para Admin Master */}
+                {userProfile?.selectedPlan !== 'premium' && isAdminMaster && (
                 <div className="form-group" style={{ borderBottom: '1px solid rgba(255,255,255,0.05)', paddingBottom: '20px' }}>
                   <label className="form-label" style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                     🔗 URL de Producción (Vercel)
@@ -4398,7 +4461,7 @@ export default function DjDashboard() {
                 </div>
               ) : (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                  {adminUsersList.map(({ uid, eventsCount, requestsCount, djName, eventTitles, email, currentPlan, expiresAt, demoLimit, strictLimitEnabled }) => (
+                  {adminUsersList.map(({ uid, eventsCount, requestsCount, djName, eventTitles, email, currentPlan, expiresAt, demoLimit, vipLimit, demoLimitExpiresAt, vipLimitExpiresAt, strictLimitEnabled }) => (
                     <div key={uid} className="glass-panel animate-slide-in" style={{
                       padding: '20px 24px', borderRadius: 'var(--radius-md)',
                       display: 'flex', flexDirection: 'column', gap: '14px',
@@ -4447,20 +4510,31 @@ export default function DjDashboard() {
                                 </div>
                                 {editDjPlan === 'free' && (
                                   <div className="form-group" style={{ marginBottom: 0 }}>
-                                    <label className="form-label" style={{ fontSize: '0.7rem' }}>Límite de Peticiones (Demo)</label>
+                                    <label className="form-label" style={{ fontSize: '0.7rem' }}>LÍMITE DE PETICIONES (DEMO)</label>
                                     <select
                                       className="input-field"
                                       value={editDjDemoLimit}
                                       onChange={(e) => setEditDjDemoLimit(parseInt(e.target.value, 10))}
                                       style={{ padding: '4px 8px', fontSize: '0.8rem', height: '28px', background: 'var(--surface-color)', color: '#fff', border: '1px solid rgba(255,255,255,0.15)', cursor: 'pointer' }}
                                     >
-                                      <option value={5}>5 Peticiones</option>
-                                      <option value={15}>15 Peticiones</option>
-                                      <option value={20}>20 Peticiones</option>
-                                      <option value={30}>30 Peticiones</option>
                                       <option value={35}>35 Peticiones (Default)</option>
-                                      <option value={40}>40 Peticiones</option>
-                                      <option value={70}>70 Peticiones</option>
+                                      <option value={50}>50 Peticiones</option>
+                                      <option value={60}>60 Peticiones</option>
+                                    </select>
+                                  </div>
+                                )}
+                                {editDjPlan === 'vip' && (
+                                  <div className="form-group" style={{ marginBottom: 0 }}>
+                                    <label className="form-label" style={{ fontSize: '0.7rem' }}>LÍMITE DE PETICIONES (VIP)</label>
+                                    <select
+                                      className="input-field"
+                                      value={editDjVipLimit}
+                                      onChange={(e) => setEditDjVipLimit(parseInt(e.target.value, 10))}
+                                      style={{ padding: '4px 8px', fontSize: '0.8rem', height: '28px', background: 'var(--surface-color)', color: '#fff', border: '1px solid rgba(255,255,255,0.15)', cursor: 'pointer' }}
+                                    >
+                                      <option value={80}>80 Peticiones (Default)</option>
+                                      <option value={100}>100 Peticiones</option>
+                                      <option value={120}>120 Peticiones</option>
                                     </select>
                                   </div>
                                 )}
@@ -4578,7 +4652,8 @@ export default function DjDashboard() {
                                   setEditDjEmail(email);
                                   setEditDjPassword('');
                                   setEditDjPlan(currentPlan || 'free');
-                                  setEditDjDemoLimit(demoLimit || 5);
+                                  setEditDjDemoLimit(demoLimit || 35);
+                                  setEditDjVipLimit(vipLimit || 80);
                                   setEditDjStrictLimit(strictLimitEnabled !== false);
                                 }}
                                 className="btn btn-secondary"
