@@ -5445,23 +5445,23 @@ export default function DjDashboard() {
                   background: bgColor || 'rgba(255,255,255,0.03)',
                   border: `1px solid ${color}33`,
                   borderRadius: 'var(--radius-lg)',
-                  padding: '12px 16px',
+                  padding: '10px 14px',
                   display: 'flex',
                   flexDirection: 'column',
-                  gap: '4px',
+                  gap: '2px',
                   position: 'relative',
                   overflow: 'hidden',
-                  minWidth: '150px'
+                  minWidth: '120px'
                 }}>
-                  <div style={{ position: 'absolute', top: 0, right: 0, width: '60px', height: '60px', background: `radial-gradient(circle at top right, ${color}14, transparent 70%)`, pointerEvents: 'none' }} />
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <div style={{ width: '28px', height: '28px', borderRadius: '50%', background: `${color}14`, border: `1px solid ${color}33`, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                      {React.cloneElement(icon, { size: 14, color })}
+                  <div style={{ position: 'absolute', top: 0, right: 0, width: '50px', height: '50px', background: `radial-gradient(circle at top right, ${color}14, transparent 70%)`, pointerEvents: 'none' }} />
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <div style={{ width: '24px', height: '24px', borderRadius: '50%', background: `${color}14`, border: `1px solid ${color}33`, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                      {React.cloneElement(icon, { size: 12, color })}
                     </div>
-                    <span style={{ fontSize: '0.68rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px', fontWeight: '600' }}>{label}</span>
+                    <span style={{ fontSize: '0.65rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px', fontWeight: '600' }}>{label}</span>
                   </div>
-                  <div style={{ fontSize: '1.4rem', fontWeight: '800', color: '#fff', lineHeight: 1.1 }}>{value}</div>
-                  {sub && <div style={{ fontSize: '0.68rem', color: 'var(--text-muted)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{sub}</div>}
+                  <div style={{ fontSize: '1.2rem', fontWeight: '800', color: '#fff', lineHeight: 1.1 }}>{value}</div>
+                  {sub && <div style={{ fontSize: '0.65rem', color: 'var(--text-muted)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{sub}</div>}
                 </div>
               );
 
@@ -5490,7 +5490,7 @@ export default function DjDashboard() {
                   {/* KPI Cards */}
                   <div style={{
                     display: 'grid',
-                    gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
+                    gridTemplateColumns: 'repeat(4, 1fr)',
                     gap: '12px',
                     marginBottom: '28px'
                   }}>
