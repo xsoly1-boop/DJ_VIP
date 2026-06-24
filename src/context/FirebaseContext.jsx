@@ -40,81 +40,119 @@ const DEFAULT_PLANS_CONFIG = {
   free: {
     name: "Plan Demo",
     price: "0",
-    billing: "gratis",
+    billing: "6 meses",
     currency: "MXN",
-    description: "Prueba las funciones básicas de la plataforma.",
+    description: "Prueba las funciones esenciales para comenzar a interactuar en tus eventos.",
     maxRequests: 35,
-    duration: 0,
+    duration: 6,
     durationUnit: "meses",
     benefits: [
-      "Cola de peticiones básicas",
-      "QR de evento estándar",
-      "Límite de 5 peticiones"
+      "Cola de peticiones básica",
+      "QR estándar para el público",
+      "35 peticiones de canciones por evento"
     ],
     restrictions: [
-      "Sin marca blanca",
-      "Límite de 5 peticiones",
-      "Sin soporte prioritario"
+      "Bloqueo estricto al superar límite",
+      "Sin personalización de marca blanca (logotipos/colores)",
+      "No permite borrar peticiones en las primeras 8 horas",
+      "No permite restablecer o recrear el evento en las primeras 8 horas"
     ]
   },
   premium: {
     name: "Plan Premium",
-    price: "299",
-    billing: "mes",
+    price: "100",
+    billing: "6 meses",
     currency: "MXN",
-    description: "Ideal para DJs profesionales que tocan en vivo.",
+    description: "Ideal para DJs profesionales que requieren marca blanca y mayores límites.",
     maxRequests: 80,
-    duration: 1,
+    duration: 6,
     durationUnit: "meses",
     benefits: [
       "Todo lo de Demo",
-      "Peticiones ilimitadas de canciones",
-      "Personalización de marca (Marca blanca)",
-      "Logotipo y colores personalizados",
-      "Estadísticas de eventos en tiempo real"
+      "80 peticiones de canciones por evento",
+      "Personalización de marca blanca (Opción B: URL externa de imagen)",
+      "Acceso a QR personalizado"
     ],
     restrictions: [
-      "Un solo evento activo simultáneo",
-      "Sin soporte 24/7 prioritario"
+      "No permite subir logotipos locales (Opción A)",
+      "No permite borrar peticiones en las primeras 8 horas",
+      "No permite restablecer o recrear el evento en las primeras 8 horas"
     ]
   },
   vip: {
     name: "Plan VIP",
-    price: "549",
-    billing: "mes",
+    price: "200",
+    billing: "6 meses",
     currency: "MXN",
-    description: "Para agencias, antros y DJs de eventos de gran escala.",
+    description: "Para DJs y eventos de gran escala con personalización total sin restricciones.",
     maxRequests: 0,
-    duration: 1,
+    duration: 6,
     durationUnit: "meses",
     benefits: [
       "Todo lo de Premium",
-      "Soporte multievento simultáneo",
-      "Soporte técnico prioritario 24/7",
-      "Descarga de respaldos de eventos"
+      "Peticiones de canciones ILIMITADAS",
+      "Logotipo personalizado Marca Blanca (Subida local Opción A habilitable)",
+      "Nombre de plataforma y tamaño de letra personalizados",
+      "Descarga de respaldos de eventos en tiempo real"
     ],
     restrictions: [
-      "Ninguna restricción"
+      "Opción A (subir logo) requiere habilitación del Admin Master"
+    ]
+  },
+  pro: {
+    name: "Plan PRO",
+    price: "400",
+    billing: "12 meses",
+    currency: "MXN",
+    status: "En Desarrollo",
+    description: "¡Próximamente! El plan definitivo para productoras y agencias multievento.",
+    maxRequests: 0,
+    duration: 12,
+    durationUnit: "meses",
+    benefits: [
+      "Multieventos activos en paralelo",
+      "Soporte VIP y asistencia prioritaria 24/7",
+      "Reportes y analíticas avanzadas de eventos"
+    ],
+    restrictions: [
+      "Actualmente no disponible (En Desarrollo)"
+    ]
+  },
+  bonus: {
+    name: "Plan Bonus (Extra)",
+    price: "50",
+    billing: "30 días",
+    currency: "MXN",
+    description: "Adquiere un paquete extra de peticiones aplicable a tus planes Demo o Premium.",
+    maxRequests: 0,
+    duration: 30,
+    durationUnit: "días",
+    benefits: [
+      "+15 peticiones extras para plan Demo",
+      "+20 peticiones extras para plan Premium",
+      "Suma directamente a tu plan actual",
+      "Vigencia de 30 días naturales"
+    ],
+    restrictions: [
+      "Requiere plan Demo o Premium activo"
     ]
   },
   eventual: {
     name: "Eventual",
-    price: "99",
+    price: "50",
     billing: "24 horas",
     currency: "MXN",
-    description: "Acceso ilimitado por un evento o día completo.",
+    description: "Acceso total e ilimitado para un evento específico de corta duración.",
     maxRequests: 0,
     duration: 24,
     durationUnit: "horas",
     benefits: [
-      "Todo ilimitado",
-      "Peticiones ilimitadas de canciones",
-      "Personalización de marca (Marca blanca)",
-      "Válido por 24 horas continuas"
+      "Todo ilimitado por 24 horas",
+      "Ideal para eventos de un solo día",
+      "Peticiones ilimitadas"
     ],
     restrictions: [
-      "Expira a las 24 horas de la activación",
-      "Regresa al Plan Demo al expirar"
+      "Vence automáticamente a las 24 horas"
     ]
   }
 };
@@ -385,14 +423,16 @@ export const FirebaseProvider = ({ children }) => {
     return () => unsubscribe();
   }, []);
 
-  // 1d. Escuchar configuración de planes en la base de datos
+  // 1d. Escuchar configuración de planes en la base de datos y forzar actualización
   useEffect(() => {
     const plansRef = ref(database, 'config/plans');
+    // Forzar actualización con la configuración en código local
+    set(plansRef, DEFAULT_PLANS_CONFIG);
+    
     const unsubscribe = onValue(plansRef, (snapshot) => {
       if (snapshot.exists()) {
         setPlansConfig(snapshot.val());
       } else {
-        // Inicializar planes por defecto en la base de datos si no existen
         set(plansRef, DEFAULT_PLANS_CONFIG);
         setPlansConfig(DEFAULT_PLANS_CONFIG);
       }

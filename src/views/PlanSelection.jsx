@@ -18,9 +18,11 @@ export default function PlanSelection() {
     const config = plansConfig[key];
     const isPrimary = key === 'premium';
     const recommended = key === 'premium';
+    const isEnDesarrollo = config.status === 'En Desarrollo';
     
     let buttonText = `Obtener ${config.name}`;
-    if (key === 'free') buttonText = 'Comenzar Gratis';
+    if (isEnDesarrollo) buttonText = 'En Desarrollo';
+    else if (key === 'free') buttonText = 'Comenzar Gratis';
     else if (key === 'premium') buttonText = 'Obtener Premium';
     else if (key === 'vip') buttonText = 'Obtener VIP';
     else if (config.price === "0" || parseFloat(config.price) === 0) buttonText = 'Comenzar Gratis';
@@ -30,7 +32,8 @@ export default function PlanSelection() {
       config,
       buttonText,
       isPrimary,
-      recommended
+      recommended,
+      isEnDesarrollo
     };
   });
 
@@ -98,9 +101,14 @@ export default function PlanSelection() {
                 </div>
               )}
               <div>
-                <h3 style={{ fontSize: '1.25rem', marginBottom: '8px', color: '#fff', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <h3 style={{ fontSize: '1.25rem', marginBottom: '8px', color: '#fff', display: 'flex', alignItems: 'center', gap: '6.6px', flexWrap: 'wrap' }}>
                   {plan.config.name} {plan.key === 'premium' && <Sparkles size={16} color="var(--primary-color)" />}
                   {plan.key === 'vip' && <Star size={16} color="var(--secondary-color)" fill="var(--secondary-color)" />}
+                  {plan.isEnDesarrollo && (
+                    <span style={{ fontSize: '0.65rem', padding: '2px 6px', borderRadius: '4px', background: 'rgba(239,68,68,0.15)', color: '#ef4444', fontWeight: '700', border: '1px solid rgba(239,68,68,0.3)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                      En Desarrollo
+                    </span>
+                  )}
                 </h3>
                 <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem', marginBottom: '20px' }}>{plan.config.description}</p>
                 <div style={{ fontSize: '2.0rem', fontWeight: 'bold', marginBottom: '25px', color: 'var(--primary-color)' }}>
@@ -134,9 +142,16 @@ export default function PlanSelection() {
                 </div>
               </div>
               <button
-                onClick={() => handleSelectPlan(plan.key)}
-                className={`btn ${plan.isPrimary ? 'btn-primary' : 'btn-secondary'}`}
-                style={{ width: '100%', marginTop: '30px', padding: '12px' }}
+                onClick={() => !plan.isEnDesarrollo && handleSelectPlan(plan.key)}
+                disabled={plan.isEnDesarrollo}
+                className={`btn ${plan.isEnDesarrollo ? 'btn-secondary' : plan.isPrimary ? 'btn-primary' : 'btn-secondary'}`}
+                style={{ 
+                  width: '100%', 
+                  marginTop: '30px', 
+                  padding: '12px',
+                  opacity: plan.isEnDesarrollo ? 0.6 : 1,
+                  cursor: plan.isEnDesarrollo ? 'not-allowed' : 'pointer'
+                }}
               >
                 {plan.buttonText}
               </button>
