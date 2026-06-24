@@ -112,6 +112,7 @@ export default function DjDashboard() {
   const [editDjPlan, setEditDjPlan] = useState('free');
   const [editDjDemoLimit, setEditDjDemoLimit] = useState(35);
   const [editDjPremiumLimit, setEditDjPremiumLimit] = useState(80);
+  const [editDjLogoUploadEnabled, setEditDjLogoUploadEnabled] = useState(false);
   const [editDjStrictLimit, setEditDjStrictLimit] = useState(true);
   const [editDjLoading, setEditDjLoading] = useState(false);
 
@@ -1212,7 +1213,8 @@ export default function DjDashboard() {
         editDjPlan, 
         editDjPlan === 'free' ? editDjDemoLimit : null, 
         editDjPlan === 'free' || editDjPlan === 'premium' ? editDjStrictLimit : null,
-        editDjPlan === 'premium' ? editDjPremiumLimit : null
+        editDjPlan === 'premium' ? editDjPremiumLimit : null,
+        editDjPlan === 'vip' ? editDjLogoUploadEnabled : false
       );
       showToast('✅ Datos de registro y plan actualizados correctamente');
       setEditingDjUid(null);
@@ -1446,9 +1448,10 @@ export default function DjDashboard() {
     const premiumLimit = userData?.profile?.premiumLimit !== undefined ? parseInt(userData.profile.premiumLimit, 10) : 80;
     const demoLimitExpiresAt = userData?.profile?.demoLimitExpiresAt || 0;
     const premiumLimitExpiresAt = userData?.profile?.premiumLimitExpiresAt || 0;
+    const logoUploadEnabled = userData?.profile?.logoUploadEnabled || false;
     const strictLimitEnabled = userData?.profile?.strictLimitEnabled !== false;
     
-    return { uid, eventsCount, requestsCount, djName, eventTitles, email, currentPlan, expiresAt, demoLimit, premiumLimit, demoLimitExpiresAt, premiumLimitExpiresAt, strictLimitEnabled };
+    return { uid, eventsCount, requestsCount, djName, eventTitles, email, currentPlan, expiresAt, demoLimit, premiumLimit, demoLimitExpiresAt, premiumLimitExpiresAt, logoUploadEnabled, strictLimitEnabled };
   });
 
   return (
@@ -2293,7 +2296,8 @@ export default function DjDashboard() {
               ) : (
                 <form onSubmit={handleSaveBranding} style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
 
-                {/* Logo Personalizado */}
+                {/* Logo Personalizado - Solo visible para Admin Master o si está habilitado para el usuario VIP */}
+                {(isAdminMaster || (userProfile?.selectedPlan === 'vip' && userProfile?.logoUploadEnabled)) && (
                 <div className="form-group" style={{ borderBottom: '1px solid rgba(255,255,255,0.05)', paddingBottom: '20px' }}>
                   <label className="form-label" style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px' }}>
                     <Image size={15} color="var(--secondary-color)" />
@@ -2375,6 +2379,7 @@ export default function DjDashboard() {
                     </div>
                   </div>
                 </div>
+                )}
 
                 {/* URL de Producción (Vercel) - Solo VIP/Eventual y solo visible para Admin Master */}
                 {userProfile?.selectedPlan !== 'premium' && isAdminMaster && (
@@ -4461,7 +4466,7 @@ export default function DjDashboard() {
                 </div>
               ) : (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                  {adminUsersList.map(({ uid, eventsCount, requestsCount, djName, eventTitles, email, currentPlan, expiresAt, demoLimit, premiumLimit, demoLimitExpiresAt, premiumLimitExpiresAt, strictLimitEnabled }) => (
+                  {adminUsersList.map(({ uid, eventsCount, requestsCount, djName, eventTitles, email, currentPlan, expiresAt, demoLimit, premiumLimit, demoLimitExpiresAt, premiumLimitExpiresAt, logoUploadEnabled, strictLimitEnabled }) => (
                     <div key={uid} className="glass-panel animate-slide-in" style={{
                       padding: '20px 24px', borderRadius: 'var(--radius-md)',
                       display: 'flex', flexDirection: 'column', gap: '14px',
@@ -4523,6 +4528,20 @@ export default function DjDashboard() {
                                     </select>
                                   </div>
                                 )}
+                                 {editDjPlan === 'vip' && (
+                                   <div className="form-group" style={{ marginBottom: 0, display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                                     <label className="form-label" style={{ fontSize: '0.7rem' }}>Logotipo Marca Blanca</label>
+                                     <label style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.8rem', cursor: 'pointer', height: '28px', color: 'var(--text-secondary)' }}>
+                                       <input
+                                         type="checkbox"
+                                         checked={editDjLogoUploadEnabled}
+                                         onChange={(e) => setEditDjLogoUploadEnabled(e.target.checked)}
+                                         style={{ width: '16px', height: '16px', cursor: 'pointer' }}
+                                       />
+                                       <span>Permitir logotipo personalizado</span>
+                                     </label>
+                                   </div>
+                                 )}
                                 {editDjPlan === 'premium' && (
                                   <div className="form-group" style={{ marginBottom: 0 }}>
                                     <label className="form-label" style={{ fontSize: '0.7rem' }}>LÍMITE DE PETICIONES (PREMIUM)</label>
@@ -4610,6 +4629,19 @@ export default function DjDashboard() {
                                     {currentPlan === 'free' && ` (Límite: ${demoLimit})`}
                                     {currentPlan === 'premium' && ` (Límite: ${premiumLimit})`}
                                   </span>
+                                   {currentPlan === 'vip' && (
+                                     <span style={{
+                                       background: logoUploadEnabled ? 'rgba(16,185,129,0.12)' : 'rgba(239,68,68,0.12)',
+                                       color: logoUploadEnabled ? 'var(--success-color)' : 'var(--danger-color)',
+                                       border: logoUploadEnabled ? '1px solid rgba(16,185,129,0.25)' : '1px solid rgba(239,68,68,0.25)',
+                                       padding: '2px 8px',
+                                       borderRadius: '4px',
+                                       fontSize: '0.72rem',
+                                       fontWeight: '600'
+                                     }}>
+                                       {logoUploadEnabled ? '🖼️ Logotipo Habilitado' : '🚫 Logotipo Deshabilitado'}
+                                     </span>
+                                   )}
                                   {(currentPlan === 'free' || currentPlan === 'premium') && (
                                     <span style={{
                                       background: strictLimitEnabled ? 'rgba(239,68,68,0.12)' : 'rgba(16,185,129,0.12)',
@@ -4655,6 +4687,7 @@ export default function DjDashboard() {
                                   setEditDjPlan(currentPlan || 'free');
                                   setEditDjDemoLimit(demoLimit || 35);
                                   setEditDjPremiumLimit(premiumLimit || 80);
+                                  setEditDjLogoUploadEnabled(logoUploadEnabled || false);
                                   setEditDjStrictLimit(strictLimitEnabled !== false);
                                 }}
                                 className="btn btn-secondary"

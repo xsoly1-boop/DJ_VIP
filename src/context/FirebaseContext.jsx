@@ -2003,7 +2003,7 @@ export const FirebaseProvider = ({ children }) => {
   };
 
   // Editar datos de registro DJ (solo Admin Master)
-  const updateDjAccount = async (uid, newEmail, newDisplayName, newPassword, newPlan, demoLimit, strictLimitEnabled, premiumLimit) => {
+  const updateDjAccount = async (uid, newEmail, newDisplayName, newPassword, newPlan, demoLimit, strictLimitEnabled, premiumLimit, logoUploadEnabled) => {
     if (!isAdminMaster) {
       throw new Error('Solo el Administrador Master puede editar cuentas.');
     }
@@ -2024,6 +2024,9 @@ export const FirebaseProvider = ({ children }) => {
           allAccounts[accountIdx].premiumLimit = premiumLimit;
           allAccounts[accountIdx].premiumLimitExpiresAt = (premiumLimit > 80) ? (Date.now() + 30 * 24 * 60 * 60 * 1000) : 0;
         }
+        if (logoUploadEnabled !== undefined) {
+          allAccounts[accountIdx].logoUploadEnabled = logoUploadEnabled;
+        }
         if (strictLimitEnabled !== undefined) allAccounts[accountIdx].strictLimitEnabled = strictLimitEnabled;
         localStorage.setItem('mock_accounts', JSON.stringify(allAccounts));
       }
@@ -2041,6 +2044,9 @@ export const FirebaseProvider = ({ children }) => {
         if (premiumLimit !== undefined) {
           dbData.users[uid].profile.premiumLimit = premiumLimit;
           dbData.users[uid].profile.premiumLimitExpiresAt = (premiumLimit > 80) ? (Date.now() + 30 * 24 * 60 * 60 * 1000) : 0;
+        }
+        if (logoUploadEnabled !== undefined) {
+          dbData.users[uid].profile.logoUploadEnabled = logoUploadEnabled;
         }
         if (strictLimitEnabled !== undefined) dbData.users[uid].profile.strictLimitEnabled = strictLimitEnabled;
         
@@ -2158,6 +2164,10 @@ export const FirebaseProvider = ({ children }) => {
     if (premiumLimit !== undefined) {
       updates.premiumLimit = premiumLimit;
       updates.premiumLimitExpiresAt = (premiumLimit > 80) ? (Date.now() + 30 * 24 * 60 * 60 * 1000) : 0;
+    }
+
+    if (logoUploadEnabled !== undefined) {
+      updates.logoUploadEnabled = logoUploadEnabled;
     }
 
     if (strictLimitEnabled !== undefined) {
