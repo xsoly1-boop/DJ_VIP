@@ -4,5 +4,8 @@
       "source": "/api/(.*)",
       "destination": "/api/index.js"
     }
-  ]
+  ],
+  "env": {
+    "PUBLIC_URL": "https://dj-vip.vercel.app"
+  }
 }

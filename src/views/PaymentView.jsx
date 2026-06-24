@@ -34,7 +34,7 @@ export default function PaymentView() {
     }
     setLoading(true);
     try {
-      // Llamar al backend para simular la preferencia/creación
+      // Llamar al backend para crear la preferencia de pago real
       const res = await fetch(`${API_BASE}/api/subscription/create`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -46,15 +46,21 @@ export default function PaymentView() {
       });
       const data = await res.json();
       if (data.success) {
-        alert(`Simulando redirección a la pasarela de pago de ${method === 'paypal' ? 'PayPal' : 'Mercado Pago'}...\n\nPago simulado con éxito.`);
-        // Autocompletar el ID de transacción simulado para facilidad del usuario
+        const initPoint = data.data?.init_point;
+        const isMockUrl = !initPoint || initPoint.startsWith('http://localhost') || initPoint.includes('MP-MOCK') || initPoint.includes('PAYPAL-MOCK');
+        if (initPoint && !isMockUrl) {
+          // Redirigir directamente a la pasarela de pago real
+          window.location.href = initPoint;
+          return;
+        }
+        // Modo simulación: sin credenciales reales configuradas
         setTransactionId('TXN-' + Date.now().toString().slice(-6));
       } else {
-        throw new Error(data.error);
+        throw new Error(data.error || 'Error desconocido del servidor');
       }
     } catch (e) {
-      console.error(e);
-      alert('Error al simular pago: ' + e.message + '\n\nProcediendo con simulación offline.');
+      console.error('Error al crear preferencia de pago:', e);
+      // Fallback offline: autocompletar ID simulado para que el usuario pueda reportar comprobante
       setTransactionId('TXN-' + Date.now().toString().slice(-6));
     } finally {
       setLoading(false);
