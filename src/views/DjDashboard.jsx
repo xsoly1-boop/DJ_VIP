@@ -1448,9 +1448,13 @@ export default function DjDashboard() {
   };
 
   useEffect(() => {
-    if (isAdminMaster && activeTab === 'admin') {
-      fetchPaymentConfig();
-      fetchPendingSubscriptions();
+    if (isAdminMaster) {
+      if (activeTab === 'admin') {
+        fetchPaymentConfig();
+        fetchPendingSubscriptions();
+      } else if (activeTab === 'revenue') {
+        fetchPaymentConfig();
+      }
     }
   }, [isAdminMaster, activeTab]);
 
