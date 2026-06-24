@@ -228,8 +228,12 @@ router.post('/deleteUser', async (req, res) => {
       console.warn(`Auth user ${uid} not found or already deleted from Firebase Auth:`, authErr.message);
     }
     // Delete Firestore user document (if exists)
-    const db = getFirestoreMock();
-    await db.collection('users').doc(uid).delete();
+    try {
+      const db = getFirestoreMock();
+      await db.collection('users').doc(uid).delete();
+    } catch (fsErr) {
+      console.warn(`Could not delete user ${uid} from Firestore (might be disabled):`, fsErr.message);
+    }
     
     // Delete Realtime Database nodes
     await getDbRef(`users/${uid}`).remove();
