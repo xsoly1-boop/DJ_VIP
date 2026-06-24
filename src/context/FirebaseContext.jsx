@@ -1126,9 +1126,9 @@ export const FirebaseProvider = ({ children }) => {
         } else {
           maxRequests = rawLimit;
         }
-      } else if (planKey === 'vip') {
-        const rawLimit = ownerProfile?.vipLimit !== undefined ? parseInt(ownerProfile.vipLimit, 10) : 80;
-        const expiresAt = ownerProfile?.vipLimitExpiresAt ? parseInt(ownerProfile.vipLimitExpiresAt, 10) : 0;
+      } else if (planKey === 'premium') {
+        const rawLimit = ownerProfile?.premiumLimit !== undefined ? parseInt(ownerProfile.premiumLimit, 10) : 80;
+        const expiresAt = ownerProfile?.premiumLimitExpiresAt ? parseInt(ownerProfile.premiumLimitExpiresAt, 10) : 0;
         if (rawLimit > 80 && expiresAt && Date.now() > expiresAt) {
           maxRequests = 80;
         } else {
@@ -1620,7 +1620,13 @@ export const FirebaseProvider = ({ children }) => {
         maxRequests = rawLimit;
       }
     } else if (planKey === 'premium') {
-      maxRequests = 80;
+      const rawLimit = userProfile?.premiumLimit !== undefined ? parseInt(userProfile.premiumLimit, 10) : 80;
+      const expiresAt = userProfile?.premiumLimitExpiresAt ? parseInt(userProfile.premiumLimitExpiresAt, 10) : 0;
+      if (rawLimit > 80 && expiresAt && Date.now() > expiresAt) {
+        maxRequests = 80;
+      } else {
+        maxRequests = rawLimit;
+      }
     }
 
     const requestsRefToCheck = ref(database, `${userBasePath}/events/${targetEventId}/requests`);
@@ -1997,7 +2003,7 @@ export const FirebaseProvider = ({ children }) => {
   };
 
   // Editar datos de registro DJ (solo Admin Master)
-  const updateDjAccount = async (uid, newEmail, newDisplayName, newPassword, newPlan, demoLimit, strictLimitEnabled, vipLimit) => {
+  const updateDjAccount = async (uid, newEmail, newDisplayName, newPassword, newPlan, demoLimit, strictLimitEnabled, premiumLimit) => {
     if (!isAdminMaster) {
       throw new Error('Solo el Administrador Master puede editar cuentas.');
     }
@@ -2014,9 +2020,9 @@ export const FirebaseProvider = ({ children }) => {
           allAccounts[accountIdx].demoLimit = demoLimit;
           allAccounts[accountIdx].demoLimitExpiresAt = (demoLimit > 35) ? (Date.now() + 30 * 24 * 60 * 60 * 1000) : 0;
         }
-        if (vipLimit !== undefined) {
-          allAccounts[accountIdx].vipLimit = vipLimit;
-          allAccounts[accountIdx].vipLimitExpiresAt = (vipLimit > 80) ? (Date.now() + 30 * 24 * 60 * 60 * 1000) : 0;
+        if (premiumLimit !== undefined) {
+          allAccounts[accountIdx].premiumLimit = premiumLimit;
+          allAccounts[accountIdx].premiumLimitExpiresAt = (premiumLimit > 80) ? (Date.now() + 30 * 24 * 60 * 60 * 1000) : 0;
         }
         if (strictLimitEnabled !== undefined) allAccounts[accountIdx].strictLimitEnabled = strictLimitEnabled;
         localStorage.setItem('mock_accounts', JSON.stringify(allAccounts));
@@ -2032,9 +2038,9 @@ export const FirebaseProvider = ({ children }) => {
           dbData.users[uid].profile.demoLimit = demoLimit;
           dbData.users[uid].profile.demoLimitExpiresAt = (demoLimit > 35) ? (Date.now() + 30 * 24 * 60 * 60 * 1000) : 0;
         }
-        if (vipLimit !== undefined) {
-          dbData.users[uid].profile.vipLimit = vipLimit;
-          dbData.users[uid].profile.vipLimitExpiresAt = (vipLimit > 80) ? (Date.now() + 30 * 24 * 60 * 60 * 1000) : 0;
+        if (premiumLimit !== undefined) {
+          dbData.users[uid].profile.premiumLimit = premiumLimit;
+          dbData.users[uid].profile.premiumLimitExpiresAt = (premiumLimit > 80) ? (Date.now() + 30 * 24 * 60 * 60 * 1000) : 0;
         }
         if (strictLimitEnabled !== undefined) dbData.users[uid].profile.strictLimitEnabled = strictLimitEnabled;
         
@@ -2149,9 +2155,9 @@ export const FirebaseProvider = ({ children }) => {
       updates.demoLimitExpiresAt = (demoLimit > 35) ? (Date.now() + 30 * 24 * 60 * 60 * 1000) : 0;
     }
 
-    if (vipLimit !== undefined) {
-      updates.vipLimit = vipLimit;
-      updates.vipLimitExpiresAt = (vipLimit > 80) ? (Date.now() + 30 * 24 * 60 * 60 * 1000) : 0;
+    if (premiumLimit !== undefined) {
+      updates.premiumLimit = premiumLimit;
+      updates.premiumLimitExpiresAt = (premiumLimit > 80) ? (Date.now() + 30 * 24 * 60 * 60 * 1000) : 0;
     }
 
     if (strictLimitEnabled !== undefined) {
