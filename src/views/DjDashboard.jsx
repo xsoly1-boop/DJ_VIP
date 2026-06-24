@@ -5648,21 +5648,23 @@ export default function DjDashboard() {
         {[1, 2, 3, 4].map((i) => (
           <div key={i} className="print-quadrant">
             <div className="print-card">
-              <img 
-                src="/template_card.png" 
-                alt="Tarjeta QR" 
-                style={{ 
-                  width: '100%', 
-                  height: '100%', 
-                  display: 'block',
-                  position: 'absolute',
-                  left: 0,
-                  top: 0,
-                  zIndex: 1
-                }} 
-              />
-              <div className="print-qr-overlay" style={{ zIndex: 2 }}>
-                <QRCodeSVG value={publicEventUrl} size={150} level={"H"} includeMargin={false} />
+              <div className="print-card-inner">
+                <img 
+                  src="/template_card.png" 
+                  alt="Tarjeta QR" 
+                  style={{ 
+                    width: '100%', 
+                    height: '100%', 
+                    display: 'block',
+                    position: 'absolute',
+                    left: 0,
+                    top: 0,
+                    zIndex: 1
+                  }} 
+                />
+                <div className="print-qr-overlay" style={{ zIndex: 2 }}>
+                  <QRCodeSVG value={publicEventUrl} size={150} level={"H"} includeMargin={false} />
+                </div>
               </div>
             </div>
           </div>
@@ -5733,9 +5735,21 @@ export default function DjDashboard() {
           }
 
           .print-card {
-            width: 100mm !important;
-            height: 58.33mm !important;
+            width: 86.625mm !important;
+            height: 148.5mm !important;
             position: relative !important;
+            box-sizing: border-box !important;
+            visibility: visible !important;
+          }
+
+          .print-card-inner {
+            width: 148.5mm !important;
+            height: 86.625mm !important;
+            position: absolute !important;
+            left: 50% !important;
+            top: 50% !important;
+            transform: translate(-50%, -50%) rotate(90deg) !important;
+            transform-origin: center !important;
             box-sizing: border-box !important;
             visibility: visible !important;
           }
