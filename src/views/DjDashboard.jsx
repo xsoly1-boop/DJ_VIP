@@ -5442,27 +5442,26 @@ export default function DjDashboard() {
 
               const kpiCard = (icon, label, value, sub, color, bgColor) => (
                 <div style={{
-                  flex: '1 1 200px',
                   background: bgColor || 'rgba(255,255,255,0.03)',
                   border: `1px solid ${color}33`,
                   borderRadius: 'var(--radius-lg)',
-                  padding: '22px 24px',
+                  padding: '12px 16px',
                   display: 'flex',
                   flexDirection: 'column',
-                  gap: '8px',
+                  gap: '4px',
                   position: 'relative',
                   overflow: 'hidden',
-                  minWidth: '170px'
+                  minWidth: '150px'
                 }}>
-                  <div style={{ position: 'absolute', top: 0, right: 0, width: '80px', height: '80px', background: `radial-gradient(circle at top right, ${color}18, transparent 70%)`, pointerEvents: 'none' }} />
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                    <div style={{ width: '36px', height: '36px', borderRadius: '50%', background: `${color}18`, border: `1px solid ${color}44`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                      {React.cloneElement(icon, { size: 18, color })}
+                  <div style={{ position: 'absolute', top: 0, right: 0, width: '60px', height: '60px', background: `radial-gradient(circle at top right, ${color}14, transparent 70%)`, pointerEvents: 'none' }} />
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <div style={{ width: '28px', height: '28px', borderRadius: '50%', background: `${color}14`, border: `1px solid ${color}33`, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                      {React.cloneElement(icon, { size: 14, color })}
                     </div>
-                    <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px', fontWeight: '600' }}>{label}</span>
+                    <span style={{ fontSize: '0.68rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px', fontWeight: '600' }}>{label}</span>
                   </div>
-                  <div style={{ fontSize: '1.8rem', fontWeight: '800', color: '#fff', lineHeight: 1 }}>{value}</div>
-                  {sub && <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{sub}</div>}
+                  <div style={{ fontSize: '1.4rem', fontWeight: '800', color: '#fff', lineHeight: 1.1 }}>{value}</div>
+                  {sub && <div style={{ fontSize: '0.68rem', color: 'var(--text-muted)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{sub}</div>}
                 </div>
               );
 
@@ -5489,7 +5488,12 @@ export default function DjDashboard() {
                   </div>
 
                   {/* KPI Cards */}
-                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '16px', marginBottom: '28px' }}>
+                  <div style={{
+                    display: 'grid',
+                    gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
+                    gap: '12px',
+                    marginBottom: '28px'
+                  }}>
                     {kpiCard(<DollarSign />, 'Total Recaudado', `$${totalRevenue.toLocaleString('es-MX', { minimumFractionDigits: 2 })} MXN`, `${activePayingUsers.length} suscripción${activePayingUsers.length !== 1 ? 'es' : ''} activa${activePayingUsers.length !== 1 ? 's' : ''}`, '#10b981', 'rgba(16,185,129,0.05)')}
                     {kpiCard(<Users />, 'DJs con Plan Activo', activePayingUsers.length, `de ${usersArr.length} DJs registrados`, '#7c3aed', 'rgba(124,58,237,0.05)')}
                     {kpiCard(<BarChart2 />, 'Promedio por Suscriptor', activePayingUsers.length > 0 ? `$${avgRevenue.toLocaleString('es-MX', { minimumFractionDigits: 2 })}` : '—', 'MXN por DJ activo', '#06b6d4', 'rgba(6,182,212,0.05)')}
