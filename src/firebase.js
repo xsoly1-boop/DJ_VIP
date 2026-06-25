@@ -1656,9 +1656,20 @@ export const storageRef = (storageInstance, path) => {
  * @param {string} role   - 'dj' | 'admin_master' (para segmentación de notificaciones)
  * @returns {Promise<void>}
  */
-export async function registerFCMToken(userId, role = 'dj') {
+export async function registerFCMToken(userId, role = 'dj', retryCount = 0) {
   try {
-    // Solo disponible en la app Android nativa (no en web/desktop)
+    // Si estamos en entorno Android (detectable por userAgent) pero el bridge no está listo, reintentamos
+    const isAndroid = typeof navigator !== 'undefined' && /Android/i.test(navigator.userAgent);
+    if (isAndroid && (typeof window === 'undefined' || !window.AndroidApp)) {
+      if (retryCount < 5) {
+        console.log(`[FCM] Android detectado. Esperando bridge nativo (intento ${retryCount + 1})...`);
+        setTimeout(() => registerFCMToken(userId, role, retryCount + 1), 1000);
+      } else {
+        console.warn('[FCM] No se pudo conectar con el bridge Android nativo después de varios intentos.');
+      }
+      return;
+    }
+
     if (typeof window === 'undefined' || !window.AndroidApp) {
       return;
     }
@@ -1671,11 +1682,16 @@ export async function registerFCMToken(userId, role = 'dj') {
     // 2. Obtener el token FCM del dispositivo
     const fcmToken = window.AndroidApp.getFCMToken?.();
     if (!fcmToken || fcmToken.trim() === '') {
-      console.warn('[FCM] Token no disponible todavía. Se registrará cuando FCM lo emita.');
+      if (retryCount < 5) {
+        console.log(`[FCM] Token no disponible todavía. Reintentando en 2s (intento ${retryCount + 1})...`);
+        setTimeout(() => registerFCMToken(userId, role, retryCount + 1), 2000);
+      } else {
+        console.warn('[FCM] El token FCM nativo no estuvo disponible después de varios intentos.');
+      }
       return;
     }
 
-    // 3. Enviar el token al backend para guardarlo en Firestore
+    // 3. Enviar el token al backend para guardarlo en la base de datos
     const backendUrl = import.meta.env.VITE_PUBLIC_URL
       ? `${import.meta.env.VITE_PUBLIC_URL}api/register-fcm-token`
       : '/api/register-fcm-token';

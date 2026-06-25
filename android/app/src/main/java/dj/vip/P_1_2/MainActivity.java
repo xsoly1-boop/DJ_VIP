@@ -28,6 +28,11 @@ import androidx.core.content.ContextCompat;
 import com.getcapacitor.BridgeActivity;
 import com.google.firebase.messaging.FirebaseMessaging;
 
+import java.io.OutputStream;
+import java.net.HttpURLConnection;
+import java.net.URL;
+import java.nio.charset.StandardCharsets;
+
 public class MainActivity extends BridgeActivity {
 
     private static final String TAG = "DJMainActivity";
@@ -219,6 +224,13 @@ public class MainActivity extends BridgeActivity {
                 if (token != null) {
                     preferences.edit().putString("fcm_token", token).apply();
                     Log.d(TAG, "Token FCM almacenado: " + token.substring(0, 12) + "...");
+
+                    // Si ya hay un UID guardado (sesión persistida), registrar con el backend inmediatamente
+                    String userId = preferences.getString("user_uid", "");
+                    if (!userId.isEmpty()) {
+                        Log.d(TAG, "UID detectado al iniciar, enviando token al backend...");
+                        new Thread(() -> registerTokenWithBackend(token)).start();
+                    }
                 }
             });
     }
@@ -341,6 +353,42 @@ public class MainActivity extends BridgeActivity {
                 WebView webView = getBridge().getWebView();
                 if (webView != null) webView.reload();
             });
+        }
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // registerTokenWithBackend: envía el token FCM al backend via HTTP
+    // ─────────────────────────────────────────────────────────────────────────
+    private void registerTokenWithBackend(String token) {
+        try {
+            String userId = preferences.getString("user_uid", "");
+            if (userId.isEmpty()) {
+                Log.w(TAG, "UID de usuario no disponible aún, token guardado localmente.");
+                return;
+            }
+
+            String json = String.format(
+                    "{\"uid\":\"%s\",\"fcmToken\":\"%s\",\"platform\":\"android\"}",
+                    userId, token);
+
+            URL url = new URL("https://dj-vip.vercel.app/api/register-fcm-token");
+            HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+            conn.setRequestMethod("POST");
+            conn.setRequestProperty("Content-Type", "application/json");
+            conn.setDoOutput(true);
+            conn.setConnectTimeout(10000);
+            conn.setReadTimeout(10000);
+
+            try (OutputStream os = conn.getOutputStream()) {
+                os.write(json.getBytes(StandardCharsets.UTF_8));
+            }
+
+            int responseCode = conn.getResponseCode();
+            Log.d(TAG, "Token registrado en backend desde MainActivity. HTTP " + responseCode);
+            conn.disconnect();
+
+        } catch (Exception e) {
+            Log.e(TAG, "Error registrando token en backend desde MainActivity: " + e.getMessage());
         }
     }
 }
