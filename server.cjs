@@ -16,6 +16,39 @@ app.get('/', (req, res) => {
   res.send('🚀 DJVIP Subscription Backend API is running.');
 });
 
+// Endpoint de diagnóstico para verificar el estado de Firebase en Vercel
+app.get('/api/firebase-status', async (req, res) => {
+  try {
+    const admin = require('firebase-admin');
+    const initialized = admin.apps.length > 0;
+    const hasServiceAccountEnv = !!process.env.FIREBASE_SERVICE_ACCOUNT;
+    
+    let dbConnection = false;
+    let dbError = null;
+    
+    if (initialized) {
+      try {
+        // Intentar una lectura rápida de prueba en Realtime Database
+        await admin.database().ref('.info/connected').once('value');
+        dbConnection = true;
+      } catch (err) {
+        dbError = err.message;
+      }
+    }
+
+    res.json({
+      success: true,
+      firebaseInitialized: initialized,
+      hasServiceAccountEnv,
+      databaseConnected: dbConnection,
+      databaseError: dbError,
+      environment: process.env.NODE_ENV || 'production'
+    });
+  } catch (e) {
+    res.status(500).json({ success: false, error: e.message });
+  }
+});
+
 // Admin routes (delete user, etc.)
 app.use('/api/admin', adminRoutes);
 
