@@ -11,6 +11,52 @@ import {
   TrendingUp, DollarSign, BarChart2, ArrowUpCircle, Download as DownloadIcon, Clock, CreditCard as CardIcon
 } from 'lucide-react';
 
+
+function PlanValidityDisplay({ activePlan, expiresAt }) {
+  const [timeLeft, setTimeLeft] = React.useState('');
+
+  React.useEffect(() => {
+    if (!expiresAt || expiresAt <= 0) {
+      setTimeLeft('Sin vencimiento');
+      return;
+    }
+
+    const updateTime = () => {
+      const now = Date.now();
+      const diffMs = expiresAt - now;
+
+      if (diffMs <= 0) {
+        setTimeLeft('Expirado');
+        return;
+      }
+
+      if (activePlan === 'eventual') {
+        const totalSecs = Math.floor(diffMs / 1000);
+        const hours = Math.floor(totalSecs / 3600);
+        const mins = Math.floor((totalSecs % 3600) / 60);
+        const secs = totalSecs % 60;
+        
+        const pad = (num) => String(num).padStart(2, '0');
+        setTimeLeft(`${pad(hours)}h ${pad(mins)}m ${pad(secs)}s`);
+      } else {
+        const diffDays = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
+        setTimeLeft(`${diffDays} día${diffDays !== 1 ? 's' : ''}`);
+      }
+    };
+
+    updateTime();
+    const intervalTime = activePlan === 'eventual' ? 1000 : 60000;
+    const timer = setInterval(updateTime, intervalTime);
+    return () => clearInterval(timer);
+  }, [activePlan, expiresAt]);
+
+  return (
+    <span style={{ fontSize: '0.65rem', color: 'var(--text-muted)' }}>
+      {timeLeft}
+    </span>
+  );
+}
+
 export default function DjDashboard() {
   const API_BASE = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
     ? 'http://localhost:4000'
@@ -2037,9 +2083,7 @@ export default function DjDashboard() {
             <h3 style={{ fontSize: '1rem', marginTop: '2px', color: '#a855f7' }}>
               {(userProfile?.activePlan || 'free').toUpperCase()}
             </h3>
-            <span style={{ fontSize: '0.65rem', color: 'var(--text-muted)' }}>
-              {userProfile?.expiresAt ? new Date(userProfile.expiresAt).toLocaleDateString('es-MX') : 'Sin vencimiento'}
-            </span>
+            <PlanValidityDisplay activePlan={userProfile?.activePlan || 'free'} expiresAt={userProfile?.expiresAt} />
           </div>
           <Clock size={18} color="#a855f7" style={{ opacity: 0.6, flexShrink: 0 }} />
         </div>
