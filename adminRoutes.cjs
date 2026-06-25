@@ -126,6 +126,203 @@ const getDbRef = (refPath) => {
   };
 };
 
+// Database Migration for plans configuration
+const migratePlansConfig = async () => {
+  try {
+    const plansRef = getDbRef('config/plans');
+    const snapshot = await plansRef.once('value');
+    let plans = {};
+    let needsUpdate = false;
+    
+    if (snapshot.exists()) {
+      plans = snapshot.val() || {};
+    } else {
+      // Seed with local default plans if empty
+      plans = {
+        free: {
+          name: "Plan Demo",
+          price: "0",
+          billing: "Permanente",
+          currency: "MXN",
+          description: "La puerta de entrada al control de tus eventos. Prueba la potencia de DJVIP y experimenta la interacción en tiempo real con tu público de forma 100% gratuita.",
+          maxRequests: 35,
+          duration: 0,
+          durationUnit: "meses",
+          benefits: [
+            "Acceso a la plataforma interactiva",
+            "Generador de QR estándar para tu cabina",
+            "Hasta 35 peticiones de canciones por evento",
+            "Cola de peticiones en tiempo real para visualizar solicitudes"
+          ],
+          restrictions: [
+            "Límite estricto de 35 peticiones por evento",
+            "Sin personalización visual (Logotipo y marca de DJVIP obligatorios)",
+            "Bloqueo de limpieza y reinicio de eventos por 8 horas"
+          ]
+        },
+        premium: {
+          name: "Plan Premium",
+          price: "100",
+          billing: "6 meses",
+          currency: "MXN",
+          description: "Lleva tus eventos al siguiente nivel con mayores límites y personalización. Ideal para DJs profesionales que quieren destacar su marca personal.",
+          maxRequests: 80,
+          duration: 6,
+          durationUnit: "meses",
+          benefits: [
+            "Todo lo incluido en el Plan Demo",
+            "Hasta 80 peticiones de canciones por evento",
+            "Personalización de Marca Blanca (Vincula tu logotipo mediante URL externa)",
+            "Acceso a QR personalizado con estilos avanzados",
+            "Soporte estándar vía correo electrónico"
+          ],
+          restrictions: [
+            "No permite subir imágenes locales para el logotipo (requiere URL externa)",
+            "Bloqueo de limpieza y reinicio de eventos por 8 horas"
+          ]
+        },
+        vip: {
+          name: "Plan VIP",
+          price: "200",
+          billing: "6 meses",
+          currency: "MXN",
+          description: "La experiencia definitiva de personalización e interacción ilimitada. Diseñado para DJs de élite y eventos masivos que exigen el máximo rendimiento sin límites.",
+          maxRequests: 0,
+          duration: 6,
+          durationUnit: "meses",
+          benefits: [
+            "Todo lo incluido en el Plan Premium",
+            "Peticiones de canciones ILIMITADAS (sin tope por evento)",
+            "Marca Blanca Completa (Personalización del nombre, tipografías y tamaños en pantalla)",
+            "Descarga de respaldos y listas de reproducción del evento en tiempo real",
+            "Soporte prioritario y rápido"
+          ],
+          restrictions: [
+            "La subida directa de logotipo local (Opción A) requiere habilitación de seguridad por el Admin Master"
+          ]
+        },
+        pro: {
+          name: "Plan PRO",
+          price: "450",
+          billing: "12 meses",
+          currency: "MXN",
+          description: "La herramienta definitiva para productoras de eventos, discotecas y agencias que gestionan múltiples cabinas y DJs en paralelo.",
+          maxRequests: 0,
+          duration: 12,
+          durationUnit: "meses",
+          benefits: [
+            "Se el primero en recibir y probar todas las novedades y actualizaciones.",
+            "Multieventos activos y simultáneos en paralelo",
+            "Soporte VIP dedicado con asistencia prioritaria 24/7",
+            "Reportes estadísticos y analíticas avanzadas del comportamiento del público",
+            "Personalización multi-marca para diferentes DJs"
+          ],
+          restrictions: [
+            "Ninguna"
+          ]
+        },
+        pro_1d: {
+          name: "Pro x 1 Día",
+          price: "0",
+          billing: "24 horas",
+          currency: "MXN",
+          description: "Prueba el poder total del Plan PRO durante 24 horas. Disfruta de multieventos y todas las herramientas exclusivas sin límites por un día entero.",
+          maxRequests: 0,
+          duration: 24,
+          durationUnit: "horas",
+          benefits: [
+            "Todos los beneficios del Plan PRO por 24 horas",
+            "Multieventos activos y simultáneos en paralelo",
+            "Soporte VIP dedicado con asistencia prioritaria 24/7",
+            "Reportes estadísticos y analíticas avanzadas del comportamiento del público",
+            "Personalización de marca al 100% y logotipos ilimitados"
+          ],
+          restrictions: [
+            "Vigencia estricta de 24 horas",
+            "Disponible para contratar solo una vez por usuario"
+          ]
+        },
+        bonus: {
+          name: "Plan Bonus (Extra)",
+          price: "50",
+          billing: "30 días",
+          currency: "MXN",
+          description: "El potenciador ideal para tus eventos especiales. Añade peticiones adicionales de forma inmediata a tus planes activos sin cambiar de suscripción.",
+          maxRequests: 0,
+          duration: 30,
+          durationUnit: "días",
+          benefits: [
+            "+15 peticiones adicionales por evento para usuarios del Plan Demo",
+            "+20 peticiones adicionales por evento para usuarios del Plan Premium",
+            "Suma acumulativa e inmediata sobre tus límites actuales",
+            "Activación instantánea y vigencia extendida de 30 días naturales"
+          ],
+          restrictions: [
+            "Requiere contar con un Plan Demo o Plan Premium activo en la plataforma"
+          ]
+        },
+        eventual: {
+          name: "Eventual",
+          price: "50",
+          billing: "24 horas",
+          currency: "MXN",
+          description: "Poder ilimitado por un día. Perfecto para DJs invitados, festivals o eventos corporativos de una sola jornada que requieren máxima capacidad temporal.",
+          maxRequests: 0,
+          duration: 24,
+          durationUnit: "horas",
+          benefits: [
+            "Acceso ilimitado a todas las herramientas VIP por 24 horas",
+            "Peticiones de canciones ilimitadas durante el evento",
+            "Acceso a QR personalizado y personalización visual básica",
+            "Activación exprés sin contratos a largo plazo"
+          ],
+          restrictions: [
+            "El acceso expira automáticamente transcurridas 24 horas desde la activación"
+          ]
+        }
+      };
+      needsUpdate = true;
+    }
+
+    // Check individual values
+    if (plans.pro && plans.pro.price !== "450") {
+      plans.pro.price = "450";
+      needsUpdate = true;
+    }
+    if (plans.pro_1d && plans.pro_1d.price !== "0") {
+      plans.pro_1d.price = "0";
+      needsUpdate = true;
+    }
+    if (plans.free) {
+      if (plans.free.billing !== "Permanente") {
+        plans.free.billing = "Permanente";
+        needsUpdate = true;
+      }
+      if (plans.free.duration !== 0) {
+        plans.free.duration = 0;
+        needsUpdate = true;
+      }
+      if (plans.free.restrictions) {
+        const index = plans.free.restrictions.indexOf("Vigencia del plan limitada a 6 meses");
+        if (index !== -1) {
+          plans.free.restrictions.splice(index, 1);
+          needsUpdate = true;
+        }
+      }
+    }
+
+    if (needsUpdate) {
+      await plansRef.set(plans);
+      console.log('✅ [Migration] Database plan configurations updated/seeded successfully.');
+    } else {
+      console.log('✅ [Migration] Database plan configurations are up-to-date.');
+    }
+  } catch (err) {
+    console.error('❌ [Migration] Error during plans database migration:', err);
+  }
+};
+migratePlansConfig();
+
 const getFirestoreMock = () => {
   if (isFirebaseInitialized) {
     return admin.firestore();
@@ -927,5 +1124,26 @@ function setupSmsListeners() {
 // Iniciar listeners
 setupSmsListeners();
 
+// Guardar la configuración de planes desde el panel admin
+router.post('/savePlansConfig', async (req, res) => {
+  const { secret, newPlansConfig } = req.body;
+  const adminSecret = process.env.VITE_ADMIN_MASTER_SECRET;
+  if (secret !== adminSecret) {
+    return res.status(403).json({ success: false, error: 'Invalid admin secret' });
+  }
+  if (!newPlansConfig) {
+    return res.status(400).json({ success: false, error: 'Missing newPlansConfig' });
+  }
+  try {
+    const plansRef = getDbRef('config/plans');
+    await plansRef.set(newPlansConfig);
+    return res.json({ success: true });
+  } catch (e) {
+    console.error('Error saving plans config', e);
+    return res.status(500).json({ success: false, error: e.message });
+  }
+});
+
 module.exports = router;
+
 

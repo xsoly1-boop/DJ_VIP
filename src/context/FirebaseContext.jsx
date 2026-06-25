@@ -46,11 +46,11 @@ const DEFAULT_PLANS_CONFIG = {
   free: {
     name: "Plan Demo",
     price: "0",
-    billing: "6 meses",
+    billing: "Permanente",
     currency: "MXN",
     description: "La puerta de entrada al control de tus eventos. Prueba la potencia de DJVIP y experimenta la interacción en tiempo real con tu público de forma 100% gratuita.",
     maxRequests: 35,
-    duration: 6,
+    duration: 0,
     durationUnit: "meses",
     benefits: [
       "Acceso a la plataforma interactiva",
@@ -61,8 +61,7 @@ const DEFAULT_PLANS_CONFIG = {
     restrictions: [
       "Límite estricto de 35 peticiones por evento",
       "Sin personalización visual (Logotipo y marca de DJVIP obligatorios)",
-      "Bloqueo de limpieza y reinicio de eventos por 8 horas",
-      "Vigencia del plan limitada a 6 meses"
+      "Bloqueo de limpieza y reinicio de eventos por 8 horas"
     ]
   },
   premium: {
@@ -460,31 +459,14 @@ export const FirebaseProvider = ({ children }) => {
     return () => unsubscribe();
   }, []);
 
-  // 1d. Escuchar configuración de planes en la base de datos y evitar sobrescribir personalizaciones
+  // 1d. Escuchar configuración de planes en la base de datos
   useEffect(() => {
     const plansRef = ref(database, 'config/plans');
     
     const unsubscribe = onValue(plansRef, (snapshot) => {
       if (snapshot.exists()) {
-        const dbPlans = snapshot.val();
-        let needsUpdate = false;
-        const updatedPlans = { ...dbPlans };
-        
-        // Asegurar que los planes definidos por defecto en código (como pro_1d) existan en la DB
-        // sin sobrescribir las ediciones del administrador para los planes ya existentes.
-        Object.keys(DEFAULT_PLANS_CONFIG).forEach(key => {
-          if (!updatedPlans[key]) {
-            updatedPlans[key] = DEFAULT_PLANS_CONFIG[key];
-            needsUpdate = true;
-          }
-        });
-        
-        if (needsUpdate) {
-          set(plansRef, updatedPlans);
-        }
-        setPlansConfig(updatedPlans);
+        setPlansConfig(snapshot.val());
       } else {
-        set(plansRef, DEFAULT_PLANS_CONFIG);
         setPlansConfig(DEFAULT_PLANS_CONFIG);
       }
     });
@@ -556,9 +538,15 @@ export const FirebaseProvider = ({ children }) => {
           }
         }
 
+        // Retrofit para limpiar expiración del plan Demo si está configurada (el plan Demo es permanente)
+        if (!isCurrentAdminMaster && data.activePlan === 'free' && data.expiresAt && data.expiresAt > 0) {
+          update(profileRef, { expiresAt: 0 });
+          data.expiresAt = 0;
+        }
+
         // --- VERIFICACIÓN DE EXPIRACIÓN AUTOMÁTICA ---
         if (!isCurrentAdminMaster && data.activePlan && data.activePlan !== 'free' && data.expiresAt && data.expiresAt > 0 && Date.now() > data.expiresAt) {
-          // El plan ha expirado. Regresar al plan correspondiente
+
           const returnPlan = data.activePlan === 'pro_1d' ? (data.previousActivePlan || 'free') : 'free';
           const updatesObj = {
             subscriptionStatus: returnPlan,
@@ -2464,8 +2452,27 @@ export const FirebaseProvider = ({ children }) => {
 
   const updatePlansConfig = async (newPlansConfig) => {
     if (!isAdminMaster) throw new Error("Acceso denegado: Solo el administrador master puede realizar esta acción.");
-    const plansRef = ref(database, 'config/plans');
-    await set(plansRef, newPlansConfig);
+    
+    if (isMockMode) {
+      const dbData = JSON.parse(localStorage.getItem('mock_rtdb_v2') || '{}');
+      if (!dbData.config) dbData.config = {};
+      dbData.config.plans = newPlansConfig;
+      localStorage.setItem('mock_rtdb_v2', JSON.stringify(dbData));
+      if (syncChannel) syncChannel.postMessage({ type: 'DB_UPDATE' });
+      setPlansConfig(newPlansConfig);
+      return;
+    }
+
+    const secret = import.meta.env.VITE_ADMIN_MASTER_SECRET;
+    const res = await fetch(`${API_BASE}/api/admin/savePlansConfig`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ secret, newPlansConfig })
+    });
+    const data = await res.json();
+    if (!data.success) {
+      throw new Error(data.error || "Error al guardar la configuración de planes");
+    }
   };
 
   const refreshAdminData = async () => {

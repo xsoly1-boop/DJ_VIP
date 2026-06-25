@@ -15,7 +15,8 @@
     // Configuración global accesible
     "config": {
       "plans": {
-        ".read": "true"
+        ".read": "true",
+        ".write": "false"
       },
       "public_payment_info": {
         ".read": "auth != null"

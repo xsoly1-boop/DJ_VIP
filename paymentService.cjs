@@ -7,7 +7,8 @@ const DEFAULT_PLANS = {
   free: { name: 'Plan Demo', price: 0, currency: 'MXN' },
   premium: { name: 'Plan Premium', price: 100, currency: 'MXN' },
   vip: { name: 'Plan VIP', price: 200, currency: 'MXN' },
-  pro: { name: 'Plan PRO', price: 400, currency: 'MXN' },
+  pro: { name: 'Plan PRO', price: 450, currency: 'MXN' },
+  pro_1d: { name: 'Plan Pro x 1 Día', price: 0, currency: 'MXN' },
   bonus: { name: 'Plan Bonus (Extra)', price: 50, currency: 'MXN' },
   eventual: { name: 'Eventual', price: 50, currency: 'MXN' }
 };
