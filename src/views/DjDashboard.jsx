@@ -2373,44 +2373,6 @@ export default function DjDashboard() {
                 </div>
               )}
 
-              {/* Géneros aprendidos */}
-              {(() => {
-                const genreCount = {};
-                Object.values(requests).forEach(r => { 
-                  if (r.genre && r.genre !== 'Personalizado') {
-                    r.genre.split('/').forEach(g => {
-                      const cleanG = g.trim();
-                      if (cleanG) genreCount[cleanG] = (genreCount[cleanG] || 0) + 1;
-                    });
-                  }
-                });
-                autocompleteSongs.forEach(s => { 
-                  if (s.genre && s.genre !== 'Personalizado') {
-                    s.genre.split('/').forEach(g => {
-                      const cleanG = g.trim();
-                      if (cleanG) genreCount[cleanG] = (genreCount[cleanG] || 0) + 1;
-                    });
-                  }
-                });
-                const sorted = Object.entries(genreCount).sort((a, b) => b[1] - a[1]);
-                if (sorted.length === 0) return null;
-                return (
-                  <div style={{ marginTop: '24px', borderTop: '1px solid var(--surface-border)', paddingTop: '20px' }}>
-                    <h4 style={{ fontSize: '0.9rem', color: 'var(--text-secondary)', marginBottom: '12px', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                      <Sparkles size={14} color="var(--secondary-color)" />
-                      Géneros más pedidos (aprendidos del público)
-                    </h4>
-                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
-                      {sorted.map(([genre, count]) => (
-                        <span key={genre} style={{ padding: '5px 12px', borderRadius: 'var(--radius-full)', background: 'rgba(6, 182, 212, 0.08)', border: '1px solid rgba(6, 182, 212, 0.2)', color: 'var(--secondary-color)', fontSize: '0.8rem', fontWeight: '600', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                          {genre}<span style={{ background: 'rgba(6,182,212,0.2)', borderRadius: '10px', padding: '1px 7px', fontSize: '0.7rem', fontWeight: '800' }}>{count}</span>
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-                );
-              })()}
-
               {/* Melodías más pedidas (Top Popularidad Global) */}
               {(() => {
                 const sortedSongs = (autocompleteSongs || [])
@@ -2505,6 +2467,44 @@ export default function DjDashboard() {
                             </div>
                           </div>
                         </div>
+                      ))}
+                    </div>
+                  </div>
+                );
+              })()}
+
+              {/* Géneros aprendidos */}
+              {(() => {
+                const genreCount = {};
+                Object.values(requests).forEach(r => { 
+                  if (r.genre && r.genre !== 'Personalizado') {
+                    r.genre.split('/').forEach(g => {
+                      const cleanG = g.trim();
+                      if (cleanG) genreCount[cleanG] = (genreCount[cleanG] || 0) + 1;
+                    });
+                  }
+                });
+                autocompleteSongs.forEach(s => { 
+                  if (s.genre && s.genre !== 'Personalizado') {
+                    s.genre.split('/').forEach(g => {
+                      const cleanG = g.trim();
+                      if (cleanG) genreCount[cleanG] = (genreCount[cleanG] || 0) + 1;
+                    });
+                  }
+                });
+                const sorted = Object.entries(genreCount).sort((a, b) => b[1] - a[1]);
+                if (sorted.length === 0) return null;
+                return (
+                  <div style={{ marginTop: '24px', borderTop: '1px solid var(--surface-border)', paddingTop: '20px' }}>
+                    <h4 style={{ fontSize: '0.9rem', color: 'var(--text-secondary)', marginBottom: '12px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                      <Sparkles size={14} color="var(--secondary-color)" />
+                      Géneros más pedidos (aprendidos del público)
+                    </h4>
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+                      {sorted.map(([genre, count]) => (
+                        <span key={genre} style={{ padding: '5px 12px', borderRadius: 'var(--radius-full)', background: 'rgba(6, 182, 212, 0.08)', border: '1px solid rgba(6, 182, 212, 0.2)', color: 'var(--secondary-color)', fontSize: '0.8rem', fontWeight: '600', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                          {genre}<span style={{ background: 'rgba(6,182,212,0.2)', borderRadius: '10px', padding: '1px 7px', fontSize: '0.7rem', fontWeight: '800' }}>{count}</span>
+                        </span>
                       ))}
                     </div>
                   </div>
