@@ -29,12 +29,22 @@ function getAdminApp() {
     adminApp = admin.app();
   } catch (e) {
     // No hay instancia inicializada, crear una nueva
-    const serviceAccount = require('../serviceAccountKey.json');
-    adminApp = admin.initializeApp({
-      credential: admin.credential.cert(serviceAccount),
-      databaseURL: process.env.VITE_FIREBASE_DATABASE_URL ||
-                   'https://djvip-c2cc9-default-rtdb.firebaseio.com'
-    });
+    if (process.env.FIREBASE_SERVICE_ACCOUNT) {
+      const sa = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT.trim());
+      if (sa.private_key) sa.private_key = sa.private_key.replace(/\\n/g, '\n');
+      adminApp = admin.initializeApp({
+        credential: admin.credential.cert(sa),
+        databaseURL: process.env.VITE_FIREBASE_DATABASE_URL ||
+                     'https://djvip-c2cc9-default-rtdb.firebaseio.com'
+      });
+    } else {
+      const serviceAccount = require('../serviceAccountKey.json');
+      adminApp = admin.initializeApp({
+        credential: admin.credential.cert(serviceAccount),
+        databaseURL: process.env.VITE_FIREBASE_DATABASE_URL ||
+                     'https://djvip-c2cc9-default-rtdb.firebaseio.com'
+      });
+    }
   }
 
   return adminApp;
