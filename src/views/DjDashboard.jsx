@@ -401,8 +401,8 @@ export default function DjDashboard() {
   };
 
   const handleDeletePlan = (planKey) => {
-    if (planKey === 'free' || planKey === 'premium' || planKey === 'vip') {
-      showToast("⚠️ No puedes eliminar los planes principales (Demo, Premium, VIP).");
+    if (planKey === 'free' || planKey === 'premium' || planKey === 'vip' || planKey === 'pro') {
+      showToast("⚠️ No puedes eliminar los planes principales (Demo, Premium, VIP, PRO).");
       return;
     }
     if (window.confirm(`¿Estás seguro de que deseas eliminar el plan "${tempPlansConfig[planKey]?.name || planKey}"?`)) {
@@ -2630,8 +2630,8 @@ export default function DjDashboard() {
               ) : (
                 <form onSubmit={handleSaveBranding} style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
 
-                {/* Logo Personalizado - Visible para Admin Master, Premium y VIP */}
-                {(isAdminMaster || currentPlan === 'premium' || currentPlan === 'vip') && (
+                {/* Logo Personalizado - Visible para Admin Master, Premium, VIP y PRO */}
+                {(isAdminMaster || currentPlan === 'premium' || currentPlan === 'vip' || currentPlan === 'pro') && (
                 <div className="form-group" style={{ borderBottom: '1px solid rgba(255,255,255,0.05)', paddingBottom: '20px' }}>
                   <label className="form-label" style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px' }}>
                     <Image size={15} color="var(--secondary-color)" />
@@ -2649,8 +2649,8 @@ export default function DjDashboard() {
                     {/* Controles de Subida / URL */}
                     <div style={{ flex: 1, minWidth: '250px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
                       
-                      {/* Opción A: Subir Archivo - Solo Admin Master o VIP con logoUploadEnabled */}
-                      {(isAdminMaster || (currentPlan === 'vip' && userProfile?.logoUploadEnabled)) && (
+                      {/* Opción A: Subir Archivo - Solo Admin Master, PRO, o VIP con logoUploadEnabled */}
+                      {(isAdminMaster || currentPlan === 'pro' || (currentPlan === 'vip' && userProfile?.logoUploadEnabled)) && (
                         <div>
                           <span style={{ fontSize: '0.8rem', fontWeight: '600', display: 'block', marginBottom: '6px', color: 'var(--text-primary)' }}>
                             Opción A: Subir desde tu computadora
@@ -2664,7 +2664,7 @@ export default function DjDashboard() {
                         </div>
                       )}
 
-                      {(isAdminMaster || (currentPlan === 'vip' && userProfile?.logoUploadEnabled)) && (
+                      {(isAdminMaster || currentPlan === 'pro' || (currentPlan === 'vip' && userProfile?.logoUploadEnabled)) && (
                         <div style={{ height: '1px', background: 'rgba(255,255,255,0.05)', margin: '4px 0' }} />
                       )}
 
@@ -3987,11 +3987,12 @@ export default function DjDashboard() {
                     <p style={{ color: 'var(--text-secondary)', fontSize: '0.85rem', margin: 0, maxWidth: '500px' }}>
                       {(!userProfile?.activePlan || userProfile?.activePlan === 'free') && `Estás usando el ${plansConfig?.free?.name || 'Plan Demo'} con límites. Pásate a ${plansConfig?.premium?.name || 'Premium'} para personalización de marca, logo y peticiones ilimitadas.`}
                       {userProfile?.activePlan === 'premium' && `Tienes acceso a ${plansConfig?.premium?.name || 'Plan Premium'}. Pásate a ${plansConfig?.vip?.name || 'VIP'} para soporte técnico prioritario 24/7 y eventos simultáneos.`}
-                      {userProfile?.activePlan === 'vip' && `¡Tienes el ${plansConfig?.vip?.name || 'Plan VIP'} con acceso y soporte total habilitados! Gracias por confiar en nosotros.`}
+                      {userProfile?.activePlan === 'vip' && `Tienes acceso a ${plansConfig?.vip?.name || 'Plan VIP'}. Pásate a ${plansConfig?.pro?.name || 'PRO'} para multieventos activos en paralelo y soporte prioritario 24/7.`}
+                      {userProfile?.activePlan === 'pro' && `¡Tienes el ${plansConfig?.pro?.name || 'Plan PRO'} con acceso total, soporte prioritario 24/7 y multieventos habilitados! Gracias por confiar en nosotros.`}
                     </p>
                   </div>
                   
-                  {userProfile?.activePlan !== 'vip' && (
+                  {userProfile?.activePlan !== 'pro' && (
                     <button
                       onClick={() => selectPlan('pending_plan')}
                       className="btn btn-primary"
@@ -4691,7 +4692,7 @@ export default function DjDashboard() {
                           {savePlansLoading ? <><RefreshCw size={14} className="animate-spin" /> Guardando...</> : <><Check size={14} /> Guardar Configuración de Planes</>}
                         </button>
                         
-                        {editingPlanTab !== 'free' && editingPlanTab !== 'premium' && editingPlanTab !== 'vip' && (
+                        {editingPlanTab !== 'free' && editingPlanTab !== 'premium' && editingPlanTab !== 'vip' && editingPlanTab !== 'pro' && (
                           <button
                             type="button"
                             className="btn btn-secondary"

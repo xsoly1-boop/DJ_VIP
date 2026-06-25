@@ -28,6 +28,7 @@ export default function PlanSelection() {
     else if (key === 'free') buttonText = 'Comenzar Gratis';
     else if (key === 'premium') buttonText = 'Obtener Premium';
     else if (key === 'vip') buttonText = 'Obtener VIP';
+    else if (key === 'pro') buttonText = 'Obtener PRO';
     else if (key === 'bonus') buttonText = 'Adquirir Bonus';
     else if (config.price === "0" || parseFloat(config.price) === 0) buttonText = 'Comenzar Gratis';
     
