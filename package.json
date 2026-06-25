@@ -11,7 +11,7 @@
     "preview": "vite preview",
     "electron:dev": "concurrently -k \"npm run dev\" \"cross-env ELECTRON_DEV=true electron .\"",
     "electron:build": "npm run build && electron-builder",
-    "test": "node scratch/test_admin.js && node scratch/test_autocomplete.js && node scratch/test_queue_deduplication.js && node scratch/test_admin_subscriptions.cjs",
+    "test": "node scratch/test_admin.js && node scratch/test_autocomplete.js && node scratch/test_queue_deduplication.js && node scratch/test_admin_subscriptions.cjs && node scratch/test_reset_revenue.cjs",
     "verify-gateways": "node verify_gateways.cjs"
   },
   "dependencies": {

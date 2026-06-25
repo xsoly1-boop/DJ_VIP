@@ -1409,6 +1409,9 @@ export default function DjDashboard() {
   const [saveConfigLoading, setSaveConfigLoading] = useState(false);
   const [pendingSubs, setPendingSubs] = useState([]);
   const [pendingSubsLoading, setPendingSubsLoading] = useState(false);
+  const [showResetRevenueModal, setShowResetRevenueModal] = useState(false);
+  const [adminPasswordInput, setAdminPasswordInput] = useState('');
+  const [resetRevenueLoading, setResetRevenueLoading] = useState(false);
 
   const fetchPaymentConfig = async () => {
     try {
@@ -1479,6 +1482,35 @@ export default function DjDashboard() {
       alert('Error al guardar configuración: ' + e.message);
     } finally {
       setSaveConfigLoading(false);
+    }
+  };
+
+  const handleResetRevenue = async (e) => {
+    e.preventDefault();
+    if (!adminPasswordInput.trim()) {
+      showToast('⚠️ Ingresa la contraseña de administrador.');
+      return;
+    }
+    setResetRevenueLoading(true);
+    try {
+      const secret = adminPasswordInput.trim();
+      const res = await fetch(`${API_BASE}/api/admin/resetRevenue`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ secret }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        showToast('✅ Finanzas y suscripciones restablecidas a cero.');
+        setShowResetRevenueModal(false);
+        setAdminPasswordInput('');
+      } else {
+        showToast(`❌ Error: ${data.error || 'unknown'}`);
+      }
+    } catch (err) {
+      showToast(`❌ Error de red: ${err.message}`);
+    } finally {
+      setResetRevenueLoading(false);
     }
   };
 
@@ -5482,13 +5514,22 @@ export default function DjDashboard() {
                         <p style={{ fontSize: '0.82rem', color: 'var(--text-muted)', margin: 0 }}>Ingresos de la plataforma · Solo visible para Admin Master</p>
                       </div>
                     </div>
-                    <button
-                      onClick={exportCSV}
-                      className="btn btn-secondary"
-                      style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '9px 16px', fontSize: '0.85rem', borderColor: 'rgba(16,185,129,0.3)', color: 'var(--success-color)' }}
-                    >
-                      <DownloadIcon size={14} /> Exportar CSV
-                    </button>
+                    <div style={{ display: 'flex', gap: '10px' }}>
+                      <button
+                        onClick={() => setShowResetRevenueModal(true)}
+                        className="btn btn-secondary"
+                        style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '9px 16px', fontSize: '0.85rem', borderColor: 'rgba(239, 68, 68, 0.3)', color: 'var(--danger-color)' }}
+                      >
+                        <Trash2 size={14} /> Restablecer a Cero
+                      </button>
+                      <button
+                        onClick={exportCSV}
+                        className="btn btn-secondary"
+                        style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '9px 16px', fontSize: '0.85rem', borderColor: 'rgba(16,185,129,0.3)', color: 'var(--success-color)' }}
+                      >
+                        <DownloadIcon size={14} /> Exportar CSV
+                      </button>
+                    </div>
                   </div>
 
                   {/* KPI Cards */}
@@ -5865,6 +5906,70 @@ export default function DjDashboard() {
                 )}
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {showResetRevenueModal && (
+        <div style={{ position: 'fixed', inset: 0, zIndex: 2000, background: 'rgba(0,0,0,0.85)', backdropFilter: 'blur(8px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}>
+          <div className="glass-panel" style={{ maxWidth: '500px', width: '100%', padding: '32px', borderRadius: 'var(--radius-lg)', border: '1px solid rgba(239,68,68,0.3)', boxShadow: '0 0 40px rgba(239,68,68,0.15)', display: 'flex', flexDirection: 'column', gap: '20px' }}>
+            
+            <div style={{ textAlign: 'center' }}>
+              <div style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: '72px', height: '72px', borderRadius: 'var(--radius-full)', background: 'rgba(239,68,68,0.1)', border: '2px solid rgba(239,68,68,0.3)', marginBottom: '12px' }}>
+                <AlertTriangle size={36} color="var(--danger-color)" />
+              </div>
+              <h2 style={{ fontSize: '1.4rem', color: 'var(--danger-color)', marginBottom: '8px' }}>⚠️ Restablecer Finanzas a Cero</h2>
+              <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', lineHeight: '1.5' }}>
+                Esta acción restablecerá todas las suscripciones activas de los usuarios al <strong>Plan Demo (Gratuito)</strong>, eliminando los ingresos acumulados de la plataforma y eliminando los comprobantes de pago pendientes de validación.
+              </p>
+              <div style={{ marginTop: '12px', padding: '10px', background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.2)', borderRadius: 'var(--radius-md)', fontSize: '0.8rem', color: '#ff8888' }}>
+                <strong>¡ATENCIÓN!</strong> Esta operación es irreversible y afectará a todos los usuarios registrados.
+              </div>
+            </div>
+
+            <form onSubmit={handleResetRevenue} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+              <div className="form-group" style={{ marginBottom: 0 }}>
+                <label className="form-label" style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.85rem' }}>
+                  <Lock size={14} /> Contraseña de Administrador (Master Secret)
+                </label>
+                <input
+                  type="password"
+                  className="input-field"
+                  placeholder="Introduce la contraseña maestra..."
+                  value={adminPasswordInput}
+                  onChange={(e) => setAdminPasswordInput(e.target.value)}
+                  required
+                  autoFocus
+                />
+              </div>
+
+              <div style={{ display: 'flex', gap: '12px', marginTop: '8px' }}>
+                <button
+                  type="button"
+                  className="btn btn-secondary"
+                  style={{ flex: 1 }}
+                  onClick={() => {
+                    setShowResetRevenueModal(false);
+                    setAdminPasswordInput('');
+                  }}
+                  disabled={resetRevenueLoading}
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  className="btn btn-danger"
+                  style={{ flex: 1, background: 'rgba(239,68,68,0.15)', border: '1px solid rgba(239,68,68,0.4)', color: 'var(--danger-color)' }}
+                  disabled={resetRevenueLoading}
+                >
+                  {resetRevenueLoading ? (
+                    <><RefreshCw size={14} className="animate-spin" /> Restableciendo...</>
+                  ) : (
+                    <><Trash2 size={14} /> Confirmar Restablecer</>
+                  )}
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}
