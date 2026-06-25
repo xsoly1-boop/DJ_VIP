@@ -5704,8 +5704,8 @@ export default function DjDashboard() {
                     p.plan?.toUpperCase() || '',
                     p.djName || p.displayName || '',
                     p.email || '',
-                    p.gateway || '',
-                    p.transactionId || '',
+                    p.gateway || p.paymentDetails?.gateway || '',
+                    p.transactionId || p.paymentDetails?.transactionId || '',
                     p.activatedAt ? new Date(p.activatedAt).toLocaleString('es-MX') : '',
                     p.expiresAt && p.expiresAt > 0 ? new Date(p.expiresAt).toLocaleString('es-MX') : 'Sin expiración',
                     p.price || 0
@@ -5797,7 +5797,7 @@ export default function DjDashboard() {
                     gap: '12px',
                     marginBottom: '28px'
                   }}>
-                    {kpiCard(<DollarSign />, 'Total Recaudado', `$${totalRevenue.toLocaleString('es-MX', { minimumFractionDigits: 2 })} MXN`, `${activePayingUsers.length} suscripción${activePayingUsers.length !== 1 ? 'es' : ''} activa${activePayingUsers.length !== 1 ? 's' : ''}`, '#10b981', 'rgba(16,185,129,0.05)')}
+                    {kpiCard(<DollarSign />, 'Total Recaudado', `$${totalRevenue.toLocaleString('es-MX', { minimumFractionDigits: 2 })} MXN`, `${activations.length} suscripción${activations.length !== 1 ? 'es' : ''} activa${activations.length !== 1 ? 's' : ''}`, '#10b981', 'rgba(16,185,129,0.05)')}
                     {kpiCard(<Users />, 'DJs con Plan Activo', activePayingUsers.length, `de ${usersArr.length} DJs registrados`, '#7c3aed', 'rgba(124,58,237,0.05)')}
                     {kpiCard(<BarChart2 />, 'Promedio por Suscriptor', activePayingUsers.length > 0 ? `$${avgRevenue.toLocaleString('es-MX', { minimumFractionDigits: 2 })}` : '—', 'MXN por DJ activo', '#06b6d4', 'rgba(6,182,212,0.05)')}
                     {kpiCard(<Clock />, 'Pendientes de Validar', pendingUsers.length, pendingRevenue > 0 ? `$${pendingRevenue.toLocaleString('es-MX', { minimumFractionDigits: 2 })} MXN potenciales` : 'Sin ingresos pendientes', '#f59e0b', 'rgba(245,158,11,0.05)')}
@@ -5849,7 +5849,7 @@ export default function DjDashboard() {
                           <tfoot>
                             <tr style={{ borderTop: '2px solid var(--surface-border)' }}>
                               <td colSpan={2} style={{ padding: '14px', color: 'var(--text-muted)', fontWeight: '700', fontSize: '0.85rem' }}>TOTAL</td>
-                              <td style={{ padding: '14px', color: '#fff', fontWeight: '700', textAlign: 'center' }}>{activePayingUsers.length}</td>
+                              <td style={{ padding: '14px', color: '#fff', fontWeight: '700', textAlign: 'center' }}>{activations.length}</td>
                               <td />
                               <td style={{ padding: '14px', color: 'var(--success-color)', fontWeight: '800', fontSize: '1rem' }}>${totalRevenue.toLocaleString('es-MX', { minimumFractionDigits: 2 })} MXN</td>
                               <td style={{ padding: '14px', color: 'var(--text-muted)' }}>100%</td>
@@ -5908,7 +5908,8 @@ export default function DjDashboard() {
                             const profile = u?.profile;
                             const plan = profile?.selectedPlan || 'pending';
                             const price = parseFloat(plansConfig?.[plan]?.price || 0);
-                            const gwLabel = { paypal: 'PayPal', mercadopago: 'MercadoPago', transfer: 'Transferencia' }[profile?.gateway] || profile?.gateway || '—';
+                            const gatewayVal = profile?.gateway || profile?.paymentDetails?.gateway;
+                            const gwLabel = { paypal: 'PayPal', mercadopago: 'MercadoPago', transfer: 'Transferencia' }[gatewayVal] || gatewayVal || '—';
                             return (
                               <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '10px 12px', background: 'rgba(245,158,11,0.03)', borderRadius: 'var(--radius-md)', border: '1px solid rgba(245,158,11,0.15)' }}>
                                 <div style={{ width: '36px', height: '36px', borderRadius: '50%', background: 'rgba(245,158,11,0.1)', border: '1px solid rgba(245,158,11,0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
@@ -5916,7 +5917,7 @@ export default function DjDashboard() {
                                 </div>
                                 <div style={{ flex: 1, minWidth: 0 }}>
                                   <div style={{ fontSize: '0.85rem', color: '#fff', fontWeight: '600', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{profile?.djName || profile?.displayName || profile?.email || 'DJ'}</div>
-                                  <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>{gwLabel} · {profile?.transactionId || '—'}</div>
+                                  <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>{gwLabel} · {profile?.transactionId || profile?.paymentDetails?.transactionId || '—'}</div>
                                 </div>
                                 <div style={{ textAlign: 'right', flexShrink: 0 }}>
                                   <div style={{ fontSize: '0.8rem', fontWeight: '700', color: '#f59e0b' }}>${price.toFixed(0)} MXN</div>

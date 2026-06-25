@@ -18,7 +18,9 @@ fs.writeFileSync(mockBackendDbPath, JSON.stringify({
         selectedPlan: "premium",
         expiresAt: Date.now() + 10000000,
         gateway: "paypal",
-        transactionId: "TX123"
+        transactionId: "TX123",
+        extraRequests: 15,
+        extraRequestsExpiresAt: Date.now() + 10000000
       }
     },
     "user-2": {
@@ -83,7 +85,7 @@ const server = app.listen(4002, async () => {
 
     // Check Realtime Database profile reset
     const p1 = backendData.users["user-1"].profile;
-    if (p1.activePlan !== "free" || p1.subscriptionStatus !== "free" || p1.selectedPlan !== "free" || p1.expiresAt !== 0 || p1.gateway !== null) {
+    if (p1.activePlan !== "free" || p1.subscriptionStatus !== "free" || p1.selectedPlan !== "free" || p1.expiresAt !== 0 || p1.gateway !== null || p1.extraRequests !== 0 || p1.extraRequestsExpiresAt !== 0) {
       throw new Error(`User-1 profile was not reset correctly: ${JSON.stringify(p1)}`);
     }
     const p2 = backendData.users["user-2"].profile;
