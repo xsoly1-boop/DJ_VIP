@@ -3457,6 +3457,67 @@ export default function DjDashboard() {
                 </div>
               ) : (
                 <>
+                  {/* SECCIÓN DE MEJORA DE PLAN */}
+                  {!(isAdminMaster && !impersonatingUid) && (
+                    <div 
+                      className="glass-panel" 
+                      style={{ 
+                        marginBottom: '32px', 
+                        padding: '24px', 
+                        borderRadius: 'var(--radius-lg)', 
+                        border: '1px solid rgba(124, 58, 237, 0.25)', 
+                        background: 'rgba(124, 58, 237, 0.03)',
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'center',
+                        flexWrap: 'wrap',
+                        gap: '20px'
+                      }}
+                    >
+                      <div>
+                        <h3 style={{ fontSize: '1.15rem', color: '#fff', marginBottom: '6px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                          <Sparkles size={18} color="var(--primary-color)" />
+                          Tu Plan Actual: <span style={{ color: 'var(--primary-color)', fontWeight: 'bold', textTransform: 'uppercase' }}>
+                            {plansConfig?.[userProfile?.activePlan || 'free']?.name || userProfile?.activePlan || 'demo/gratis'}
+                            {(() => {
+                              const extraRequests = userProfile?.extraRequests !== undefined ? parseInt(userProfile.extraRequests, 10) : 0;
+                              const extraRequestsExpiresAt = userProfile?.extraRequestsExpiresAt ? parseInt(userProfile.extraRequestsExpiresAt, 10) : 0;
+                              const isExtraValid = extraRequests > 0 && (!extraRequestsExpiresAt || Date.now() <= extraRequestsExpiresAt);
+                              return isExtraValid ? ` (+${extraRequests} Extra)` : '';
+                            })()}
+                          </span>
+                        </h3>
+                        <p style={{ color: 'var(--text-secondary)', fontSize: '0.85rem', margin: 0, maxWidth: '500px' }}>
+                          {(!userProfile?.activePlan || userProfile?.activePlan === 'free') && `Estás usando el ${plansConfig?.free?.name || 'Plan Demo'} con límites. Pásate a ${plansConfig?.premium?.name || 'Premium'} para personalización de marca, logo y peticiones ilimitadas.`}
+                          {userProfile?.activePlan === 'premium' && `Tienes acceso a ${plansConfig?.premium?.name || 'Plan Premium'}. Pásate a ${plansConfig?.vip?.name || 'VIP'} para soporte técnico prioritario 24/7 y eventos simultáneos.`}
+                          {userProfile?.activePlan === 'vip' && `Tienes acceso a ${plansConfig?.vip?.name || 'Plan VIP'}. Pásate a ${plansConfig?.pro?.name || 'PRO'} para multieventos activos en paralelo y soporte prioritario 24/7.`}
+                          {userProfile?.activePlan === 'pro' && `¡Tienes el ${plansConfig?.pro?.name || 'Plan PRO'} con acceso total, soporte prioritario 24/7 y multieventos habilitados! Gracias por confiar en nosotros.`}
+                        </p>
+                      </div>
+                      
+                      {userProfile?.activePlan !== 'pro' && (
+                        <button
+                          onClick={() => selectPlan('pending_plan')}
+                          className="btn btn-primary"
+                          style={{
+                            background: 'linear-gradient(135deg, #7c3aed 0%, #4f46e5 100%)',
+                            border: 'none',
+                            padding: '12px 24px',
+                            fontWeight: 'bold',
+                            fontSize: '0.9rem',
+                            cursor: 'pointer',
+                            borderRadius: 'var(--radius-md)',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '8px'
+                          }}
+                        >
+                          <Sparkles size={16} /> Mejorar / Cambiar Plan
+                        </button>
+                      )}
+                    </div>
+                  )}
+
                   <p style={{ fontSize: '0.9rem', color: 'var(--text-secondary)', lineHeight: '1.6', marginBottom: '24px' }}>
                     Nuestra plataforma inteligente está diseñada para optimizar tu flujo de trabajo, mantener la energía en la pista y potenciar tu marca como DJ. A continuación se presentan las características clave y beneficios incluidos:
                   </p>
@@ -3953,67 +4014,6 @@ export default function DjDashboard() {
                   </div>
                 </div>
               </div>
-
-              {/* SECCIÓN DE MEJORA DE PLAN */}
-              {!(isAdminMaster && !impersonatingUid) && (
-                <div 
-                  className="glass-panel" 
-                  style={{ 
-                    marginTop: '32px', 
-                    padding: '24px', 
-                    borderRadius: 'var(--radius-lg)', 
-                    border: '1px solid rgba(124, 58, 237, 0.25)', 
-                    background: 'rgba(124, 58, 237, 0.03)',
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    alignItems: 'center',
-                    flexWrap: 'wrap',
-                    gap: '20px'
-                  }}
-                >
-                  <div>
-                    <h3 style={{ fontSize: '1.15rem', color: '#fff', marginBottom: '6px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                      <Sparkles size={18} color="var(--primary-color)" />
-                      Tu Plan Actual: <span style={{ color: 'var(--primary-color)', fontWeight: 'bold', textTransform: 'uppercase' }}>
-                        {plansConfig?.[userProfile?.activePlan || 'free']?.name || userProfile?.activePlan || 'demo/gratis'}
-                        {(() => {
-                          const extraRequests = userProfile?.extraRequests !== undefined ? parseInt(userProfile.extraRequests, 10) : 0;
-                          const extraRequestsExpiresAt = userProfile?.extraRequestsExpiresAt ? parseInt(userProfile.extraRequestsExpiresAt, 10) : 0;
-                          const isExtraValid = extraRequests > 0 && (!extraRequestsExpiresAt || Date.now() <= extraRequestsExpiresAt);
-                          return isExtraValid ? ` (+${extraRequests} Extra)` : '';
-                        })()}
-                      </span>
-                    </h3>
-                    <p style={{ color: 'var(--text-secondary)', fontSize: '0.85rem', margin: 0, maxWidth: '500px' }}>
-                      {(!userProfile?.activePlan || userProfile?.activePlan === 'free') && `Estás usando el ${plansConfig?.free?.name || 'Plan Demo'} con límites. Pásate a ${plansConfig?.premium?.name || 'Premium'} para personalización de marca, logo y peticiones ilimitadas.`}
-                      {userProfile?.activePlan === 'premium' && `Tienes acceso a ${plansConfig?.premium?.name || 'Plan Premium'}. Pásate a ${plansConfig?.vip?.name || 'VIP'} para soporte técnico prioritario 24/7 y eventos simultáneos.`}
-                      {userProfile?.activePlan === 'vip' && `Tienes acceso a ${plansConfig?.vip?.name || 'Plan VIP'}. Pásate a ${plansConfig?.pro?.name || 'PRO'} para multieventos activos en paralelo y soporte prioritario 24/7.`}
-                      {userProfile?.activePlan === 'pro' && `¡Tienes el ${plansConfig?.pro?.name || 'Plan PRO'} con acceso total, soporte prioritario 24/7 y multieventos habilitados! Gracias por confiar en nosotros.`}
-                    </p>
-                  </div>
-                  
-                  {userProfile?.activePlan !== 'pro' && (
-                    <button
-                      onClick={() => selectPlan('pending_plan')}
-                      className="btn btn-primary"
-                      style={{
-                        background: 'linear-gradient(135deg, #7c3aed 0%, #4f46e5 100%)',
-                        border: 'none',
-                        padding: '12px 24px',
-                        fontWeight: 'bold',
-                        fontSize: '0.9rem',
-                        cursor: 'pointer',
-                        borderRadius: 'var(--radius-md)',
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '8px'
-                      }}
-                    >
-                      <Sparkles size={16} /> Mejorar / Cambiar Plan
-                    </button>
-                  )}
-                </div>
-              )}
             </>
           )}
 
