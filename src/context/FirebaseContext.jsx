@@ -108,7 +108,7 @@ const DEFAULT_PLANS_CONFIG = {
   },
   pro: {
     name: "Plan PRO",
-    price: "400",
+    price: "450",
     billing: "12 meses",
     currency: "MXN",
     description: "La herramienta definitiva para productoras de eventos, discotecas y agencias que gestionan múltiples cabinas y DJs en paralelo.",
@@ -128,7 +128,7 @@ const DEFAULT_PLANS_CONFIG = {
   },
   pro_1d: {
     name: "Pro x 1 Día",
-    price: "50",
+    price: "0",
     billing: "24 horas",
     currency: "MXN",
     description: "Prueba el poder total del Plan PRO durante 24 horas. Disfruta de multieventos y todas las herramientas exclusivas sin límites por un día entero.",
@@ -1126,10 +1126,16 @@ export const FirebaseProvider = ({ children }) => {
         }
       }
       
-      updates.subscriptionStatus = 'free';
+      updates.subscriptionStatus = planName === 'free' ? 'free' : planName;
       updates.activePlan = planName;
       updates.activatedAt = Date.now();
       updates.expiresAt = msToAdd > 0 ? Date.now() + msToAdd : 0;
+
+      // Si es el plan temporal Pro x 1 Día, registrar el plan previo y flag de uso único
+      if (planName === 'pro_1d') {
+        updates.previousActivePlan = currentActivePlan;
+        updates.pro1dUsed = true;
+      }
     } else {
       // Plan de cobro -> mandar a pasarela
       updates.subscriptionStatus = 'pending_payment';
