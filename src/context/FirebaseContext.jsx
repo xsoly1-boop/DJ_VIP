@@ -973,6 +973,10 @@ export const FirebaseProvider = ({ children }) => {
     if (!activeUid) return;
     const profileRef = ref(database, `users/${activeUid}/profile`);
     
+    // Limpiar el bypass de pago al iniciar un cambio de plan
+    sessionStorage.removeItem('bypass_payment_lock');
+    window.dispatchEvent(new Event('bypass_payment_lock'));
+
     if (planName === 'pending_plan') {
       await update(profileRef, {
         selectedPlan: null,
