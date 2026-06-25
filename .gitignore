@@ -36,7 +36,8 @@ dist-desktop
 *.apk
 out/
 release/
+serviceAccountKey.json
+djvip-c2cc9-*.json
 *.keystore
 *.jks
-.vercel
-serviceAccountKey.json
+
