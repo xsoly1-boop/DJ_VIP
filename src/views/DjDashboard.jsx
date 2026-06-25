@@ -5412,7 +5412,37 @@ export default function DjDashboard() {
             try {
               // ---- Lógica de cálculo financiero ----
               const PAID_PLANS = ['premium', 'vip', 'pro', 'bonus', 'eventual'];
-              const usersArr = Object.values(allUsersData || {}).filter(u => u && typeof u === 'object');
+              
+              // Get the actual users list from database
+              const baseUsers = { ...(allUsersData || {}) };
+              // Ensure uid-admin-master is always present in the calculation
+              if (!baseUsers['uid-admin-master']) {
+                baseUsers['uid-admin-master'] = {
+                  profile: {
+                    activePlan: 'pro',
+                    selectedPlan: 'pro',
+                    subscriptionStatus: 'active',
+                    email: 'dj@admin.com',
+                    displayName: 'Administrador',
+                    activatedAt: Date.now(),
+                    expiresAt: 0
+                  }
+                };
+              }
+              
+              const usersArr = Object.entries(baseUsers).map(([uid, u]) => {
+                if (!u || typeof u !== 'object') return null;
+                const profile = { ...(u.profile || {}) };
+                if (uid === 'uid-admin-master') {
+                  profile.activePlan = 'pro';
+                  profile.selectedPlan = 'pro';
+                  profile.subscriptionStatus = 'active';
+                  profile.email = profile.email || 'dj@admin.com';
+                  profile.displayName = profile.displayName || 'Administrador';
+                  profile.activatedAt = profile.activatedAt || Date.now();
+                }
+                return { ...u, uid, profile };
+              }).filter(Boolean);
 
               // Usuarios con plan de pago activo
               const activePayingUsers = usersArr.filter(u => {
