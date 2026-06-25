@@ -62,7 +62,8 @@ export default function DjDashboard() {
     markSupportChatAsRead,
     subscribeToSupportChat,
     subscribeToAllSupportChats,
-    submitFeedback
+    submitFeedback,
+    refreshAdminData
   } = useFirebase();
 
   // Estados Locales
@@ -1397,14 +1398,16 @@ export default function DjDashboard() {
     }
   };
 
-  // --- ESTADOS PARA GESTIÓN DE SUSCRIPCIONES (ADMIN MASTER) ---
   const [paymentConfig, setPaymentConfig] = useState({
     paypalClientId: '',
     paypalClientSecret: '',
     paypalMode: 'sandbox',
     mercadopagoPublicKey: '',
     mercadopagoAccessToken: '',
-    adminClabe: ''
+    adminClabe: '',
+    paypalEnabled: true,
+    mercadopagoEnabled: true,
+    transferEnabled: true
   });
   const [saveConfigLoading, setSaveConfigLoading] = useState(false);
   const [pendingSubs, setPendingSubs] = useState([]);
@@ -1504,6 +1507,7 @@ export default function DjDashboard() {
         showToast('✅ Finanzas y suscripciones restablecidas a cero.');
         setShowResetRevenueModal(false);
         setAdminPasswordInput('');
+        await refreshAdminData();
       } else {
         showToast(`❌ Error: ${data.error || 'unknown'}`);
       }
@@ -1527,6 +1531,7 @@ export default function DjDashboard() {
       if (data.success) {
         alert('Suscripción aprobada con éxito.');
         fetchPendingSubscriptions();
+        await refreshAdminData();
       } else {
         throw new Error(data.error);
       }
@@ -1549,6 +1554,7 @@ export default function DjDashboard() {
       if (data.success) {
         alert('Suscripción rechazada.');
         fetchPendingSubscriptions();
+        await refreshAdminData();
       } else {
         throw new Error(data.error);
       }
@@ -2025,6 +2031,29 @@ export default function DjDashboard() {
           </div>
           <Star size={18} color="#f59e0b" style={{ opacity: 0.6, flexShrink: 0 }} />
         </div>
+        <div className="glass-panel" style={{ padding: '8px 10px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <div>
+            <p style={{ fontSize: '0.65rem', color: 'var(--text-secondary)', fontWeight: '500', lineHeight: 1.2 }}>Vigencia<br/>Plan Activo</p>
+            <h3 style={{ fontSize: '1rem', marginTop: '2px', color: '#a855f7' }}>
+              {(userProfile?.activePlan || 'free').toUpperCase()}
+            </h3>
+            <span style={{ fontSize: '0.65rem', color: 'var(--text-muted)' }}>
+              {userProfile?.expiresAt ? new Date(userProfile.expiresAt).toLocaleDateString('es-MX') : 'Sin vencimiento'}
+            </span>
+          </div>
+          <Clock size={18} color="#a855f7" style={{ opacity: 0.6, flexShrink: 0 }} />
+        </div>
+        {isAdminMaster && (
+          <div className="glass-panel" style={{ padding: '8px 10px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <div>
+              <p style={{ fontSize: '0.65rem', color: 'var(--text-secondary)', fontWeight: '500', lineHeight: 1.2 }}>DJs<br/>Registrados</p>
+              <h3 style={{ fontSize: '1.25rem', marginTop: '2px', color: '#06b6d4' }}>
+                {Object.keys(allUsersData || {}).filter(uid => uid !== 'uid-admin-master' && allUsersData[uid]?.profile?.email !== 'dj@admin.com').length}
+              </h3>
+            </div>
+            <Users size={18} color="#06b6d4" style={{ opacity: 0.6, flexShrink: 0 }} />
+          </div>
+        )}
       </section>
 
       {/* PANEL PRINCIPAL */}
@@ -5565,20 +5594,33 @@ export default function DjDashboard() {
                         <p style={{ fontSize: '0.82rem', color: 'var(--text-muted)', margin: 0 }}>Ingresos de la plataforma · Solo visible para Admin Master</p>
                       </div>
                     </div>
-                    <div style={{ display: 'flex', gap: '10px' }}>
+                    <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                      <button
+                        onClick={async () => {
+                          showToast('⏳ Actualizando finanzas...');
+                          await refreshAdminData();
+                          await fetchPendingSubscriptions();
+                          await fetchPaymentConfig();
+                          showToast('📊 Finanzas actualizadas.');
+                        }}
+                        className="btn btn-secondary"
+                        style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '8px 12px', fontSize: '0.8rem', borderColor: 'rgba(16, 185, 129, 0.3)', color: 'var(--success-color)' }}
+                      >
+                        <RefreshCw size={12} /> Actualizar Finanzas
+                      </button>
                       <button
                         onClick={() => setShowResetRevenueModal(true)}
                         className="btn btn-secondary"
-                        style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '9px 16px', fontSize: '0.85rem', borderColor: 'rgba(239, 68, 68, 0.3)', color: 'var(--danger-color)' }}
+                        style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '8px 12px', fontSize: '0.8rem', borderColor: 'rgba(239, 68, 68, 0.3)', color: 'var(--danger-color)' }}
                       >
-                        <Trash2 size={14} /> Restablecer a Cero
+                        <Trash2 size={12} /> Restablecer a Cero
                       </button>
                       <button
                         onClick={exportCSV}
                         className="btn btn-secondary"
-                        style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '9px 16px', fontSize: '0.85rem', borderColor: 'rgba(16,185,129,0.3)', color: 'var(--success-color)' }}
+                        style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '8px 12px', fontSize: '0.8rem', borderColor: 'rgba(255, 255, 255, 0.15)', color: 'var(--text-secondary)' }}
                       >
-                        <DownloadIcon size={14} /> Exportar CSV
+                        <DownloadIcon size={12} /> Exportar CSV
                       </button>
                     </div>
                   </div>
@@ -5733,6 +5775,38 @@ export default function DjDashboard() {
                     </div>
 
                     <form onSubmit={handleSavePaymentConfig} style={{ padding: '20px', display: 'flex', flexDirection: 'column', gap: '20px' }}>
+                      {/* Estado de Pasarelas */}
+                      <div style={{ display: 'flex', gap: '20px', flexWrap: 'wrap', background: 'rgba(255, 255, 255, 0.02)', padding: '16px', borderRadius: 'var(--radius-md)', border: '1px solid rgba(255, 255, 255, 0.05)', marginBottom: '10px' }}>
+                        <span style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', fontWeight: 'bold', width: '100%' }}>Habilitar / Deshabilitar Pasarelas de Pago:</span>
+                        <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontSize: '0.85rem', color: '#fff' }}>
+                          <input
+                            type="checkbox"
+                            checked={paymentConfig.paypalEnabled !== false}
+                            onChange={(e) => setPaymentConfig({ ...paymentConfig, paypalEnabled: e.target.checked })}
+                            style={{ width: '16px', height: '16px', accentColor: 'var(--success-color)' }}
+                          />
+                          <span>PayPal Activo</span>
+                        </label>
+                        <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontSize: '0.85rem', color: '#fff' }}>
+                          <input
+                            type="checkbox"
+                            checked={paymentConfig.mercadopagoEnabled !== false}
+                            onChange={(e) => setPaymentConfig({ ...paymentConfig, mercadopagoEnabled: e.target.checked })}
+                            style={{ width: '16px', height: '16px', accentColor: 'var(--success-color)' }}
+                          />
+                          <span>Mercado Pago Activo</span>
+                        </label>
+                        <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontSize: '0.85rem', color: '#fff' }}>
+                          <input
+                            type="checkbox"
+                            checked={paymentConfig.transferEnabled !== false}
+                            onChange={(e) => setPaymentConfig({ ...paymentConfig, transferEnabled: e.target.checked })}
+                            style={{ width: '16px', height: '16px', accentColor: 'var(--success-color)' }}
+                          />
+                          <span>Transferencia Bancaria Activa</span>
+                        </label>
+                      </div>
+
                       {/* PayPal Config */}
                       <div>
                         <h5 style={{ fontSize: '0.85rem', color: '#fff', borderBottom: '1px solid var(--surface-border)', paddingBottom: '6px', marginBottom: '12px' }}>Credenciales de PayPal</h5>

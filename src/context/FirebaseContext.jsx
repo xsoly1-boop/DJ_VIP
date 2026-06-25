@@ -26,6 +26,12 @@ import {
   get
 } from '../firebase';
 
+const API_BASE = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
+  ? 'http://localhost:4000'
+  : (window.location.protocol === 'file:' 
+    ? (import.meta.env.DEV ? 'http://localhost:4000' : (import.meta.env.VITE_PUBLIC_URL ? import.meta.env.VITE_PUBLIC_URL.replace(/\/$/, '') : 'https://dj-vip.vercel.app'))
+    : window.location.origin);
+
 const FirebaseContext = createContext(null);
 
 export const useFirebase = () => {
@@ -1073,12 +1079,35 @@ export const FirebaseProvider = ({ children }) => {
   const submitFeedback = async (text) => {
     if (!activeUid) return;
     const feedbackRef = ref(database, `suggestions/${activeUid}/${Date.now()}`);
+    const email = userProfile?.email || user?.email || '';
+    const djName = userProfile?.displayName || '';
     await set(feedbackRef, {
       text,
-      email: userProfile?.email || user?.email || '',
-      djName: userProfile?.displayName || '',
+      email,
+      djName,
       submittedAt: Date.now()
     });
+
+    if (isMockMode) {
+      try {
+        const secret = import.meta.env.VITE_ADMIN_MASTER_SECRET;
+        await fetch(`${API_BASE}/api/admin/sendNotificationSMS`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            secret,
+            type: 'suggestion',
+            payload: {
+              djName,
+              email,
+              text
+            }
+          })
+        });
+      } catch (e) {
+        console.error("Error sending mock suggestion SMS:", e);
+      }
+    }
   };
 
   const submitPaymentProof = async (gateway, transactionId) => {
@@ -1095,16 +1124,42 @@ export const FirebaseProvider = ({ children }) => {
     });
 
     const pendingRef = ref(database, `pending_subscriptions/${activeUid}`);
+    const email = userProfile?.email || user?.email || '';
+    const djName = userProfile?.displayName || '';
+    const selectedPlan = userProfile?.selectedPlan || 'premium';
+    
     await set(pendingRef, {
       uid: activeUid,
-      email: userProfile?.email || user?.email || '',
+      email,
       phone: userProfile?.phone || '',
-      displayName: userProfile?.displayName || '',
-      selectedPlan: userProfile?.selectedPlan || 'premium',
+      displayName: djName,
+      selectedPlan,
       gateway,
       transactionId,
       submittedAt: Date.now()
     });
+
+    if (isMockMode) {
+      try {
+        const secret = import.meta.env.VITE_ADMIN_MASTER_SECRET;
+        await fetch(`${API_BASE}/api/admin/sendNotificationSMS`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            secret,
+            type: 'pending_subscription',
+            payload: {
+              displayName: djName,
+              email,
+              selectedPlan,
+              transactionId
+            }
+          })
+        });
+      } catch (e) {
+        console.error("Error sending mock payment SMS:", e);
+      }
+    }
   };
 
   const logoutDJ = async () => {
@@ -2334,6 +2389,30 @@ export const FirebaseProvider = ({ children }) => {
     await set(plansRef, newPlansConfig);
   };
 
+  const refreshAdminData = async () => {
+    if (!isAdminMaster) return;
+    try {
+      const secret = import.meta.env.VITE_ADMIN_MASTER_SECRET;
+      const res = await fetch(`${API_BASE}/api/admin/getUsersData`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ secret })
+      });
+      const data = await res.json();
+      if (data.success && data.users) {
+        setAllUsersData(data.users);
+        if (isMockMode) {
+          const currentDb = JSON.parse(localStorage.getItem('mock_rtdb_v2') || '{}');
+          currentDb.users = data.users;
+          localStorage.setItem('mock_rtdb_v2', JSON.stringify(currentDb));
+          if (syncChannel) syncChannel.postMessage({ type: 'DB_UPDATE' });
+        }
+      }
+    } catch (e) {
+      console.error('Error refreshing admin users data:', e);
+    }
+  };
+
   // --- CHAT DE SOPORTE INTERNO (USUARIOS PRO / ADMIN MASTER) ---
 
   const sendSupportMessage = async (userUid, text) => {
@@ -2390,6 +2469,25 @@ export const FirebaseProvider = ({ children }) => {
           const msg = `💬 Soporte PRO: El DJ "${senderName}" escribió:\n"${text}"`;
           const url = `https://api.callmebot.com/whatsapp.php?phone=${adminContact.whatsapp.trim()}&text=${encodeURIComponent(msg)}&apikey=${adminContact.callmebotApiKey.trim()}`;
           fetch(url).catch(e => console.error("Error en CallMeBot mock:", e));
+        }
+
+        // Enviar notificación SMS a través de la API local
+        try {
+          const secret = import.meta.env.VITE_ADMIN_MASTER_SECRET;
+          await fetch(`${API_BASE}/api/admin/sendNotificationSMS`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              secret,
+              type: 'support_chat',
+              payload: {
+                senderName,
+                text
+              }
+            })
+          });
+        } catch (e) {
+          console.error("Error sending mock support SMS:", e);
         }
       }
 
@@ -2556,6 +2654,7 @@ export const FirebaseProvider = ({ children }) => {
     <FirebaseContext.Provider value={{
       plansConfig,
       updatePlansConfig,
+      refreshAdminData,
       sendSupportMessage,
       markSupportChatAsRead,
       subscribeToSupportChat,

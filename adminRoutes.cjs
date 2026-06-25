@@ -531,7 +531,10 @@ router.post('/savePaymentConfig', async (req, res) => {
     await publicDb.set({
       paypalClientId: config.paypalClientId || '',
       mercadopagoPublicKey: config.mercadopagoPublicKey || '',
-      adminClabe: config.adminClabe || ''
+      adminClabe: config.adminClabe || '',
+      paypalEnabled: config.paypalEnabled !== false,
+      mercadopagoEnabled: config.mercadopagoEnabled !== false,
+      transferEnabled: config.transferEnabled !== false
     });
 
     return res.json({ success: true });
@@ -540,6 +543,57 @@ router.post('/savePaymentConfig', async (req, res) => {
     return res.status(500).json({ success: false, error: e.message });
   }
 });
+
+// Endpoint para obtener la lista de usuarios completa para el Admin Master
+router.post('/getUsersData', async (req, res) => {
+  const { secret } = req.body;
+  const adminSecret = process.env.VITE_ADMIN_MASTER_SECRET;
+  if (secret !== adminSecret) {
+    return res.status(403).json({ success: false, error: 'Invalid admin secret' });
+  }
+  try {
+    const db = getDbRef('users');
+    const snapshot = await db.once('value');
+    return res.json({ success: true, users: snapshot.val() || {} });
+  } catch (err) {
+    console.error('Error in getUsersData:', err);
+    return res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// Endpoint auxiliar para enviar notificaciones SMS (especialmente en desarrollo/modo local)
+router.post('/sendNotificationSMS', async (req, res) => {
+  const { secret, type, payload } = req.body;
+  const adminSecret = process.env.VITE_ADMIN_MASTER_SECRET;
+  // Permitir localhost sin contraseña para simplicidad de desarrollo mock
+  if (secret !== adminSecret && req.hostname !== 'localhost' && req.hostname !== '127.0.0.1') {
+    return res.status(403).json({ success: false, error: 'Invalid admin secret' });
+  }
+  try {
+    const { sendAdminSMS } = require('./smsService.cjs');
+    let message = '';
+    if (type === 'pending_subscription') {
+      const planName = (payload.selectedPlan || 'premium').toUpperCase();
+      const djName = payload.displayName || payload.email || 'DJ';
+      message = `🔔 DJVIP: Nueva suscripción pendiente de validación. DJ: ${djName} (Plan: ${planName}). Comprobante: ${payload.transactionId || '—'}`;
+    } else if (type === 'support_chat') {
+      message = `💬 Soporte PRO: El DJ "${payload.senderName || 'DJ'}" escribió:\n"${payload.text}"`;
+    } else if (type === 'suggestion') {
+      message = `💡 DJVIP: Nueva sugerencia de "${payload.djName || payload.email || 'DJ'}":\n"${payload.text}"`;
+    } else {
+      message = payload.message || '';
+    }
+
+    if (message) {
+      await sendAdminSMS(message);
+    }
+    return res.json({ success: true });
+  } catch (err) {
+    console.error('Error sending SMS notification:', err);
+    return res.status(500).json({ success: false, error: err.message });
+  }
+});
+
 
 router.post('/getPaymentConfig', async (req, res) => {
   const { secret } = req.body;
@@ -753,4 +807,55 @@ router.post('/rejectSubscription', async (req, res) => {
   }
 });
 
+let serverStartTime = Date.now();
+
+function setupSmsListeners() {
+  if (!isFirebaseInitialized) {
+    console.log('⚠️ SMS Listeners skipped: Firebase Admin SDK not initialized.');
+    return;
+  }
+  console.log('📡 Configurando SMS Listeners en Firebase Realtime Database...');
+  
+  // 1. Nuevas suscripciones pendientes
+  admin.database().ref('pending_subscriptions').on('child_added', (snapshot) => {
+    const sub = snapshot.val();
+    if (sub && sub.submittedAt && sub.submittedAt > serverStartTime) {
+      const planName = (sub.selectedPlan || 'premium').toUpperCase();
+      const djName = sub.displayName || sub.email || 'DJ';
+      const { sendAdminSMS } = require('./smsService.cjs');
+      const msg = `🔔 DJVIP: Nueva suscripción pendiente de validación. DJ: ${djName} (Plan: ${planName}). Comprobante: ${sub.transactionId || '—'}`;
+      sendAdminSMS(msg).catch(console.error);
+    }
+  });
+  
+  // 2. Chat de Soporte PRO (mensajes de usuarios)
+  admin.database().ref('support_chats').on('child_added', (chatSnap) => {
+    const userUid = chatSnap.key;
+    chatSnap.ref.child('messages').on('child_added', (msgSnap) => {
+      const msg = msgSnap.val();
+      if (msg && msg.senderId !== 'uid-admin-master' && msg.timestamp && msg.timestamp > serverStartTime) {
+        const { sendAdminSMS } = require('./smsService.cjs');
+        const body = `💬 Soporte PRO: El DJ "${msg.senderName || 'DJ'}" escribió: "${msg.text}"`;
+        sendAdminSMS(body).catch(console.error);
+      }
+    });
+  });
+  
+  // 3. Sugerencias / Retroalimentación
+  admin.database().ref('suggestions').on('child_added', (userSnap) => {
+    userSnap.ref.on('child_added', (sugSnap) => {
+      const sug = sugSnap.val();
+      if (sug && sug.submittedAt && sug.submittedAt > serverStartTime) {
+        const { sendAdminSMS } = require('./smsService.cjs');
+        const body = `💡 DJVIP: Nueva sugerencia de "${sug.djName || sug.email || 'DJ'}": "${sug.text}"`;
+        sendAdminSMS(body).catch(console.error);
+      }
+    });
+  });
+}
+
+// Iniciar listeners
+setupSmsListeners();
+
 module.exports = router;
+

@@ -185,74 +185,102 @@ export default function PaymentView() {
           <div>
             <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', fontWeight: '600', marginBottom: '10px' }}>1. Elige un método y realiza el Pago:</p>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
-                <button
-                  type="button"
-                  onClick={() => handleCheckoutMock('paypal')}
-                  style={{
-                    background: gateway === 'paypal' ? 'rgba(124, 58, 237, 0.15)' : 'rgba(255, 255, 255, 0.02)',
-                    border: gateway === 'paypal' ? '2px solid var(--primary-color)' : '1px solid var(--surface-border)',
-                    color: '#fff',
-                    padding: '16px',
-                    borderRadius: 'var(--radius-md)',
-                    cursor: 'pointer',
-                    fontWeight: 'bold',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    alignItems: 'center',
-                    gap: '8px',
-                    transition: 'all 0.2s'
-                  }}
-                >
-                  <div style={{ color: '#003087', fontSize: '1.1rem', fontWeight: '800' }}>PayPal</div>
-                  <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>Paga en MXN</span>
-                </button>
+              {(() => {
+                const showPaypal = publicPaymentInfo?.paypalEnabled !== false;
+                const showMercadoPago = publicPaymentInfo?.mercadopagoEnabled !== false;
+                const showTransfer = publicPaymentInfo?.transferEnabled !== false;
 
-                <button
-                  type="button"
-                  onClick={() => handleCheckoutMock('mercadopago')}
-                  style={{
-                    background: gateway === 'mercadopago' ? 'rgba(124, 58, 237, 0.15)' : 'rgba(255, 255, 255, 0.02)',
-                    border: gateway === 'mercadopago' ? '2px solid var(--primary-color)' : '1px solid var(--surface-border)',
-                    color: '#fff',
-                    padding: '16px',
-                    borderRadius: 'var(--radius-md)',
-                    cursor: 'pointer',
-                    fontWeight: 'bold',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    alignItems: 'center',
-                    gap: '8px',
-                    transition: 'all 0.2s'
-                  }}
-                >
-                  <div style={{ color: '#009ee3', fontSize: '1.1rem', fontWeight: '800' }}>MercadoPago</div>
-                  <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>Pesos locales / Tarjeta</span>
-                </button>
-              </div>
+                if (!showPaypal && !showMercadoPago && !showTransfer) {
+                  return (
+                    <div style={{ textAlign: 'center', color: 'var(--danger-color)', fontSize: '0.85rem', padding: '12px', background: 'rgba(239, 68, 68, 0.05)', borderRadius: '6px', border: '1px solid rgba(239, 68, 68, 0.2)' }}>
+                      No hay métodos de pago habilitados en este momento. Por favor contacte al administrador.
+                    </div>
+                  );
+                }
 
-              <button
-                type="button"
-                onClick={() => handleCheckoutMock('transfer')}
-                style={{
-                  background: gateway === 'transfer' ? 'rgba(124, 58, 237, 0.15)' : 'rgba(255, 255, 255, 0.02)',
-                  border: gateway === 'transfer' ? '2px solid var(--primary-color)' : '1px solid var(--surface-border)',
-                  color: '#fff',
-                  padding: '16px',
-                  borderRadius: 'var(--radius-md)',
-                  cursor: 'pointer',
-                  fontWeight: 'bold',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  alignItems: 'center',
-                  gap: '8px',
-                  transition: 'all 0.2s',
-                  width: '100%'
-                }}
-              >
-                <div style={{ color: 'var(--secondary-color)', fontSize: '1.1rem', fontWeight: '800' }}>Transferencia Bancaria</div>
-                <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>SPEI / Depósito directo</span>
-              </button>
+                return (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                    {(showPaypal || showMercadoPago) && (
+                      <div style={{ display: 'grid', gridTemplateColumns: (showPaypal && showMercadoPago) ? '1fr 1fr' : '1fr', gap: '12px' }}>
+                        {showPaypal && (
+                          <button
+                            type="button"
+                            onClick={() => handleCheckoutMock('paypal')}
+                            style={{
+                              background: gateway === 'paypal' ? 'rgba(124, 58, 237, 0.15)' : 'rgba(255, 255, 255, 0.02)',
+                              border: gateway === 'paypal' ? '2px solid var(--primary-color)' : '1px solid var(--surface-border)',
+                              color: '#fff',
+                              padding: '16px',
+                              borderRadius: 'var(--radius-md)',
+                              cursor: 'pointer',
+                              fontWeight: 'bold',
+                              display: 'flex',
+                              flexDirection: 'column',
+                              alignItems: 'center',
+                              gap: '8px',
+                              transition: 'all 0.2s',
+                              width: '100%'
+                            }}
+                          >
+                            <div style={{ color: '#003087', fontSize: '1.1rem', fontWeight: '800' }}>PayPal</div>
+                            <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>Paga en MXN</span>
+                          </button>
+                        )}
+
+                        {showMercadoPago && (
+                          <button
+                            type="button"
+                            onClick={() => handleCheckoutMock('mercadopago')}
+                            style={{
+                              background: gateway === 'mercadopago' ? 'rgba(124, 58, 237, 0.15)' : 'rgba(255, 255, 255, 0.02)',
+                              border: gateway === 'mercadopago' ? '2px solid var(--primary-color)' : '1px solid var(--surface-border)',
+                              color: '#fff',
+                              padding: '16px',
+                              borderRadius: 'var(--radius-md)',
+                              cursor: 'pointer',
+                              fontWeight: 'bold',
+                              display: 'flex',
+                              flexDirection: 'column',
+                              alignItems: 'center',
+                              gap: '8px',
+                              transition: 'all 0.2s',
+                              width: '100%'
+                            }}
+                          >
+                            <div style={{ color: '#009ee3', fontSize: '1.1rem', fontWeight: '800' }}>MercadoPago</div>
+                            <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>Pesos locales / Tarjeta</span>
+                          </button>
+                        )}
+                      </div>
+                    )}
+
+                    {showTransfer && (
+                      <button
+                        type="button"
+                        onClick={() => handleCheckoutMock('transfer')}
+                        style={{
+                          background: gateway === 'transfer' ? 'rgba(124, 58, 237, 0.15)' : 'rgba(255, 255, 255, 0.02)',
+                          border: gateway === 'transfer' ? '2px solid var(--primary-color)' : '1px solid var(--surface-border)',
+                          color: '#fff',
+                          padding: '16px',
+                          borderRadius: 'var(--radius-md)',
+                          cursor: 'pointer',
+                          fontWeight: 'bold',
+                          display: 'flex',
+                          flexDirection: 'column',
+                          alignItems: 'center',
+                          gap: '8px',
+                          transition: 'all 0.2s',
+                          width: '100%'
+                        }}
+                      >
+                        <div style={{ color: 'var(--secondary-color)', fontSize: '1.1rem', fontWeight: '800' }}>Transferencia Bancaria</div>
+                        <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>SPEI / Depósito directo</span>
+                      </button>
+                    )}
+                  </div>
+                );
+              })()}
             </div>
           </div>
 
