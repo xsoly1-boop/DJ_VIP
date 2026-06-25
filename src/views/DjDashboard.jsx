@@ -5625,28 +5625,62 @@ export default function DjDashboard() {
               .filter(Boolean)
               .filter(u => u.uid !== 'uid-admin-master' && u.profile?.email !== 'dj@admin.com');
 
-              // Usuarios con plan de pago activo
-              const activePayingUsers = usersArr.filter(u => {
-                const plan = u?.profile?.activePlan;
-                return plan && PAID_PLANS.includes(plan);
-              });
-
-              // Total recaudado (suma de precios de planes activos)
+              // Calcular usuarios con plan de pago o bonus activos
+              const activePayingUsers = [];
               let totalRevenue = 0;
               const byPlan = {};
               const activations = [];
 
-              activePayingUsers.forEach(u => {
+              usersArr.forEach(u => {
                 const profile = u?.profile;
                 if (!profile) return;
+
+                // 1. Plan activo base (si es de pago)
                 const plan = profile.activePlan;
-                const price = parseFloat(plansConfig?.[plan]?.price || 0);
-                const currency = plansConfig?.[plan]?.currency || 'MXN';
-                totalRevenue += price;
-                if (!byPlan[plan]) byPlan[plan] = { count: 0, subtotal: 0, price, currency, name: plansConfig?.[plan]?.name || plan };
-                byPlan[plan].count++;
-                byPlan[plan].subtotal += price;
-                activations.push({ ...profile, plan, price });
+                if (plan && plan !== 'free' && plan !== 'bonus' && PAID_PLANS.includes(plan)) {
+                  const price = parseFloat(plansConfig?.[plan]?.price || 0);
+                  const currency = plansConfig?.[plan]?.currency || 'MXN';
+                  totalRevenue += price;
+                  
+                  if (!byPlan[plan]) {
+                    byPlan[plan] = { count: 0, subtotal: 0, price, currency, name: plansConfig?.[plan]?.name || plan };
+                  }
+                  byPlan[plan].count++;
+                  byPlan[plan].subtotal += price;
+                  activations.push({ ...profile, plan, price });
+                  
+                  if (!activePayingUsers.some(au => au.uid === u.uid)) {
+                    activePayingUsers.push(u);
+                  }
+                }
+
+                // 2. Add-on de Bonus activo
+                const extraRequests = profile.extraRequests ? parseInt(profile.extraRequests, 10) : 0;
+                const extraRequestsExpiresAt = profile.extraRequestsExpiresAt ? parseInt(profile.extraRequestsExpiresAt, 10) : 0;
+                const isBonusActive = extraRequests > 0 && extraRequestsExpiresAt >= Date.now();
+                if (isBonusActive) {
+                  const bonusPrice = parseFloat(plansConfig?.bonus?.price || 50);
+                  const bonusCurrency = plansConfig?.bonus?.currency || 'MXN';
+                  totalRevenue += bonusPrice;
+                  
+                  if (!byPlan.bonus) {
+                    byPlan.bonus = { count: 0, subtotal: 0, price: bonusPrice, currency: bonusCurrency, name: plansConfig?.bonus?.name || 'Plan Bonus (Extra)' };
+                  }
+                  byPlan.bonus.count++;
+                  byPlan.bonus.subtotal += bonusPrice;
+                  
+                  activations.push({
+                    ...profile,
+                    plan: 'bonus',
+                    price: bonusPrice,
+                    activatedAt: extraRequestsExpiresAt - 30 * 24 * 60 * 60 * 1000,
+                    expiresAt: extraRequestsExpiresAt
+                  });
+                  
+                  if (!activePayingUsers.some(au => au.uid === u.uid)) {
+                    activePayingUsers.push(u);
+                  }
+                }
               });
 
               // Ordenar activaciones más recientes primero

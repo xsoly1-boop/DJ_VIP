@@ -857,6 +857,8 @@ router.post('/resetRevenue', async (req, res) => {
           activePlan: 'free',
           selectedPlan: 'free',
           expiresAt: 0,
+          extraRequests: 0,
+          extraRequestsExpiresAt: 0,
           gateway: null,
           transactionId: null,
           submittedAt: null,
