@@ -1069,10 +1069,10 @@ let serverStartTime = Date.now();
 
 function setupSmsListeners() {
   if (!isFirebaseInitialized) {
-    console.log('⚠️ SMS Listeners skipped: Firebase Admin SDK not initialized.');
+    console.log('⚠️ SMS/FCM Listeners skipped: Firebase Admin SDK not initialized.');
     return;
   }
-  console.log('📡 Configurando SMS Listeners en Firebase Realtime Database...');
+  console.log('📡 Configurando SMS y FCM Listeners en Firebase Realtime Database...');
   
   // 1. Nuevas suscripciones pendientes
   admin.database().ref('pending_subscriptions').on('child_added', async (snapshot) => {
@@ -1080,6 +1080,7 @@ function setupSmsListeners() {
     if (sub && sub.submittedAt && sub.submittedAt > serverStartTime) {
       const planName = (sub.selectedPlan || 'premium').toUpperCase();
       const djName = sub.displayName || sub.email || 'DJ';
+      const djUid = sub.uid || snapshot.key;
       
       let twilioConfig = {};
       try {
@@ -1091,9 +1092,15 @@ function setupSmsListeners() {
         console.error("Error reading twilio config in pending_subscriptions listener:", e);
       }
 
+      // SMS Twilio
       const { sendAdminSMS } = require('./smsService.cjs');
       const msg = `🔔 DJVIP: Nueva suscripción pendiente de validación. DJ: ${djName} (Plan: ${planName}). Comprobante: ${sub.transactionId || '—'}`;
       sendAdminSMS(msg, twilioConfig).catch(console.error);
+
+      // 🔔 FCM Push a todos los Administradores
+      console.log(`[DB Listener] ✅ Suscripción pendiente detectada en DB → DJ: ${djName}`);
+      fcmSender.sendSubscriptionPendingNotification(djName, planName, djUid)
+        .catch(err => console.error('[FCM DB Listener] Error en notif subscription_pending:', err.message));
     }
   });
   
@@ -1113,9 +1120,15 @@ function setupSmsListeners() {
           console.error("Error reading twilio config in support_chats listener:", e);
         }
 
+        // SMS Twilio
         const { sendAdminSMS } = require('./smsService.cjs');
         const body = `💬 Soporte PRO: El DJ "${msg.senderName || 'DJ'}" escribió: "${msg.text}"`;
         sendAdminSMS(body, twilioConfig).catch(console.error);
+
+        // 🔔 FCM Push a todos los Administradores
+        console.log(`[DB Listener] 💬 Soporte PRO detectado en DB → De: ${msg.senderName || 'DJ'}`);
+        fcmSender.sendSupportMessageNotification(msg.senderName || 'Un DJ', msg.text, userUid)
+          .catch(err => console.error('[FCM DB Listener] Error en notif support_message:', err.message));
       }
     });
   });
@@ -1142,10 +1155,12 @@ function setupSmsListeners() {
     });
   });
 
-  // 4. Nuevo usuario registrado
+  // 4. Nuevo usuario registrado y 5. Peticiones de canciones del público
   const notifiedNewUsers = new Set();
   admin.database().ref('users').on('child_added', (userSnap) => {
     const uid = userSnap.key;
+
+    // 4. Perfil del nuevo usuario (nuevo registro)
     userSnap.ref.child('profile').on('value', async (profileSnap) => {
       const profile = profileSnap.val();
       if (profile && profile.createdAt && profile.createdAt > serverStartTime && profile.email !== 'dj@admin.com' && !notifiedNewUsers.has(uid)) {
@@ -1161,10 +1176,32 @@ function setupSmsListeners() {
           console.error("Error reading twilio config in new user listener:", e);
         }
 
+        // SMS Twilio
         const { sendAdminSMS } = require('./smsService.cjs');
         const body = `🎧 DJVIP: Nuevo DJ registrado: "${profile.displayName || 'DJ'}" (${profile.email})`;
         sendAdminSMS(body, twilioConfig).catch(console.error);
+
+        // 🔔 FCM Push a todos los Administradores
+        console.log(`[DB Listener] 👤 Nuevo DJ registrado detectado en DB → Nombre: ${profile.displayName || 'DJ'}`);
+        fcmSender.sendNewUserNotification(profile.displayName || profile.email, profile.email, uid)
+          .catch(err => console.error('[FCM DB Listener] Error en notif new_user_registered:', err.message));
       }
+    });
+
+    // 5. Peticiones de canciones para este DJ en todos sus eventos activos
+    userSnap.ref.child('events').on('child_added', (eventSnap) => {
+      eventSnap.ref.child('requests').on('child_added', async (requestSnap) => {
+        const reqData = requestSnap.val();
+        if (reqData && reqData.timestamp && reqData.timestamp > serverStartTime) {
+          const songTitle = reqData.songName || reqData.title || 'Una canción';
+          const requestedBy = reqData.userName || reqData.requestedBy || 'El público';
+          
+          // 🔔 FCM Push directamente al DJ dueño del evento
+          console.log(`[DB Listener] 🎵 Petición de canción detectada en DB → DJ UID: ${uid} | "${songTitle}" por ${requestedBy}`);
+          fcmSender.sendSongRequestNotification(uid, songTitle, requestedBy)
+            .catch(err => console.error('[FCM DB Listener] Error en notif song_request:', err.message));
+        }
+      });
     });
   });
 
