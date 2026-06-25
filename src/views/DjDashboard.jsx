@@ -1255,9 +1255,9 @@ export default function DjDashboard() {
       return;
     }
 
-    // ── Verificación preventiva de cooldown 8h (Demo y Premium) ──────────────
+    // ── Verificación preventiva de cooldown 8h (Demo, Premium y Bonus) ───────
     const planActual = userProfile?.activePlan || userProfile?.selectedPlan || 'free';
-    if (['free', 'premium'].includes(planActual)) {
+    if (['free', 'premium', 'bonus'].includes(planActual)) {
       const COOLDOWN_MS = 8 * 60 * 60 * 1000;
       const latestCreatedAt = eventsList.reduce((max, ev) => {
         const ts = typeof ev.createdAt === 'number' ? ev.createdAt : 0;
@@ -1267,7 +1267,7 @@ export default function DjDashboard() {
         const remainingMs = COOLDOWN_MS - (Date.now() - latestCreatedAt);
         const remainingH = Math.floor(remainingMs / 3600000);
         const remainingM = Math.floor((remainingMs % 3600000) / 60000);
-        const planLabel = planActual === 'free' ? 'Demo' : 'Premium';
+        const planLabel = planActual === 'free' ? 'Demo' : (planActual === 'bonus' ? 'Bonus' : 'Premium');
         showToast(`⏳ Plan ${planLabel}: solo puedes crear un evento cada 8 horas. Tiempo restante: ${remainingH}h ${remainingM}min.`);
         return;
       }
@@ -1289,7 +1289,7 @@ export default function DjDashboard() {
       // Manejo específico del error de cooldown
       if (err?.message?.startsWith('COOLDOWN:')) {
         const tiempoRestante = err.message.replace('COOLDOWN:', '');
-        const planLabel = planActual === 'free' ? 'Demo' : 'Premium';
+        const planLabel = planActual === 'free' ? 'Demo' : (planActual === 'bonus' ? 'Bonus' : 'Premium');
         showToast(`⏳ Plan ${planLabel}: solo puedes crear un evento cada 8 horas. Tiempo restante: ${tiempoRestante}.`);
       } else {
         showToast(`❌ Error al crear evento: ${err.message || ''}`);
@@ -4062,10 +4062,10 @@ export default function DjDashboard() {
                       <input type="date" className="input-field" value={newEventDate} onChange={(e) => setNewEventDate(e.target.value)} />
                     </div>
                   </div>
-                  {/* Aviso de cooldown 8h para planes Demo y Premium */}
+                  {/* Aviso de cooldown 8h para planes Demo, Premium y Bonus */}
                   {(() => {
                     const planActual = userProfile?.activePlan || userProfile?.selectedPlan || 'free';
-                    if (!['free', 'premium'].includes(planActual)) return null;
+                    if (!['free', 'premium', 'bonus'].includes(planActual)) return null;
                     const COOLDOWN_MS = 8 * 60 * 60 * 1000;
                     const latestCreatedAt = eventsList.reduce((max, ev) => {
                       const ts = typeof ev.createdAt === 'number' ? ev.createdAt : 0;
@@ -4077,7 +4077,7 @@ export default function DjDashboard() {
                     const remainingMs = COOLDOWN_MS - elapsed;
                     const remainingH = Math.floor(remainingMs / 3600000);
                     const remainingM = Math.floor((remainingMs % 3600000) / 60000);
-                    const planLabel = planActual === 'free' ? 'Demo' : 'Premium';
+                    const planLabel = planActual === 'free' ? 'Demo' : (planActual === 'bonus' ? 'Bonus' : 'Premium');
                     return (
                       <div style={{
                         background: 'rgba(245, 158, 11, 0.1)',

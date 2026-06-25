@@ -1469,9 +1469,9 @@ export const FirebaseProvider = ({ children }) => {
   const createNewEvent = async (eventId, title, djName, date, eventType) => {
     if (!userBasePath) return;
 
-    // ── Restricción de cooldown 8 horas (planes free y premium) ──────────────
+    // ── Restricción de cooldown 8 horas (planes free, premium y bonus) ──────────────
     const currentPlan = userProfile?.activePlan || userProfile?.selectedPlan || 'free';
-    const COOLDOWN_PLANS = ['free', 'premium'];
+    const COOLDOWN_PLANS = ['free', 'premium', 'bonus'];
     const COOLDOWN_MS = 8 * 60 * 60 * 1000; // 8 horas en ms
 
     if (COOLDOWN_PLANS.includes(currentPlan)) {
@@ -1541,30 +1541,14 @@ export const FirebaseProvider = ({ children }) => {
   const deleteEvent = async (eventId) => {
     if (!userBasePath) return;
 
-    // ── Restricción de 8 horas para eliminar/restablecer (planes free y premium) ──
+    // ── Restricción estricta de eliminar/restablecer (planes free, premium y bonus) ──
     if (!isAdminMaster) {
       const planKey = userProfile?.activePlan || userProfile?.selectedPlan || 'free';
-      const restrictedPlans = ['free', 'premium'];
+      const restrictedPlans = ['free', 'premium', 'bonus'];
       if (restrictedPlans.includes(planKey)) {
-        let createdAt = 0;
-        const eventIndexRef = ref(database, `${userBasePath}/events_index/${eventId}`);
-        const eventIndexSnap = await get(eventIndexRef);
-        if (eventIndexSnap.exists()) {
-          createdAt = eventIndexSnap.val()?.createdAt || 0;
-        }
-
-        if (createdAt > 0) {
-          const elapsed = Date.now() - createdAt;
-          const COOLDOWN_MS = 8 * 60 * 60 * 1000;
-          if (elapsed < COOLDOWN_MS) {
-            const remainingMs = COOLDOWN_MS - elapsed;
-            const remainingH = Math.floor(remainingMs / 3600000);
-            const remainingM = Math.floor((remainingMs % 3600000) / 60000);
-            throw new Error(
-              `No es posible eliminar o restablecer el evento dentro de las primeras 8 horas de haberlo iniciado. Tiempo restante: ${remainingH}h ${remainingM}min.`
-            );
-          }
-        }
+        throw new Error(
+          "Función no disponible: Los usuarios de planes Demo y Premium tienen estrictamente prohibido eliminar o restablecer eventos."
+        );
       }
     }
     // ─────────────────────────────────────────────────────────────────────────────
@@ -1679,6 +1663,16 @@ export const FirebaseProvider = ({ children }) => {
   const updateEventMetadata = async (eventId, title, djName, date, eventType) => {
     if (!userBasePath) return;
 
+    if (!isAdminMaster) {
+      const planKey = userProfile?.activePlan || userProfile?.selectedPlan || 'free';
+      const restrictedPlans = ['free', 'premium', 'bonus'];
+      if (restrictedPlans.includes(planKey)) {
+        throw new Error(
+          "Función no disponible: Los usuarios de planes Demo y Premium tienen estrictamente prohibido modificar la información del evento."
+        );
+      }
+    }
+
     // Actualizar index
     const indexRef = ref(database, `${userBasePath}/events_index/${eventId}`);
     await update(indexRef, {
@@ -1714,71 +1708,11 @@ export const FirebaseProvider = ({ children }) => {
     if (isAdminMaster) return; // Administrador Master está exento
     
     const planKey = userProfile?.activePlan || userProfile?.selectedPlan || 'free';
-    const restrictedPlans = ['free', 'premium'];
-    if (!restrictedPlans.includes(planKey)) {
-      return;
-    }
-
-    let extraRequests = userProfile?.extraRequests !== undefined ? parseInt(userProfile.extraRequests, 10) : 0;
-    let extraRequestsExpiresAt = userProfile?.extraRequestsExpiresAt ? parseInt(userProfile.extraRequestsExpiresAt, 10) : 0;
-
-    // Fallback for old accounts
-    if (extraRequests === 0) {
-      if (planKey === 'free' && userProfile?.demoLimit !== undefined) {
-        const rawLimit = parseInt(userProfile.demoLimit, 10);
-        if (rawLimit > 35) {
-          extraRequests = rawLimit - 35;
-          extraRequestsExpiresAt = userProfile.demoLimitExpiresAt ? parseInt(userProfile.demoLimitExpiresAt, 10) : 0;
-        }
-      } else if (planKey === 'premium' && userProfile?.premiumLimit !== undefined) {
-        const rawLimit = parseInt(userProfile.premiumLimit, 10);
-        if (rawLimit > 80) {
-          extraRequests = rawLimit - 80;
-          extraRequestsExpiresAt = userProfile.premiumLimitExpiresAt ? parseInt(userProfile.premiumLimitExpiresAt, 10) : 0;
-        }
-      }
-    }
-
-    const isExtraValid = extraRequests > 0 && (!extraRequestsExpiresAt || Date.now() <= extraRequestsExpiresAt);
-    const activeExtra = isExtraValid ? extraRequests : 0;
-
-    let maxRequests = 35;
-    if (planKey === 'free') {
-      maxRequests = 35 + activeExtra;
-    } else if (planKey === 'premium') {
-      maxRequests = 80 + activeExtra;
-    }
-
-    const requestsRefToCheck = ref(database, `${userBasePath}/events/${targetEventId}/requests`);
-    const requestsSnap = await get(requestsRefToCheck);
-    const activeCount = requestsSnap.exists() ? Object.keys(requestsSnap.val()).length : 0;
-
-    const playedRefToCheck = ref(database, `${userBasePath}/events/${targetEventId}/played_requests`);
-    const playedSnap = await get(playedRefToCheck);
-    const playedCount = playedSnap.exists() ? Object.keys(playedSnap.val()).length : 0;
-
-    const totalRequests = activeCount + playedCount;
-
-    if (totalRequests >= maxRequests) {
-      let createdAt = 0;
-      const eventIndexRef = ref(database, `${userBasePath}/events_index/${targetEventId}`);
-      const eventIndexSnap = await get(eventIndexRef);
-      if (eventIndexSnap.exists()) {
-        createdAt = eventIndexSnap.val()?.createdAt || 0;
-      }
-      
-      if (createdAt > 0) {
-        const elapsed = Date.now() - createdAt;
-        const COOLDOWN_MS = 8 * 60 * 60 * 1000;
-        if (elapsed < COOLDOWN_MS) {
-          const remainingMs = COOLDOWN_MS - elapsed;
-          const remainingH = Math.floor(remainingMs / 3600000);
-          const remainingM = Math.floor((remainingMs % 3600000) / 60000);
-          throw new Error(
-            `No es posible limpiar la lista de peticiones tras alcanzar el límite de tu plan (${maxRequests} peticiones) dentro de las primeras 8 horas del evento. Tiempo restante: ${remainingH}h ${remainingM}min.`
-          );
-        }
-      }
+    const restrictedPlans = ['free', 'premium', 'bonus'];
+    if (restrictedPlans.includes(planKey)) {
+      throw new Error(
+        "Función no disponible: Los usuarios de planes Demo y Premium tienen estrictamente prohibido limpiar la cola de peticiones, sin importar si cuentan con el plan bonus."
+      );
     }
   };
 
