@@ -146,6 +146,10 @@ async function sendToTokens(tokens, payload) {
     try {
       const message = {
         token,
+        notification: {
+          title: payload.data?.title || 'DJ Panel Pro',
+          body: payload.data?.body || ''
+        },
         data: {
           ...payload.data,
           // Asegurar que todos los valores son strings (requerimiento FCM)
@@ -157,7 +161,8 @@ async function sendToTokens(tokens, payload) {
           priority: 'high',
           notification: {
             sound: 'default',
-            channelId: payload.data?.channel_id || 'djvip_default'
+            channelId: payload.data?.channel_id || 'djvip_default',
+            icon: 'ic_launcher'
           }
         }
       };
