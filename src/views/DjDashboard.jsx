@@ -1684,6 +1684,43 @@ export default function DjDashboard() {
         </div>
       )}
 
+      {/* Banner de suscripción pendiente de validación */}
+      {(userProfile?.subscriptionStatus === 'pending_validation' || userProfile?.subscriptionStatus === 'pending_payment') && (
+        <div style={{
+          marginBottom: '16px', padding: '12px 20px',
+          background: 'linear-gradient(135deg, rgba(245, 158, 11, 0.12) 0%, rgba(245, 158, 11, 0.04) 100%)',
+          border: '1px solid rgba(245, 158, 11, 0.35)',
+          borderRadius: 'var(--radius-md)',
+          display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px', flexWrap: 'wrap'
+        }}>
+          <span style={{ color: '#f59e0b', fontSize: '0.88rem', fontWeight: '600', display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <Sparkles size={16} />
+            Mejora en proceso: Tu pago para el plan <strong>{(userProfile?.selectedPlan || '').toUpperCase()}</strong> está pendiente de validación. Disfrutas de tu plan actual entre tanto.
+          </span>
+          <button
+            onClick={() => {
+              sessionStorage.removeItem('bypass_payment_lock');
+              window.location.reload();
+            }}
+            className="btn"
+            style={{
+              padding: '6px 14px',
+              fontSize: '0.8rem',
+              fontWeight: 'bold',
+              background: '#f59e0b',
+              color: '#1a1a1a',
+              border: 'none',
+              borderRadius: '6px',
+              cursor: 'pointer',
+              boxShadow: '0 2px 8px rgba(245,158,11,0.2)',
+              transition: 'all 0.2s'
+            }}
+          >
+            Ver Estado de Pago
+          </button>
+        </div>
+      )}
+
       {/* Banner de impersonación (admin viendo un DJ) */}
       {impersonatingUid && (
         <div style={{

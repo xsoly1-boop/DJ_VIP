@@ -9,6 +9,18 @@ import PaymentView from './views/PaymentView';
 
 function AppContent() {
   const { user, userProfile, authLoading, changeEvent, isAdminMaster } = useFirebase();
+  const [bypassPaymentLock, setBypassPaymentLock] = React.useState(() => {
+    return sessionStorage.getItem('bypass_payment_lock') === 'true';
+  });
+
+  // Escuchar evento personalizado para alternar el bypass del bloqueo de pago
+  React.useEffect(() => {
+    const handleBypass = () => {
+      setBypassPaymentLock(sessionStorage.getItem('bypass_payment_lock') === 'true');
+    };
+    window.addEventListener('bypass_payment_lock', handleBypass);
+    return () => window.removeEventListener('bypass_payment_lock', handleBypass);
+  }, []);
 
   // Enrutar basado en parámetros de búsqueda de la URL (?event=nombre-evento)
   const queryParams = new URLSearchParams(window.location.search);
@@ -53,12 +65,15 @@ function AppContent() {
     }
 
     const status = userProfile?.subscriptionStatus || 'pending_plan';
+    const isBypassed = bypassPaymentLock || sessionStorage.getItem('bypass_payment_lock') === 'true';
     
-    if (status === 'pending_plan') {
-      return <PlanSelection />;
-    }
-    if (status === 'pending_payment' || status === 'pending_validation') {
-      return <PaymentView />;
+    if (!isBypassed) {
+      if (status === 'pending_plan') {
+        return <PlanSelection />;
+      }
+      if (status === 'pending_payment' || status === 'pending_validation') {
+        return <PaymentView />;
+      }
     }
 
     return <DjDashboard />;

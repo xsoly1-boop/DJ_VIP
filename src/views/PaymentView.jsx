@@ -133,6 +133,23 @@ export default function PaymentView() {
             <p style={{ margin: '0 0 8px 0', color: 'var(--text-secondary)' }}><strong>Método:</strong> {userProfile?.paymentDetails?.gateway || gateway}</p>
             <p style={{ margin: '0', color: 'var(--text-secondary)' }}><strong>ID Transacción:</strong> {userProfile?.paymentDetails?.transactionId || transactionId}</p>
           </div>
+          <button 
+            onClick={() => {
+              sessionStorage.setItem('bypass_payment_lock', 'true');
+              window.dispatchEvent(new Event('bypass_payment_lock'));
+            }} 
+            className="btn btn-primary" 
+            style={{ 
+              width: '100%', 
+              padding: '12px', 
+              marginBottom: '10px',
+              background: 'linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%)',
+              border: 'none',
+              fontWeight: 'bold'
+            }}
+          >
+            Regresar al DJ Panel (Usar plan actual)
+          </button>
           <button onClick={logoutDJ} className="btn btn-secondary" style={{ width: '100%', padding: '12px' }}>
             Cerrar Sesión
           </button>
@@ -306,7 +323,17 @@ export default function PaymentView() {
           )}
         </div>
 
-        <div style={{ marginTop: '30px', borderTop: '1px solid rgba(255, 255, 255, 0.08)', paddingTop: '20px', textAlign: 'center' }}>
+        <div style={{ marginTop: '30px', borderTop: '1px solid rgba(255, 255, 255, 0.08)', paddingTop: '20px', display: 'flex', gap: '15px', justifyContent: 'center', alignItems: 'center', flexWrap: 'wrap' }}>
+          <button 
+            onClick={() => {
+              sessionStorage.setItem('bypass_payment_lock', 'true');
+              window.dispatchEvent(new Event('bypass_payment_lock'));
+            }} 
+            className="btn btn-primary" 
+            style={{ padding: '8px 16px', display: 'inline-flex', alignItems: 'center', gap: '6px', fontSize: '0.85rem' }}
+          >
+            Regresar al DJ Panel
+          </button>
           <button onClick={logoutDJ} className="btn btn-secondary" style={{ padding: '8px 16px', display: 'inline-flex', alignItems: 'center', gap: '6px', fontSize: '0.85rem' }}>
             <LogOut size={14} /> Cerrar Sesión
           </button>
