@@ -25,6 +25,14 @@ export default function PlanSelection() {
           return false;
         }
       }
+      if (key === 'free') {
+        // Ocultar si ya expiró el plan Demo
+        const isDemoExpired = activePlan === 'free_expired' ||
+          (Date.now() - (userProfile?.createdAt || 0) >= 6 * 30 * 24 * 60 * 60 * 1000);
+        if (isDemoExpired) {
+          return false;
+        }
+      }
       return true;
     })
     .map((key) => {

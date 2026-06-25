@@ -46,11 +46,11 @@ const DEFAULT_PLANS_CONFIG = {
   free: {
     name: "Plan Demo",
     price: "0",
-    billing: "Permanente",
+    billing: "6 meses",
     currency: "MXN",
     description: "La puerta de entrada al control de tus eventos. Prueba la potencia de DJVIP y experimenta la interacción en tiempo real con tu público de forma 100% gratuita.",
     maxRequests: 35,
-    duration: 0,
+    duration: 6,
     durationUnit: "meses",
     benefits: [
       "Acceso a la plataforma interactiva",
@@ -59,6 +59,7 @@ const DEFAULT_PLANS_CONFIG = {
       "Cola de peticiones en tiempo real para visualizar solicitudes"
     ],
     restrictions: [
+      "Vigencia del plan limitada a 6 meses",
       "Límite estricto de 35 peticiones por evento",
       "Sin personalización visual (Logotipo y marca de DJVIP obligatorios)",
       "Bloqueo de limpieza y reinicio de eventos por 8 horas"
@@ -538,21 +539,59 @@ export const FirebaseProvider = ({ children }) => {
           }
         }
 
-        // Retrofit para limpiar expiración del plan Demo si está configurada (el plan Demo es permanente)
-        if (!isCurrentAdminMaster && data.activePlan === 'free' && data.expiresAt && data.expiresAt > 0) {
-          update(profileRef, { expiresAt: 0 });
-          data.expiresAt = 0;
+        // Retrofit: Si el plan es free y expiresAt no está definido o es 0, establecerlo a 6 meses desde createdAt
+        if (!isCurrentAdminMaster && data.activePlan === 'free' && (!data.expiresAt || data.expiresAt === 0)) {
+          const calculatedExpiresAt = (data.createdAt || Date.now()) + 6 * 30 * 24 * 60 * 60 * 1000;
+          update(profileRef, { expiresAt: calculatedExpiresAt });
+          data.expiresAt = calculatedExpiresAt;
         }
 
-        // --- VERIFICACIÓN DE EXPIRACIÓN AUTOMÁTICA ---
-        if (!isCurrentAdminMaster && data.activePlan && data.activePlan !== 'free' && data.expiresAt && data.expiresAt > 0 && Date.now() > data.expiresAt) {
+        // --- VERIFICACIÓN DE EXPIRACIÓN AUTOMÁTICA DEL PLAN DEMO (FREE) ---
+        if (!isCurrentAdminMaster && data.activePlan === 'free' && data.expiresAt && data.expiresAt > 0 && Date.now() > data.expiresAt) {
+          const updatesObj = {
+            subscriptionStatus: 'pending_plan',
+            activePlan: 'free_expired',
+            expiresAt: 0
+          };
+          update(profileRef, updatesObj);
+          return;
+        }
 
-          const returnPlan = data.activePlan === 'pro_1d' ? (data.previousActivePlan || 'free') : 'free';
+        // --- VERIFICACIÓN DE EXPIRACIÓN AUTOMÁTICA DE PLANES DE PAGO ---
+        if (!isCurrentAdminMaster && data.activePlan && data.activePlan !== 'free' && data.activePlan !== 'free_expired' && data.expiresAt && data.expiresAt > 0 && Date.now() > data.expiresAt) {
+          const demoLimitTime = (data.createdAt || Date.now()) + 6 * 30 * 24 * 60 * 60 * 1000;
+          const remainingDemo = demoLimitTime - Date.now();
+          
+          let returnPlan = 'pending_plan';
+          let returnActivePlan = 'free_expired';
+          let returnExpiresAt = 0;
+          
+          if (data.activePlan === 'pro_1d') {
+            const previous = data.previousActivePlan || 'free';
+            if (previous === 'free') {
+              if (remainingDemo > 0) {
+                returnPlan = 'free';
+                returnActivePlan = 'free';
+                returnExpiresAt = demoLimitTime;
+              }
+            } else {
+              returnPlan = previous;
+              returnActivePlan = previous;
+              returnExpiresAt = 0;
+            }
+          } else {
+            if (remainingDemo > 0) {
+              returnPlan = 'free';
+              returnActivePlan = 'free';
+              returnExpiresAt = demoLimitTime;
+            }
+          }
+
           const updatesObj = {
             subscriptionStatus: returnPlan,
-            activePlan: returnPlan,
+            activePlan: returnActivePlan,
             activatedAt: Date.now(),
-            expiresAt: 0
+            expiresAt: returnExpiresAt
           };
           if (data.activePlan === 'pro_1d') {
             updatesObj.pro1dUsed = true;
@@ -574,7 +613,7 @@ export const FirebaseProvider = ({ children }) => {
           subscriptionStatus: isCurrentAdminMaster ? 'pro' : 'free',
           createdAt: Date.now(),
           activatedAt: Date.now(),
-          expiresAt: 0
+          expiresAt: isCurrentAdminMaster ? 0 : (Date.now() + 6 * 30 * 24 * 60 * 60 * 1000)
         };
         set(profileRef, defaultProfile);
         setUserProfile(defaultProfile);
@@ -949,7 +988,7 @@ export const FirebaseProvider = ({ children }) => {
       subscriptionStatus: 'free', // Comienza con plan Demo directamente
       createdAt: Date.now(),
       activatedAt: Date.now(),
-      expiresAt: 0
+      expiresAt: Date.now() + 6 * 30 * 24 * 60 * 60 * 1000
     };
 
     // 2. Guardar en la base de datos

@@ -142,11 +142,11 @@ const migratePlansConfig = async () => {
         free: {
           name: "Plan Demo",
           price: "0",
-          billing: "Permanente",
+          billing: "6 meses",
           currency: "MXN",
           description: "La puerta de entrada al control de tus eventos. Prueba la potencia de DJVIP y experimenta la interacción en tiempo real con tu público de forma 100% gratuita.",
           maxRequests: 35,
-          duration: 0,
+          duration: 6,
           durationUnit: "meses",
           benefits: [
             "Acceso a la plataforma interactiva",
@@ -155,6 +155,7 @@ const migratePlansConfig = async () => {
             "Cola de peticiones en tiempo real para visualizar solicitudes"
           ],
           restrictions: [
+            "Vigencia del plan limitada a 6 meses",
             "Límite estricto de 35 peticiones por evento",
             "Sin personalización visual (Logotipo y marca de DJVIP obligatorios)",
             "Bloqueo de limpieza y reinicio de eventos por 8 horas"
@@ -294,20 +295,25 @@ const migratePlansConfig = async () => {
       needsUpdate = true;
     }
     if (plans.free) {
-      if (plans.free.billing !== "Permanente") {
-        plans.free.billing = "Permanente";
+      if (plans.free.billing !== "6 meses") {
+        plans.free.billing = "6 meses";
         needsUpdate = true;
       }
-      if (plans.free.duration !== 0) {
-        plans.free.duration = 0;
+      if (plans.free.duration !== 6) {
+        plans.free.duration = 6;
         needsUpdate = true;
       }
-      if (plans.free.restrictions) {
-        const index = plans.free.restrictions.indexOf("Vigencia del plan limitada a 6 meses");
-        if (index !== -1) {
-          plans.free.restrictions.splice(index, 1);
-          needsUpdate = true;
-        }
+      if (plans.free.durationUnit !== "meses") {
+        plans.free.durationUnit = "meses";
+        needsUpdate = true;
+      }
+      if (!plans.free.restrictions) {
+        plans.free.restrictions = [];
+      }
+      const index = plans.free.restrictions.indexOf("Vigencia del plan limitada a 6 meses");
+      if (index === -1) {
+        plans.free.restrictions.unshift("Vigencia del plan limitada a 6 meses");
+        needsUpdate = true;
       }
     }
 
