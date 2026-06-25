@@ -1,7 +1,7 @@
 import type { CapacitorConfig } from '@capacitor/cli';
 
 const config: CapacitorConfig = {
-  appId: 'com.dj.interactive.platform',
+  appId: 'dj.vip.P_1_2',
   appName: 'DJ Panel Pro',
   webDir: 'dist'
 };

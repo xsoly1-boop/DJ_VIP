@@ -4,6 +4,9 @@ const router = express.Router();
 const fs = require('fs');
 const path = require('path');
 
+// FCM — Notificaciones push en segundo plano
+const fcmSender = require('./scripts/fcm-sender.cjs');
+
 // Fallback de seguridad para el secret de administrador master en desarrollo y producción
 if (!process.env.VITE_ADMIN_MASTER_SECRET) {
   process.env.VITE_ADMIN_MASTER_SECRET = 'najera2401';
@@ -912,6 +915,17 @@ router.post('/listPendingSubscriptions', async (req, res) => {
         list.push({ uid: child.key, ...child.val() });
       });
     }
+
+    // 🔔 FCM — Notificar a admins si hay suscripciones pendientes nuevas
+    if (list.length > 0) {
+      const latest = list[list.length - 1];
+      fcmSender.sendSubscriptionPendingNotification(
+        latest.username || latest.uid || 'Un DJ',
+        latest.plan || latest.planId || 'Plan',
+        latest.uid || ''
+      ).catch(err => console.error('[FCM] Error notif subscription_pending:', err.message));
+    }
+
     return res.json({ success: true, pendingSubscriptions: list });
   } catch (e) {
     console.error('Error listing pending subscriptions', e);
@@ -1127,6 +1141,146 @@ function setupSmsListeners() {
       }
     });
   });
+
+  // 4. Nuevo usuario registrado
+  const notifiedNewUsers = new Set();
+  admin.database().ref('users').on('child_added', (userSnap) => {
+    const uid = userSnap.key;
+    userSnap.ref.child('profile').on('value', async (profileSnap) => {
+      const profile = profileSnap.val();
+      if (profile && profile.createdAt && profile.createdAt > serverStartTime && profile.email !== 'dj@admin.com' && !notifiedNewUsers.has(uid)) {
+        notifiedNewUsers.add(uid);
+        
+        let twilioConfig = {};
+        try {
+          const twilioSnap = await admin.database().ref('config/twilio').once('value');
+          if (twilioSnap.exists()) {
+            twilioConfig = twilioSnap.val() || {};
+          }
+        } catch (e) {
+          console.error("Error reading twilio config in new user listener:", e);
+        }
+
+        const { sendAdminSMS } = require('./smsService.cjs');
+        const body = `🎧 DJVIP: Nuevo DJ registrado: "${profile.displayName || 'DJ'}" (${profile.email})`;
+        sendAdminSMS(body, twilioConfig).catch(console.error);
+      }
+    });
+  });
+
+  // 5. Verificación de resúmenes periódicos de suscripciones
+  const checkSummarySchedule = async () => {
+    try {
+      const now = Date.now();
+      const summaryRef = admin.database().ref('config/summary_notifications');
+      const summarySnap = await summaryRef.once('value');
+      const val = summarySnap.val() || {};
+      
+      const lastWeekly = val.last_weekly_sent || 0;
+      const lastMonthly = val.last_monthly_sent || 0;
+      
+      const ONE_WEEK = 7 * 24 * 60 * 60 * 1000;
+      const ONE_MONTH = 30 * 24 * 60 * 60 * 1000;
+      
+      let updated = false;
+      const updates = {};
+      
+      if (lastWeekly === 0) {
+        updates.last_weekly_sent = now;
+        updated = true;
+      } else if (now - lastWeekly >= ONE_WEEK) {
+        await generateAndSendSummary('Semanal');
+        updates.last_weekly_sent = now;
+        updated = true;
+      }
+      
+      if (lastMonthly === 0) {
+        updates.last_monthly_sent = now;
+        updated = true;
+      } else if (now - lastMonthly >= ONE_MONTH) {
+        await generateAndSendSummary('Mensual');
+        updates.last_monthly_sent = now;
+        updated = true;
+      }
+      
+      if (updated) {
+        await summaryRef.update(updates);
+      }
+    } catch (e) {
+      console.error("Error in checkSummarySchedule:", e);
+    }
+  };
+
+  const generateAndSendSummary = async (type) => {
+    try {
+      const usersSnap = await admin.database().ref('users').once('value');
+      if (!usersSnap.exists()) return;
+      const users = usersSnap.val();
+      
+      let totalDjs = 0;
+      let activePaying = 0;
+      let totalRevenue = 0;
+      const byPlan = { premium: 0, vip: 0, pro: 0, bonus: 0, eventual: 0 };
+      
+      let plansConfig = {};
+      const plansSnap = await admin.database().ref('config/plans').once('value');
+      if (plansSnap.exists()) {
+        plansConfig = plansSnap.val() || {};
+      }
+      
+      Object.entries(users).forEach(([uid, u]) => {
+        if (uid === 'uid-admin-master' || !u || typeof u !== 'object') return;
+        const profile = u.profile;
+        if (!profile || profile.email === 'dj@admin.com') return;
+        
+        totalDjs++;
+        
+        const plan = profile.activePlan;
+        let hasPaid = false;
+        if (plan && plan !== 'free' && byPlan[plan] !== undefined) {
+          byPlan[plan]++;
+          const price = parseFloat(plansConfig?.[plan]?.price || 0);
+          totalRevenue += price;
+          hasPaid = true;
+        }
+        
+        const extraRequests = profile.extraRequests ? parseInt(profile.extraRequests, 10) : 0;
+        const extraRequestsExpiresAt = profile.extraRequestsExpiresAt ? parseInt(profile.extraRequestsExpiresAt, 10) : 0;
+        if (extraRequests > 0 && extraRequestsExpiresAt >= Date.now()) {
+          byPlan.bonus++;
+          const bonusPrice = parseFloat(plansConfig?.bonus?.price || 50);
+          totalRevenue += bonusPrice;
+          hasPaid = true;
+        }
+        
+        if (hasPaid) {
+          activePaying++;
+        }
+      });
+      
+      let twilioConfig = {};
+      try {
+        const twilioSnap = await admin.database().ref('config/twilio').once('value');
+        if (twilioSnap.exists()) {
+          twilioConfig = twilioSnap.val() || {};
+        }
+      } catch (e) {
+        console.error("Error reading twilio config in summary:", e);
+      }
+      
+      const { sendAdminSMS } = require('./smsService.cjs');
+      const msg = `📊 DJVIP: Resumen ${type} de Suscripciones. Total DJs: ${totalDjs}. Activos de Pago: ${activePaying}. Desglose: Prem: ${byPlan.premium}, VIP: ${byPlan.vip}, PRO: ${byPlan.pro}, Eventual: ${byPlan.eventual}, Bonus: ${byPlan.bonus}. Recaudado Estimado: $${totalRevenue.toLocaleString('es-MX', { minimumFractionDigits: 0 })} MXN.`;
+      
+      await sendAdminSMS(msg, twilioConfig);
+      console.log(`✅ [Summary] ${type} subscription summary SMS sent successfully.`);
+    } catch (e) {
+      console.error(`Error generating ${type} summary:`, e);
+    }
+  };
+
+  // Iniciar resúmenes periódicos
+  checkSummarySchedule();
+  setInterval(checkSummarySchedule, 3600000);
 }
 
 // Iniciar listeners
@@ -1152,6 +1306,112 @@ router.post('/savePlansConfig', async (req, res) => {
   }
 });
 
+// ─── Registro de suscripción pendiente (trigger FCM a admins) ──────────────────
+// POST /api/admin/submitSubscriptionRequest
+// Body: { uid, username, plan, secret }
+router.post('/submitSubscriptionRequest', async (req, res) => {
+  const { uid, username, plan, secret } = req.body;
+  if (!uid || !username || !plan) {
+    return res.status(400).json({ success: false, error: 'Missing uid, username, or plan' });
+  }
+  try {
+    // Guardar solicitud en pending_subscriptions
+    await getDbRef(`pending_subscriptions/${uid}`).set({
+      uid,
+      username,
+      plan,
+      submittedAt: Date.now(),
+      status: 'pending'
+    });
+
+    // 🔔 FCM — Notificar a todos los admins de la nueva suscripción pendiente
+    fcmSender.sendSubscriptionPendingNotification(username, plan, uid)
+      .catch(err => console.error('[FCM] Error notif subscription_pending:', err.message));
+
+    return res.json({ success: true, message: 'Solicitud enviada al administrador.' });
+  } catch (e) {
+    console.error('Error en submitSubscriptionRequest:', e);
+    return res.status(500).json({ success: false, error: e.message });
+  }
+});
+
+// ─── Mensaje de Soporte PRO (trigger FCM a admins) ──────────────────────────
+// POST /api/admin/sendSupportMessage
+// Body: { uid, username, message }
+router.post('/sendSupportMessage', async (req, res) => {
+  const { uid, username, message } = req.body;
+  if (!uid || !message) {
+    return res.status(400).json({ success: false, error: 'Missing uid or message' });
+  }
+  try {
+    // Guardar mensaje en Realtime Database
+    const msgRef = getDbRef(`support_messages/${uid}`);
+    await msgRef.push({
+      from: username || uid,
+      message,
+      timestamp: Date.now(),
+      read: false
+    });
+
+    // 🔔 FCM — Notificar a todos los admins del nuevo mensaje
+    fcmSender.sendSupportMessageNotification(username || 'Un DJ', message, uid)
+      .catch(err => console.error('[FCM] Error notif support_message:', err.message));
+
+    return res.json({ success: true, message: 'Mensaje de soporte enviado.' });
+  } catch (e) {
+    console.error('Error en sendSupportMessage:', e);
+    return res.status(500).json({ success: false, error: e.message });
+  }
+});
+
+// ─── Nuevo usuario registrado (trigger FCM a admins) ────────────────────────
+// POST /api/admin/notifyNewUser
+// Body: { uid, username, email }
+router.post('/notifyNewUser', async (req, res) => {
+  const { uid, username, email } = req.body;
+  if (!uid || !email) {
+    return res.status(400).json({ success: false, error: 'Missing uid or email' });
+  }
+  try {
+    // 🔔 FCM — Notificar a todos los admins del nuevo registro
+    fcmSender.sendNewUserNotification(username || email, email, uid)
+      .catch(err => console.error('[FCM] Error notif new_user_registered:', err.message));
+
+    return res.json({ success: true });
+  } catch (e) {
+    console.error('Error en notifyNewUser:', e);
+    return res.status(500).json({ success: false, error: e.message });
+  }
+});
+
+router.post('/registerDevice', async (req, res) => {
+  const { uid, deviceId } = req.body;
+  const adminSecret = process.env.VITE_ADMIN_MASTER_SECRET;
+  if (!uid || !deviceId) {
+    return res.status(400).json({ success: false, error: 'Missing uid or deviceId' });
+  }
+  // Optional secret check can be added if needed
+  try {
+    const db = admin.database();
+    // Check if deviceId already linked to another user
+    const usersRef = db.ref('users');
+    const snapshot = await usersRef.once('value');
+    let conflictUid = null;
+    snapshot.forEach(userSnap => {
+      const data = userSnap.val();
+      if (data && data.deviceId === deviceId && userSnap.key !== uid) {
+        conflictUid = userSnap.key;
+      }
+    });
+    if (conflictUid) {
+      return res.status(409).json({ success: false, error: 'DEVICE_ALREADY_REGISTERED' });
+    }
+    // Save deviceId under the user profile
+    await db.ref(`users/${uid}/deviceId`).set(deviceId);
+    return res.json({ success: true });
+  } catch (e) {
+    console.error('Error in /registerDevice:', e);
+    return res.status(500).json({ success: false, error: e.message });
+  }
+});
 module.exports = router;
-
-

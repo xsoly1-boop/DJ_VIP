@@ -1,0 +1,40 @@
+{
+  "project_info": {
+    "project_number": "814917855042",
+    "firebase_url": "https://djvip-c2cc9-default-rtdb.firebaseio.com",
+    "project_id": "djvip-c2cc9",
+    "storage_bucket": "djvip-c2cc9.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:814917855042:android:0865e615fd76c950fa0adb",
+        "android_client_info": {
+          "package_name": "dj.vip.P_1_2"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "814917855042-m5udlcrb93ese7stl3f6aisgt8uii7kb.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAxg0lnQT7qZ6s8zSvsXjVExjaOr0fTWEQ"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "814917855042-m5udlcrb93ese7stl3f6aisgt8uii7kb.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

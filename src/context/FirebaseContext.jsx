@@ -25,6 +25,7 @@ import {
   MOCK_ACCOUNTS,
   get
 } from '../firebase';
+import { getDeviceId } from '../utils/deviceFingerprint';
 
 const API_BASE = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
   ? 'http://localhost:4000'
@@ -456,6 +457,14 @@ export const FirebaseProvider = ({ children }) => {
       setAuthLoading(false);
       // Al cambiar de usuario, resetear impersonación
       setImpersonatingUid(null);
+
+      // 🔔 FCM — Registrar token cuando el usuario inicia sesión en Android
+      if (currentUser) {
+        const isAdmin = currentUser.email === MASTER_ADMIN_EMAIL;
+        import('../firebase.js').then(({ registerFCMToken }) => {
+          registerFCMToken(currentUser.uid, isAdmin ? 'admin_master' : 'dj');
+        }).catch(() => {}); // No-op si el import falla
+      }
     });
     return () => unsubscribe();
   }, []);
@@ -979,6 +988,16 @@ export const FirebaseProvider = ({ children }) => {
     const registeredUser = userCredential.user;
     const uid = registeredUser.uid;
 
+    // 2. Obtener device fingerprint
+    let deviceId = null;
+    try {
+      // Dynamically import the fingerprint utility to avoid SSR issues
+      const { getDeviceId } = await import('../utils/deviceFingerprint');
+      deviceId = await getDeviceId();
+    } catch (e) {
+      console.warn('Device fingerprint not obtained:', e);
+    }
+
     const initialProfile = {
       email,
       displayName: displayName || email.split('@')[0],
@@ -988,10 +1007,11 @@ export const FirebaseProvider = ({ children }) => {
       subscriptionStatus: 'free', // Comienza con plan Demo directamente
       createdAt: Date.now(),
       activatedAt: Date.now(),
-      expiresAt: Date.now() + 6 * 30 * 24 * 60 * 60 * 1000
+      expiresAt: Date.now() + 6 * 30 * 24 * 60 * 60 * 1000,
+      deviceId: deviceId || undefined
     };
 
-    // 2. Guardar en la base de datos
+    // 3. Guardar en la base de datos
     if (isMockMode) {
       const dbData = JSON.parse(localStorage.getItem('mock_rtdb_v2') || '{}');
       if (!dbData.users) dbData.users = {};
@@ -1027,7 +1047,6 @@ export const FirebaseProvider = ({ children }) => {
         djName: initialProfile.displayName
       };
       localStorage.setItem('mock_rtdb_v2', JSON.stringify(dbData));
-      
       if (syncChannel) syncChannel.postMessage({ type: 'DB_UPDATE' });
     } else {
       // Guardar perfil en RTDB real
@@ -1061,8 +1080,90 @@ export const FirebaseProvider = ({ children }) => {
       });
     }
 
+    // 4. Registrar deviceId en backend (if obtained)
+    if (deviceId) {
+      try {
+        await fetch(`${API_BASE}/registerDevice`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ uid, deviceId })
+        });
+      } catch (e) {
+        console.warn('Failed to register deviceId with backend:', e);
+      }
+    }
+
+    // 2b. Guardar en la base de datos (real o mock)
+    if (isMockMode) {
+      const dbData = JSON.parse(localStorage.getItem('mock_rtdb_v2') || '{}');
+      if (!dbData.users) dbData.users = {};
+      dbData.users[uid] = {
+        profile: initialProfile,
+        events: {
+          'default-event': {
+            settings: {
+              djName: initialProfile.displayName,
+              title: 'Mi Gran Evento VIP',
+              theme: 'dark',
+              brandEnabled: false,
+              brandName: '',
+              brandLogo: ''
+            },
+            requests: {},
+            played_requests: {}
+          }
+        },
+        events_index: {
+          'default-event': {
+            id: 'default-event',
+            title: 'Mi Gran Evento VIP',
+            djName: initialProfile.displayName,
+            active: true
+          }
+        }
+      };
+      if (!dbData.events_registry) dbData.events_registry = {};
+      dbData.events_registry['default-event-' + uid] = {
+        ownerUid: uid,
+        title: 'Mi Gran Evento VIP',
+        djName: initialProfile.displayName
+      };
+      localStorage.setItem('mock_rtdb_v2', JSON.stringify(dbData));
+      if (syncChannel) syncChannel.postMessage({ type: 'DB_UPDATE' });
+    } else {
+      const profileRef = ref(database, `users/${uid}/profile`);
+      await set(profileRef, initialProfile);
+
+      const defaultSettingsRef = ref(database, `users/${uid}/events/default-event/settings`);
+      await set(defaultSettingsRef, {
+        djName: initialProfile.displayName,
+        title: 'Mi Gran Evento VIP',
+        theme: 'dark',
+        brandEnabled: false,
+        brandName: '',
+        brandLogo: ''
+      });
+
+      const defaultIndexRef = ref(database, `users/${uid}/events_index/default-event`);
+      await set(defaultIndexRef, {
+        id: 'default-event',
+        title: 'Mi Gran Evento VIP',
+        djName: initialProfile.displayName,
+        active: true
+      });
+
+      const registryRef = ref(database, `events_registry/default-event-${uid}`);
+      await set(registryRef, {
+        ownerUid: uid,
+        title: 'Mi Gran Evento VIP',
+        djName: initialProfile.displayName
+      });
+    }
+
     return registeredUser;
   };
+
+
 
   const selectPlan = async (planName) => {
     if (!activeUid) return;

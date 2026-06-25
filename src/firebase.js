@@ -1639,3 +1639,67 @@ export const storageRef = (storageInstance, path) => {
   }
   return { path, isMockStorageRef: true };
 };
+
+// -------------------------------------------------------------
+// FCM — Registro de Token Push (Android Bridge)
+// -------------------------------------------------------------
+
+/**
+ * registerFCMToken
+ * ────────────────
+ * Obtiene el token FCM desde el bridge nativo Android (AndroidApp.getFCMToken)
+ * y lo envía al backend DJVIP para almacenarlo en Firestore.
+ *
+ * Debe llamarse justo después de que el usuario inicia sesión correctamente.
+ *
+ * @param {string} userId - UID del usuario autenticado en Firebase Auth
+ * @param {string} role   - 'dj' | 'admin_master' (para segmentación de notificaciones)
+ * @returns {Promise<void>}
+ */
+export async function registerFCMToken(userId, role = 'dj') {
+  try {
+    // Solo disponible en la app Android nativa (no en web/desktop)
+    if (typeof window === 'undefined' || !window.AndroidApp) {
+      return;
+    }
+
+    // 1. Guardar el UID en el bridge nativo para que el servicio FCM pueda asociar el token
+    if (typeof window.AndroidApp.setUserUID === 'function') {
+      window.AndroidApp.setUserUID(userId);
+    }
+
+    // 2. Obtener el token FCM del dispositivo
+    const fcmToken = window.AndroidApp.getFCMToken?.();
+    if (!fcmToken || fcmToken.trim() === '') {
+      console.warn('[FCM] Token no disponible todavía. Se registrará cuando FCM lo emita.');
+      return;
+    }
+
+    // 3. Enviar el token al backend para guardarlo en Firestore
+    const backendUrl = import.meta.env.VITE_PUBLIC_URL
+      ? `${import.meta.env.VITE_PUBLIC_URL}api/register-fcm-token`
+      : '/api/register-fcm-token';
+
+    const response = await fetch(backendUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        uid: userId,
+        fcmToken: fcmToken.trim(),
+        platform: 'android',
+        role
+      })
+    });
+
+    const result = await response.json();
+    if (result.success) {
+      console.log('[FCM] ✅ Token FCM registrado correctamente en el servidor.');
+    } else {
+      console.error('[FCM] ❌ Error registrando token:', result.error);
+    }
+  } catch (err) {
+    // No lanzar error — las notificaciones son opcionales, no deben romper el flujo de login
+    console.error('[FCM] Error en registerFCMToken:', err.message);
+  }
+}
+

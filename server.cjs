@@ -4,7 +4,8 @@ require('dotenv').config();
 const cors = require('cors');
 const bodyParser = require('body-parser');
 const paymentService = require('./paymentService.cjs');
-const adminRoutes = require('./adminRoutes.cjs'); // New admin routes
+const adminRoutes = require('./adminRoutes.cjs');
+const fcmSender = require('./scripts/fcm-sender.cjs');
 
 const app = express();
 app.use(cors());
@@ -17,6 +18,43 @@ app.get('/', (req, res) => {
 
 // Admin routes (delete user, etc.)
 app.use('/api/admin', adminRoutes);
+
+// ─── Registro de token FCM desde la app Android ──────────────────────────────
+// POST /api/register-fcm-token
+// Body: { uid, fcmToken, platform }
+app.post('/api/register-fcm-token', async (req, res) => {
+  try {
+    const { uid, fcmToken, platform = 'android' } = req.body;
+    if (!uid || !fcmToken) {
+      return res.status(400).json({ success: false, error: 'uid y fcmToken son requeridos' });
+    }
+    await fcmSender.registerFCMToken(uid, fcmToken, platform);
+    res.json({ success: true, message: 'Token FCM registrado correctamente' });
+  } catch (e) {
+    console.error('[API] Error registrando token FCM:', e.message);
+    res.status(500).json({ success: false, error: e.message });
+  }
+});
+
+// ─── Petición de canción → notificación al DJ ────────────────────────────────
+// POST /api/song-request
+// Body: { djUid, songTitle, requestedBy }
+app.post('/api/song-request', async (req, res) => {
+  try {
+    const { djUid, songTitle, requestedBy } = req.body;
+    if (!djUid || !songTitle) {
+      return res.status(400).json({ success: false, error: 'djUid y songTitle son requeridos' });
+    }
+    // Enviar notificación FCM al DJ en segundo plano (no bloqueante)
+    fcmSender.sendSongRequestNotification(djUid, songTitle, requestedBy || 'El público')
+      .catch(err => console.error('[API] Error notificación song_request:', err.message));
+
+    res.json({ success: true, message: 'Petición registrada y notificación enviada' });
+  } catch (e) {
+    console.error('[API] Error en /api/song-request:', e.message);
+    res.status(500).json({ success: false, error: e.message });
+  }
+});
 
 // Create a new subscription
 app.post('/api/subscription/create', async (req, res) => {
