@@ -69,6 +69,22 @@ app.post('/api/register-fcm-token', async (req, res) => {
   }
 });
 
+// POST /api/unregister-fcm-token
+// Body: { uid, fcmToken }
+app.post('/api/unregister-fcm-token', async (req, res) => {
+  try {
+    const { uid, fcmToken } = req.body;
+    if (!uid || !fcmToken) {
+      return res.status(400).json({ success: false, error: 'uid y fcmToken son requeridos' });
+    }
+    await fcmSender.unregisterFCMToken(uid, fcmToken);
+    res.json({ success: true, message: 'Token FCM desregistrado correctamente' });
+  } catch (e) {
+    console.error('[API] Error desregistrando token FCM:', e.message);
+    res.status(500).json({ success: false, error: e.message });
+  }
+});
+
 // ─── Petición de canción → notificación al DJ ────────────────────────────────
 // POST /api/song-request
 // Body: { djUid, songTitle, requestedBy }

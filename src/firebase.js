@@ -1397,6 +1397,35 @@ export const createUserWithEmailAndPassword = async (authInstance, email, passwo
 };
 
 export const signOut = async (authInstance) => {
+  // 1. Desregistrar el token FCM nativo en el servidor antes de borrar localmente
+  if (typeof window !== 'undefined' && window.AndroidApp) {
+    try {
+      const uid = window.AndroidApp.getUserUID?.();
+      const fcmToken = window.AndroidApp.getFCMToken?.();
+      if (uid && fcmToken && uid.trim() !== '' && fcmToken.trim() !== '') {
+        const backendUrl = import.meta.env.VITE_PUBLIC_URL
+          ? `${import.meta.env.VITE_PUBLIC_URL}api/unregister-fcm-token`
+          : '/api/unregister-fcm-token';
+        await fetch(backendUrl, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ uid, fcmToken })
+        });
+        console.log('[FCM] ✅ Token desregistrado del servidor en el cierre de sesión.');
+      }
+    } catch (err) {
+      console.error('[FCM] Error desregistrando token en el cierre de sesión:', err.message);
+    }
+
+    // 2. Limpiar sesión en el bridge nativo
+    if (typeof window.AndroidApp.setUserUID === 'function') {
+      window.AndroidApp.setUserUID('');
+    }
+    if (typeof window.AndroidApp.setUserRole === 'function') {
+      window.AndroidApp.setUserRole('');
+    }
+  }
+
   if (!isMockMode) {
     return realSignOut(authInstance);
   }
@@ -1674,9 +1703,12 @@ export async function registerFCMToken(userId, role = 'dj', retryCount = 0) {
       return;
     }
 
-    // 1. Guardar el UID en el bridge nativo para que el servicio FCM pueda asociar el token
+    // 1. Guardar el UID y el rol en el bridge nativo para que el servicio FCM pueda asociar y filtrar
     if (typeof window.AndroidApp.setUserUID === 'function') {
       window.AndroidApp.setUserUID(userId);
+    }
+    if (typeof window.AndroidApp.setUserRole === 'function') {
+      window.AndroidApp.setUserRole(role);
     }
 
     // 2. Obtener el token FCM del dispositivo

@@ -131,7 +131,7 @@ async function getAdminTokens() {
  * @param {Object} payload - campos del mensaje FCM
  * @returns {Promise<{sent: number, failed: number}>}
  */
-async function sendToTokens(tokens, payload) {
+async function sendToTokens(tokens, payload, dataOnly = false) {
   if (!tokens || tokens.length === 0) {
     console.warn('[FCM] Sin tokens disponibles para enviar el mensaje.');
     return { sent: 0, failed: 0 };
@@ -146,10 +146,6 @@ async function sendToTokens(tokens, payload) {
     try {
       const message = {
         token,
-        notification: {
-          title: payload.data?.title || 'DJ Panel Pro',
-          body: payload.data?.body || ''
-        },
         data: {
           ...payload.data,
           // Asegurar que todos los valores son strings (requerimiento FCM)
@@ -158,18 +154,25 @@ async function sendToTokens(tokens, payload) {
           )
         },
         android: {
-          priority: 'high',
-          notification: {
-            sound: 'default',
-            channelId: payload.data?.channel_id || 'djvip_default',
-            icon: 'ic_launcher'
-          }
+          priority: 'high'
         }
       };
 
+      if (!dataOnly) {
+        message.notification = {
+          title: payload.data?.title || 'DJ Panel Pro',
+          body: payload.data?.body || ''
+        };
+        message.android.notification = {
+          sound: 'default',
+          channelId: payload.data?.channel_id || 'djvip_default',
+          icon: 'ic_launcher'
+        };
+      }
+
       await messaging.send(message);
       sent++;
-      console.log(`[FCM] ✅ Mensaje enviado al token ...${token.slice(-8)}`);
+      console.log(`[FCM] ✅ Mensaje enviado al token ...${token.slice(-8)} (dataOnly=${dataOnly})`);
     } catch (err) {
       failed++;
       console.error(`[FCM] ❌ Error enviando al token ...${token.slice(-8)}:`, err.code || err.message);
@@ -293,7 +296,7 @@ async function sendSubscriptionPendingNotification(username, planName, djUid = '
       channel_id: 'djvip_admin_subscriptions',
       timestamp: String(Date.now())
     }
-  });
+  }, true);
 }
 
 /**
@@ -323,7 +326,7 @@ async function sendSupportMessageNotification(fromUser, messagePreview, djUid = 
       channel_id: 'djvip_admin_support',
       timestamp: String(Date.now())
     }
-  });
+  }, true);
 }
 
 /**
@@ -349,7 +352,7 @@ async function sendNewUserNotification(username, email, uid = '') {
       channel_id: 'djvip_admin_users',
       timestamp: String(Date.now())
     }
-  });
+  }, true);
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -389,6 +392,30 @@ async function registerFCMToken(uid, fcmToken, platform = 'android') {
   }
 }
 
+/**
+ * Eliminar el token FCM de un dispositivo en Realtime Database (para logout)
+ *
+ * @param {string} uid      - UID del usuario autenticado
+ * @param {string} fcmToken - Token FCM del dispositivo
+ */
+async function unregisterFCMToken(uid, fcmToken) {
+  try {
+    const db = getDatabase();
+    const deviceId = Buffer.from(fcmToken).toString('base64')
+      .replace(/\//g, '_')
+      .replace(/\+/g, '-')
+      .replace(/=/g, '')
+      .substring(0, 30);
+
+    await db.ref(`users/${uid}/devices/${deviceId}`).remove();
+    console.log(`[FCM] Token desregistrado para uid=${uid} en Realtime Database`);
+    return { success: true };
+  } catch (err) {
+    console.error('[FCM] Error desregistrando token:', err.message);
+    throw err;
+  }
+}
+
 // ─── Exportar ─────────────────────────────────────────────────────────────────
 module.exports = {
   sendSongRequestNotification,
@@ -397,6 +424,7 @@ module.exports = {
   sendSupportMessageNotification,
   sendNewUserNotification,
   registerFCMToken,
+  unregisterFCMToken,
   getAdminTokens,
   getTokensForUser
 };

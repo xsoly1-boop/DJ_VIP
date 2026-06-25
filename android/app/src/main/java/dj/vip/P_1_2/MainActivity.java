@@ -327,6 +327,27 @@ public class MainActivity extends BridgeActivity {
         public String getUserUID() {
             return preferences.getString("user_uid", "");
         }
+
+        /**
+         * Guardar el rol del usuario para filtrar notificaciones nativas
+         * Llamada desde JS: AndroidApp.setUserRole(role)
+         */
+        @JavascriptInterface
+        public void setUserRole(String role) {
+            if (role != null) {
+                preferences.edit().putString("user_role", role).apply();
+                Log.d(TAG, "Rol de usuario guardado: " + role);
+            }
+        }
+
+        /**
+         * Obtener el rol del usuario guardado
+         * Llamada desde JS: AndroidApp.getUserRole()
+         */
+        @JavascriptInterface
+        public String getUserRole() {
+            return preferences.getString("user_role", "");
+        }
     }
 
     // ─────────────────────────────────────────────────────────────────────────

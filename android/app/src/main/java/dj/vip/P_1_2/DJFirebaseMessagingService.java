@@ -115,6 +115,11 @@ public class DJFirebaseMessagingService extends FirebaseMessagingService {
     // ─────────────────────────────────────────────────────────────────────────
     private void dispatchNotification(String type, String title, String body,
                                       Map<String, String> data) {
+        SharedPreferences prefs = getSharedPreferences("DJ_App_Prefs", Context.MODE_PRIVATE);
+        String userRole = prefs.getString("user_role", "");
+
+        Log.d(TAG, "dispatchNotification: type=" + type + ", userRole=" + userRole);
+
         switch (type) {
 
             // ─── NOTIFICACIONES PARA DJ/USUARIO ───────────────────────────
@@ -139,6 +144,10 @@ public class DJFirebaseMessagingService extends FirebaseMessagingService {
 
             // ─── NOTIFICACIONES PARA ADMIN MASTER ─────────────────────────
             case "subscription_pending": {
+                if (!"admin_master".equals(userRole)) {
+                    Log.d(TAG, "Notificación 'subscription_pending' omitida: el rol actual no es admin_master (es: " + userRole + ")");
+                    break;
+                }
                 String user     = data.getOrDefault("username", "Usuario");
                 String plan     = data.getOrDefault("plan_name", "Plan");
                 String richBody = "✅ " + user + " solicitó activar el " + plan
@@ -150,6 +159,10 @@ public class DJFirebaseMessagingService extends FirebaseMessagingService {
             }
 
             case "support_message": {
+                if (!"admin_master".equals(userRole)) {
+                    Log.d(TAG, "Notificación 'support_message' omitida: el rol actual no es admin_master (es: " + userRole + ")");
+                    break;
+                }
                 String from     = data.getOrDefault("from_user", "Un DJ");
                 String preview  = data.getOrDefault("message_preview", "Nuevo mensaje");
                 String richBody = "💬 " + from + ": \"" + preview + "\"";
@@ -160,6 +173,10 @@ public class DJFirebaseMessagingService extends FirebaseMessagingService {
             }
 
             case "new_user_registered": {
+                if (!"admin_master".equals(userRole)) {
+                    Log.d(TAG, "Notificación 'new_user_registered' omitida: el rol actual no es admin_master (es: " + userRole + ")");
+                    break;
+                }
                 String user     = data.getOrDefault("username", "Nuevo usuario");
                 String email    = data.getOrDefault("email", "");
                 String richBody = "👤 " + user + " (" + email + ") se registró en la plataforma.";
