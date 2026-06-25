@@ -2104,8 +2104,9 @@ export default function DjDashboard() {
         <div className="glass-panel" style={{ padding: '8px 10px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <div>
             <p style={{ fontSize: '0.65rem', color: 'var(--text-secondary)', fontWeight: '500', lineHeight: 1.2 }}>Vigencia<br/>Plan Activo</p>
-            <h3 style={{ fontSize: '1rem', marginTop: '2px', color: '#a855f7' }}>
+            <h3 style={{ fontSize: '1rem', marginTop: '2px', color: '#a855f7', display: 'flex', alignItems: 'center', gap: '4px' }}>
               {(userProfile?.activePlan || 'free').toUpperCase()}
+              {((userProfile?.activePlan === 'pro' || userProfile?.activePlan === 'pro_1d') && ' 😎')}
             </h3>
             <PlanValidityDisplay activePlan={userProfile?.activePlan || 'free'} expiresAt={userProfile?.expiresAt} />
           </div>
@@ -3547,6 +3548,7 @@ export default function DjDashboard() {
                           <Sparkles size={18} color="var(--primary-color)" />
                           Tu Plan Actual: <span style={{ color: 'var(--primary-color)', fontWeight: 'bold', textTransform: 'uppercase' }}>
                             {plansConfig?.[userProfile?.activePlan || 'free']?.name || userProfile?.activePlan || 'demo/gratis'}
+                            {((userProfile?.activePlan === 'pro' || userProfile?.activePlan === 'pro_1d') && ' 😎')}
                             {(() => {
                               const extraRequests = userProfile?.extraRequests !== undefined ? parseInt(userProfile.extraRequests, 10) : 0;
                               const extraRequestsExpiresAt = userProfile?.extraRequestsExpiresAt ? parseInt(userProfile.extraRequestsExpiresAt, 10) : 0;
@@ -3560,6 +3562,7 @@ export default function DjDashboard() {
                           {userProfile?.activePlan === 'premium' && `Tienes acceso a ${plansConfig?.premium?.name || 'Plan Premium'}. Pásate a ${plansConfig?.vip?.name || 'VIP'} para soporte técnico prioritario 24/7 y eventos simultáneos.`}
                           {userProfile?.activePlan === 'vip' && `Tienes acceso a ${plansConfig?.vip?.name || 'Plan VIP'}. Pásate a ${plansConfig?.pro?.name || 'PRO'} para multieventos activos en paralelo y soporte prioritario 24/7.`}
                           {userProfile?.activePlan === 'pro' && `¡Tienes el ${plansConfig?.pro?.name || 'Plan PRO'} con acceso total, soporte prioritario 24/7 y multieventos habilitados! Gracias por confiar en nosotros.`}
+                          {userProfile?.activePlan === 'pro_1d' && `¡Tienes el ${plansConfig?.pro_1d?.name || 'Plan Pro x 1 Día'} con acceso total de cortesía por 24 horas. Disfruta de multieventos, soporte prioritario 24/7 y herramientas PRO sin límites!`}
                         </p>
                       </div>
                       

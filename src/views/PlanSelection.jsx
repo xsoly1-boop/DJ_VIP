@@ -186,16 +186,30 @@ export default function PlanSelection() {
       }}>
         {mainPlans.map((plan) => {
           const isVipBorder = plan.key === 'vip';
-          const borderStyle = plan.recommended 
+          
+          let borderStyle = plan.recommended 
             ? '1px solid rgba(124, 58, 237, 0.3)' 
             : isVipBorder 
               ? '1px solid rgba(6, 182, 212, 0.25)' 
               : '1px solid rgba(255, 255, 255, 0.05)';
-          const bgStyle = plan.recommended 
+              
+          let bgStyle = plan.recommended 
             ? 'rgba(124, 58, 237, 0.03)' 
             : isVipBorder 
               ? 'rgba(6, 182, 212, 0.01)' 
               : 'rgba(255, 255, 255, 0.01)';
+              
+          let boxShadowStyle = 'none';
+
+          if (plan.key === 'pro') {
+            borderStyle = '2px solid var(--primary-color)';
+            bgStyle = 'linear-gradient(135deg, color-mix(in srgb, var(--primary-color) 8%, transparent) 0%, rgba(0, 0, 0, 0.2) 100%)';
+            boxShadowStyle = '0 8px 32px 0 rgba(0, 0, 0, 0.4), 0 0 15px color-mix(in srgb, var(--primary-color) 20%, transparent)';
+          } else if (plan.key === 'pro_1d') {
+            borderStyle = '2px solid var(--secondary-color)';
+            bgStyle = 'linear-gradient(135deg, color-mix(in srgb, var(--secondary-color) 8%, transparent) 0%, rgba(0, 0, 0, 0.2) 100%)';
+            boxShadowStyle = '0 8px 32px 0 rgba(0, 0, 0, 0.4), 0 0 15px color-mix(in srgb, var(--secondary-color) 20%, transparent)';
+          }
 
           return (
             <div key={plan.key} className="glass-panel" style={{
@@ -206,6 +220,7 @@ export default function PlanSelection() {
               justifyContent: 'space-between',
               border: borderStyle,
               background: bgStyle,
+              boxShadow: boxShadowStyle,
               position: 'relative'
             }}>
               {plan.recommended && (
@@ -230,7 +245,9 @@ export default function PlanSelection() {
               )}
               <div>
                 <h3 style={{ fontSize: '1.25rem', marginBottom: '8px', color: '#fff', display: 'flex', alignItems: 'center', gap: '6.6px', flexWrap: 'wrap' }}>
-                  {plan.config.name} {plan.key === 'premium' && <Sparkles size={16} color="var(--primary-color)" />}
+                  {plan.config.name} 
+                  {(plan.key === 'pro' || plan.key === 'pro_1d') && <span style={{ marginLeft: '4px' }}>😎</span>}
+                  {plan.key === 'premium' && <Sparkles size={16} color="var(--primary-color)" />}
                   {plan.key === 'vip' && <Star size={16} color="var(--secondary-color)" fill="var(--secondary-color)" />}
                   {plan.isEnDesarrollo && (
                     <span style={{ fontSize: '0.65rem', padding: '2px 6px', borderRadius: '4px', background: 'rgba(239,68,68,0.15)', color: '#ef4444', fontWeight: '700', border: '1px solid rgba(239,68,68,0.3)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
