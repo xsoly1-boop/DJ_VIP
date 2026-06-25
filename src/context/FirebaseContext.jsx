@@ -33,6 +33,20 @@ const API_BASE = (window.location.hostname === 'localhost' || window.location.ho
     ? (import.meta.env.DEV ? 'http://localhost:4000' : (import.meta.env.VITE_PUBLIC_URL ? import.meta.env.VITE_PUBLIC_URL.replace(/\/$/, '') : 'https://dj-vip.vercel.app'))
     : window.location.origin);
 
+const triggerNotificationAPI = (endpoint, body) => {
+  const baseUrl = import.meta.env.VITE_PUBLIC_URL 
+    ? import.meta.env.VITE_PUBLIC_URL.replace(/\/$/, '')
+    : (API_BASE || '');
+  
+  const url = `${baseUrl}/${endpoint.startsWith('/') ? endpoint.slice(1) : endpoint}`;
+  
+  fetch(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body)
+  }).catch(err => console.warn('[FCM Trigger] Error despertando API:', err.message));
+};
+
 const FirebaseContext = createContext(null);
 
 export const useFirebase = () => {
@@ -1078,6 +1092,13 @@ export const FirebaseProvider = ({ children }) => {
         title: 'Mi Gran Evento VIP',
         djName: initialProfile.displayName
       });
+
+      // Despertar la API de Vercel para notificar nuevo usuario registrado
+      triggerNotificationAPI('api/admin/notifyNewUser', {
+        uid,
+        username: initialProfile.displayName || initialProfile.email,
+        email: initialProfile.email
+      });
     }
 
     // 4. Registrar deviceId en backend (if obtained)
@@ -1157,6 +1178,13 @@ export const FirebaseProvider = ({ children }) => {
         ownerUid: uid,
         title: 'Mi Gran Evento VIP',
         djName: initialProfile.displayName
+      });
+
+      // Despertar la API de Vercel para notificar nuevo usuario registrado
+      triggerNotificationAPI('api/admin/notifyNewUser', {
+        uid,
+        username: initialProfile.displayName || initialProfile.email,
+        email: initialProfile.email
       });
     }
 
@@ -1344,6 +1372,13 @@ export const FirebaseProvider = ({ children }) => {
       gateway,
       transactionId,
       submittedAt: Date.now()
+    });
+
+    // Despertar la API de Vercel para notificar la suscripción pendiente
+    triggerNotificationAPI('api/admin/submitSubscriptionRequest', {
+      uid: activeUid,
+      username: djName || email,
+      plan: selectedPlan
     });
 
     if (isMockMode) {
@@ -1547,6 +1582,16 @@ export const FirebaseProvider = ({ children }) => {
       isRepeat
     };
     const result = await push(requestsRef, newRequest);
+
+    // Despertar la API de Vercel para enviar la notificación push de canción
+    const songName = cleanTitle || 'Tema no especificado';
+    const artistName = cleanArtist || '';
+    const songTitleFull = artistName ? `${songName} - ${artistName}` : songName;
+    triggerNotificationAPI('api/song-request', {
+      djUid: targetUid,
+      songTitle: songTitleFull,
+      requestedBy: 'El público'
+    });
 
     // Auto-alimentar la base de datos de autocompletado global en tiempo real
     try {
@@ -2743,6 +2788,12 @@ export const FirebaseProvider = ({ children }) => {
 
     // Enviar notificación por WhatsApp si el remitente no es admin
     if (!isSenderAdmin) {
+      // Despertar la API de Vercel para notificar mensaje de soporte
+      triggerNotificationAPI('api/admin/sendSupportMessage', {
+        uid: userUid,
+        username: senderName || 'Un DJ',
+        message: text
+      });
       try {
         const contactSnap = await get(ref(database, 'config/admin_contact'));
         if (contactSnap.exists()) {
