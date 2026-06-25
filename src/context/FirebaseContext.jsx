@@ -126,6 +126,27 @@ const DEFAULT_PLANS_CONFIG = {
       "Ninguna"
     ]
   },
+  pro_1d: {
+    name: "Pro x 1 Día",
+    price: "50",
+    billing: "24 horas",
+    currency: "MXN",
+    description: "Prueba el poder total del Plan PRO durante 24 horas. Disfruta de multieventos y todas las herramientas exclusivas sin límites por un día entero.",
+    maxRequests: 0,
+    duration: 24,
+    durationUnit: "horas",
+    benefits: [
+      "Todos los beneficios del Plan PRO por 24 horas",
+      "Multieventos activos y simultáneos en paralelo",
+      "Soporte VIP dedicado con asistencia prioritaria 24/7",
+      "Reportes estadísticos y analíticas avanzadas del comportamiento del público",
+      "Personalización de marca al 100% y logotipos ilimitados"
+    ],
+    restrictions: [
+      "Vigencia estricta de 24 horas",
+      "Disponible para contratar solo una vez por usuario"
+    ]
+  },
   bonus: {
     name: "Plan Bonus (Extra)",
     price: "50",
@@ -409,6 +430,12 @@ export const FirebaseProvider = ({ children }) => {
     mercadopagoPublicKey: '',
     adminClabe: ''
   });
+  const [twilioConfig, setTwilioConfig] = useState({
+    accountSid: '',
+    authToken: '',
+    fromNumber: '',
+    toNumber: ''
+  });
 
   // UID efectivo: puede ser el propio usuario o, si el admin está impersonando, el del DJ seleccionado
   const [impersonatingUid, setImpersonatingUid] = useState(null);
@@ -433,15 +460,29 @@ export const FirebaseProvider = ({ children }) => {
     return () => unsubscribe();
   }, []);
 
-  // 1d. Escuchar configuración de planes en la base de datos y forzar actualización
+  // 1d. Escuchar configuración de planes en la base de datos y evitar sobrescribir personalizaciones
   useEffect(() => {
     const plansRef = ref(database, 'config/plans');
-    // Forzar actualización con la configuración en código local
-    set(plansRef, DEFAULT_PLANS_CONFIG);
     
     const unsubscribe = onValue(plansRef, (snapshot) => {
       if (snapshot.exists()) {
-        setPlansConfig(snapshot.val());
+        const dbPlans = snapshot.val();
+        let needsUpdate = false;
+        const updatedPlans = { ...dbPlans };
+        
+        // Asegurar que los planes definidos por defecto en código (como pro_1d) existan en la DB
+        // sin sobrescribir las ediciones del administrador para los planes ya existentes.
+        Object.keys(DEFAULT_PLANS_CONFIG).forEach(key => {
+          if (!updatedPlans[key]) {
+            updatedPlans[key] = DEFAULT_PLANS_CONFIG[key];
+            needsUpdate = true;
+          }
+        });
+        
+        if (needsUpdate) {
+          set(plansRef, updatedPlans);
+        }
+        setPlansConfig(updatedPlans);
       } else {
         set(plansRef, DEFAULT_PLANS_CONFIG);
         setPlansConfig(DEFAULT_PLANS_CONFIG);
@@ -449,6 +490,27 @@ export const FirebaseProvider = ({ children }) => {
     });
     return () => unsubscribe();
   }, []);
+
+  // 1f. Escuchar configuración de Twilio (solo para el Admin Master)
+  useEffect(() => {
+    if (!isAdminMaster) return;
+    const twilioRef = ref(database, 'config/twilio');
+    
+    if (isMockMode) {
+      const dbData = JSON.parse(localStorage.getItem('mock_rtdb_v2') || '{}');
+      if (dbData.config && dbData.config.twilio) {
+        setTwilioConfig(dbData.config.twilio);
+      }
+      return;
+    }
+
+    const unsubscribe = onValue(twilioRef, (snapshot) => {
+      if (snapshot.exists()) {
+        setTwilioConfig(snapshot.val());
+      }
+    });
+    return () => unsubscribe();
+  }, [isAdminMaster]);
 
   // 1e. Escuchar información pública de pago en la base de datos
   useEffect(() => {
@@ -496,13 +558,19 @@ export const FirebaseProvider = ({ children }) => {
 
         // --- VERIFICACIÓN DE EXPIRACIÓN AUTOMÁTICA ---
         if (!isCurrentAdminMaster && data.activePlan && data.activePlan !== 'free' && data.expiresAt && data.expiresAt > 0 && Date.now() > data.expiresAt) {
-          // El plan ha expirado. Regresar al Plan Demo (free) automáticamente
-          update(profileRef, {
-            subscriptionStatus: 'free',
-            activePlan: 'free',
+          // El plan ha expirado. Regresar al plan correspondiente
+          const returnPlan = data.activePlan === 'pro_1d' ? (data.previousActivePlan || 'free') : 'free';
+          const updatesObj = {
+            subscriptionStatus: returnPlan,
+            activePlan: returnPlan,
             activatedAt: Date.now(),
             expiresAt: 0
-          });
+          };
+          if (data.activePlan === 'pro_1d') {
+            updatesObj.pro1dUsed = true;
+            updatesObj.previousActivePlan = null;
+          }
+          update(profileRef, updatesObj);
           return;
         }
         setUserProfile(data);
@@ -1005,6 +1073,7 @@ export const FirebaseProvider = ({ children }) => {
       'eventual': 1,
       'premium': 2,
       'vip': 3,
+      'pro_1d': 3.5,
       'pro': 4
     };
 
@@ -2577,6 +2646,23 @@ export const FirebaseProvider = ({ children }) => {
     await set(contactRef, contactData);
   };
 
+  const updateTwilioConfig = async (config) => {
+    if (!isAdminMaster) throw new Error("Acceso denegado: Solo el administrador master puede realizar esta acción.");
+    
+    if (isMockMode) {
+      const dbData = JSON.parse(localStorage.getItem('mock_rtdb_v2') || '{}');
+      if (!dbData.config) dbData.config = {};
+      dbData.config.twilio = config;
+      localStorage.setItem('mock_rtdb_v2', JSON.stringify(dbData));
+      if (syncChannel) syncChannel.postMessage({ type: 'DB_UPDATE' });
+      setTwilioConfig(config);
+      return;
+    }
+
+    const twilioRef = ref(database, 'config/twilio');
+    await set(twilioRef, config);
+  };
+
   const markSupportChatAsRead = async (userUid, readerType) => {
     if (isMockMode) {
       const dbData = JSON.parse(localStorage.getItem('mock_rtdb_v2') || '{}');
@@ -2704,6 +2790,8 @@ export const FirebaseProvider = ({ children }) => {
       createDjAccount,
       updateDjAccount,
       updateAdminProfile,
+      twilioConfig,
+      updateTwilioConfig,
       updateActiveRequest,
       updateAutocompleteSong,
       deleteAutocompleteSong,

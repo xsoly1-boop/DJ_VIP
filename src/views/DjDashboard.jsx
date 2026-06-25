@@ -96,6 +96,8 @@ export default function DjDashboard() {
     createDjAccount,
     updateDjAccount,
     updateAdminProfile,
+    twilioConfig,
+    updateTwilioConfig,
     uploadLogo,
     getDatabaseBackup,
     deleteSuggestion,
@@ -230,6 +232,12 @@ export default function DjDashboard() {
   const [adminCallmebotApiKey, setAdminCallmebotApiKey] = useState('');
   const [saveAdminProfileLoading, setSaveAdminProfileLoading] = useState(false);
 
+  // Estados para Twilio SMS
+  const [twilioAccountSid, setTwilioAccountSid] = useState('');
+  const [twilioAuthToken, setTwilioAuthToken] = useState('');
+  const [twilioFromNumber, setTwilioFromNumber] = useState('');
+  const [twilioToNumber, setTwilioToNumber] = useState('');
+
   // Sincronizar campos cuando cargue el perfil del admin
   useEffect(() => {
     if (isAdminMaster && userProfile) {
@@ -238,6 +246,16 @@ export default function DjDashboard() {
       setAdminCallmebotApiKey(userProfile.callmebotApiKey || '');
     }
   }, [userProfile, isAdminMaster]);
+
+  // Sincronizar Twilio config cuando cargue de la BD
+  useEffect(() => {
+    if (isAdminMaster && twilioConfig) {
+      setTwilioAccountSid(twilioConfig.accountSid || '');
+      setTwilioAuthToken(twilioConfig.authToken || '');
+      setTwilioFromNumber(twilioConfig.fromNumber || '');
+      setTwilioToNumber(twilioConfig.toNumber || '');
+    }
+  }, [twilioConfig, isAdminMaster]);
 
   const handleSaveAdminProfile = async (e) => {
     e.preventDefault();
@@ -248,7 +266,13 @@ export default function DjDashboard() {
     setSaveAdminProfileLoading(true);
     try {
       await updateAdminProfile(adminAlias.trim(), adminWhatsapp.trim(), adminCallmebotApiKey.trim());
-      showToast('✅ Perfil guardado correctamente.');
+      await updateTwilioConfig({
+        accountSid: twilioAccountSid.trim(),
+        authToken: twilioAuthToken.trim(),
+        fromNumber: twilioFromNumber.trim(),
+        toNumber: twilioToNumber.trim()
+      });
+      showToast('✅ Perfil y configuración de SMS guardados correctamente.');
     } catch (err) {
       showToast('❌ Error al guardar perfil: ' + err.message);
     } finally {
@@ -447,8 +471,8 @@ export default function DjDashboard() {
   };
 
   const handleDeletePlan = (planKey) => {
-    if (planKey === 'free' || planKey === 'premium' || planKey === 'vip' || planKey === 'pro') {
-      showToast("⚠️ No puedes eliminar los planes principales (Demo, Premium, VIP, PRO).");
+    if (planKey === 'free' || planKey === 'premium' || planKey === 'vip' || planKey === 'pro' || planKey === 'pro_1d') {
+      showToast("⚠️ No puedes eliminar los planes principales (Demo, Premium, VIP, PRO, Pro x 1 Día).");
       return;
     }
     if (window.confirm(`¿Estás seguro de que deseas eliminar el plan "${tempPlansConfig[planKey]?.name || planKey}"?`)) {
@@ -1715,9 +1739,9 @@ export default function DjDashboard() {
     return { uid, eventsCount, requestsCount, djName, eventTitles, email, currentPlan, expiresAt, demoLimit, premiumLimit, demoLimitExpiresAt, premiumLimitExpiresAt, logoUploadEnabled, strictLimitEnabled, extraRequests, extraRequestsExpiresAt };
   });
 
-  const isProUser = (userProfile?.activePlan || 'free') === 'pro';
+  const isProUser = (userProfile?.activePlan || 'free') === 'pro' || (userProfile?.activePlan || 'free') === 'pro_1d';
   const currentPlan = userProfile?.activePlan || 'free';
-  const isPrintAllowed = ['vip', 'pro', 'eventual'].includes(currentPlan) || isAdminMaster;
+  const isPrintAllowed = ['vip', 'pro', 'pro_1d', 'eventual'].includes(currentPlan) || isAdminMaster;
 
   return (
     <>
@@ -4736,7 +4760,7 @@ export default function DjDashboard() {
                           {savePlansLoading ? <><RefreshCw size={14} className="animate-spin" /> Guardando...</> : <><Check size={14} /> Guardar Configuración de Planes</>}
                         </button>
                         
-                        {editingPlanTab !== 'free' && editingPlanTab !== 'premium' && editingPlanTab !== 'vip' && editingPlanTab !== 'pro' && (
+                        {editingPlanTab !== 'free' && editingPlanTab !== 'premium' && editingPlanTab !== 'vip' && editingPlanTab !== 'pro' && editingPlanTab !== 'pro_1d' && (
                           <button
                             type="button"
                             className="btn btn-secondary"
@@ -5422,6 +5446,65 @@ export default function DjDashboard() {
                     onChange={(e) => setAdminCallmebotApiKey(e.target.value)}
                   />
                   <p style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginTop: '4px' }}>Para recibir alertas por WhatsApp ante nuevos mensajes de soporte, agrega tu número a CallMeBot en WhatsApp, obtén tu API Key e ingrésala aquí.</p>
+                </div>
+
+                <div style={{ marginTop: '30px', borderTop: '1px solid var(--surface-border)', paddingTop: '20px' }}>
+                  <h3 style={{ fontSize: '1.1rem', fontWeight: '700', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--secondary-color)' }}>
+                    <Bell size={18} /> Configuración de Notificaciones SMS (Twilio)
+                  </h3>
+                  <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginBottom: '16px', lineHeight: '1.4' }}>
+                    Configura tus credenciales de Twilio para recibir mensajes de texto SMS en tu teléfono móvil ante nuevas suscripciones, chats de soporte y sugerencias. Si dejas estos campos vacíos, el sistema guardará los mensajes localmente en el archivo <code style={{ color: 'var(--primary-color)' }}>scratch/sms_logs.txt</code>.
+                  </p>
+
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px', marginBottom: '20px' }}>
+                    <div className="form-group" style={{ marginBottom: 0 }}>
+                      <label className="form-label" style={{ fontWeight: '600' }}>Account SID de Twilio</label>
+                      <input
+                        type="text"
+                        className="input-field"
+                        placeholder="ej. ACxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+                        value={twilioAccountSid}
+                        onChange={(e) => setTwilioAccountSid(e.target.value)}
+                      />
+                    </div>
+
+                    <div className="form-group" style={{ marginBottom: 0 }}>
+                      <label className="form-label" style={{ fontWeight: '600' }}>Auth Token de Twilio</label>
+                      <input
+                        type="password"
+                        className="input-field"
+                        placeholder="Twilio Auth Token"
+                        value={twilioAuthToken}
+                        onChange={(e) => setTwilioAuthToken(e.target.value)}
+                      />
+                    </div>
+                  </div>
+
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
+                    <div className="form-group" style={{ marginBottom: 0 }}>
+                      <label className="form-label" style={{ fontWeight: '600' }}>Número Remitente Twilio (From)</label>
+                      <input
+                        type="text"
+                        className="input-field"
+                        placeholder="ej. +18559098765"
+                        value={twilioFromNumber}
+                        onChange={(e) => setTwilioFromNumber(e.target.value)}
+                      />
+                      <p style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginTop: '4px' }}>Número telefónico asignado por Twilio en formato internacional.</p>
+                    </div>
+
+                    <div className="form-group" style={{ marginBottom: 0 }}>
+                      <label className="form-label" style={{ fontWeight: '600' }}>Número Receptor Admin (To)</label>
+                      <input
+                        type="text"
+                        className="input-field"
+                        placeholder="ej. +5215512345678"
+                        value={twilioToNumber}
+                        onChange={(e) => setTwilioToNumber(e.target.value)}
+                      />
+                      <p style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginTop: '4px' }}>Tu número telefónico personal en formato internacional (debe iniciar con +).</p>
+                    </div>
+                  </div>
                 </div>
 
                 <div style={{ borderTop: '1px solid var(--surface-border)', paddingTop: '20px', display: 'flex', justifyContent: 'flex-end' }}>

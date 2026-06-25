@@ -17,30 +17,41 @@ export default function PlanSelection() {
     }
   };
 
-  const plans = Object.keys(plansConfig || {}).map((key) => {
-    const config = plansConfig[key];
-    const isPrimary = key === 'premium';
-    const recommended = key === 'premium';
-    const isEnDesarrollo = config.status === 'En Desarrollo';
-    
-    let buttonText = `Obtener ${config.name}`;
-    if (isEnDesarrollo) buttonText = 'En Desarrollo';
-    else if (key === 'free') buttonText = 'Comenzar Gratis';
-    else if (key === 'premium') buttonText = 'Obtener Premium';
-    else if (key === 'vip') buttonText = 'Obtener VIP';
-    else if (key === 'pro') buttonText = 'Obtener PRO';
-    else if (key === 'bonus') buttonText = 'Adquirir Bonus';
-    else if (config.price === "0" || parseFloat(config.price) === 0) buttonText = 'Comenzar Gratis';
-    
-    return {
-      key,
-      config,
-      buttonText,
-      isPrimary,
-      recommended,
-      isEnDesarrollo
-    };
-  });
+  const plans = Object.keys(plansConfig || {})
+    .filter((key) => {
+      if (key === 'pro_1d') {
+        // Ocultar si ya fue usado o si es el plan activo actual
+        if (userProfile?.pro1dUsed || activePlan === 'pro_1d') {
+          return false;
+        }
+      }
+      return true;
+    })
+    .map((key) => {
+      const config = plansConfig[key];
+      const isPrimary = key === 'premium';
+      const recommended = key === 'premium';
+      const isEnDesarrollo = config.status === 'En Desarrollo';
+      
+      let buttonText = `Obtener ${config.name}`;
+      if (isEnDesarrollo) buttonText = 'En Desarrollo';
+      else if (key === 'free') buttonText = 'Comenzar Gratis';
+      else if (key === 'premium') buttonText = 'Obtener Premium';
+      else if (key === 'vip') buttonText = 'Obtener VIP';
+      else if (key === 'pro') buttonText = 'Obtener PRO';
+      else if (key === 'pro_1d') buttonText = 'Obtener Pro 1 Día';
+      else if (key === 'bonus') buttonText = 'Adquirir Bonus';
+      else if (config.price === "0" || parseFloat(config.price) === 0) buttonText = 'Comenzar Gratis';
+      
+      return {
+        key,
+        config,
+        buttonText,
+        isPrimary,
+        recommended,
+        isEnDesarrollo
+      };
+    });
 
   const mainPlans = plans.filter((p) => p.key !== 'bonus');
   const bonusPlan = plans.find((p) => p.key === 'bonus');

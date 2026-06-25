@@ -20,11 +20,11 @@ try {
  * 
  * @param {string} body - Contenido del mensaje.
  */
-async function sendAdminSMS(body) {
-  const accountSid = process.env.TWILIO_ACCOUNT_SID;
-  const authToken = process.env.TWILIO_AUTH_TOKEN;
-  const fromNumber = process.env.TWILIO_FROM_NUMBER;
-  const toNumber = process.env.ADMIN_MOBILE_NUMBER || process.env.TWILIO_TO_NUMBER;
+async function sendAdminSMS(body, config = {}) {
+  const accountSid = config.accountSid || process.env.TWILIO_ACCOUNT_SID;
+  const authToken = config.authToken || process.env.TWILIO_AUTH_TOKEN;
+  const fromNumber = config.fromNumber || process.env.TWILIO_FROM_NUMBER;
+  const toNumber = config.toNumber || process.env.ADMIN_MOBILE_NUMBER || process.env.TWILIO_TO_NUMBER;
 
   const logMessage = `[${new Date().toISOString()}] SMS para ${toNumber || 'ADMIN'} -> ${body}\n`;
 

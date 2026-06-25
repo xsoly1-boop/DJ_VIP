@@ -442,20 +442,28 @@ router.post('/updateUserSubscriptionStatus', async (req, res) => {
     await db.collection('users').doc(uid).update({ subscriptionStatus: status });
 
     // Also update Realtime Database profile
+    const profileSnap = await getDbRef(`users/${uid}/profile`).once('value');
+    const profile = profileSnap.exists() ? profileSnap.val() : {};
+
     let duration = 30;
     let durationUnit = 'days';
-    try {
-      const plansSnap = await getDbRef('config/plans').once('value');
-      if (plansSnap.exists()) {
-        const plans = plansSnap.val();
-        const planDetails = plans[status];
-        if (planDetails) {
-          duration = parseInt(planDetails.duration, 10) || 30;
-          durationUnit = planDetails.durationUnit || 'days';
+    if (status === 'pro_1d') {
+      duration = 24;
+      durationUnit = 'hours';
+    } else {
+      try {
+        const plansSnap = await getDbRef('config/plans').once('value');
+        if (plansSnap.exists()) {
+          const plans = plansSnap.val();
+          const planDetails = plans[status];
+          if (planDetails) {
+            duration = parseInt(planDetails.duration, 10) || 30;
+            durationUnit = planDetails.durationUnit || 'days';
+          }
         }
+      } catch (e) {
+        console.warn("Could not load plan duration from DB:", e);
       }
-    } catch (e) {
-      console.warn("Could not load plan duration from DB:", e);
     }
 
     let msToAdd = 0;
@@ -481,6 +489,11 @@ router.post('/updateUserSubscriptionStatus', async (req, res) => {
       activatedAt,
       expiresAt
     };
+
+    if (status === 'pro_1d') {
+      rtdbUpdates.previousActivePlan = profile.activePlan || 'free';
+      rtdbUpdates.pro1dUsed = true;
+    }
 
     if (status === 'free') {
       rtdbUpdates.paymentRejectedReason = null;
@@ -571,6 +584,17 @@ router.post('/sendNotificationSMS', async (req, res) => {
   }
   try {
     const { sendAdminSMS } = require('./smsService.cjs');
+    
+    let twilioConfig = {};
+    try {
+      const twilioSnap = await getDbRef('config/twilio').once('value');
+      if (twilioSnap.exists()) {
+        twilioConfig = twilioSnap.val() || {};
+      }
+    } catch (err) {
+      console.warn("Could not load twilio config from DB:", err);
+    }
+
     let message = '';
     if (type === 'pending_subscription') {
       const planName = (payload.selectedPlan || 'premium').toUpperCase();
@@ -585,7 +609,7 @@ router.post('/sendNotificationSMS', async (req, res) => {
     }
 
     if (message) {
-      await sendAdminSMS(message);
+      await sendAdminSMS(message, twilioConfig);
     }
     return res.json({ success: true });
   } catch (err) {
@@ -734,18 +758,23 @@ router.post('/approveSubscription', async (req, res) => {
 
     let duration = 30; // fallback duration: 30
     let durationUnit = 'days'; // fallback unit: days
-    try {
-      const plansSnap = await getDbRef('config/plans').once('value');
-      if (plansSnap.exists()) {
-        const plans = plansSnap.val();
-        const planDetails = plans[plan];
-        if (planDetails) {
-          duration = parseInt(planDetails.duration, 10) || 30;
-          durationUnit = planDetails.durationUnit || 'days';
+    if (plan === 'pro_1d') {
+      duration = 24;
+      durationUnit = 'hours';
+    } else {
+      try {
+        const plansSnap = await getDbRef('config/plans').once('value');
+        if (plansSnap.exists()) {
+          const plans = plansSnap.val();
+          const planDetails = plans[plan];
+          if (planDetails) {
+            duration = parseInt(planDetails.duration, 10) || 30;
+            durationUnit = planDetails.durationUnit || 'days';
+          }
         }
+      } catch (e) {
+        console.warn("Could not load plan duration from DB, using fallback 30 days:", e);
       }
-    } catch (e) {
-      console.warn("Could not load plan duration from DB, using fallback 30 days:", e);
     }
     
     let msToAdd = 0;
@@ -763,12 +792,22 @@ router.post('/approveSubscription', async (req, res) => {
     const expiresAt = activatedAt + msToAdd;
 
     // 1. Actualizar el perfil del usuario a activo con el plan seleccionado y expiración
-    await getDbRef(`users/${uid}/profile`).update({
+    const profileSnap = await getDbRef(`users/${uid}/profile`).once('value');
+    const profile = profileSnap.exists() ? profileSnap.val() : {};
+
+    const rtdbUpdates = {
       subscriptionStatus: plan,
       activePlan: plan,
       activatedAt,
       expiresAt
-    });
+    };
+
+    if (plan === 'pro_1d') {
+      rtdbUpdates.previousActivePlan = profile.activePlan || 'free';
+      rtdbUpdates.pro1dUsed = true;
+    }
+
+    await getDbRef(`users/${uid}/profile`).update(rtdbUpdates);
     
     // 2. Eliminar de la lista de pendientes
     await getDbRef(`pending_subscriptions/${uid}`).remove();
@@ -817,38 +856,69 @@ function setupSmsListeners() {
   console.log('📡 Configurando SMS Listeners en Firebase Realtime Database...');
   
   // 1. Nuevas suscripciones pendientes
-  admin.database().ref('pending_subscriptions').on('child_added', (snapshot) => {
+  admin.database().ref('pending_subscriptions').on('child_added', async (snapshot) => {
     const sub = snapshot.val();
     if (sub && sub.submittedAt && sub.submittedAt > serverStartTime) {
       const planName = (sub.selectedPlan || 'premium').toUpperCase();
       const djName = sub.displayName || sub.email || 'DJ';
+      
+      let twilioConfig = {};
+      try {
+        const twilioSnap = await admin.database().ref('config/twilio').once('value');
+        if (twilioSnap.exists()) {
+          twilioConfig = twilioSnap.val() || {};
+        }
+      } catch (e) {
+        console.error("Error reading twilio config in pending_subscriptions listener:", e);
+      }
+
       const { sendAdminSMS } = require('./smsService.cjs');
       const msg = `🔔 DJVIP: Nueva suscripción pendiente de validación. DJ: ${djName} (Plan: ${planName}). Comprobante: ${sub.transactionId || '—'}`;
-      sendAdminSMS(msg).catch(console.error);
+      sendAdminSMS(msg, twilioConfig).catch(console.error);
     }
   });
   
   // 2. Chat de Soporte PRO (mensajes de usuarios)
   admin.database().ref('support_chats').on('child_added', (chatSnap) => {
     const userUid = chatSnap.key;
-    chatSnap.ref.child('messages').on('child_added', (msgSnap) => {
+    chatSnap.ref.child('messages').on('child_added', async (msgSnap) => {
       const msg = msgSnap.val();
       if (msg && msg.senderId !== 'uid-admin-master' && msg.timestamp && msg.timestamp > serverStartTime) {
+        let twilioConfig = {};
+        try {
+          const twilioSnap = await admin.database().ref('config/twilio').once('value');
+          if (twilioSnap.exists()) {
+            twilioConfig = twilioSnap.val() || {};
+          }
+        } catch (e) {
+          console.error("Error reading twilio config in support_chats listener:", e);
+        }
+
         const { sendAdminSMS } = require('./smsService.cjs');
         const body = `💬 Soporte PRO: El DJ "${msg.senderName || 'DJ'}" escribió: "${msg.text}"`;
-        sendAdminSMS(body).catch(console.error);
+        sendAdminSMS(body, twilioConfig).catch(console.error);
       }
     });
   });
   
   // 3. Sugerencias / Retroalimentación
   admin.database().ref('suggestions').on('child_added', (userSnap) => {
-    userSnap.ref.on('child_added', (sugSnap) => {
+    userSnap.ref.on('child_added', async (sugSnap) => {
       const sug = sugSnap.val();
       if (sug && sug.submittedAt && sug.submittedAt > serverStartTime) {
+        let twilioConfig = {};
+        try {
+          const twilioSnap = await admin.database().ref('config/twilio').once('value');
+          if (twilioSnap.exists()) {
+            twilioConfig = twilioSnap.val() || {};
+          }
+        } catch (e) {
+          console.error("Error reading twilio config in suggestions listener:", e);
+        }
+
         const { sendAdminSMS } = require('./smsService.cjs');
         const body = `💡 DJVIP: Nueva sugerencia de "${sug.djName || sug.email || 'DJ'}": "${sug.text}"`;
-        sendAdminSMS(body).catch(console.error);
+        sendAdminSMS(body, twilioConfig).catch(console.error);
       }
     });
   });
