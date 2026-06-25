@@ -1250,13 +1250,13 @@ export default function DjDashboard() {
     if (!newEventTitle.trim()) { showToast('⚠️ El título del evento es requerido'); return; }
 
     // ── Restricción: Plan Premium = máximo 2 eventos ──────────────────────────
-    if (userProfile?.selectedPlan === 'premium' && eventsList.length >= 2) {
+    if ((userProfile?.activePlan || 'free') === 'premium' && eventsList.length >= 2) {
       showToast('⚠️ El plan contratado por el DJ ha alcanzado su límite de 2 eventos. Mejora a VIP para eventos ilimitados.');
       return;
     }
 
     // ── Verificación preventiva de cooldown 8h (Demo, Premium y Bonus) ───────
-    const planActual = userProfile?.activePlan || userProfile?.selectedPlan || 'free';
+    const planActual = userProfile?.activePlan || 'free';
     if (['free', 'premium', 'bonus'].includes(planActual)) {
       const COOLDOWN_MS = 8 * 60 * 60 * 1000;
       const latestCreatedAt = eventsList.reduce((max, ev) => {
@@ -1628,7 +1628,7 @@ export default function DjDashboard() {
       return sum + Object.keys(ev?.requests || {}).length;
     }, 0);
     
-    const currentPlan = uid === 'uid-admin-master' ? 'pro' : (userData?.profile?.selectedPlan || userData?.profile?.subscriptionStatus || 'free');
+    const currentPlan = uid === 'uid-admin-master' ? 'pro' : (userData?.profile?.activePlan || userData?.profile?.subscriptionStatus || 'free');
     const expiresAt = userData?.profile?.expiresAt || 0;
     const extraRequests = userData?.profile?.extraRequests !== undefined ? parseInt(userData.profile.extraRequests, 10) : 0;
     const extraRequestsExpiresAt = userData?.profile?.extraRequestsExpiresAt ? parseInt(userData.profile.extraRequestsExpiresAt, 10) : 0;
@@ -1663,8 +1663,8 @@ export default function DjDashboard() {
     return { uid, eventsCount, requestsCount, djName, eventTitles, email, currentPlan, expiresAt, demoLimit, premiumLimit, demoLimitExpiresAt, premiumLimitExpiresAt, logoUploadEnabled, strictLimitEnabled, extraRequests, extraRequestsExpiresAt };
   });
 
-  const isProUser = userProfile?.selectedPlan === 'pro' || userProfile?.activePlan === 'pro';
-  const currentPlan = userProfile?.activePlan || userProfile?.selectedPlan || 'free';
+  const isProUser = (userProfile?.activePlan || 'free') === 'pro';
+  const currentPlan = userProfile?.activePlan || 'free';
   const isPrintAllowed = ['vip', 'pro', 'eventual'].includes(currentPlan) || isAdminMaster;
 
   return (
@@ -1808,9 +1808,9 @@ export default function DjDashboard() {
             </p>
             <p style={{ fontSize: '0.75rem', color: '#facc15', fontWeight: '600', marginTop: '2px', letterSpacing: '0.5px' }}>
               {(() => {
-                const plan = userProfile?.selectedPlan || 'free';
+                const plan = userProfile?.activePlan || 'free';
                 const planName = plansConfig?.[plan]?.name || (plan === 'free' ? 'Plan Demo' : plan);
-                const isFree = !userProfile?.selectedPlan || plan === 'free';
+                const isFree = plan === 'free';
                 const isPremium = plan === 'premium';
                 let maxReq = 0;
                 let extraQuantity = 0;
@@ -2040,7 +2040,7 @@ export default function DjDashboard() {
             <button className={`btn ${activeTab === 'settings' ? 'btn-primary' : 'btn-secondary'}`}
               onClick={() => setActiveTab('settings')} style={{ justifyContent: 'flex-start', width: '100%' }}>
               <Settings size={16} /><span>Personalizar mi Panel</span>
-              {(!userProfile?.selectedPlan || userProfile?.selectedPlan === 'free') && <Lock size={14} style={{ marginLeft: 'auto', opacity: 0.6 }} />}
+              {(!currentPlan || currentPlan === 'free') && <Lock size={14} style={{ marginLeft: 'auto', opacity: 0.6 }} />}
             </button>
             <button className={`btn ${activeTab === 'calendar' ? 'btn-primary' : 'btn-secondary'}`}
               onClick={() => setActiveTab('calendar')} style={{ justifyContent: 'flex-start', width: '100%' }}>
@@ -2054,12 +2054,12 @@ export default function DjDashboard() {
             <button className={`btn ${activeTab === 'optimization' ? 'btn-primary' : 'btn-secondary'}`}
               onClick={() => setActiveTab('optimization')} style={{ justifyContent: 'flex-start', width: '100%' }}>
               <Sliders size={16} /><span>Ajustes de Optimización</span>
-              {(!userProfile?.selectedPlan || userProfile?.selectedPlan === 'free' || userProfile?.selectedPlan === 'premium') && <Lock size={14} style={{ marginLeft: 'auto', opacity: 0.6 }} />}
+              {(!currentPlan || currentPlan === 'free' || currentPlan === 'premium') && <Lock size={14} style={{ marginLeft: 'auto', opacity: 0.6 }} />}
             </button>
             <button className={`btn ${activeTab === 'benefits' ? 'btn-primary' : 'btn-secondary'}`}
               onClick={() => setActiveTab('benefits')} style={{ justifyContent: 'flex-start', width: '100%' }}>
               <Sparkles size={16} /><span>Beneficios para el DJ</span>
-              {(!userProfile?.selectedPlan || userProfile?.selectedPlan === 'free' || userProfile?.selectedPlan === 'premium') && <Lock size={14} style={{ marginLeft: 'auto', opacity: 0.6 }} />}
+              {(!currentPlan || currentPlan === 'free' || currentPlan === 'premium') && <Lock size={14} style={{ marginLeft: 'auto', opacity: 0.6 }} />}
             </button>
             {/* Tab Admin: solo visible para dj@admin.com sin impersonar */}
             {isAdminMaster && !impersonatingUid && (
@@ -2560,7 +2560,7 @@ export default function DjDashboard() {
                 Configuración de Marca
               </h2>
 
-              {(!userProfile?.selectedPlan || userProfile?.selectedPlan === 'free') ? (
+              {(!currentPlan || currentPlan === 'free') ? (
                 <div style={{
                   padding: '40px 20px',
                   textAlign: 'center',
@@ -2602,7 +2602,7 @@ export default function DjDashboard() {
                 <form onSubmit={handleSaveBranding} style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
 
                 {/* Logo Personalizado - Visible para Admin Master, Premium y VIP */}
-                {(isAdminMaster || userProfile?.selectedPlan === 'premium' || userProfile?.selectedPlan === 'vip') && (
+                {(isAdminMaster || currentPlan === 'premium' || currentPlan === 'vip') && (
                 <div className="form-group" style={{ borderBottom: '1px solid rgba(255,255,255,0.05)', paddingBottom: '20px' }}>
                   <label className="form-label" style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px' }}>
                     <Image size={15} color="var(--secondary-color)" />
@@ -2621,7 +2621,7 @@ export default function DjDashboard() {
                     <div style={{ flex: 1, minWidth: '250px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
                       
                       {/* Opción A: Subir Archivo - Solo Admin Master o VIP con logoUploadEnabled */}
-                      {(isAdminMaster || (userProfile?.selectedPlan === 'vip' && userProfile?.logoUploadEnabled)) && (
+                      {(isAdminMaster || (currentPlan === 'vip' && userProfile?.logoUploadEnabled)) && (
                         <div>
                           <span style={{ fontSize: '0.8rem', fontWeight: '600', display: 'block', marginBottom: '6px', color: 'var(--text-primary)' }}>
                             Opción A: Subir desde tu computadora
@@ -2635,7 +2635,7 @@ export default function DjDashboard() {
                         </div>
                       )}
 
-                      {(isAdminMaster || (userProfile?.selectedPlan === 'vip' && userProfile?.logoUploadEnabled)) && (
+                      {(isAdminMaster || (currentPlan === 'vip' && userProfile?.logoUploadEnabled)) && (
                         <div style={{ height: '1px', background: 'rgba(255,255,255,0.05)', margin: '4px 0' }} />
                       )}
 
@@ -2691,7 +2691,7 @@ export default function DjDashboard() {
                 )}
 
                 {/* URL de Producción (Vercel) - Solo VIP/Eventual y solo visible para Admin Master */}
-                {userProfile?.selectedPlan !== 'premium' && isAdminMaster && (
+                {currentPlan !== 'premium' && isAdminMaster && (
                 <div className="form-group" style={{ borderBottom: '1px solid rgba(255,255,255,0.05)', paddingBottom: '20px' }}>
                   <label className="form-label" style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                     🔗 URL de Producción (Vercel)
@@ -2705,7 +2705,7 @@ export default function DjDashboard() {
                 )}
 
                 {/* Nombre de la Web / Plataforma - Solo VIP/Eventual */}
-                {userProfile?.selectedPlan !== 'premium' && (
+                {currentPlan !== 'premium' && (
                 <div className="form-group" style={{ borderBottom: '1px solid rgba(255,255,255,0.05)', paddingBottom: '20px' }}>
                   <label className="form-label" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                     <Sparkles size={15} color="var(--primary-color)" />
@@ -2725,7 +2725,7 @@ export default function DjDashboard() {
                 )}
 
                 {/* Tamaño de letra del Nombre de la Plataforma - Solo VIP/Eventual */}
-                {userProfile?.selectedPlan !== 'premium' && (
+                {currentPlan !== 'premium' && (
                 <div className="form-group" style={{ borderBottom: '1px solid rgba(255,255,255,0.05)', paddingBottom: '20px' }}>
                   <label className="form-label" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                     <Sliders size={15} color="var(--primary-color)" />
@@ -2750,7 +2750,7 @@ export default function DjDashboard() {
                 )}
 
                 {/* Títulos y Fecha - Solo VIP/Eventual */}
-                {userProfile?.selectedPlan !== 'premium' && (<>
+                {currentPlan !== 'premium' && (<>
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
                   <div className="form-group">
                     <label className="form-label">Título del Evento (Público)</label>
@@ -2779,7 +2779,7 @@ export default function DjDashboard() {
                 </>)}
 
                 {/* Paleta de Colores - Solo VIP/Eventual */}
-                {userProfile?.selectedPlan !== 'premium' && (
+                {currentPlan !== 'premium' && (
                 <div style={{ borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: '20px' }}>
                   <label className="form-label">Esquema de Colores Dinámico</label>
                   <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginBottom: '16px' }}>
@@ -2807,7 +2807,7 @@ export default function DjDashboard() {
                 <div style={{ borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: '20px' }}>
                   <label className="form-label" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                     🎨 Tema / Color de Fondo
-                    {!(userProfile?.selectedPlan === 'vip' || userProfile?.selectedPlan === 'eventual' || isProUser) && (
+                    {!(currentPlan === 'vip' || currentPlan === 'eventual' || isProUser) && (
                       <span style={{ fontSize: '0.65rem', color: 'var(--warning-color)', background: 'rgba(245,158,11,0.1)', padding: '2px 6px', borderRadius: '4px', fontWeight: '700', display: 'flex', alignItems: 'center', gap: '3px' }}>
                         🔒 EXCLUSIVO VIP / EVENTUAL / PRO
                       </span>
@@ -2822,7 +2822,7 @@ export default function DjDashboard() {
                       const isSkinUnlocked = (skinKey) => {
                         if (skinKey === 'default') return true;
                         if (skinKey === 'skin_luxury') return isProUser;
-                        return ['vip', 'eventual', 'pro'].includes(userProfile?.selectedPlan) || ['vip', 'eventual', 'pro'].includes(userProfile?.activePlan);
+                        return ['vip', 'eventual', 'pro'].includes(currentPlan);
                       };
 
                       return [
@@ -2869,7 +2869,7 @@ export default function DjDashboard() {
                       });
                     })()}
                   </div>
-                  {!(userProfile?.selectedPlan === 'vip' || userProfile?.selectedPlan === 'eventual' || isProUser) ? (
+                  {!(currentPlan === 'vip' || currentPlan === 'eventual' || isProUser) ? (
                     <p style={{ fontSize: '0.75rem', color: 'var(--warning-color)', marginTop: '8px' }}>
                       💡 Mejora tu plan a <strong>VIP</strong>, <strong>PRO</strong> o adquiere un pase <strong>Eventual</strong> en la sección de planes para desbloquear esta personalización.
                     </p>
@@ -2883,7 +2883,7 @@ export default function DjDashboard() {
                 </div>
 
                 {/* Tipografía y Escala - Solo VIP/Eventual */}
-                {userProfile?.selectedPlan !== 'premium' && (<>
+                {currentPlan !== 'premium' && (<>
                 <div style={{ borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: '20px', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
                   <div className="form-group">
                     <label className="form-label">Tipografía / Fuente del Sitio</label>
@@ -2909,7 +2909,7 @@ export default function DjDashboard() {
                 </>)}
 
                 {/* Módulo de Comentarios o Dedicatorias - Solo VIP/Eventual */}
-                {userProfile?.selectedPlan !== 'premium' && (<>
+                {currentPlan !== 'premium' && (<>
                 <div style={{ borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: '20px' }}>
                   <label className="form-label" style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--primary-color)', fontWeight: '600' }}>
                     💬 Módulo de Dedicatorias y Comentarios
@@ -2957,7 +2957,7 @@ export default function DjDashboard() {
 
           {/* PANEL AJUSTES DE OPTIMIZACIÓN */}
           {activeTab === 'optimization' && (
-            (!userProfile?.selectedPlan || userProfile?.selectedPlan === 'free' || userProfile?.selectedPlan === 'premium') ? (
+            (!currentPlan || currentPlan === 'free' || currentPlan === 'premium') ? (
               <div className="glass-panel animate-slide-in" style={{ padding: '24px' }}>
                 <h2 style={{ fontSize: '1.25rem', marginBottom: '20px', borderBottom: '1px solid var(--surface-border)', paddingBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
                   <Sliders size={20} color="var(--primary-color)" />
@@ -3388,7 +3388,7 @@ export default function DjDashboard() {
                 </h2>
               </div>
 
-              {(!userProfile?.selectedPlan || userProfile?.selectedPlan === 'free' || userProfile?.selectedPlan === 'premium') ? (
+              {(!currentPlan || currentPlan === 'free' || currentPlan === 'premium') ? (
                 <div style={{
                   padding: '40px 20px',
                   textAlign: 'center',
@@ -3946,7 +3946,7 @@ export default function DjDashboard() {
                     <h3 style={{ fontSize: '1.15rem', color: '#fff', marginBottom: '6px', display: 'flex', alignItems: 'center', gap: '8px' }}>
                       <Sparkles size={18} color="var(--primary-color)" />
                       Tu Plan Actual: <span style={{ color: 'var(--primary-color)', fontWeight: 'bold', textTransform: 'uppercase' }}>
-                        {plansConfig?.[userProfile?.selectedPlan || 'free']?.name || userProfile?.selectedPlan || 'demo/gratis'}
+                        {plansConfig?.[userProfile?.activePlan || 'free']?.name || userProfile?.activePlan || 'demo/gratis'}
                         {(() => {
                           const extraRequests = userProfile?.extraRequests !== undefined ? parseInt(userProfile.extraRequests, 10) : 0;
                           const extraRequestsExpiresAt = userProfile?.extraRequestsExpiresAt ? parseInt(userProfile.extraRequestsExpiresAt, 10) : 0;
@@ -3956,13 +3956,13 @@ export default function DjDashboard() {
                       </span>
                     </h3>
                     <p style={{ color: 'var(--text-secondary)', fontSize: '0.85rem', margin: 0, maxWidth: '500px' }}>
-                      {(!userProfile?.selectedPlan || userProfile?.selectedPlan === 'free') && `Estás usando el ${plansConfig?.free?.name || 'Plan Demo'} con límites. Pásate a ${plansConfig?.premium?.name || 'Premium'} para personalización de marca, logo y peticiones ilimitadas.`}
-                      {userProfile?.selectedPlan === 'premium' && `Tienes acceso a ${plansConfig?.premium?.name || 'Plan Premium'}. Pásate a ${plansConfig?.vip?.name || 'VIP'} para soporte técnico prioritario 24/7 y eventos simultáneos.`}
-                      {userProfile?.selectedPlan === 'vip' && `¡Tienes el ${plansConfig?.vip?.name || 'Plan VIP'} con acceso y soporte total habilitados! Gracias por confiar en nosotros.`}
+                      {(!userProfile?.activePlan || userProfile?.activePlan === 'free') && `Estás usando el ${plansConfig?.free?.name || 'Plan Demo'} con límites. Pásate a ${plansConfig?.premium?.name || 'Premium'} para personalización de marca, logo y peticiones ilimitadas.`}
+                      {userProfile?.activePlan === 'premium' && `Tienes acceso a ${plansConfig?.premium?.name || 'Plan Premium'}. Pásate a ${plansConfig?.vip?.name || 'VIP'} para soporte técnico prioritario 24/7 y eventos simultáneos.`}
+                      {userProfile?.activePlan === 'vip' && `¡Tienes el ${plansConfig?.vip?.name || 'Plan VIP'} con acceso y soporte total habilitados! Gracias por confiar en nosotros.`}
                     </p>
                   </div>
                   
-                  {userProfile?.selectedPlan !== 'vip' && (
+                  {userProfile?.activePlan !== 'vip' && (
                     <button
                       onClick={() => selectPlan('pending_plan')}
                       className="btn btn-primary"
@@ -4109,7 +4109,7 @@ export default function DjDashboard() {
                   </div>
                   {/* Aviso de cooldown 8h para planes Demo, Premium y Bonus */}
                   {(() => {
-                    const planActual = userProfile?.activePlan || userProfile?.selectedPlan || 'free';
+                    const planActual = userProfile?.activePlan || 'free';
                     if (!['free', 'premium', 'bonus'].includes(planActual)) return null;
                     const COOLDOWN_MS = 8 * 60 * 60 * 1000;
                     const latestCreatedAt = eventsList.reduce((max, ev) => {
@@ -6122,7 +6122,7 @@ export default function DjDashboard() {
       )}
 
       {/* Chat de Soporte Flotante para DJ PRO */}
-      {!isAdminMaster && userProfile?.selectedPlan === 'pro' && (
+      {!isAdminMaster && currentPlan === 'pro' && (
         <div style={{ position: 'fixed', bottom: '24px', right: '24px', zIndex: 9999, fontFamily: 'system-ui, sans-serif' }}>
           {/* Botón Flotante */}
           <button
