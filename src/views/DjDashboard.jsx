@@ -1817,7 +1817,7 @@ export default function DjDashboard() {
                   const color = pct >= 90 ? '#ef4444' : pct >= 70 ? '#f97316' : '#facc15';
                   return (
                     <span style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
-                      <span>📋 Plan activo: <strong>{planName}</strong></span>
+                      <span>📋 Plan activo: <strong>{planName}{extraQuantity > 0 ? ` +${extraQuantity} Extra` : ''}</strong></span>
                       {extraQuantity > 0 && (
                         <button
                           onClick={() => showToast(`⚡ Tienes ${extraQuantity} peticiones extra contratadas por 30 días.`)}
@@ -3908,7 +3908,15 @@ export default function DjDashboard() {
                   <div>
                     <h3 style={{ fontSize: '1.15rem', color: '#fff', marginBottom: '6px', display: 'flex', alignItems: 'center', gap: '8px' }}>
                       <Sparkles size={18} color="var(--primary-color)" />
-                      Tu Plan Actual: <span style={{ color: 'var(--primary-color)', fontWeight: 'bold', textTransform: 'uppercase' }}>{plansConfig?.[userProfile?.selectedPlan || 'free']?.name || userProfile?.selectedPlan || 'demo/gratis'}</span>
+                      Tu Plan Actual: <span style={{ color: 'var(--primary-color)', fontWeight: 'bold', textTransform: 'uppercase' }}>
+                        {plansConfig?.[userProfile?.selectedPlan || 'free']?.name || userProfile?.selectedPlan || 'demo/gratis'}
+                        {(() => {
+                          const extraRequests = userProfile?.extraRequests !== undefined ? parseInt(userProfile.extraRequests, 10) : 0;
+                          const extraRequestsExpiresAt = userProfile?.extraRequestsExpiresAt ? parseInt(userProfile.extraRequestsExpiresAt, 10) : 0;
+                          const isExtraValid = extraRequests > 0 && (!extraRequestsExpiresAt || Date.now() <= extraRequestsExpiresAt);
+                          return isExtraValid ? ` (+${extraRequests} Extra)` : '';
+                        })()}
+                      </span>
                     </h3>
                     <p style={{ color: 'var(--text-secondary)', fontSize: '0.85rem', margin: 0, maxWidth: '500px' }}>
                       {(!userProfile?.selectedPlan || userProfile?.selectedPlan === 'free') && `Estás usando el ${plansConfig?.free?.name || 'Plan Demo'} con límites. Pásate a ${plansConfig?.premium?.name || 'Premium'} para personalización de marca, logo y peticiones ilimitadas.`}
@@ -4726,7 +4734,7 @@ export default function DjDashboard() {
                 </div>
               ) : (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                  {adminUsersList.map(({ uid, eventsCount, requestsCount, djName, eventTitles, email, currentPlan, expiresAt, demoLimit, premiumLimit, demoLimitExpiresAt, premiumLimitExpiresAt, logoUploadEnabled, strictLimitEnabled }) => (
+                  {adminUsersList.map(({ uid, eventsCount, requestsCount, djName, eventTitles, email, currentPlan, expiresAt, demoLimit, premiumLimit, demoLimitExpiresAt, premiumLimitExpiresAt, logoUploadEnabled, strictLimitEnabled, extraRequests }) => (
                     <div key={uid} className="glass-panel animate-slide-in" style={{
                       padding: '20px 24px', borderRadius: 'var(--radius-md)',
                       display: 'flex', flexDirection: 'column', gap: '14px',
@@ -4891,7 +4899,7 @@ export default function DjDashboard() {
                                     fontWeight: '600',
                                     textTransform: 'uppercase'
                                   }}>
-                                    Plan: {plansConfig?.[currentPlan]?.name || currentPlan}
+                                    Plan: {plansConfig?.[currentPlan]?.name || currentPlan}{extraRequests > 0 ? ` (+${extraRequests} Extra)` : ''}
                                     {currentPlan === 'free' && ` (Límite: ${demoLimit})`}
                                     {currentPlan === 'premium' && ` (Límite: ${premiumLimit})`}
                                   </span>

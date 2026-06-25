@@ -21,8 +21,8 @@ app.use('/api/admin', adminRoutes);
 // Create a new subscription
 app.post('/api/subscription/create', async (req, res) => {
   try {
-    const { userId, planId, paymentMethod } = req.body;
-    const result = await paymentService.createSubscription({ userId, planId, paymentMethod });
+    const { userId, planId, paymentMethod, uid } = req.body;
+    const result = await paymentService.createSubscription({ userId, planId, paymentMethod, uid });
     res.json({ success: true, data: result });
   } catch (e) {
     console.error(e);

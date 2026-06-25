@@ -427,6 +427,8 @@ router.post('/updateUserSubscriptionStatus', async (req, res) => {
       await db.collection('users').doc(uid).update({ subscriptionStatus: currentActivePlan });
       await getDbRef(`users/${uid}/profile`).update({
         subscriptionStatus: currentActivePlan,
+        activePlan: currentActivePlan,
+        selectedPlan: currentActivePlan,
         extraRequests: newExtra,
         extraRequestsExpiresAt: extraExpiresAt,
         paymentRejectedReason: null,
@@ -660,6 +662,8 @@ router.post('/approveSubscription', async (req, res) => {
 
       await getDbRef(`users/${uid}/profile`).update({
         subscriptionStatus: currentActivePlan,
+        activePlan: currentActivePlan,
+        selectedPlan: currentActivePlan,
         extraRequests: newExtra,
         extraRequestsExpiresAt: extraExpiresAt,
         paymentRejectedReason: null,

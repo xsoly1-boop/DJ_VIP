@@ -8,7 +8,7 @@ export default function PaymentView() {
     : (window.location.protocol === 'file:' || !window.location.hostname)
       ? (import.meta.env.DEV ? 'http://localhost:4000' : (import.meta.env.VITE_PUBLIC_URL ? import.meta.env.VITE_PUBLIC_URL.replace(/\/$/, '') : 'https://dj-vip.vercel.app'))
       : '';
-  const { userProfile, selectPlan, submitPaymentProof, logoutDJ, plansConfig, publicPaymentInfo } = useFirebase();
+  const { userProfile, selectPlan, submitPaymentProof, logoutDJ, plansConfig, publicPaymentInfo, user } = useFirebase();
   const [gateway, setGateway] = useState('');
   const [transactionId, setTransactionId] = useState('');
   const [loading, setLoading] = useState(false);
@@ -17,6 +17,11 @@ export default function PaymentView() {
   const planName = userProfile?.selectedPlan || 'premium';
   const planDetails = plansConfig?.[planName];
   const price = planDetails ? `$${planDetails.price} ${planDetails.currency || 'MXN'}` : (planName === 'vip' ? '$549 MXN' : '$299 MXN');
+
+  const activePlan = userProfile?.activePlan || 'free';
+  const displayPlanName = planName === 'bonus'
+    ? `Peticiones Extra (${activePlan === 'free' ? '+15' : '+20'} Peticiones)`
+    : `Plan ${planName.toUpperCase()}`;
 
   const handleBackToPlans = async () => {
     try {
@@ -41,7 +46,8 @@ export default function PaymentView() {
         body: JSON.stringify({
           userId: userProfile?.email || 'user',
           planId: planName,
-          paymentMethod: method
+          paymentMethod: method,
+          uid: userProfile?.uid || user?.uid || ''
         })
       });
       const data = await res.json();
@@ -152,7 +158,7 @@ export default function PaymentView() {
         </div>
 
         <div style={{ textAlign: 'center', marginBottom: '25px' }}>
-          <h2 style={{ fontSize: '1.4rem', color: '#fff', marginBottom: '6px' }}>Adquirir Plan {planName.toUpperCase()}</h2>
+          <h2 style={{ fontSize: '1.4rem', color: '#fff', marginBottom: '6px' }}>Adquirir {displayPlanName}</h2>
           <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>Total a pagar: <strong style={{ color: 'var(--success-color)', fontSize: '1.1rem' }}>{price}</strong></p>
         </div>
 

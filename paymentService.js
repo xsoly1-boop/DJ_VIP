@@ -61,8 +61,47 @@ async function getPaymentConfig() {
 }
 
 // Helper to create a subscription (choose provider based on paymentMethod)
-async function createSubscription({ userId, planId, paymentMethod }) {
+async function createSubscription({ userId, planId, paymentMethod, uid }) {
   const config = await getPaymentConfig();
+
+  // Resolve user active plan dynamically to customize the bonus addon
+  let activePlan = 'free';
+  if (uid) {
+    if (admin.apps.length === 0) {
+      try {
+        const fs = require('fs');
+        const path = require('path');
+        const mockDbPath = path.join(__dirname, 'scratch/mock_backend_db.json');
+        if (fs.existsSync(mockDbPath)) {
+          const db = JSON.parse(fs.readFileSync(mockDbPath, 'utf8'));
+          activePlan = db.users?.[uid]?.profile?.activePlan || db.users?.[uid]?.profile?.subscriptionStatus || 'free';
+        }
+      } catch (e) {}
+    } else {
+      try {
+        const snapshot = await admin.database().ref(`users/${uid}/profile`).once('value');
+        if (snapshot.exists()) {
+          activePlan = snapshot.val().activePlan || snapshot.val().subscriptionStatus || 'free';
+        }
+      } catch (e) {
+        console.error('Error fetching active plan in createSubscription:', e);
+      }
+    }
+  }
+
+  let planDetails = await getPlanDetails(planId);
+  let planName = planDetails?.name || `Plan ${planId.toUpperCase()}`;
+  let planDesc = planDetails?.description || DEFAULT_PLANS[planId]?.description || '';
+
+  if (planId === 'bonus') {
+    if (activePlan === 'premium') {
+      planName = "Peticiones Extra (+20 Peticiones)";
+      planDesc = "Agrega 20 peticiones adicionales a tu Plan Premium durante 30 días.";
+    } else {
+      planName = "Peticiones Extra (+15 Peticiones)";
+      planDesc = "Agrega 15 peticiones adicionales a tu Plan Demo durante 30 días.";
+    }
+  }
 
   if (paymentMethod === 'paypal') {
     const clientId = config.paypalClientId || process.env.PAYPAL_CLIENT_ID;
@@ -101,9 +140,6 @@ async function createSubscription({ userId, planId, paymentMethod }) {
       });
       const preferenceClient = new Preference(client);
 
-      // Get plan details dynamically from database
-      const planDetails = await getPlanDetails(planId);
-      const planName = planDetails?.name || `Plan ${planId.toUpperCase()}`;
       const price = parseFloat(planDetails?.price || DEFAULT_PLANS[planId]?.price || 0);
       const currency = planDetails?.currency || DEFAULT_PLANS[planId]?.currency || 'MXN';
 
@@ -120,6 +156,7 @@ async function createSubscription({ userId, planId, paymentMethod }) {
           items: [
             {
               title: planName,
+              description: planDesc,
               quantity: 1,
               unit_price: price,
               currency_id: currency
