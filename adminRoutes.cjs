@@ -259,31 +259,7 @@ router.post('/listSubscriptions', async (req, res) => {
     const db = getFirestoreMock();
     const snapshot = await db.collection('subscriptions').get();
     const subs = [];
-    let hasAdminSub = false;
-    snapshot.forEach(doc => {
-      const data = doc.data();
-      const subId = doc.id;
-      const subUid = data ? (data.uid || data.userId) : null;
-      if (subUid === 'uid-admin-master' || subId === 'uid-admin-master') {
-        hasAdminSub = true;
-      }
-      subs.push({ id: doc.id, ...data });
-    });
-    if (!hasAdminSub) {
-      subs.push({
-        id: 'uid-admin-master',
-        uid: 'uid-admin-master',
-        userId: 'dj@admin.com',
-        email: 'dj@admin.com',
-        plan: 'pro',
-        type: 'pro',
-        status: 'active',
-        price: '400',
-        gateway: 'manual',
-        activatedAt: Date.now(),
-        expiresAt: 0
-      });
-    }
+    snapshot.forEach(doc => subs.push({ id: doc.id, ...doc.data() }));
     return res.json({ success: true, subscriptions: subs });
   } catch (e) {
     console.error('Error listing subscriptions', e);
