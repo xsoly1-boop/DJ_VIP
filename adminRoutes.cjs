@@ -1352,8 +1352,8 @@ router.post('/submitSubscriptionRequest', async (req, res) => {
     return res.status(400).json({ success: false, error: 'Missing uid, username, or plan' });
   }
   try {
-    // Guardar solicitud en pending_subscriptions
-    await getDbRef(`pending_subscriptions/${uid}`).set({
+    // Guardar solicitud en pending_subscriptions usando update para conservar los campos detallados del frontend
+    await getDbRef(`pending_subscriptions/${uid}`).update({
       uid,
       username,
       plan,
