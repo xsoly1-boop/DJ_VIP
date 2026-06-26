@@ -1,10 +1,56 @@
-const { app, BrowserWindow, Menu, ipcMain, powerSaveBlocker } = require('electron');
+const { app, BrowserWindow, Menu, ipcMain, powerSaveBlocker, Tray, nativeImage, dialog, protocol, net } = require('electron');
 const path = require('path');
 const fs = require('fs');
 const os = require('os');
+const { pathToFileURL } = require('url');
+
+// Desactivar política de autoplay para permitir sonido de notificaciones en segundo plano
+app.commandLine.appendSwitch('autoplay-policy', 'no-user-gesture-required');
+
+// Bloqueo de Instancia Única (Single Instance Lock)
+const gotTheLock = app.requestSingleInstanceLock();
+if (!gotTheLock) {
+  app.quit();
+} else {
+  app.on('second-instance', () => {
+    if (mainWindow) {
+      if (mainWindow.isMinimized()) mainWindow.restore();
+      mainWindow.show();
+      mainWindow.focus();
+    }
+  });
+}
 
 let mainWindow;
 let powerSaveBlockerId;
+let tray = null;
+
+// Ruta del archivo de configuración local para notificaciones y sesión
+const configPath = path.join(app.getPath('userData'), 'djvip_config.json');
+
+function loadConfig() {
+  try {
+    if (fs.existsSync(configPath)) {
+      return JSON.parse(fs.readFileSync(configPath, 'utf8'));
+    }
+  } catch (e) {
+    console.error('Error cargando configuración:', e);
+  }
+  return {
+    selected_ringtone_uri: '',
+    selected_ringtone_name: 'Predeterminado del sistema',
+    user_uid: '',
+    user_role: ''
+  };
+}
+
+function saveConfig(config) {
+  try {
+    fs.writeFileSync(configPath, JSON.stringify(config, null, 2), 'utf8');
+  } catch (e) {
+    console.error('Error guardando configuración:', e);
+  }
+}
 
 function createWindow() {
   mainWindow = new BrowserWindow({
@@ -83,6 +129,14 @@ function createWindow() {
   const menu = Menu.buildFromTemplate(template);
   Menu.setApplicationMenu(menu);
 
+  // Interceptar el evento de cierre de ventana para ocultarla en segundo plano
+  mainWindow.on('close', (e) => {
+    if (!app.isQuitting) {
+      e.preventDefault();
+      mainWindow.hide();
+    }
+  });
+
   mainWindow.on('closed', () => {
     mainWindow = null;
   });
@@ -153,11 +207,105 @@ ipcMain.handle('write-playlist', async (event, { vdjPath, filename, content }) =
   }
 });
 
+// Función para crear el icono en el System Tray
+function createTray() {
+  const iconPath = path.join(__dirname, 'build-resources', 'icon.png');
+  let image;
+  if (fs.existsSync(iconPath)) {
+    image = nativeImage.createFromPath(iconPath).resize({ width: 16, height: 16 });
+  } else {
+    // fallback
+    image = nativeImage.createEmpty();
+  }
+  
+  tray = new Tray(image);
+  
+  const contextMenu = Menu.buildFromTemplate([
+    {
+      label: 'Mostrar DJ Panel Pro',
+      click: () => {
+        if (mainWindow) {
+          mainWindow.show();
+          mainWindow.focus();
+        }
+      }
+    },
+    { type: 'separator' },
+    {
+      label: 'Iniciar con el sistema',
+      type: 'checkbox',
+      checked: app.getLoginItemSettings().openAtLogin,
+      click: (item) => {
+        app.setLoginItemSettings({
+          openAtLogin: item.checked,
+          path: app.getPath('exe')
+        });
+      }
+    },
+    { type: 'separator' },
+    {
+      label: 'Salir',
+      click: () => {
+        app.isQuitting = true;
+        app.quit();
+      }
+    }
+  ]);
+  
+  tray.setToolTip('DJ Panel Pro');
+  tray.setContextMenu(contextMenu);
+  
+  tray.on('double-click', () => {
+    if (mainWindow) {
+      mainWindow.show();
+      mainWindow.focus();
+    }
+  });
+}
+
+// IPC Handlers para Notificaciones y Configuración
+ipcMain.on('get-config-sync', (event) => {
+  event.returnValue = loadConfig();
+});
+
+ipcMain.on('save-config-sync', (event, config) => {
+  saveConfig(config);
+  event.returnValue = true;
+});
+
+ipcMain.handle('choose-sound-dialog', async () => {
+  const result = await dialog.showOpenDialog(mainWindow, {
+    title: 'Seleccionar tono de notificación',
+    filters: [
+      { name: 'Archivos de audio', extensions: ['mp3', 'wav', 'ogg', 'm4a'] }
+    ],
+    properties: ['openFile']
+  });
+
+  if (!result.canceled && result.filePaths.length > 0) {
+    const filePath = result.filePaths[0];
+    const name = path.basename(filePath);
+    return { name, uri: filePath };
+  }
+  return null;
+});
+
 app.whenReady().then(() => {
+  // Registrar protocolo seguro para reproducir sonidos locales
+  protocol.handle('local-sound', (request) => {
+    const filePath = decodeURIComponent(request.url.replace('local-sound://', ''));
+    try {
+      return net.fetch(pathToFileURL(filePath).toString());
+    } catch (err) {
+      console.error('Error al cargar sonido local en Electron:', err);
+    }
+  });
+
   // Evitar reposo de la pantalla/sistema en macOS/desktop
   powerSaveBlockerId = powerSaveBlocker.start('prevent-display-sleep');
 
   createWindow();
+  createTray();
 
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) {
@@ -167,9 +315,7 @@ app.whenReady().then(() => {
 });
 
 app.on('window-all-closed', () => {
-  if (process.platform !== 'darwin') {
-    app.quit();
-  }
+  // Mantener la app viva en el System Tray
 });
 
 app.on('will-quit', () => {
