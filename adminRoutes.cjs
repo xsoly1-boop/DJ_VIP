@@ -3,6 +3,7 @@ const express = require('express');
 const router = express.Router();
 const fs = require('fs');
 const path = require('path');
+try { require('dotenv').config(); } catch (e) {}
 
 // FCM — Notificaciones push en segundo plano
 const fcmSender = require('./scripts/fcm-sender.cjs');
@@ -1451,4 +1452,23 @@ router.post('/registerDevice', async (req, res) => {
     return res.status(500).json({ success: false, error: e.message });
   }
 });
+
+router.post('/notify-update', async (req, res) => {
+  const { versionName, releaseNotes } = req.body;
+  if (!versionName) {
+    return res.status(400).json({ success: false, error: 'Falta el parámetro versionName.' });
+  }
+  
+  try {
+    const result = await fcmSender.sendGlobalUpdateNotification(versionName, releaseNotes);
+    return res.json({ success: true, result });
+  } catch (e) {
+    console.error('Error en /notify-update:', e);
+    return res.status(500).json({ success: false, error: e.message });
+  }
+});
+
+router.getDbRef = getDbRef;
+router.getFirestoreMock = getFirestoreMock;
+
 module.exports = router;

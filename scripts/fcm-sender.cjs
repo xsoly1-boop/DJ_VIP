@@ -166,7 +166,7 @@ async function sendToTokens(tokens, payload, dataOnly = false) {
         message.android.notification = {
           sound: 'default',
           channelId: payload.data?.channel_id || 'djvip_default',
-          icon: 'ic_launcher'
+          icon: 'ic_notification'
         };
       }
 
@@ -416,6 +416,53 @@ async function unregisterFCMToken(uid, fcmToken) {
   }
 }
 
+/**
+ * 🚀 Notificación de Actualización Global
+ * Envía una notificación push a todos los dispositivos registrados en la base de datos
+ */
+async function sendGlobalUpdateNotification(versionName, releaseNotes = '') {
+  console.log(`[FCM] 🚀 Notificación global de actualización → v${versionName}`);
+  
+  try {
+    const db = getDatabase();
+    const usersSnap = await db.ref('users').once('value');
+    if (!usersSnap.exists()) return { sent: 0, failed: 0 };
+    
+    const users = usersSnap.val();
+    const tokens = [];
+    
+    for (const [uid, u] of Object.entries(users)) {
+      if (u && u.devices && typeof u.devices === 'object') {
+        Object.values(u.devices).forEach(device => {
+          if (device && device.fcmToken && device.platform === 'android' && device.active !== false) {
+            if (!tokens.includes(device.fcmToken)) {
+              tokens.push(device.fcmToken);
+            }
+          }
+        });
+      }
+    }
+    
+    const bodyText = releaseNotes 
+      ? `Hay una nueva versión disponible (v${versionName}). Novedades: ${releaseNotes}`
+      : `Ya está disponible la nueva versión ${versionName}. Abre la aplicación para actualizar.`;
+      
+    return sendToTokens(tokens, {
+      data: {
+        notification_type: 'app_update',
+        title: '🚀 Actualización de DJ Panel Pro',
+        body: bodyText,
+        version: versionName,
+        channel_id: 'djvip_default',
+        timestamp: String(Date.now())
+      }
+    });
+  } catch (err) {
+    console.error('[FCM] Error enviando notificación de actualización global:', err.message);
+    return { sent: 0, failed: 0 };
+  }
+}
+
 // ─── Exportar ─────────────────────────────────────────────────────────────────
 module.exports = {
   sendSongRequestNotification,
@@ -423,6 +470,7 @@ module.exports = {
   sendSubscriptionPendingNotification,
   sendSupportMessageNotification,
   sendNewUserNotification,
+  sendGlobalUpdateNotification,
   registerFCMToken,
   unregisterFCMToken,
   getAdminTokens,

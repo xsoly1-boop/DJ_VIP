@@ -105,6 +105,21 @@ app.post('/api/song-request', async (req, res) => {
   }
 });
 
+// Webhook & IPN payment notifications handler from Mercado Pago
+app.all('/api/payments/notification', async (req, res) => {
+  try {
+    const result = await paymentService.handleNotification(req.body, req.query);
+    if (result.success) {
+      return res.status(200).json({ success: true, message: result.message || 'Notification processed' });
+    } else {
+      return res.status(400).json({ success: false, error: result.error });
+    }
+  } catch (e) {
+    console.error('[API Notification Error]:', e);
+    return res.status(500).json({ success: false, error: e.message });
+  }
+});
+
 // Create a new subscription
 app.post('/api/subscription/create', async (req, res) => {
   try {
