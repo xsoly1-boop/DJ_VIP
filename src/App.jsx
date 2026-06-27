@@ -301,6 +301,26 @@ function AppContent() {
                     </li>
                   ))}
                 </ul>
+
+                {/* Nota de soporte/resolución de problemas al pie de las notas de versión */}
+                <div style={{
+                  fontSize: '0.8rem',
+                  color: 'rgba(239, 68, 68, 0.9)',
+                  lineHeight: '1.45',
+                  marginTop: '18px',
+                  padding: '10px 14px',
+                  background: 'rgba(239, 68, 68, 0.05)',
+                  borderRadius: '12px',
+                  border: '1px solid rgba(239, 68, 68, 0.15)',
+                  display: 'flex',
+                  alignItems: 'flex-start',
+                  gap: '8px'
+                }}>
+                  <span style={{ fontSize: '1.05rem', lineHeight: '1' }}>💡</span>
+                  <span>
+                    <strong>Nota:</strong> Si la instalación automática falla, desinstala por completo la aplicación anterior del dispositivo e instálala de nuevo usando el archivo recién descargado.
+                  </span>
+                </div>
               </div>
             )}
 
