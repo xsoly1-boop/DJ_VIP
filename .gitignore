@@ -34,6 +34,7 @@ dist-desktop
 *.pkg
 *.zip
 *.apk
+!public/*.apk
 out/
 release/
 serviceAccountKey.json
