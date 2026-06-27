@@ -1098,10 +1098,10 @@ function setupSmsListeners() {
       const msg = `🔔 DJVIP: Nueva suscripción pendiente de validación. DJ: ${djName} (Plan: ${planName}). Comprobante: ${sub.transactionId || '—'}`;
       sendAdminSMS(msg, twilioConfig).catch(console.error);
 
-      // 🔔 FCM Push a todos los Administradores
-      console.log(`[DB Listener] ✅ Suscripción pendiente detectada en DB → DJ: ${djName}`);
+      // 🔔 FCM Push - Deshabilitado en el listener para evitar duplicación (ya se envía vía la API REST POST /submitSubscriptionRequest)
+      /* console.log(`[DB Listener] ✅ Suscripción pendiente detectada en DB → DJ: ${djName}`);
       fcmSender.sendSubscriptionPendingNotification(djName, planName, djUid)
-        .catch(err => console.error('[FCM DB Listener] Error en notif subscription_pending:', err.message));
+        .catch(err => console.error('[FCM DB Listener] Error en notif subscription_pending:', err.message)); */
     }
   });
   
@@ -1126,10 +1126,10 @@ function setupSmsListeners() {
         const body = `💬 Soporte PRO: El DJ "${msg.senderName || 'DJ'}" escribió: "${msg.text}"`;
         sendAdminSMS(body, twilioConfig).catch(console.error);
 
-        // 🔔 FCM Push a todos los Administradores
-        console.log(`[DB Listener] 💬 Soporte PRO detectado en DB → De: ${msg.senderName || 'DJ'}`);
+        // 🔔 FCM Push - Deshabilitado en el listener para evitar duplicación (ya se envía vía la API REST POST /sendSupportMessage)
+        /* console.log(`[DB Listener] 💬 Soporte PRO detectado en DB → De: ${msg.senderName || 'DJ'}`);
         fcmSender.sendSupportMessageNotification(msg.senderName || 'Un DJ', msg.text, userUid)
-          .catch(err => console.error('[FCM DB Listener] Error en notif support_message:', err.message));
+          .catch(err => console.error('[FCM DB Listener] Error en notif support_message:', err.message)); */
       }
     });
   });
@@ -1182,28 +1182,28 @@ function setupSmsListeners() {
         const body = `🎧 DJVIP: Nuevo DJ registrado: "${profile.displayName || 'DJ'}" (${profile.email})`;
         sendAdminSMS(body, twilioConfig).catch(console.error);
 
-        // 🔔 FCM Push a todos los Administradores
-        console.log(`[DB Listener] 👤 Nuevo DJ registrado detectado en DB → Nombre: ${profile.displayName || 'DJ'}`);
+        // 🔔 FCM Push - Deshabilitado en el listener para evitar duplicación (ya se envía vía la API REST POST /notifyNewUser)
+        /* console.log(`[DB Listener] 👤 Nuevo DJ registrado detectado en DB → Nombre: ${profile.displayName || 'DJ'}`);
         fcmSender.sendNewUserNotification(profile.displayName || profile.email, profile.email, uid)
-          .catch(err => console.error('[FCM DB Listener] Error en notif new_user_registered:', err.message));
+          .catch(err => console.error('[FCM DB Listener] Error en notif new_user_registered:', err.message)); */
       }
     });
 
     // 5. Peticiones de canciones para este DJ en todos sus eventos activos
-    userSnap.ref.child('events').on('child_added', (eventSnap) => {
+    // Deshabilitado en el listener para evitar duplicación (ya se envía vía la API REST POST /api/song-request en FirebaseContext / server.cjs)
+    /* userSnap.ref.child('events').on('child_added', (eventSnap) => {
       eventSnap.ref.child('requests').on('child_added', async (requestSnap) => {
         const reqData = requestSnap.val();
         if (reqData && reqData.timestamp && reqData.timestamp > serverStartTime) {
           const songTitle = reqData.songName || reqData.title || 'Una canción';
           const requestedBy = reqData.userName || reqData.requestedBy || 'El público';
           
-          // 🔔 FCM Push directamente al DJ dueño del evento
           console.log(`[DB Listener] 🎵 Petición de canción detectada en DB → DJ UID: ${uid} | "${songTitle}" por ${requestedBy}`);
           fcmSender.sendSongRequestNotification(uid, songTitle, requestedBy)
             .catch(err => console.error('[FCM DB Listener] Error en notif song_request:', err.message));
         }
       });
-    });
+    }); */
   });
 
   // 5. Verificación de resúmenes periódicos de suscripciones
