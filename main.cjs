@@ -21,6 +21,9 @@ if (!gotTheLock) {
   });
 }
 
+// Establecer el ID de la aplicación para notificaciones del sistema
+app.setAppUserModelId('com.dj.interactive.platform');
+
 let mainWindow;
 let powerSaveBlockerId;
 let tray = null;
@@ -31,7 +34,11 @@ const configPath = path.join(app.getPath('userData'), 'djvip_config.json');
 function loadConfig() {
   try {
     if (fs.existsSync(configPath)) {
-      return JSON.parse(fs.readFileSync(configPath, 'utf8'));
+      const config = JSON.parse(fs.readFileSync(configPath, 'utf8'));
+      if (config.minimize_to_tray === undefined) {
+        config.minimize_to_tray = false;
+      }
+      return config;
     }
   } catch (e) {
     console.error('Error cargando configuración:', e);
@@ -40,7 +47,8 @@ function loadConfig() {
     selected_ringtone_uri: '',
     selected_ringtone_name: 'Predeterminado del sistema',
     user_uid: '',
-    user_role: ''
+    user_role: '',
+    minimize_to_tray: false
   };
 }
 
@@ -63,7 +71,8 @@ function createWindow() {
     webPreferences: {
       nodeIntegration: false,
       contextIsolation: true,
-      preload: path.join(__dirname, 'preload.cjs')
+      preload: path.join(__dirname, 'preload.cjs'),
+      backgroundThrottling: false
     }
   });
 
@@ -129,11 +138,18 @@ function createWindow() {
   const menu = Menu.buildFromTemplate(template);
   Menu.setApplicationMenu(menu);
 
-  // Interceptar el evento de cierre de ventana para ocultarla en segundo plano
+  // Interceptar el evento de cierre de ventana para ocultarla en segundo plano si está configurado y el usuario es PRO
   mainWindow.on('close', (e) => {
-    if (!app.isQuitting) {
+    const config = loadConfig();
+    const isProOrAdmin = (config.user_role === 'pro' || config.user_role === 'pro_1d' || config.user_uid === 'uid-admin-master');
+    const minimizeToTray = config.minimize_to_tray && isProOrAdmin;
+
+    if (!app.isQuitting && minimizeToTray) {
       e.preventDefault();
       mainWindow.hide();
+    } else {
+      app.isQuitting = true;
+      app.quit();
     }
   });
 
@@ -273,6 +289,45 @@ ipcMain.on('save-config-sync', (event, config) => {
   event.returnValue = true;
 });
 
+ipcMain.on('show-native-notification', (event, { title, body }) => {
+  const { Notification } = require('electron');
+  
+  // 1. Intentar mostrar la notificación nativa de Electron (con el icono del vinilo)
+  const notification = new Notification({
+    title: title,
+    body: body,
+    silent: false
+  });
+  
+  // 2. Escuchar el evento 'failed'. Si macOS bloquea la notificación nativa por falta de firma o permisos,
+  // se activa el fallback de AppleScript (osascript) para garantizar que el DJ vea la alerta.
+  notification.on('failed', (err) => {
+    console.error('Error en notificación nativa:', err);
+    if (process.platform === 'darwin') {
+      showMacOsFallbackNotification(title, body);
+    }
+  });
+
+  notification.show();
+});
+
+function showMacOsFallbackNotification(title, body) {
+  try {
+    const { exec } = require('child_process');
+    // Sanitizar y escapar comillas dobles y caracteres especiales para AppleScript
+    const escapedTitle = title.replace(/['"\\\r\n]/g, ' ');
+    const escapedBody = body.replace(/['"\\\r\n]/g, ' ');
+    const cmd = `osascript -e 'display notification "${escapedBody}" with title "${escapedTitle}"'`;
+    exec(cmd, (error) => {
+      if (error) {
+        console.error('Error al mostrar notificación de respaldo en macOS:', error);
+      }
+    });
+  } catch (err) {
+    console.error('Error ejecutando osascript:', err);
+  }
+}
+
 ipcMain.handle('choose-sound-dialog', async () => {
   const result = await dialog.showOpenDialog(mainWindow, {
     title: 'Seleccionar tono de notificación',
@@ -290,14 +345,20 @@ ipcMain.handle('choose-sound-dialog', async () => {
   return null;
 });
 
+app.on('before-quit', () => {
+  app.isQuitting = true;
+});
+
 app.whenReady().then(() => {
   // Registrar protocolo seguro para reproducir sonidos locales
-  protocol.handle('local-sound', (request) => {
+  protocol.handle('local-sound', async (request) => {
     const filePath = decodeURIComponent(request.url.replace('local-sound://', ''));
     try {
-      return net.fetch(pathToFileURL(filePath).toString());
+      const data = await fs.promises.readFile(filePath);
+      return new Response(data);
     } catch (err) {
       console.error('Error al cargar sonido local en Electron:', err);
+      return new Response('Not Found', { status: 404 });
     }
   });
 
@@ -310,6 +371,9 @@ app.whenReady().then(() => {
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) {
       createWindow();
+    } else if (mainWindow) {
+      mainWindow.show();
+      mainWindow.focus();
     }
   });
 });

@@ -35,11 +35,28 @@ if [ ! -f "package.json" ]; then
 fi
 
 # -----------------------------------------------------------------------
+# 0.5. Incrementar versión automáticamente
+# -----------------------------------------------------------------------
+echo -e "${CYAN}[0.5/5] Incrementando la versión del proyecto...${RESET}"
+node scripts/increment-version.cjs
+echo ""
+
+# -----------------------------------------------------------------------
 # 1. Compilar el frontend web
 # -----------------------------------------------------------------------
 echo -e "${CYAN}[1/5] Compilando frontend web de producción...${RESET}"
 npm run build
 echo -e "  ✅ Web compilada exitosamente."
+echo ""
+
+# -----------------------------------------------------------------------
+# 1.5. Limpiar APKs de dist y assets para evitar anidamiento recursivo
+# -----------------------------------------------------------------------
+echo -e "${CYAN}[1.5/5] Limpiando instaladores de dist y assets...${RESET}"
+rm -f "dist/DJ a la Carta Pro.apk"
+rm -f "dist/app-debug.apk"
+rm -f "android/app/src/main/assets/public/DJ a la Carta Pro.apk"
+rm -f "android/app/src/main/assets/public/app-debug.apk"
 echo ""
 
 # -----------------------------------------------------------------------
@@ -89,12 +106,14 @@ echo ""
 # -----------------------------------------------------------------------
 echo -e "${CYAN}[5/5] Copiando archivo APK generado...${RESET}"
 APK_PATH="android/app/build/outputs/apk/debug/app-debug.apk"
-DEST_PATH="./app-debug.apk"
+DEST_PATH="./DJ a la Carta Pro.apk"
 
 if [ -f "$APK_PATH" ]; then
     cp "$APK_PATH" "$DEST_PATH"
+    cp "$APK_PATH" "./public/DJ a la Carta Pro.apk"
     echo -e "  🎉 ${GREEN}¡COMPILACIÓN EXITOSA!${RESET}"
     echo -e "  📱 APK generado en la raíz: ${GREEN}${DEST_PATH}${RESET}"
+    echo -e "  🌐 Copiado a la carpeta pública: ${GREEN}./public/DJ a la Carta Pro.apk${RESET}"
     echo -e "  📂 Tamaño del archivo: ${CYAN}$(du -sh "$DEST_PATH" | cut -f1)${RESET}"
     echo ""
     echo "Puedes transferir este archivo a tu celular Android para instalar la actualización."

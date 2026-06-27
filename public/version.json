@@ -1,0 +1,9 @@
+{
+  "latestVersion": "1.0.0.7",
+  "apkUrl": "https://dj-vip.vercel.app/DJ%20a%20la%20Carta%20Pro.apk",
+  "releaseNotes": [
+    "Icono de notificación corregido con audífonos line-art de alta compatibilidad.",
+    "Persistencia automática del estado de notificaciones en el dashboard.",
+    "Bypass y correcciones de permisos para notificaciones en macOS y Android."
+  ]
+}

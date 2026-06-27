@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { useFirebase } from '../context/FirebaseContext';
 import { MOCK_ACCOUNTS, MASTER_ADMIN_EMAIL } from '../firebase';
+import AdminSubscriptions from './AdminSubscriptions';
 import { QRCodeSVG, QRCodeCanvas } from 'qrcode.react';
 import { 
   Music, LogOut, Settings, Calendar, Download, RefreshCw, 
@@ -58,11 +59,9 @@ function PlanValidityDisplay({ activePlan, expiresAt }) {
 }
 
 export default function DjDashboard() {
-  const API_BASE = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
+  const API_BASE = ((window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') && window.location.port !== '')
     ? 'http://localhost:4000'
-    : (window.location.protocol === 'file:' || !window.location.hostname)
-      ? (import.meta.env.DEV ? 'http://localhost:4000' : (import.meta.env.VITE_PUBLIC_URL ? import.meta.env.VITE_PUBLIC_URL.replace(/\/$/, '') : 'https://dj-vip.vercel.app'))
-      : '';
+    : (import.meta.env.VITE_PUBLIC_URL ? import.meta.env.VITE_PUBLIC_URL.replace(/\/$/, '') : 'https://dj-vip.vercel.app');
 
   const { 
     user, 
@@ -127,7 +126,7 @@ export default function DjDashboard() {
   const [dateInput, setDateInput] = useState(eventSettings.date || new Date().toISOString().split('T')[0]);
   const [primaryColor, setPrimaryColor] = useState(eventSettings.themeColor || '#7c3aed');
   const [secondaryColor, setSecondaryColor] = useState(eventSettings.themeColorSecondary || '#06b6d4');
-  const [productionUrl, setProductionUrl] = useState(eventSettings.productionUrl || import.meta.env.VITE_PUBLIC_URL || '');
+  const [productionUrl, setProductionUrl] = useState(eventSettings.productionUrl || 'https://dj-vip.vercel.app/');
   // Logo solo por URL externa
   const [logoUrlInput, setLogoUrlInput] = useState(eventSettings.logoUrl || '');
   const [fontFamily, setFontFamily] = useState(eventSettings.fontFamily || 'Outfit');
@@ -143,6 +142,7 @@ export default function DjDashboard() {
   const [tipCurrencyInput, setTipCurrencyInput] = useState(eventSettings.tipCurrency || 'MXN');
   const [dedicationsEnabledInput, setDedicationsEnabledInput] = useState(eventSettings.dedicationsEnabled || false);
   const [customGenresInput, setCustomGenresInput] = useState(eventSettings.customGenres || '');
+  const [minimizeToTrayInput, setMinimizeToTrayInput] = useState(false);
 
   // Publicidad y Contacto
   const [promoEnabledInput, setPromoEnabledInput] = useState(eventSettings.promoEnabled || false);
@@ -210,7 +210,14 @@ export default function DjDashboard() {
   const [soundEnabled, setSoundEnabled] = useState(true);
   const [selectedTone, setSelectedTone] = useState(() => localStorage.getItem('dj_notification_tone') || 'chime');
   const [androidSoundName, setAndroidSoundName] = useState('Predeterminado del sistema');
-  const [notificationsEnabled, setNotificationsEnabled] = useState(false);
+  const [notificationsEnabled, setNotificationsEnabled] = useState(() => {
+    const saved = localStorage.getItem('dj_notifications_enabled');
+    if (saved !== null) {
+      return saved === 'true';
+    }
+    if (window.electronAPI) return true;
+    return typeof window !== 'undefined' && 'Notification' in window && Notification.permission === 'granted';
+  });
   const [toastMessage, setToastMessage] = useState(null);
 
   // --- SOPORTE CHAT ESTADOS Y EFECTOS ---
@@ -246,6 +253,13 @@ export default function DjDashboard() {
       setAdminCallmebotApiKey(userProfile.callmebotApiKey || '');
     }
   }, [userProfile, isAdminMaster]);
+
+  // Sincronizar ajuste de bandeja (Tray) de escritorio al montar
+  useEffect(() => {
+    if (window.AndroidApp && typeof window.AndroidApp.getMinimizeToTray === 'function') {
+      setMinimizeToTrayInput(window.AndroidApp.getMinimizeToTray());
+    }
+  }, []);
 
   // Sincronizar Twilio config cuando cargue de la BD
   useEffect(() => {
@@ -629,6 +643,50 @@ export default function DjDashboard() {
     }
   };
 
+  // Notificación de Actualización Global (Admin Master)
+  const [updateVersionInput, setUpdateVersionInput] = useState('');
+  const [updateNotesInput, setUpdateNotesInput] = useState('');
+  const [updateNotificationLoading, setUpdateNotificationLoading] = useState(false);
+
+  const handleSendUpdateNotification = async () => {
+    if (updateNotificationLoading) return;
+    const version = updateVersionInput.trim();
+    if (!version) {
+      showToast("⚠️ Por favor escribe el número de versión.");
+      return;
+    }
+    
+    setUpdateNotificationLoading(true);
+    try {
+      const backendUrl = `${API_BASE}/api/admin/notify-update`;
+            
+      const response = await fetch(backendUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          versionName: version,
+          releaseNotes: updateNotesInput.trim()
+        })
+      });
+      
+      const data = await response.json();
+      if (response.ok && data.success) {
+        showToast("🚀 Notificación de actualización enviada con éxito.");
+        setUpdateVersionInput('');
+        setUpdateNotesInput('');
+      } else {
+        throw new Error(data.error || "Error al enviar la notificación.");
+      }
+    } catch (error) {
+      console.error("Error al enviar notificación global:", error);
+      showToast(`❌ Error: ${error.message}`);
+    } finally {
+      setUpdateNotificationLoading(false);
+    }
+  };
+
   // Sincronizar géneros desde base de datos
   useEffect(() => {
     const raw = eventSettings.customGenres || '';
@@ -862,7 +920,7 @@ export default function DjDashboard() {
     setDateInput(eventSettings.date || new Date().toISOString().split('T')[0]);
     setPrimaryColor(eventSettings.themeColor || '#7c3aed');
     setSecondaryColor(eventSettings.themeColorSecondary || '#06b6d4');
-    setProductionUrl(eventSettings.productionUrl || import.meta.env.VITE_PUBLIC_URL || '');
+    setProductionUrl(eventSettings.productionUrl || 'https://dj-vip.vercel.app/');
     setLogoUrlInput(eventSettings.logoUrl || '');
     setFontFamily(eventSettings.fontFamily || 'Outfit');
     setFontSize(eventSettings.fontSize || 'medium');
@@ -960,10 +1018,23 @@ export default function DjDashboard() {
   };
 
   const requestNotificationPermission = async () => {
-    if (!('Notification' in window)) return;
+    if (window.electronAPI) {
+      const newValue = !notificationsEnabled;
+      setNotificationsEnabled(newValue);
+      localStorage.setItem('dj_notifications_enabled', String(newValue));
+      showToast(newValue ? '🔔 Notificaciones activadas' : '❌ Notificaciones desactivadas');
+      return;
+    }
+
+    if (!('Notification' in window)) {
+      showToast('❌ Las notificaciones no están soportadas en este navegador');
+      return;
+    }
     const permission = await Notification.requestPermission();
-    setNotificationsEnabled(permission === 'granted');
-    showToast(permission === 'granted' ? '🔔 Notificaciones activadas' : '❌ Permiso denegado');
+    const isGranted = permission === 'granted';
+    setNotificationsEnabled(isGranted);
+    localStorage.setItem('dj_notifications_enabled', String(isGranted));
+    showToast(isGranted ? '🔔 Notificaciones activadas' : '❌ Permiso denegado');
   };
 
   useEffect(() => {
@@ -996,11 +1067,16 @@ export default function DjDashboard() {
             });
           }
 
-          if (notificationsEnabled && Notification.permission === 'granted') {
-            new Notification(`Nueva petición: ${req.title}`, {
-              body: `De: ${req.artist} (${req.genre})`,
-              icon: '/icon-192.png'
-            });
+          if (notificationsEnabled && (window.electronAPI || Notification.permission === 'granted')) {
+            if (window.electronAPI && window.electronAPI.showNativeNotification) {
+              window.electronAPI.showNativeNotification(`Nueva petición: ${req.title}`, `De: ${req.artist} (${req.genre})`);
+            } else {
+              new Notification(`Nueva petición: ${req.title}`, {
+                body: `De: ${req.artist} (${req.genre})`,
+                icon: '/icon-192.png',
+                silent: true
+              });
+            }
           }
         }
       });
@@ -1497,9 +1573,12 @@ export default function DjDashboard() {
       const data = await res.json();
       if (data.success && data.config) {
         setPaymentConfig(data.config);
+      } else {
+        showToast(`❌ Configuración: ${data.error || "Error al obtener pasarelas"}`);
       }
     } catch (e) {
       console.error('Error fetching payment config', e);
+      showToast(`❌ Error de red (pasarelas): ${e.message}`);
     }
   };
 
@@ -1515,9 +1594,12 @@ export default function DjDashboard() {
       const data = await res.json();
       if (data.success) {
         setPendingSubs(data.pendingSubscriptions || []);
+      } else {
+        showToast(`❌ Suscripciones: ${data.error || "No se pudo cargar la lista"}`);
       }
     } catch (e) {
       console.error('Error fetching pending subscriptions', e);
+      showToast(`❌ Error de red (suscripciones): ${e.message}`);
     } finally {
       setPendingSubsLoading(false);
     }
@@ -2788,8 +2870,8 @@ export default function DjDashboard() {
                 </div>
                 )}
 
-                {/* URL de Producción (Vercel) - Solo VIP/Eventual y solo visible para Admin Master */}
-                {currentPlan !== 'premium' && isAdminMaster && (
+                {/* URL de Producción (Vercel) - Solo visible para Admin Master */}
+                {isAdminMaster && (
                 <div className="form-group" style={{ borderBottom: '1px solid rgba(255,255,255,0.05)', paddingBottom: '20px' }}>
                   <label className="form-label" style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                     🔗 URL de Producción (Vercel)
@@ -3031,6 +3113,45 @@ export default function DjDashboard() {
                 </div>
                 </>)}
 
+                {/* Opciones de la Aplicación de Escritorio */}
+                {window.electronAPI && window.electronAPI.isDesktop && (
+                  <div style={{ borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: '20px' }}>
+                    <label className="form-label" style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--primary-color)', fontWeight: '600' }}>
+                      🖥️ Aplicación de Escritorio (Desktop)
+                      {!(isProUser || isAdminMaster) && (
+                        <span style={{ fontSize: '0.65rem', color: 'var(--warning-color)', background: 'rgba(245,158,11,0.1)', padding: '2px 6px', borderRadius: '4px', fontWeight: '700', display: 'flex', alignItems: 'center', gap: '3px' }}>
+                          🔒 EXCLUSIVO PLAN PRO
+                        </span>
+                      )}
+                    </label>
+                    <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginBottom: '16px' }}>
+                      Configura el comportamiento de la aplicación de escritorio en tu computadora.
+                    </p>
+
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px', opacity: (isProUser || isAdminMaster) ? 1 : 0.5 }}>
+                      <input 
+                        type="checkbox" 
+                        id="minimize-to-tray-checkbox"
+                        disabled={!(isProUser || isAdminMaster)}
+                        checked={minimizeToTrayInput} 
+                        onChange={(e) => {
+                          const checked = e.target.checked;
+                          setMinimizeToTrayInput(checked);
+                          if (window.AndroidApp && typeof window.AndroidApp.setMinimizeToTray === 'function') {
+                            window.AndroidApp.setMinimizeToTray(checked);
+                          }
+                          showToast(checked ? "📥 Minimizar al tray activado" : "❌ Minimizar al tray desactivado");
+                        }}
+                        style={{ width: '18px', height: '18px', cursor: (isProUser || isAdminMaster) ? 'pointer' : 'not-allowed' }}
+                      />
+                      <label htmlFor="minimize-to-tray-checkbox" style={{ fontSize: '0.9rem', fontWeight: '600', cursor: (isProUser || isAdminMaster) ? 'pointer' : 'not-allowed', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                        Minimizar la app a la barra de menú / System Tray al cerrar la ventana
+                        {!(isProUser || isAdminMaster) && <Lock size={14} style={{ opacity: 0.8 }} />}
+                      </label>
+                    </div>
+                  </div>
+                )}
+
                 <div style={{ display: 'flex', gap: '10px', marginTop: '10px', borderTop: '1px solid var(--surface-border)', paddingTop: '20px' }}>
                   <button type="submit" className="btn btn-primary">Guardar Configuración</button>
                   <button type="button" className="btn btn-secondary" onClick={() => {
@@ -3045,6 +3166,9 @@ export default function DjDashboard() {
                     setClabeInput(eventSettings.bankClabe || '');
                     setTipCurrencyInput(eventSettings.tipCurrency || 'MXN');
                     setDedicationsEnabledInput(eventSettings.dedicationsEnabled || false);
+                    if (window.AndroidApp && typeof window.AndroidApp.getMinimizeToTray === 'function') {
+                      setMinimizeToTrayInput(window.AndroidApp.getMinimizeToTray());
+                    }
                     showToast("Revertido a cambios guardados");
                   }}>Descartar Cambios</button>
                 </div>
@@ -4384,7 +4508,7 @@ export default function DjDashboard() {
               {/* Botón para gestionar suscripciones */}
               <div style={{ marginBottom: '28px', display: 'flex', gap: '12px' }}>
                 <button
-                  onClick={() => window.location.href = '/subscriptions'}
+                  onClick={() => setActiveTab('subscriptions')}
                   className="btn btn-primary"
                   style={{
                     background: 'linear-gradient(135deg, #7c3aed 0%, #4f46e5 100%)',
@@ -5178,6 +5302,59 @@ export default function DjDashboard() {
                 </div>
               )}
 
+              {/* === SECCIÓN: NOTIFICACIÓN DE ACTUALIZACIÓN DE APP === */}
+              {isAdminMaster && !impersonatingUid && (
+                <div style={{ marginTop: '28px', padding: '20px', border: '1px solid rgba(139,92,246,0.25)', background: 'rgba(139,92,246,0.03)', borderRadius: 'var(--radius-md)' }}>
+                  <h3 style={{ fontSize: '1.05rem', fontWeight: '700', marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--primary-color)' }}>
+                    <Bell size={18} /> Notificar Actualización de la App (Push Global)
+                  </h3>
+                  <p style={{ fontSize: '0.82rem', color: 'var(--text-secondary)', lineHeight: '1.5', marginBottom: '16px' }}>
+                    Envía una notificación push inmediata a todos los dispositivos móviles registrados indicando que hay una nueva versión disponible. Los usuarios verán la alerta en la barra de estado y el modal de actualización in-app al abrir la app.
+                  </p>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '16px' }}>
+                    <div className="form-group" style={{ textAlign: 'left' }}>
+                      <label className="form-label" style={{ fontSize: '0.75rem' }}>Versión Lanzada (ej: 1.0.1)</label>
+                      <input 
+                        type="text" 
+                        className="input-field" 
+                        placeholder="ej: 1.0.1" 
+                        value={updateVersionInput} 
+                        onChange={(e) => setUpdateVersionInput(e.target.value)} 
+                        style={{ padding: '8px 12px', fontSize: '0.85rem' }}
+                      />
+                    </div>
+                    <div className="form-group" style={{ textAlign: 'left' }}>
+                      <label className="form-label" style={{ fontSize: '0.75rem' }}>Notas de Versión (ej: Solución de iconos y macOS)</label>
+                      <input 
+                        type="text" 
+                        className="input-field" 
+                        placeholder="ej: Solución de iconos y macOS" 
+                        value={updateNotesInput} 
+                        onChange={(e) => setUpdateNotesInput(e.target.value)} 
+                        style={{ padding: '8px 12px', fontSize: '0.85rem' }}
+                      />
+                    </div>
+                  </div>
+                  <button
+                    onClick={handleSendUpdateNotification}
+                    disabled={updateNotificationLoading}
+                    className="btn btn-primary"
+                    style={{
+                      padding: '10px 20px',
+                      fontSize: '0.85rem',
+                      fontWeight: '600',
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '8px',
+                      height: 'auto'
+                    }}
+                  >
+                    {updateNotificationLoading ? <RefreshCw size={14} className="animate-spin" /> : <Send size={14} />}
+                    {updateNotificationLoading ? 'Enviando...' : 'Enviar Notificación de Actualización'}
+                  </button>
+                </div>
+              )}
+
               {/* Info de cuentas mock */}
               {isMock && (
                 <div style={{ marginTop: '24px', padding: '16px', background: 'rgba(245,158,11,0.05)', border: '1px solid rgba(245,158,11,0.15)', borderRadius: 'var(--radius-md)' }}>
@@ -5195,6 +5372,13 @@ export default function DjDashboard() {
                   </div>
                 </div>
               )}
+            </div>
+          )}
+
+          {/* 4.5. PANEL GESTIÓN DE SUSCRIPCIONES (ADMIN MASTER) */}
+          {activeTab === 'subscriptions' && isAdminMaster && !impersonatingUid && (
+            <div className="glass-panel" style={{ padding: '24px', minHeight: '600px' }}>
+              <AdminSubscriptions onBack={() => setActiveTab('admin')} />
             </div>
           )}
 

@@ -43,6 +43,20 @@ echo -e "  ✅ Web compilada exitosamente."
 echo ""
 
 # -----------------------------------------------------------------------
+# 1.5. Limpiar APKs de dist y assets para evitar anidamiento recursivo
+# -----------------------------------------------------------------------
+echo -e "${CYAN}[1.5/6] Limpiando instaladores de dist y assets...${RESET}"
+rm -f "dist/DJ a la Carta Pro.apk"
+rm -f "dist/app-debug.apk"
+rm -f "dist/dj-panel-release.apk"
+rm -f "dist/app-release.apk"
+rm -f "android/app/src/main/assets/public/DJ a la Carta Pro.apk"
+rm -f "android/app/src/main/assets/public/app-debug.apk"
+rm -f "android/app/src/main/assets/public/dj-panel-release.apk"
+rm -f "android/app/src/main/assets/public/app-release.apk"
+echo ""
+
+# -----------------------------------------------------------------------
 # 2. Sincronizar assets con Capacitor
 # -----------------------------------------------------------------------
 echo -e "${CYAN}[2/6] Sincronizando con Capacitor Android...${RESET}"

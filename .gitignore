@@ -41,3 +41,4 @@ djvip-c2cc9-*.json
 *.keystore
 *.jks
 
+.vercel

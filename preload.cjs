@@ -7,6 +7,7 @@ window.addEventListener('DOMContentLoaded', () => {
 contextBridge.exposeInMainWorld('electronAPI', {
   writePlaylist: (args) => ipcRenderer.invoke('write-playlist', args),
   detectVirtualDJPath: () => ipcRenderer.invoke('detect-virtualdj-path'),
+  showNativeNotification: (title, body) => ipcRenderer.send('show-native-notification', { title, body }),
   isDesktop: true
 });
 
@@ -15,11 +16,20 @@ let localConfig = ipcRenderer.sendSync('get-config-sync') || {
   selected_ringtone_uri: '',
   selected_ringtone_name: 'Predeterminado del sistema',
   user_uid: '',
-  user_role: ''
+  user_role: '',
+  minimize_to_tray: false
 };
 
 // Polyfill/Bridge para simular la interfaz AndroidApp en Escritorio
 contextBridge.exposeInMainWorld('AndroidApp', {
+  getMinimizeToTray: () => {
+    return !!localConfig.minimize_to_tray;
+  },
+
+  setMinimizeToTray: (value) => {
+    localConfig.minimize_to_tray = !!value;
+    ipcRenderer.sendSync('save-config-sync', localConfig);
+  },
   playSystemNotificationSound: () => {
     if (localConfig.selected_ringtone_uri) {
       // Tono personalizado elegido por el usuario

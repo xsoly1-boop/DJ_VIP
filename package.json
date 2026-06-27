@@ -13,7 +13,8 @@
     "electron:build": "npm run build && electron-builder",
     "test": "node scratch/test_admin.js && node scratch/test_autocomplete.js && node scratch/test_queue_deduplication.js && node scratch/test_admin_subscriptions.cjs && node scratch/test_reset_revenue.cjs && node scratch/test_demo_expiration.cjs",
     "verify-gateways": "node verify_gateways.cjs",
-    "start-backend": "node server.cjs"
+    "start-backend": "node server.cjs",
+    "reset-db": "node scripts/reset_db.cjs"
   },
   "dependencies": {
     "@capacitor/android": "^8.4.1",
@@ -104,15 +105,12 @@
           "arch": ["x64"]
         }
       ],
-      "icon": "build-resources/icon.ico",
+      "icon": "build-resources/icon.png",
       "publisherName": "DJ a la Carta"
     },
     "nsis": {
       "oneClick": false,
       "allowToChangeInstallationDirectory": true,
-      "installerIcon": "build-resources/icon.ico",
-      "uninstallerIcon": "build-resources/icon.ico",
-      "installerHeaderIcon": "build-resources/icon.ico",
       "createDesktopShortcut": true,
       "createStartMenuShortcut": true,
       "shortcutName": "DJ Panel Pro"

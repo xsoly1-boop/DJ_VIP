@@ -2,6 +2,7 @@
 *.dmg
 *.exe
 *.apk
+!public/*.apk
 *.zip
 
 # Ignore local build outputs and node_modules

@@ -27,11 +27,9 @@ import {
 } from '../firebase';
 import { getDeviceId } from '../utils/deviceFingerprint';
 
-const API_BASE = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
+const API_BASE = ((window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') && window.location.port !== '')
   ? 'http://localhost:4000'
-  : (window.location.protocol === 'file:' 
-    ? (import.meta.env.DEV ? 'http://localhost:4000' : (import.meta.env.VITE_PUBLIC_URL ? import.meta.env.VITE_PUBLIC_URL.replace(/\/$/, '') : 'https://dj-vip.vercel.app'))
-    : window.location.origin);
+  : (import.meta.env.VITE_PUBLIC_URL ? import.meta.env.VITE_PUBLIC_URL.replace(/\/$/, '') : 'https://dj-vip.vercel.app');
 
 const triggerNotificationAPI = (endpoint, body) => {
   const baseUrl = import.meta.env.VITE_PUBLIC_URL 
@@ -219,7 +217,7 @@ const DEMO_SETTINGS = {
   logoUrl: "",
   mercadopagoLink: "https://link.mercadopago.com.mx/djdemo",
   paypalUsername: "djdemo",
-  productionUrl: "https://dj-a-la-carta2-0.vercel.app",
+  productionUrl: "https://dj-vip.vercel.app/",
   promoEnabled: true,
   promoInstagram: "djdemo_oficial",
   promoTiktok: "djdemo_oficial",
@@ -474,7 +472,7 @@ export const FirebaseProvider = ({ children }) => {
 
       // 🔔 FCM — Registrar token cuando el usuario inicia sesión en Android
       if (currentUser) {
-        const isAdmin = currentUser.email === MASTER_ADMIN_EMAIL;
+        const isAdmin = currentUser.email && MASTER_ADMIN_EMAIL && currentUser.email.toLowerCase() === MASTER_ADMIN_EMAIL.toLowerCase();
         import('../firebase.js').then(({ registerFCMToken }) => {
           registerFCMToken(currentUser.uid, isAdmin ? 'admin_master' : 'dj');
         }).catch(() => {}); // No-op si el import falla
@@ -1039,7 +1037,8 @@ export const FirebaseProvider = ({ children }) => {
               theme: 'dark',
               brandEnabled: false,
               brandName: '',
-              brandLogo: ''
+              brandLogo: '',
+              productionUrl: 'https://dj-vip.vercel.app/'
             },
             requests: {},
             played_requests: {}
@@ -1075,7 +1074,8 @@ export const FirebaseProvider = ({ children }) => {
         theme: 'dark',
         brandEnabled: false,
         brandName: '',
-        brandLogo: ''
+        brandLogo: '',
+        productionUrl: 'https://dj-vip.vercel.app/'
       });
 
       const defaultIndexRef = ref(database, `users/${uid}/events_index/default-event`);
@@ -1820,7 +1820,8 @@ export const FirebaseProvider = ({ children }) => {
         tipsEnabled: false,
         paypalUsername: '',
         mercadopagoLink: '',
-        dedicationsEnabled: false
+        dedicationsEnabled: false,
+        productionUrl: 'https://dj-vip.vercel.app/'
       },
       requests: {}
     };
