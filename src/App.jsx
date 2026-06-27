@@ -19,7 +19,10 @@ function AppContent() {
   React.useEffect(() => {
     const checkUpdates = async () => {
       try {
-        const response = await fetch('/version.json?t=' + Date.now());
+        const baseUrl = import.meta.env.VITE_PUBLIC_URL 
+          ? import.meta.env.VITE_PUBLIC_URL.replace(/\/$/, '') 
+          : 'https://dj-vip.vercel.app';
+        const response = await fetch(`${baseUrl}/version.json?t=${Date.now()}`);
         if (!response.ok) return;
         const data = await response.json();
         
