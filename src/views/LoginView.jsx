@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useFirebase } from '../context/FirebaseContext';
 import { Lock, Mail, Music, ArrowRight, ShieldAlert, Phone, User, RefreshCw } from 'lucide-react';
+import { CURRENT_APP_VERSION } from '../utils/AppVersionConfig';
 
 export default function LoginView() {
   const { loginDJ, registerDJ, isMock } = useFirebase();
@@ -242,6 +243,16 @@ export default function LoginView() {
             {isRegister ? '¿Ya tienes una cuenta? Inicia sesión' : '¿No tienes cuenta? Regístrate aquí'}
           </button>
         </div>
+
+        <p style={{
+          fontSize: '0.7rem',
+          color: 'var(--text-muted)',
+          marginTop: '20px',
+          opacity: 0.5,
+          fontWeight: '600'
+        }}>
+          Versión Instalada: v{CURRENT_APP_VERSION}
+        </p>
       </div>
     </div>
   );

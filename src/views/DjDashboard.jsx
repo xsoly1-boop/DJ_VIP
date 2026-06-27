@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { useFirebase } from '../context/FirebaseContext';
 import { MOCK_ACCOUNTS, MASTER_ADMIN_EMAIL } from '../firebase';
+import { CURRENT_APP_VERSION } from '../utils/AppVersionConfig';
 import AdminSubscriptions from './AdminSubscriptions';
 import { QRCodeSVG, QRCodeCanvas } from 'qrcode.react';
 import { 
@@ -6485,6 +6486,9 @@ export default function DjDashboard() {
         </p>
         <p style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginTop: '6px', opacity: 0.6 }}>
           {eventSettings.webName || 'DJ a la Carta'} © {new Date().getFullYear()} — Todos los derechos reservados
+        </p>
+        <p style={{ fontSize: '0.65rem', color: 'var(--text-muted)', marginTop: '4px', opacity: 0.5, fontWeight: '600' }}>
+          Versión Instalada: v{CURRENT_APP_VERSION}
         </p>
       </footer>
 
