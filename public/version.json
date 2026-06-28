@@ -1,14 +1,14 @@
 {
   "latestVersion": "1.0.0.20",
   "apkUrl": "https://dj-vip.vercel.app/DJ%20a%20la%20Carta%20Pro.apk",
-  "dmgUrl": "https://github.com/xsoly1-boop/DJ_VIP/releases/download/v1.0.0.19/DJ%20Panel%20Pro-1.0.0.19-arm64.dmg",
-  "dmgUrlIntel": "https://github.com/xsoly1-boop/DJ_VIP/releases/download/v1.0.0.19/DJ%20Panel%20Pro-1.0.0.19-x64.dmg",
+  "dmgUrl": "https://github.com/xsoly1-boop/DJ_VIP/releases/download/v1.0.0.19/DJ.Panel.Pro-1.0.0.19-arm64.dmg",
+  "dmgUrlIntel": "https://github.com/xsoly1-boop/DJ_VIP/releases/download/v1.0.0.19/DJ.Panel.Pro-1.0.0.19-x64.dmg",
   "releaseNotes": [
-    "Corrección crítica para macOS: Solucionado cuelgue de inicio que minimizaba la app en el Dock.",
-    "Compatibilidad extendida con protocolos antiguos en Electron 22 (macOS 10.14+).",
-    "Impresión directa de tarjetas QR integrada de forma nativa en Android.",
-    "Resolución del bloqueo de pantalla en la carga inicial de dispositivos iOS.",
-    "Aviso de actualización optimizado para modo horizontal y fondo esmerilado.",
-    "Notificaciones sonoras nativas en macOS acopladas al volumen de la app."
+    "Android: Restaurado el servicio de notificaciones en segundo plano con nuevas credenciales activas.",
+    "macOS: Solucionado error crítico de inicio que dejaba la aplicación minimizada en el Dock.",
+    "macOS y Windows: El selector de tonos de alerta ahora utiliza los sonidos nativos de la API Web de la plataforma.",
+    "Android e iOS: Mantenimiento del selector de tonos personalizado por archivo local de dispositivo.",
+    "Android: Impresión directa de tarjetas QR de mesas y cabina integrada nativamente.",
+    "General: Optimización visual del aviso de actualización en modo horizontal y fondos."
   ]
 }
