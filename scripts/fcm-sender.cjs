@@ -177,10 +177,11 @@ async function sendToTokens(tokens, payload, dataOnly = false) {
       failed++;
       console.error(`[FCM] ❌ Error enviando al token ...${token.slice(-8)}:`, err.code || err.message);
 
-      // Si el token es inválido, eliminarlo de Firestore
+      // Si el token es inválido, eliminarlo de Realtime Database
       if (
         err.code === 'messaging/registration-token-not-registered' ||
-        err.code === 'messaging/invalid-registration-token'
+        err.code === 'messaging/invalid-registration-token' ||
+        err.code === 'messaging/invalid-argument'
       ) {
         await removeInvalidToken(token);
       }

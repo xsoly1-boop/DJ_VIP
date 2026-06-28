@@ -96,15 +96,63 @@ log_result() {
     fi
 }
 
-spinner() {
-    local pid=$1
-    local spin='⣾⣽⣻⢿⡿⣟⣯⣷'
-    local i=0
+run_with_progress() {
+    local cmd="$1"
+    local est_duration="$2"
+    local label="$3"
+
+    # Ejecutar en segundo plano redireccionando la salida al log
+    eval "$cmd" >> "$BUILD_LOG" 2>&1 &
+    local pid=$!
+
+    local cols=40
+    local elapsed=0
+    local percent=0
+
+    # Ocultar cursor
+    printf "\033[?25l"
+
     while kill -0 "$pid" 2>/dev/null; do
-        printf "\r  ${PURPLE}${spin:i++%${#spin}:1}${RESET} Procesando..."
-        sleep 0.1
+        # Calcular porcentaje progresivo estimado
+        percent=$(( elapsed * 100 / est_duration ))
+        if [ $percent -ge 98 ]; then
+            percent=98
+        fi
+
+        local filled=$(( percent * cols / 100 ))
+        local empty=$(( cols - filled ))
+        local bar=""
+        for ((i=0; i<filled; i++)); do bar="${bar}█"; done
+        for ((i=0; i<empty; i++)); do bar="${bar}░"; done
+
+        # Barra animada
+        printf "\r  ${CYAN}%-32s${RESET} [${GREEN}%s${RESET}] %d%%" "$label" "$bar" "$percent"
+
+        sleep 0.5
+        elapsed=$((elapsed + 1))
+        # Si se pasa del tiempo estimado, desaceleramos el avance
+        if [ $elapsed -gt $((est_duration * 2)) ]; then
+            elapsed=$est_duration
+        fi
     done
-    printf "\r                          \r"
+
+    wait "$pid"
+    local exit_status=$?
+
+    # Mostrar cursor
+    printf "\033[?25h"
+
+    # Terminar en 100% o mostrar error
+    local bar=""
+    if [ $exit_status -eq 0 ]; then
+        for ((i=0; i<cols; i++)); do bar="${bar}█"; done
+        printf "\r  ${CYAN}%-32s${RESET} [${GREEN}%s${RESET}] 100%%\n" "$label" "$bar"
+    else
+        for ((i=0; i<cols; i++)); do bar="${bar}█"; done
+        printf "\r  ${RED}%-32s${RESET} [${RED}%s${RESET}] FALLÓ (Exit: %d)\n" "$label" "$bar" "$exit_status"
+    fi
+
+    return $exit_status
 }
 
 # Obtener la versión actual del proyecto
@@ -553,7 +601,7 @@ bump_version() {
 build_frontend() {
     print_step "3" "$TOTAL_STEPS" "Compilando frontend React + Vite" "⚡"
 
-    npm run build 2>&1 | tail -5
+    run_with_progress "npm run build" 15 "Compilando Frontend Web"
     log_ok "Frontend compilado → dist/"
 }
 
@@ -573,16 +621,12 @@ build_android() {
     rm -f "android/app/src/main/assets/public"/*.dmg 2>/dev/null || true
     rm -f "android/app/src/main/assets/public"/*.ipa 2>/dev/null || true
 
-    echo -e "  ${DIM}Sincronizando con Capacitor...${RESET}"
-    npx cap sync android 2>&1 | tail -3
-
-    echo -e "  ${DIM}Compilando APK con Gradle...${RESET}"
-    set +e
-    cd android
-    ./gradlew assembleRelease 2>&1 | tee -a "$BUILD_LOG" | tail -8
+    # Ejecutar sync y build con barras de progreso animadas
+    run_with_progress "npx cap sync android" 10 "Sincronizando Capacitor"
+    
+    local gradlew_cmd="cd android && ./gradlew assembleRelease && cd .."
+    run_with_progress "$gradlew_cmd" 45 "Compilando APK con Gradle"
     local APK_EXIT=$?
-    cd ..
-    set -e
 
     local APK_SRC="android/app/build/outputs/apk/release/app-release.apk"
     local APK_DEST="${OUTPUT_DIR}/DJ.a.la.carta.apk"
@@ -598,12 +642,10 @@ build_android() {
         log_result "Android APK" "OK" "${APK_DEST} (${size})"
     else
         log_err "Gradle falló. Intentando build debug..."
-        set +e
-        cd android
-        ./gradlew assembleDebug 2>&1 | tail -5
+        local debug_cmd="cd android && ./gradlew assembleDebug && cd .."
+        run_with_progress "$debug_cmd" 20 "Compilando APK Debug"
         local DBG_EXIT=$?
-        cd ..
-        set -e
+        
         local APK_DBG="android/app/build/outputs/apk/debug/app-debug.apk"
         if [ $DBG_EXIT -eq 0 ] && [ -f "$APK_DBG" ]; then
             cp "$APK_DBG" "${OUTPUT_DIR}/DJ.a.la.carta-debug.apk"
@@ -626,19 +668,16 @@ build_macos_silicon() {
 
     rm -rf dist-desktop/*.dmg dist-desktop/*.blockmap 2>/dev/null || true
 
-    set +e
-    CSC_IDENTITY_AUTO_DISCOVERY=false \
-    CSC_LINK="" \
-    npx electron-builder --mac --arm64 --publish never 2>&1 | tee -a "$BUILD_LOG" | tail -10
+    local silicon_cmd="CSC_IDENTITY_AUTO_DISCOVERY=false CSC_LINK=\"\" npx electron-builder --mac --arm64 --publish never"
+    run_with_progress "$silicon_cmd" 35 "Compilando macOS Silicon DMG"
     local EXIT_CODE=$?
-    set -e
 
     if [ $EXIT_CODE -eq 0 ]; then
         DMG_ARM=$(find dist-desktop -maxdepth 1 -name "*arm64*.dmg" 2>/dev/null | head -1)
         [ -z "$DMG_ARM" ] && DMG_ARM=$(find dist-desktop -maxdepth 1 -name "*.dmg" 2>/dev/null | head -1)
 
         if [ -n "$DMG_ARM" ]; then
-            local ARM_DEST="${OUTPUT_DIR}/DJ-Panel-Pro-v${NEW_VERSION}-macOS-Silicon-arm64.dmg"
+            local ARM_DEST="${OUTPUT_DIR}/DJ.a.la.carta.silicon.dmg"
             cp "$DMG_ARM" "$ARM_DEST"
             # Firma ad-hoc
             codesign --force --sign - "$ARM_DEST" 2>/dev/null || true
@@ -648,7 +687,7 @@ build_macos_silicon() {
             log_result "macOS Silicon DMG" "OK" "${ARM_DEST} (${size})"
 
             # Renombrar en dist-desktop para GitHub upload
-            DMG_ARM_FINAL="dist-desktop/DJ Panel Pro-${NEW_VERSION}-arm64.dmg"
+            DMG_ARM_FINAL="dist-desktop/DJ.a.la.carta.silicon.dmg"
             cp "$DMG_ARM" "$DMG_ARM_FINAL" 2>/dev/null || DMG_ARM_FINAL="$DMG_ARM"
         else
             log_result "macOS Silicon DMG" "FAIL" "DMG no encontrado en dist-desktop/"
@@ -671,19 +710,16 @@ build_macos_intel() {
     # Solo limpiar blockmaps
     rm -f dist-desktop/*.blockmap 2>/dev/null || true
 
-    set +e
-    CSC_IDENTITY_AUTO_DISCOVERY=false \
-    CSC_LINK="" \
-    npx electron-builder --mac --x64 --publish never 2>&1 | tee -a "$BUILD_LOG" | tail -10
+    local intel_cmd="CSC_IDENTITY_AUTO_DISCOVERY=false CSC_LINK=\"\" npx electron-builder --mac --x64 --publish never"
+    run_with_progress "$intel_cmd" 35 "Compilando macOS Intel DMG"
     local EXIT_CODE=$?
-    set -e
 
     if [ $EXIT_CODE -eq 0 ]; then
         # Buscar el DMG x64 (no arm64)
         DMG_X64=$(find dist-desktop -maxdepth 1 -name "*.dmg" ! -name "*arm64*" 2>/dev/null | head -1)
 
         if [ -n "$DMG_X64" ]; then
-            local X64_DEST="${OUTPUT_DIR}/DJ-Panel-Pro-v${NEW_VERSION}-macOS-Intel-x64.dmg"
+            local X64_DEST="${OUTPUT_DIR}/DJ.a.la.carta.dmg"
             cp "$DMG_X64" "$X64_DEST"
             codesign --force --sign - "$X64_DEST" 2>/dev/null || true
             local size
@@ -692,7 +728,7 @@ build_macos_intel() {
             log_result "macOS Intel DMG" "OK" "${X64_DEST} (${size})"
 
             # Renombrar en dist-desktop para GitHub upload
-            DMG_X64_FINAL="dist-desktop/DJ Panel Pro-${NEW_VERSION}-x64.dmg"
+            DMG_X64_FINAL="dist-desktop/DJ.a.la.carta.dmg"
             cp "$DMG_X64" "$DMG_X64_FINAL" 2>/dev/null || DMG_X64_FINAL="$DMG_X64"
         else
             log_result "macOS Intel DMG" "FAIL" "DMG no encontrado en dist-desktop/"
@@ -713,26 +749,30 @@ build_windows() {
 
     log_info "Cross-compile desde macOS → Windows. Puede tardar más."
 
-    set +e
     # Forzar desactivación de firma de código para cross-compile
     unset WIN_CSC_LINK 2>/dev/null || true
     unset WIN_CSC_KEY_PASSWORD 2>/dev/null || true
     unset CSC_LINK 2>/dev/null || true
     export CSC_IDENTITY_AUTO_DISCOVERY=false
-    npx electron-builder --win --x64 --publish never 2>&1 | tee -a "$BUILD_LOG" | tail -15
+    
+    local win_cmd="npx electron-builder --win --x64 --publish never"
+    run_with_progress "$win_cmd" 45 "Compilando Windows EXE"
     local EXIT_CODE=$?
-    set -e
 
     if [ $EXIT_CODE -eq 0 ]; then
         local EXE_FILE
         EXE_FILE=$(find dist-desktop -maxdepth 1 -name "*.exe" 2>/dev/null | head -1)
         if [ -n "$EXE_FILE" ]; then
-            local EXE_DEST="${OUTPUT_DIR}/DJ-Panel-Pro-v${NEW_VERSION}-Windows-x64-Setup.exe"
+            local EXE_DEST="${OUTPUT_DIR}/DJ.a.la.carta.exe"
             cp "$EXE_FILE" "$EXE_DEST"
             local size
             size=$(du -sh "$EXE_DEST" | cut -f1)
             log_ok "Windows EXE compilado (${size})"
             log_result "Windows EXE" "OK" "${EXE_DEST} (${size})"
+            
+            # Renombrar en dist-desktop para GitHub upload
+            EXE_FINAL="dist-desktop/DJ.a.la.carta.exe"
+            cp "$EXE_FILE" "$EXE_FINAL" 2>/dev/null || EXE_FINAL="$EXE_FILE"
         else
             log_result "Windows EXE" "FAIL" "EXE no encontrado en dist-desktop/"
         fi
@@ -802,59 +842,51 @@ deploy_github_release() {
 
     log_ok "Release creado: ID ${RELEASE_ID}"
 
-    # Subir binarios como assets (nombres SIN espacios para URLs limpias)
+    # Subir binarios como assets (nombres sin versión)
     local upload_count=0
 
-    # DMG arm64
-    if [ -n "${DMG_ARM_FINAL:-}" ] && [ -f "${DMG_ARM_FINAL}" ]; then
-        echo -e "  ${DIM}📤 Subiendo DMG arm64...${RESET}"
-        local ARM_UPLOAD_NAME="DJ.Panel.Pro-${NEW_VERSION}-arm64.dmg"
-        curl -s -X POST \
-            -H "Authorization: token ${GITHUB_TOKEN}" \
-            -H "Content-Type: application/octet-stream" \
-            "${UPLOAD_URL}?name=${ARM_UPLOAD_NAME}" \
-            --data-binary @"${DMG_ARM_FINAL}" > /dev/null
-        log_ok "DMG arm64 subido como ${ARM_UPLOAD_NAME}"
-        upload_count=$((upload_count + 1))
+    # DMG Silicon
+    local silicon_dmg="${OUTPUT_DIR}/DJ.a.la.carta.silicon.dmg"
+    if [ -f "$silicon_dmg" ]; then
+        local upload_cmd="curl -s -X POST -H 'Authorization: token ${GITHUB_TOKEN}' -H 'Content-Type: application/octet-stream' '${UPLOAD_URL}?name=DJ.a.la.carta.silicon.dmg' --data-binary @'${silicon_dmg}'"
+        run_with_progress "$upload_cmd" 15 "Subiendo macOS Silicon DMG"
+        if [ $? -eq 0 ]; then
+            log_ok "DMG Silicon subido como DJ.a.la.carta.silicon.dmg"
+            upload_count=$((upload_count + 1))
+        fi
     fi
 
-    # DMG x64
-    if [ -n "${DMG_X64_FINAL:-}" ] && [ -f "${DMG_X64_FINAL}" ]; then
-        echo -e "  ${DIM}📤 Subiendo DMG x64...${RESET}"
-        local X64_UPLOAD_NAME="DJ.Panel.Pro-${NEW_VERSION}-x64.dmg"
-        curl -s -X POST \
-            -H "Authorization: token ${GITHUB_TOKEN}" \
-            -H "Content-Type: application/octet-stream" \
-            "${UPLOAD_URL}?name=${X64_UPLOAD_NAME}" \
-            --data-binary @"${DMG_X64_FINAL}" > /dev/null
-        log_ok "DMG x64 subido como ${X64_UPLOAD_NAME}"
-        upload_count=$((upload_count + 1))
+    # DMG Intel
+    local intel_dmg="${OUTPUT_DIR}/DJ.a.la.carta.dmg"
+    if [ -f "$intel_dmg" ]; then
+        local upload_cmd="curl -s -X POST -H 'Authorization: token ${GITHUB_TOKEN}' -H 'Content-Type: application/octet-stream' '${UPLOAD_URL}?name=DJ.a.la.carta.dmg' --data-binary @'${intel_dmg}'"
+        run_with_progress "$upload_cmd" 15 "Subiendo macOS Intel DMG"
+        if [ $? -eq 0 ]; then
+            log_ok "DMG Intel subido como DJ.a.la.carta.dmg"
+            upload_count=$((upload_count + 1))
+        fi
     fi
 
-    # APK
-    local APK_FILE="${OUTPUT_DIR}/DJ.a.la.carta.apk"
-    if [ -f "$APK_FILE" ]; then
-        echo -e "  ${DIM}📤 Subiendo APK Android...${RESET}"
-        curl -s -X POST \
-            -H "Authorization: token ${GITHUB_TOKEN}" \
-            -H "Content-Type: application/octet-stream" \
-            "${UPLOAD_URL}?name=DJ.a.la.carta.apk" \
-            --data-binary @"${APK_FILE}" > /dev/null
-        log_ok "APK Android subido"
-        upload_count=$((upload_count + 1))
+    # APK Android
+    local apk_file="${OUTPUT_DIR}/DJ.a.la.carta.apk"
+    if [ -f "$apk_file" ]; then
+        local upload_cmd="curl -s -X POST -H 'Authorization: token ${GITHUB_TOKEN}' -H 'Content-Type: application/octet-stream' '${UPLOAD_URL}?name=DJ.a.la.carta.apk' --data-binary @'${apk_file}'"
+        run_with_progress "$upload_cmd" 8 "Subiendo Android APK"
+        if [ $? -eq 0 ]; then
+            log_ok "APK Android subido como DJ.a.la.carta.apk"
+            upload_count=$((upload_count + 1))
+        fi
     fi
 
-    # EXE
-    local EXE_FILE="${OUTPUT_DIR}/DJ-Panel-Pro-v${NEW_VERSION}-Windows-x64-Setup.exe"
-    if [ -f "$EXE_FILE" ]; then
-        echo -e "  ${DIM}📤 Subiendo EXE Windows...${RESET}"
-        curl -s -X POST \
-            -H "Authorization: token ${GITHUB_TOKEN}" \
-            -H "Content-Type: application/octet-stream" \
-            "${UPLOAD_URL}?name=DJ-Panel-Pro-v${NEW_VERSION}-Windows-x64-Setup.exe" \
-            --data-binary @"${EXE_FILE}" > /dev/null
-        log_ok "EXE Windows subido"
-        upload_count=$((upload_count + 1))
+    # EXE Windows
+    local exe_file="${OUTPUT_DIR}/DJ.a.la.carta.exe"
+    if [ -f "$exe_file" ]; then
+        local upload_cmd="curl -s -X POST -H 'Authorization: token ${GITHUB_TOKEN}' -H 'Content-Type: application/octet-stream' '${UPLOAD_URL}?name=DJ.a.la.carta.exe' --data-binary @'${exe_file}'"
+        run_with_progress "$upload_cmd" 15 "Subiendo Windows EXE"
+        if [ $? -eq 0 ]; then
+            log_ok "EXE Windows subido como DJ.a.la.carta.exe"
+            upload_count=$((upload_count + 1))
+        fi
     fi
 
     log_ok "${upload_count} binario(s) subidos a GitHub Release"
@@ -888,12 +920,12 @@ deploy_github_release() {
                     for (const a of assets) {
                         const name = a.name.toLowerCase();
                         const url = a.browser_download_url;
-                        if (name.includes('arm64') && name.endsWith('.dmg')) {
+                        if (name.includes('silicon') && name.endsWith('.dmg')) {
                             v.dmgUrl = url;
-                            console.log('  ✅ dmgUrl (arm64): ' + url);
-                        } else if (name.includes('x64') && name.endsWith('.dmg')) {
+                            console.log('  ✅ dmgUrl (silicon): ' + url);
+                        } else if (name.endsWith('.dmg') && !name.includes('silicon')) {
                             v.dmgUrlIntel = url;
-                            console.log('  ✅ dmgUrlIntel (x64): ' + url);
+                            console.log('  ✅ dmgUrlIntel (Intel): ' + url);
                         } else if (name.endsWith('.apk')) {
                             // APK se sirve desde Vercel, no cambiar
                             console.log('  ℹ️  APK en GitHub: ' + url);
@@ -1600,62 +1632,93 @@ main() {
     # Mostrar resumen de selección
     show_selection_summary
 
-    # Calcular total de pasos
-    TOTAL_STEPS=4  # base: verificar + versión + frontend + verificar URLs
-    [ $BUILD_ANDROID -eq 1 ]       && TOTAL_STEPS=$((TOTAL_STEPS + 1))
-    [ $BUILD_MACOS_SILICON -eq 1 ] && TOTAL_STEPS=$((TOTAL_STEPS + 1))
-    [ $BUILD_MACOS_INTEL -eq 1 ]   && TOTAL_STEPS=$((TOTAL_STEPS + 1))
-    [ $BUILD_WINDOWS -eq 1 ]       && TOTAL_STEPS=$((TOTAL_STEPS + 1))
-    [ $DEPLOY_GITHUB -eq 1 ]       && TOTAL_STEPS=$((TOTAL_STEPS + 1))
-    [ $SYNC_FIREBASE -eq 1 ]       && TOTAL_STEPS=$((TOTAL_STEPS + 1))
-    [ $DEPLOY_VERCEL -eq 1 ]       && TOTAL_STEPS=$((TOTAL_STEPS + 1))
-    [ $DO_GIT_PUSH -eq 1 ]         && TOTAL_STEPS=$((TOTAL_STEPS + 1))
-    [ $TEST_NOTIF_ADMIN -eq 1 ]    && TOTAL_STEPS=$((TOTAL_STEPS + 1))
-    [ $TEST_NOTIF_USER -eq 1 ]     && TOTAL_STEPS=$((TOTAL_STEPS + 1))
-    [ $INJECT_REQUESTS -eq 1 ]     && TOTAL_STEPS=$((TOTAL_STEPS + 1))
+    # Determinar si solo se ejecutan herramientas de testing (sin compilar ni desplegar)
+    local ONLY_TESTING=0
+    if [ $TEST_NOTIF_ADMIN -eq 1 ] || [ $TEST_NOTIF_USER -eq 1 ] || [ $INJECT_REQUESTS -eq 1 ]; then
+        if [ $BUILD_ANDROID -eq 0 ] && [ $BUILD_MACOS_SILICON -eq 0 ] && \
+           [ $BUILD_MACOS_INTEL -eq 0 ] && [ $BUILD_WINDOWS -eq 0 ] && \
+           [ $DEPLOY_GITHUB -eq 0 ] && [ $DEPLOY_VERCEL -eq 0 ] && \
+           [ $SYNC_FIREBASE -eq 0 ] && [ $DO_GIT_PUSH -eq 0 ]; then
+            ONLY_TESTING=1
+        fi
+    fi
 
-    CURRENT_STEP=4  # después de verificar(1), versión(2), frontend(3)
+    if [ $ONLY_TESTING -eq 1 ]; then
+        # Configurar variables mínimas de versión para el reporte
+        NEW_VERSION=$(get_current_version)
+        TAG="v${NEW_VERSION}"
+        OUTPUT_DIR="releases/${NEW_VERSION}"
+        
+        # Calcular pasos
+        TOTAL_STEPS=0
+        [ $TEST_NOTIF_ADMIN -eq 1 ] && TOTAL_STEPS=$((TOTAL_STEPS + 1))
+        [ $TEST_NOTIF_USER -eq 1 ]  && TOTAL_STEPS=$((TOTAL_STEPS + 1))
+        [ $INJECT_REQUESTS -eq 1 ]  && TOTAL_STEPS=$((TOTAL_STEPS + 1))
+        
+        CURRENT_STEP=1
 
-    # ── EJECUCIÓN ─────────────────────────────────────────────────────────────
+        # Ejecutar únicamente utilidades seleccionadas
+        test_notif_admin
+        test_notif_user
+        inject_requests
+    else
+        # Calcular total de pasos de un despliegue completo
+        TOTAL_STEPS=4  # base: verificar + versión + frontend + verificar URLs
+        [ $BUILD_ANDROID -eq 1 ]       && TOTAL_STEPS=$((TOTAL_STEPS + 1))
+        [ $BUILD_MACOS_SILICON -eq 1 ] && TOTAL_STEPS=$((TOTAL_STEPS + 1))
+        [ $BUILD_MACOS_INTEL -eq 1 ]   && TOTAL_STEPS=$((TOTAL_STEPS + 1))
+        [ $BUILD_WINDOWS -eq 1 ]       && TOTAL_STEPS=$((TOTAL_STEPS + 1))
+        [ $DEPLOY_GITHUB -eq 1 ]       && TOTAL_STEPS=$((TOTAL_STEPS + 1))
+        [ $SYNC_FIREBASE -eq 1 ]       && TOTAL_STEPS=$((TOTAL_STEPS + 1))
+        [ $DEPLOY_VERCEL -eq 1 ]       && TOTAL_STEPS=$((TOTAL_STEPS + 1))
+        [ $DO_GIT_PUSH -eq 1 ]         && TOTAL_STEPS=$((TOTAL_STEPS + 1))
+        [ $TEST_NOTIF_ADMIN -eq 1 ]    && TOTAL_STEPS=$((TOTAL_STEPS + 1))
+        [ $TEST_NOTIF_USER -eq 1 ]     && TOTAL_STEPS=$((TOTAL_STEPS + 1))
+        [ $INJECT_REQUESTS -eq 1 ]     && TOTAL_STEPS=$((TOTAL_STEPS + 1))
 
-    # 1. Verificar entorno
-    verify_environment
+        CURRENT_STEP=4  # después de verificar(1), versión(2), frontend(3)
 
-    # 2. Bump de versión
-    bump_version
+        # ── EJECUCIÓN COMPLETA ──────────────────────────────────────────────────
 
-    # 3. Compilar frontend
-    build_frontend
+        # 1. Verificar entorno
+        verify_environment
 
-    # 4-7. Compilar plataformas
-    build_android
-    build_macos_silicon
-    build_macos_intel
-    build_windows
+        # 2. Bump de versión
+        bump_version
 
-    # 8. GitHub Release
-    deploy_github_release
+        # 3. Compilar frontend
+        build_frontend
 
-    # 9. Firebase RTDB
-    sync_firebase
+        # 4-7. Compilar plataformas
+        build_android
+        build_macos_silicon
+        build_macos_intel
+        build_windows
 
-    # 10. Vercel
-    deploy_vercel
+        # 8. GitHub Release
+        deploy_github_release
 
-    # 11. Git Push → Render
-    do_git_push
+        # 9. Firebase RTDB
+        sync_firebase
 
-    # 12. Verificar URLs de descarga
-    verify_urls
+        # 10. Vercel
+        deploy_vercel
 
-    # 13. Test notificaciones → Admin Master
-    test_notif_admin
+        # 11. Git Push → Render
+        do_git_push
 
-    # 14. Test notificaciones → usuario específico
-    test_notif_user
+        # 12. Verificar URLs de descarga
+        verify_urls
 
-    # 15. Inyectar peticiones de canciones
-    inject_requests
+        # 13. Test notificaciones → Admin Master
+        test_notif_admin
+
+        # 14. Test notificaciones → usuario específico
+        test_notif_user
+
+        # 15. Inyectar peticiones de canciones
+        inject_requests
+    fi
 
     # ── RESUMEN FINAL ─────────────────────────────────────────────────────────
     print_summary

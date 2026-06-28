@@ -2486,7 +2486,7 @@ export default function DjDashboard() {
 
         {/* COLUMNA IZQUIERDA */}
         <aside style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-          <nav className="glass-panel" style={{ padding: '8px', display: 'flex', flexDirection: 'column', gap: '4px' }}>
+          <nav className="glass-panel sidebar-nav" style={{ padding: '8px', display: 'flex', flexDirection: 'column', gap: '4px' }}>
             <button className={`btn ${activeTab === 'requests' ? 'btn-primary' : 'btn-secondary'}`}
               onClick={() => setActiveTab('requests')} style={{ justifyContent: 'flex-start', width: '100%' }}>
               <Music size={16} /><span>Lista de Peticiones</span>

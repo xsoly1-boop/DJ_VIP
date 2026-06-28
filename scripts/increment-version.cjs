@@ -65,10 +65,10 @@ async function increment() {
   jsonContent.latestVersion = newVersion;
   // Solo establecer defaults si no existen, NUNCA sobreescribir URLs existentes
   if (!jsonContent.apkUrl) jsonContent.apkUrl = 'https://dj-vip.vercel.app/DJ.a.la.carta.apk';
-  if (!jsonContent.dmgUrl) jsonContent.dmgUrl = '';
-  if (!jsonContent.dmgUrlIntel) jsonContent.dmgUrlIntel = '';
+  if (!jsonContent.dmgUrl) jsonContent.dmgUrl = `https://github.com/xsoly1-boop/DJ_VIP/releases/download/v${newVersion}/DJ.a.la.carta.silicon.dmg`;
+  if (!jsonContent.dmgUrlIntel) jsonContent.dmgUrlIntel = `https://github.com/xsoly1-boop/DJ_VIP/releases/download/v${newVersion}/DJ.a.la.carta.dmg`;
   if (!jsonContent.ipaUrl) jsonContent.ipaUrl = 'https://dj-vip.vercel.app/DJ-Panel-Pro.ipa';
-  if (!jsonContent.exeUrl) jsonContent.exeUrl = 'https://dj-vip.vercel.app/DJ-Panel-Pro-Setup.exe';
+  if (!jsonContent.exeUrl) jsonContent.exeUrl = `https://github.com/xsoly1-boop/DJ_VIP/releases/download/v${newVersion}/DJ.a.la.carta.exe`;
   fs.writeFileSync(jsonPath, JSON.stringify(jsonContent, null, 2) + '\n', 'utf8');
   console.log(`[version.json] Actualizado a: ${newVersion}`);
 
@@ -98,8 +98,9 @@ async function increment() {
       await admin.database().ref('config/updates').update({
         latestVersion: newVersion,
         apkUrl:    'https://dj-vip.vercel.app/DJ.a.la.carta.apk',
-        dmgUrl:    'https://github.com/xsoly1-boop/DJ_VIP/releases/download/v1.0.0.39/DJ.Panel.Pro-1.0.0.39-arm64.dmg',
-        dmgUrlIntel: 'https://github.com/xsoly1-boop/DJ_VIP/releases/download/v1.0.0.39/DJ.Panel.Pro-1.0.0.39-x64.dmg',
+        dmgUrl:    `https://github.com/xsoly1-boop/DJ_VIP/releases/download/v${newVersion}/DJ.a.la.carta.silicon.dmg`,
+        dmgUrlIntel: `https://github.com/xsoly1-boop/DJ_VIP/releases/download/v${newVersion}/DJ.a.la.carta.dmg`,
+        exeUrl:    `https://github.com/xsoly1-boop/DJ_VIP/releases/download/v${newVersion}/DJ.a.la.carta.exe`
       });
       console.log(`[Firebase RTDB] config/updates.latestVersion → ${newVersion}`);
     } catch (e) {

@@ -434,5 +434,20 @@ html[data-skin="skin_crystal"] body {
   filter: brightness(1.1) !important;
 }
 
+/* Sidebar Navigation Styling Adjustments */
+.sidebar-nav .btn {
+  font-size: 0.8rem !important;
+  font-weight: 500 !important;
+  padding: 8px 14px !important;
+  gap: 8px !important;
+  border-radius: 8px !important;
+}
 
+.sidebar-nav .btn span {
+  font-size: 0.8rem !important;
+}
 
+.sidebar-nav .btn svg {
+  width: 14px !important;
+  height: 14px !important;
+}
