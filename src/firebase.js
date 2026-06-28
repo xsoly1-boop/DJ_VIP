@@ -8,7 +8,8 @@ import {
   onAuthStateChanged as realAuthChanged,
   reauthenticateWithCredential,
   EmailAuthProvider,
-  createUserWithEmailAndPassword as realCreateUser
+  createUserWithEmailAndPassword as realCreateUser,
+  sendPasswordResetEmail as realSendPasswordResetEmail
 } from 'firebase/auth';
 import { Capacitor } from '@capacitor/core';
 import { 
@@ -1406,6 +1407,23 @@ export const createUserWithEmailAndPassword = async (authInstance, email, passwo
   window.dispatchEvent(new CustomEvent('mock-auth-change', { detail: mockUser }));
 
   return { user: mockUser };
+};
+
+export const sendPasswordResetEmail = async (authInstance, email) => {
+  if (!isMockMode) {
+    return realSendPasswordResetEmail(authInstance, email);
+  }
+  const savedAccountsStr = localStorage.getItem('mock_accounts');
+  let accounts = [...MOCK_ACCOUNTS];
+  if (savedAccountsStr) {
+    try { accounts = JSON.parse(savedAccountsStr); } catch (e) {}
+  }
+  const account = accounts.find(a => a.email.toLowerCase() === email.toLowerCase());
+  if (!account) {
+    throw new Error('auth/user-not-found: El correo electrónico no está registrado.');
+  }
+  console.log(`[MOCK] Enlace de recuperación de contraseña enviado a ${email}`);
+  return true;
 };
 
 export const signOut = async (authInstance) => {

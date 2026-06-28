@@ -6,14 +6,16 @@ import { CURRENT_APP_VERSION } from '../utils/AppVersionConfig';
 const APK_URL = 'https://dj-vip.vercel.app/DJ%20a%20la%20Carta%20Pro.apk';
 
 export default function LoginView() {
-  const { loginDJ, registerDJ, isMock } = useFirebase();
+  const { loginDJ, recoverPassword, registerDJ, isMock } = useFirebase();
   const [isRegister, setIsRegister] = useState(false);
+  const [isRecovery, setIsRecovery] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [displayName, setDisplayName] = useState('');
   const [phone, setPhone] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [error, setError] = useState(null);
+  const [successMessage, setSuccessMessage] = useState(null);
   const [loading, setLoading] = useState(false);
 
   // States for input focus glows
@@ -27,13 +29,19 @@ export default function LoginView() {
   const [btnHovered, setBtnHovered] = useState(false);
   const [toggleBtnHovered, setToggleBtnHovered] = useState(false);
   const [downloadBtnHovered, setDownloadBtnHovered] = useState(false);
+  const [forgotBtnHovered, setForgotBtnHovered] = useState(false);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError(null);
+    setSuccessMessage(null);
     setLoading(true);
     try {
-      if (isRegister) {
+      if (isRecovery) {
+        await recoverPassword(email);
+        setSuccessMessage('¡Enlace de recuperación enviado con éxito! Revisa tu bandeja de entrada.');
+        setEmail('');
+      } else if (isRegister) {
         if (password !== confirmPassword) throw new Error('Las contraseñas no coinciden.');
         await registerDJ(email, password, phone, displayName);
       } else {
@@ -49,12 +57,23 @@ export default function LoginView() {
 
   const toggleMode = () => {
     setIsRegister(!isRegister);
+    setIsRecovery(false);
     setError(null);
+    setSuccessMessage(null);
     setEmail('');
     setPassword('');
     setDisplayName('');
     setPhone('');
     setConfirmPassword('');
+  };
+
+  const toggleRecoveryMode = () => {
+    setIsRecovery(!isRecovery);
+    setIsRegister(false);
+    setError(null);
+    setSuccessMessage(null);
+    setEmail('');
+    setPassword('');
   };
 
   return (
@@ -114,7 +133,7 @@ export default function LoginView() {
           textShadow: '0 0 15px rgba(255, 255, 255, 0.1), 0 0 10px rgba(124, 58, 237, 0.55)',
           letterSpacing: '-0.02em'
         }}>
-          {isRegister ? 'Registro de DJ' : 'DJ Control Panel'}
+          {isRecovery ? 'Recuperar Acceso' : isRegister ? 'Registro de DJ' : 'DJ Control Panel'}
         </h1>
         <p style={{
           color: '#94a3b8',
@@ -123,13 +142,15 @@ export default function LoginView() {
           marginBottom: '35px',
           padding: '0 10px'
         }}>
-          {isRegister
-            ? 'Crea tu cuenta para comenzar a gestionar tus eventos interactivos.'
-            : 'Inicia sesión para gestionar tus eventos y peticiones en vivo.'}
+          {isRecovery
+            ? 'Ingresa tu correo electrónico registrado para enviarte un enlace de recuperación.'
+            : isRegister
+              ? 'Crea tu cuenta para comenzar a gestionar tus eventos interactivos.'
+              : 'Inicia sesión para gestionar tus eventos y peticiones en vivo.'}
         </p>
 
         {/* Modo Demo */}
-        {isMock && !isRegister && (
+        {isMock && !isRegister && !isRecovery && (
           <div style={{
             background: 'rgba(245, 158, 11, 0.06)',
             border: '1px solid rgba(245, 158, 11, 0.15)',
@@ -150,6 +171,22 @@ export default function LoginView() {
                 🔑 <strong>admin123</strong>
               </p>
             </div>
+          </div>
+        )}
+
+        {/* Mensaje de Éxito */}
+        {successMessage && (
+          <div style={{
+            background: 'rgba(16, 185, 129, 0.06)',
+            border: '1px solid rgba(16, 185, 129, 0.15)',
+            borderRadius: '12px',
+            padding: '12px 16px',
+            marginBottom: '24px',
+            color: '#10b981',
+            fontSize: '0.85rem',
+            textAlign: 'left'
+          }}>
+            {successMessage}
           </div>
         )}
 
@@ -263,40 +300,59 @@ export default function LoginView() {
             </div>
           )}
 
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', textAlign: 'left' }}>
-            <label style={{ fontSize: '0.72rem', fontWeight: '700', letterSpacing: '0.08em', color: '#94a3b8', textTransform: 'uppercase' }}>Contraseña</label>
-            <div style={{ position: 'relative' }}>
-              <Lock size={18} color={passwordFocused ? 'rgba(124, 58, 237, 0.8)' : '#64748b'} style={{ position: 'absolute', left: '16px', top: '50%', transform: 'translateY(-50%)', transition: 'color 0.2s ease' }} />
-              <input
-                type="password"
-                required
-                placeholder="••••••••"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                onFocus={() => setPasswordFocused(true)}
-                onBlur={() => setPasswordFocused(false)}
-                style={{
-                  width: '100%',
-                  padding: '14px 18px 14px 44px',
-                  background: 'rgba(255, 255, 255, 0.02)',
-                  border: passwordFocused ? '1px solid rgba(124, 58, 237, 0.8)' : '1px solid rgba(255, 255, 255, 0.07)',
-                  borderRadius: '12px',
-                  color: '#ffffff',
-                  fontSize: '1rem',
-                  boxSizing: 'border-box',
-                  outline: 'none',
-                  transition: 'all 0.2s ease',
-                  boxShadow: passwordFocused ? '0 0 15px rgba(124, 58, 237, 0.35)' : 'none'
-                }}
-              />
+          {!isRecovery && (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', textAlign: 'left' }}>
+              <label style={{ fontSize: '0.72rem', fontWeight: '700', letterSpacing: '0.08em', color: '#94a3b8', textTransform: 'uppercase' }}>Contraseña</label>
+              <div style={{ position: 'relative' }}>
+                <Lock size={18} color={passwordFocused ? 'rgba(124, 58, 237, 0.8)' : '#64748b'} style={{ position: 'absolute', left: '16px', top: '50%', transform: 'translateY(-50%)', transition: 'color 0.2s ease' }} />
+                <input
+                  type="password"
+                  required={!isRecovery}
+                  placeholder="••••••••"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  onFocus={() => setPasswordFocused(true)}
+                  onBlur={() => setPasswordFocused(false)}
+                  style={{
+                    width: '100%',
+                    padding: '14px 18px 14px 44px',
+                    background: 'rgba(255, 255, 255, 0.02)',
+                    border: passwordFocused ? '1px solid rgba(124, 58, 237, 0.8)' : '1px solid rgba(255, 255, 255, 0.07)',
+                    borderRadius: '12px',
+                    color: '#ffffff',
+                    fontSize: '1rem',
+                    boxSizing: 'border-box',
+                    outline: 'none',
+                    transition: 'all 0.2s ease',
+                    boxShadow: passwordFocused ? '0 0 15px rgba(124, 58, 237, 0.35)' : 'none'
+                  }}
+                />
+              </div>
             </div>
-          </div>
+          )}
 
-          {!isRegister && (
+          {!isRegister && !isRecovery && (
             <div style={{ textAlign: 'right', marginTop: '-10px', padding: '0 4px' }}>
-              <span style={{ fontSize: '0.72rem', color: '#64748b', fontStyle: 'italic' }}>
-                ¿Olvidaste tu contraseña? Contacta al administrador para restablecerla.
-              </span>
+              <button
+                type="button"
+                onClick={toggleRecoveryMode}
+                onMouseEnter={() => setForgotBtnHovered(true)}
+                onMouseLeave={() => setForgotBtnHovered(false)}
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  color: forgotBtnHovered ? '#c084fc' : '#64748b',
+                  fontSize: '0.72rem',
+                  fontStyle: 'italic',
+                  cursor: 'pointer',
+                  textDecoration: 'underline',
+                  outline: 'none',
+                  transition: 'color 0.2s ease',
+                  padding: 0
+                }}
+              >
+                ¿Olvidaste tu contraseña? Restablécela aquí
+              </button>
             </div>
           )}
 
@@ -357,17 +413,17 @@ export default function LoginView() {
             }}
           >
             {loading ? (
-              <><RefreshCw size={18} className="animate-spin" /> {isRegister ? 'Registrando...' : 'Iniciando Sesión...'}</>
+              <><RefreshCw size={18} className="animate-spin" /> {isRecovery ? 'Enviando...' : isRegister ? 'Registrando...' : 'Iniciando Sesión...'}</>
             ) : (
-              <>{isRegister ? 'Crear Cuenta DJ' : 'Entrar al Panel'} <ArrowRight size={18} /></>
+              <>{isRecovery ? 'Enviar Enlace de Recuperación' : isRegister ? 'Crear Cuenta DJ' : 'Entrar al Panel'} <ArrowRight size={18} /></>
             )}
           </button>
         </form>
 
-        {/* Toggle login/registro */}
+        {/* Toggle login/registro/recuperación */}
         <div style={{ marginTop: '25px', borderTop: '1px solid rgba(255, 255, 255, 0.08)', paddingTop: '20px' }}>
           <button
-            onClick={toggleMode}
+            onClick={isRecovery ? toggleRecoveryMode : toggleMode}
             onMouseEnter={() => setToggleBtnHovered(true)}
             onMouseLeave={() => setToggleBtnHovered(false)}
             style={{
@@ -381,7 +437,11 @@ export default function LoginView() {
               outline: 'none'
             }}
           >
-            {isRegister ? '¿Ya tienes una cuenta? Inicia sesión' : '¿No tienes cuenta? Regístrate aquí'}
+            {isRecovery
+              ? '← Volver al inicio de sesión'
+              : isRegister
+                ? '¿Ya tienes una cuenta? Inicia sesión'
+                : '¿No tienes cuenta? Regístrate aquí'}
           </button>
         </div>
 

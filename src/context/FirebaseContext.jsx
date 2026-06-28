@@ -12,6 +12,7 @@ import {
   signOut,
   createUserWithEmailAndPassword,
   reauthenticateUser,
+  sendPasswordResetEmail,
   ref,
   onValue,
   set,
@@ -1005,6 +1006,10 @@ export const FirebaseProvider = ({ children }) => {
 
   const loginDJ = async (email, password) => {
     return signInWithEmailAndPassword(auth, email, password);
+  };
+
+  const recoverPassword = async (email) => {
+    return sendPasswordResetEmail(auth, email);
   };
 
   const registerDJ = async (email, password, phone, displayName) => {
@@ -2985,6 +2990,7 @@ export const FirebaseProvider = ({ children }) => {
       allUsersData,
       allSuggestions,
       loginDJ,
+      recoverPassword,
       registerDJ,
       selectPlan,
       cancelPlanSelection,
