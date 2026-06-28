@@ -524,6 +524,21 @@ function AppContent() {
                     💻 Intel (x64)
                   </button>
                   <span style={{ fontSize: '0.72rem', color: 'rgba(255,255,255,0.35)' }}>Archivo .dmg · macOS 10.14+</span>
+                  <div style={{
+                    fontSize: '0.68rem',
+                    color: '#facc15',
+                    background: 'rgba(250,204,21,0.08)',
+                    border: '1px solid rgba(250,204,21,0.25)',
+                    padding: '8px 10px',
+                    borderRadius: '8px',
+                    marginTop: '4px',
+                    textAlign: 'left',
+                    lineHeight: '1.4'
+                  }}>
+                    ⚠️ <strong>Si macOS dice que la app está dañada al abrirla:</strong><br />
+                    Abre la Terminal y ejecuta:<br />
+                    <code style={{ background: 'rgba(0,0,0,0.3)', padding: '2px 4px', borderRadius: '4px', display: 'block', marginTop: '4px', wordBreak: 'break-all', fontFamily: 'monospace' }}>xattr -cr /Applications/DJ\ Panel\ Pro.app</code>
+                  </div>
                   {dismissBtn}
                 </div>
               );
@@ -548,6 +563,21 @@ function AppContent() {
                     🍎 Apple Silicon (arm64)
                   </button>
                   <span style={{ fontSize: '0.72rem', color: 'rgba(255,255,255,0.35)' }}>Archivo .dmg · macOS 10.14+</span>
+                  <div style={{
+                    fontSize: '0.68rem',
+                    color: '#facc15',
+                    background: 'rgba(250,204,21,0.08)',
+                    border: '1px solid rgba(250,204,21,0.25)',
+                    padding: '8px 10px',
+                    borderRadius: '8px',
+                    marginTop: '4px',
+                    textAlign: 'left',
+                    lineHeight: '1.4'
+                  }}>
+                    ⚠️ <strong>Si macOS dice que la app está dañada al abrirla:</strong><br />
+                    Abre la Terminal y ejecuta:<br />
+                    <code style={{ background: 'rgba(0,0,0,0.3)', padding: '2px 4px', borderRadius: '4px', display: 'block', marginTop: '4px', wordBreak: 'break-all', fontFamily: 'monospace' }}>xattr -cr /Applications/DJ\ Panel\ Pro.app</code>
+                  </div>
                   {dismissBtn}
                 </div>
               );
