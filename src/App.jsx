@@ -14,6 +14,7 @@ function AppContent() {
   });
   const [updateInfo, setUpdateInfo] = React.useState(null);
   const [showUpdateModal, setShowUpdateModal] = React.useState(false);
+  const [isDownloading, setIsDownloading] = React.useState(false);
 
   // Comprobar actualizaciones al iniciar
   React.useEffect(() => {
@@ -388,9 +389,13 @@ function AppContent() {
                 Later
               </button>
               <button 
+                disabled={isDownloading}
                 onClick={async (e) => {
                   e.preventDefault();
                   e.stopPropagation();
+                  if (isDownloading) return;
+                  setIsDownloading(true);
+                  
                   if (window.electronAPI?.openExternalUrl) {
                     // macOS Electron: abre GitHub Releases en el navegador predeterminado
                     const releaseUrl = updateInfo.dmgUrl || 'https://github.com/xsoly1-boop/DJ_VIP/releases/latest';
@@ -400,11 +405,17 @@ function AppContent() {
                     const downloadUrl = updateInfo.apkUrl;
                     window.open(downloadUrl, '_system');
                   }
-                  setShowUpdateModal(false);
+                  
+                  // Retrasar el cierre del modal un momento para asegurar que el render se limpie correctamente
+                  setTimeout(() => {
+                    setShowUpdateModal(false);
+                    setIsDownloading(false);
+                  }, 500);
                 }}
                 className="update-modal-btn-now"
+                style={{ opacity: isDownloading ? 0.6 : 1, cursor: isDownloading ? 'not-allowed' : 'pointer' }}
               >
-                Update Now
+                {isDownloading ? 'Downloading...' : 'Update Now'}
               </button>
             </div>
           </div>

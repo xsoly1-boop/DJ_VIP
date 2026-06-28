@@ -12,9 +12,12 @@ out/
 release/
 scratch/
 
-# Ignore mobile platforms
+# Ignore mobile platforms and releases
 android/
 ios/
+releases/
+*.ipa
+DJ_Panel.ipa
 
 # Ignore system files
 .DS_Store
