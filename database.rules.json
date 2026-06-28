@@ -28,6 +28,10 @@
       "admin_contact": {
         ".read": "auth != null",
         ".write": "auth != null && auth.token.email == 'dj@admin.com'"
+      },
+      "updates": {
+        ".read": "true",
+        ".write": "auth != null && auth.token.email == 'dj@admin.com'"
       }
     },
 

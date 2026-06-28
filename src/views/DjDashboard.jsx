@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { useFirebase } from '../context/FirebaseContext';
-import { MOCK_ACCOUNTS, MASTER_ADMIN_EMAIL } from '../firebase';
+import { MOCK_ACCOUNTS, MASTER_ADMIN_EMAIL, database, ref, set, get } from '../firebase';
 import { CURRENT_APP_VERSION } from '../utils/AppVersionConfig';
 import AdminSubscriptions from './AdminSubscriptions';
 import { QRCodeSVG, QRCodeCanvas } from 'qrcode.react';
@@ -234,6 +234,13 @@ export default function DjDashboard() {
   const [adminChatData, setAdminChatData] = useState({ metadata: {}, messages: [] });
   const adminChatEndRef = useRef(null);
 
+  // Admin Master: Estados para Gestor de Actualizaciones
+  const [adminUpdateVersion, setAdminUpdateVersion] = useState('');
+  const [adminUpdateApkUrl, setAdminUpdateApkUrl] = useState('https://dj-vip.vercel.app/DJ%20a%20la%20Carta%20Pro.apk');
+  const [adminReleaseNotesRaw, setAdminReleaseNotesRaw] = useState('');
+  const [isGeneratingNotes, setIsGeneratingNotes] = useState(false);
+  const [isPublishingNotes, setIsPublishingNotes] = useState(false);
+
   // Perfil del Admin Master
   const [adminAlias, setAdminAlias] = useState('');
   const [adminWhatsapp, setAdminWhatsapp] = useState('');
@@ -255,6 +262,117 @@ export default function DjDashboard() {
       return () => clearInterval(interval);
     }
   }, []);
+
+  // Cargar configuración de actualización al activar la pestaña de soporte
+  useEffect(() => {
+    if (activeTab === 'support' && isAdminMaster && !impersonatingUid) {
+      const updatesRef = ref(database, 'config/updates');
+      get(updatesRef).then((snapshot) => {
+        if (snapshot.exists()) {
+          const data = snapshot.val();
+          setAdminUpdateVersion(data.latestVersion || '');
+          setAdminUpdateApkUrl(data.apkUrl || 'https://dj-vip.vercel.app/DJ%20a%20la%20Carta%20Pro.apk');
+          if (data.releaseNotes) {
+            setAdminReleaseNotesRaw(data.releaseNotes.join('\n'));
+          }
+        }
+      }).catch(err => console.error(err));
+    }
+  }, [activeTab, isAdminMaster, impersonatingUid]);
+
+  // Autorellenar notas de actualización analizando los cambios recientes desde GitHub
+  const handleAutoFillReleaseNotes = async () => {
+    setIsGeneratingNotes(true);
+    showToast("🔍 Conectando con GitHub para analizar cambios recientes...");
+    try {
+      const res = await fetch('https://api.github.com/repos/xsoly1-boop/DJ_VIP/commits?per_page=10');
+      if (!res.ok) throw new Error('Error al conectar con GitHub API.');
+      const commits = await res.json();
+      
+      const notes = commits
+        .map(c => {
+          let msg = c.commit.message || '';
+          msg = msg.split('\n')[0].trim();
+          
+          if (msg.toLowerCase().includes('merge branch') || 
+              msg.toLowerCase().includes('rebuild android apk') ||
+              msg.toLowerCase().includes('revert')) {
+            return null;
+          }
+          
+          if (msg.startsWith('feat:')) {
+            msg = msg.replace(/^feat:\s*/i, '').trim();
+            msg = msg.charAt(0).toUpperCase() + msg.slice(1);
+            return `General: ${msg}.`;
+          } else if (msg.startsWith('design:')) {
+            msg = msg.replace(/^design:\s*/i, '').trim();
+            msg = msg.charAt(0).toUpperCase() + msg.slice(1);
+            return `Diseño: ${msg}.`;
+          } else if (msg.startsWith('fix:')) {
+            msg = msg.replace(/^fix:\s*/i, '').trim();
+            msg = msg.charAt(0).toUpperCase() + msg.slice(1);
+            return `Corrección: ${msg}.`;
+          }
+          
+          return msg.charAt(0).toUpperCase() + msg.slice(1);
+        })
+        .filter(Boolean);
+
+      if (notes.length === 0) {
+        notes.push("General: Optimización de rendimiento y correcciones de bugs menores.");
+      }
+
+      setAdminReleaseNotesRaw(notes.join('\n'));
+
+      const response = await fetch(`${API_BASE}/version.json?t=${Date.now()}`);
+      if (response.ok) {
+        const currentData = await response.json();
+        const parts = (currentData.latestVersion || '1.0.0.0').split('.');
+        const lastPart = parseInt(parts[parts.length - 1], 10);
+        if (!isNaN(lastPart)) {
+          parts[parts.length - 1] = (lastPart + 1).toString();
+          setAdminUpdateVersion(parts.join('.'));
+        }
+      }
+
+      showToast("✨ Notas y versión autorellenadas con éxito basadas en el repositorio.");
+    } catch (err) {
+      console.error(err);
+      showToast("❌ Error al autorellenar desde GitHub: " + err.message);
+    } finally {
+      setIsGeneratingNotes(false);
+    }
+  };
+
+  // Guardar/Publicar notas en Firebase RTDB
+  const handlePublishReleaseNotes = async () => {
+    if (!adminUpdateVersion) {
+      showToast("⚠️ Debes especificar la última versión.");
+      return;
+    }
+    setIsPublishingNotes(true);
+    try {
+      const parsedNotes = adminReleaseNotesRaw
+        .split('\n')
+        .map(line => line.trim())
+        .filter(line => line.length > 0);
+
+      const updatesRef = ref(database, 'config/updates');
+      await set(updatesRef, {
+        latestVersion: adminUpdateVersion,
+        apkUrl: adminUpdateApkUrl,
+        dmgUrl: "https://github.com/xsoly1-boop/DJ_VIP/releases/latest",
+        releaseNotes: parsedNotes
+      });
+
+      showToast("🚀 ¡Actualización publicada en vivo para todos los usuarios!");
+    } catch (err) {
+      console.error(err);
+      showToast("❌ Error al publicar la actualización: " + err.message);
+    } finally {
+      setIsPublishingNotes(false);
+    }
+  };
 
   // Estados para Twilio SMS
   const [twilioAccountSid, setTwilioAccountSid] = useState('');
@@ -5599,6 +5717,82 @@ export default function DjDashboard() {
                       <span style={{ fontSize: '0.85rem' }}>Selecciona una conversación de la izquierda para comenzar.</span>
                     </div>
                   )}
+                </div>
+              </div>
+
+              {/* Contenedor Extra: Gestión de Notas de Actualización */}
+              <div className="glass-panel" style={{ marginTop: '24px', padding: '20px', textAlign: 'left', border: '1px solid rgba(255,255,255,0.08)' }}>
+                <h3 style={{ fontSize: '1rem', fontWeight: '700', color: '#fff', marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <Sparkles size={18} color="var(--primary-color)" />
+                  📢 Publicar Notas de Actualización (Modal de Inicio)
+                </h3>
+                <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginBottom: '16px' }}>
+                  Administra las notas de lanzamiento que los usuarios visualizan en el modal al abrir la aplicación.
+                </p>
+                
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 2fr', gap: '16px', marginBottom: '16px' }}>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                    <label style={{ fontSize: '0.75rem', fontWeight: '700', color: 'var(--text-secondary)' }}>ÚLTIMA VERSIÓN</label>
+                    <input
+                      type="text"
+                      className="input-field"
+                      placeholder="Ej: 1.0.0.32"
+                      value={adminUpdateVersion}
+                      onChange={(e) => setAdminUpdateVersion(e.target.value)}
+                      style={{ height: '38px', fontSize: '0.85rem' }}
+                    />
+                  </div>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                    <label style={{ fontSize: '0.75rem', fontWeight: '700', color: 'var(--text-secondary)' }}>URL DE DESCARGA APK</label>
+                    <input
+                      type="text"
+                      className="input-field"
+                      placeholder="https://..."
+                      value={adminUpdateApkUrl}
+                      onChange={(e) => setAdminUpdateApkUrl(e.target.value)}
+                      style={{ height: '38px', fontSize: '0.85rem' }}
+                    />
+                  </div>
+                </div>
+
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', marginBottom: '16px' }}>
+                  <label style={{ fontSize: '0.75rem', fontWeight: '700', color: 'var(--text-secondary)' }}>NOTAS DE LANZAMIENTO (UNA POR LÍNEA)</label>
+                  <textarea
+                    className="input-field"
+                    placeholder="Ej:&#10;Android: Solucionado problema con notificaciones en segundo plano.&#10;General: Correcciones menores de diseño cristal."
+                    value={adminReleaseNotesRaw}
+                    onChange={(e) => setAdminReleaseNotesRaw(e.target.value)}
+                    style={{ minHeight: '120px', padding: '10px 12px', fontSize: '0.85rem', lineHeight: '1.4', resize: 'vertical', fontFamily: 'inherit' }}
+                  />
+                </div>
+
+                <div style={{ display: 'flex', gap: '12px' }}>
+                  <button
+                    type="button"
+                    className="btn btn-secondary"
+                    onClick={handleAutoFillReleaseNotes}
+                    disabled={isGeneratingNotes}
+                    style={{ flex: 1, height: '40px', fontSize: '0.85rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}
+                  >
+                    {isGeneratingNotes ? (
+                      <><RefreshCw size={14} className="animate-spin" /> Analizando Commits...</>
+                    ) : (
+                      <><Sparkles size={14} /> Autorellenar Cambios (GitHub)</>
+                    )}
+                  </button>
+                  <button
+                    type="button"
+                    className="btn btn-primary"
+                    onClick={handlePublishReleaseNotes}
+                    disabled={isPublishingNotes}
+                    style={{ flex: 1, height: '40px', fontSize: '0.85rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', background: 'linear-gradient(135deg, #7c3aed 0%, #4f46e5 100%)', border: 'none' }}
+                  >
+                    {isPublishingNotes ? (
+                      <><RefreshCw size={14} className="animate-spin" /> Publicando...</>
+                    ) : (
+                      <><Check size={14} /> Publicar Actualización</>
+                    )}
+                  </button>
                 </div>
               </div>
             </div>

@@ -7,6 +7,8 @@ import AdminSubscriptions from './views/AdminSubscriptions';
 import PlanSelection from './views/PlanSelection';
 import PaymentView from './views/PaymentView';
 
+import { database, ref, onValue } from './firebase';
+
 function AppContent() {
   const { user, userProfile, authLoading, changeEvent, isAdminMaster } = useFirebase();
   const [bypassPaymentLock, setBypassPaymentLock] = React.useState(() => {
@@ -18,39 +20,46 @@ function AppContent() {
 
   // Comprobar actualizaciones al iniciar
   React.useEffect(() => {
-    const checkUpdates = async () => {
+    const updatesRef = ref(database, 'config/updates');
+    const unsubscribe = onValue(updatesRef, async (snapshot) => {
       try {
-        const baseUrl = import.meta.env.VITE_PUBLIC_URL 
-          ? import.meta.env.VITE_PUBLIC_URL.replace(/\/$/, '') 
-          : 'https://dj-vip.vercel.app';
-        const response = await fetch(`${baseUrl}/version.json?t=${Date.now()}`);
-        if (!response.ok) return;
-        const data = await response.json();
+        let data = snapshot.val();
+        if (!data) {
+          const baseUrl = import.meta.env.VITE_PUBLIC_URL 
+            ? import.meta.env.VITE_PUBLIC_URL.replace(/\/$/, '') 
+            : 'https://dj-vip.vercel.app';
+          const response = await fetch(`${baseUrl}/version.json?t=${Date.now()}`);
+          if (!response.ok) return;
+          data = await response.json();
+        }
         
-        const { CURRENT_APP_VERSION } = await import('./utils/AppVersionConfig');
-        
-        const isNewer = (latest, current) => {
-          const lParts = latest.split('.').map(Number);
-          const cParts = current.split('.').map(Number);
-          for (let i = 0; i < Math.max(lParts.length, cParts.length); i++) {
-            const l = lParts[i] || 0;
-            const c = cParts[i] || 0;
-            if (l > c) return true;
-            if (l < c) return false;
-          }
-          return false;
-        };
+        if (data && data.latestVersion) {
+          const { CURRENT_APP_VERSION } = await import('./utils/AppVersionConfig');
+          
+          const isNewer = (latest, current) => {
+            const lParts = latest.split('.').map(Number);
+            const cParts = current.split('.').map(Number);
+            for (let i = 0; i < Math.max(lParts.length, cParts.length); i++) {
+              const l = lParts[i] || 0;
+              const c = cParts[i] || 0;
+              if (l > c) return true;
+              if (l < c) return false;
+            }
+            return false;
+          };
 
-        if (isNewer(data.latestVersion, CURRENT_APP_VERSION)) {
-          setUpdateInfo(data);
-          setShowUpdateModal(true);
+          if (isNewer(data.latestVersion, CURRENT_APP_VERSION)) {
+            setUpdateInfo(data);
+            setShowUpdateModal(true);
+          } else {
+            setShowUpdateModal(false);
+          }
         }
       } catch (err) {
         console.warn('[Update Check] Error comprobando actualizaciones:', err);
       }
-    };
-
-    checkUpdates();
+    });
+    return () => unsubscribe();
   }, []);
 
   // Escuchar evento personalizado para alternar el bypass del bloqueo de pago
