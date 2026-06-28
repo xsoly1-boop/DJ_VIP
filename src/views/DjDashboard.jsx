@@ -300,21 +300,111 @@ export default function DjDashboard() {
             return null;
           }
           
-          if (msg.startsWith('feat:')) {
-            msg = msg.replace(/^feat:\s*/i, '').trim();
-            msg = msg.charAt(0).toUpperCase() + msg.slice(1);
-            return `General: ${msg}.`;
-          } else if (msg.startsWith('design:')) {
-            msg = msg.replace(/^design:\s*/i, '').trim();
-            msg = msg.charAt(0).toUpperCase() + msg.slice(1);
-            return `Diseño: ${msg}.`;
-          } else if (msg.startsWith('fix:')) {
-            msg = msg.replace(/^fix:\s*/i, '').trim();
-            msg = msg.charAt(0).toUpperCase() + msg.slice(1);
-            return `Corrección: ${msg}.`;
-          }
+          // Traducir términos comunes al español
+          let text = msg;
           
-          return msg.charAt(0).toUpperCase() + msg.slice(1);
+          if (text.startsWith('feat:')) {
+            text = 'General: ' + text.replace(/^feat:\s*/i, '');
+          } else if (text.startsWith('design:')) {
+            text = 'Diseño: ' + text.replace(/^design:\s*/i, '');
+          } else if (text.startsWith('fix:')) {
+            text = 'Corrección: ' + text.replace(/^fix:\s*/i, '');
+          } else {
+            text = 'General: ' + text;
+          }
+
+          // Diccionario de traducción de verbos y palabras clave
+          const dict = {
+            'add': 'añadir',
+            'adds': 'añade',
+            'added': 'añadido',
+            'adding': 'añadiendo',
+            'create': 'crear',
+            'created': 'creado',
+            'creating': 'creando',
+            'fix': 'corregir',
+            'fixed': 'corregido',
+            'fixing': 'corrigiendo',
+            'update': 'actualizar',
+            'updated': 'actualizado',
+            'updating': 'actualizando',
+            'improve': 'mejorar',
+            'improved': 'mejorado',
+            'improving': 'mejorando',
+            'remove': 'eliminar',
+            'removed': 'eliminado',
+            'removing': 'eliminando',
+            'rebuild': 'recompilar',
+            'rebuilt': 'recompilado',
+            'change': 'cambiar',
+            'changed': 'cambiado',
+            'changing': 'cambiando',
+            'clean': 'limpiar',
+            'cleaned': 'limpiado',
+            'integrate': 'integrar',
+            'integrated': 'integrado',
+            'support': 'soporte',
+            'implement': 'implementar',
+            'implemented': 'implementado',
+            
+            // Sustantivos / Contextos comunes
+            'password recovery': 'recuperación de contraseña',
+            'password reset': 'restablecimiento de contraseña',
+            'recovery system': 'sistema de recuperación',
+            'login page': 'pantalla de inicio de sesión',
+            'login view': 'pantalla de inicio de sesión',
+            'login': 'inicio de sesión',
+            'white border': 'borde blanco',
+            'breathing': 'resplandor',
+            'glow': 'brillo',
+            'panels': 'paneles',
+            'containers': 'contenedores',
+            'theme': 'tema',
+            'skin': 'skin',
+            'user': 'usuario',
+            'users': 'usuarios',
+            'release notes': 'notas de lanzamiento',
+            'manager': 'gestor',
+            'control panel': 'panel de control',
+            'admin view': 'vista de administrador',
+            'support view': 'vista de soporte',
+            'sidebar': 'barra lateral',
+            'navigation': 'navegación',
+            'mobile': 'móvil',
+            'mobile layout': 'diseño móvil',
+            'responsive': 'responsivo',
+            'apk': 'APK',
+            'app version': 'versión de la app',
+            'version': 'versión',
+            'firebase': 'Firebase',
+            'auth': 'Auth',
+            'database': 'base de datos',
+            'rtDb': 'base de datos en tiempo real',
+            'rtdb': 'base de datos en tiempo real'
+          };
+
+          // Reemplazar todas las palabras coincidentes de forma insensible a mayúsculas
+          Object.keys(dict).forEach(key => {
+            const regex = new RegExp('\\b' + key + '\\b', 'gi');
+            text = text.replace(regex, dict[key]);
+          });
+
+          // Capitalizar la primera letra después del prefijo
+          const prefixMatch = text.match(/^([^:]+:\s*)(.*)$/);
+          if (prefixMatch) {
+            const prefix = prefixMatch[1];
+            const rest = prefixMatch[2];
+            text = prefix + rest.charAt(0).toUpperCase() + rest.slice(1);
+          } else {
+            text = text.charAt(0).toUpperCase() + text.slice(1);
+          }
+
+          // Asegurar que termine en punto
+          if (!text.endsWith('.')) {
+            text += '.';
+          }
+
+          return text;
         })
         .filter(Boolean);
 
