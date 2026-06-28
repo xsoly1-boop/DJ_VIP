@@ -1,10 +1,13 @@
 {
-  "latestVersion": "1.0.0.16",
+  "latestVersion": "1.0.0.17",
   "apkUrl": "https://dj-vip.vercel.app/DJ%20a%20la%20Carta%20Pro.apk",
   "dmgUrl": "https://dj-vip.vercel.app/DJ%20Control%20Panel.dmg",
   "releaseNotes": [
-    "Icono de notificación corregido con audífonos line-art de alta compatibilidad.",
-    "Persistencia automática del estado de notificaciones en el dashboard.",
-    "Bypass y correcciones de permisos para notificaciones en macOS y Android."
+    "Impresión directa de tarjetas QR integrada de forma nativa en Android.",
+    "Resolución del bloqueo de pantalla en la carga inicial de dispositivos iOS.",
+    "Aviso de actualización optimizado para modo horizontal y fondo esmerilado.",
+    "Solución al error de descarga múltiple accidental de la aplicación APK.",
+    "Notificaciones sonoras nativas en macOS acopladas al volumen de la app.",
+    "Descargador de actualización inteligente de archivos DMG para macOS de escritorio."
   ]
 }
