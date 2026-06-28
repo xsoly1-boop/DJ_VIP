@@ -638,6 +638,8 @@ build_windows() {
     set +e
     CSC_IDENTITY_AUTO_DISCOVERY=false \
     CSC_LINK="" \
+    WIN_CSC_LINK="" \
+    WIN_CSC_KEY_PASSWORD="" \
     npx electron-builder --win --x64 --publish never 2>&1 | tee -a "$BUILD_LOG" | tail -15
     local EXIT_CODE=$?
     set -e
