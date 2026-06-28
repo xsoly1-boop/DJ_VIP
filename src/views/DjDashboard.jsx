@@ -1070,7 +1070,7 @@ export default function DjDashboard() {
 
           if (notificationsEnabled && (window.electronAPI || Notification.permission === 'granted')) {
             if (window.electronAPI && window.electronAPI.showNativeNotification) {
-              window.electronAPI.showNativeNotification(`Nueva petición: ${req.title}`, `De: ${req.artist} (${req.genre})`);
+              window.electronAPI.showNativeNotification(`Nueva petición: ${req.title}`, `De: ${req.artist} (${req.genre})`, soundEnabled);
             } else {
               new Notification(`Nueva petición: ${req.title}`, {
                 body: `De: ${req.artist} (${req.genre})`,

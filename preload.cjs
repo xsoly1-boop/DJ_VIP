@@ -7,7 +7,7 @@ window.addEventListener('DOMContentLoaded', () => {
 contextBridge.exposeInMainWorld('electronAPI', {
   writePlaylist: (args) => ipcRenderer.invoke('write-playlist', args),
   detectVirtualDJPath: () => ipcRenderer.invoke('detect-virtualdj-path'),
-  showNativeNotification: (title, body) => ipcRenderer.send('show-native-notification', { title, body }),
+  showNativeNotification: (title, body, soundEnabled) => ipcRenderer.send('show-native-notification', { title, body, silent: !soundEnabled }),
   isDesktop: true
 });
 
@@ -42,43 +42,8 @@ contextBridge.exposeInMainWorld('AndroidApp', {
         console.error('Error al intentar reproducir audio local:', err);
       }
     } else {
-      // Si no hay tono seleccionado, reproducimos un timbre electrónico sintetizado premium
-      try {
-        const AudioContextClass = window.AudioContext || window.webkitAudioContext;
-        if (!AudioContextClass) return;
-        const audioCtx = new AudioContextClass();
-        const now = audioCtx.currentTime;
-
-        // Oscilador 1 (Tono base)
-        const osc1 = audioCtx.createOscillator();
-        const gain1 = audioCtx.createGain();
-        osc1.type = 'sine';
-        osc1.frequency.setValueAtTime(523.25, now); // C5 (Do)
-        osc1.frequency.exponentialRampToValueAtTime(783.99, now + 0.15); // G5 (Sol)
-        gain1.gain.setValueAtTime(0.12, now);
-        gain1.gain.exponentialRampToValueAtTime(0.001, now + 0.35);
-        osc1.connect(gain1);
-        gain1.connect(audioCtx.destination);
-
-        // Oscilador 2 (Tono armónico de acompañamiento)
-        const osc2 = audioCtx.createOscillator();
-        const gain2 = audioCtx.createGain();
-        osc2.type = 'sine';
-        osc2.frequency.setValueAtTime(659.25, now + 0.05); // E5 (Mi)
-        osc2.frequency.exponentialRampToValueAtTime(1046.50, now + 0.20); // C6 (Do octavado)
-        gain2.gain.setValueAtTime(0.08, now + 0.05);
-        gain2.gain.exponentialRampToValueAtTime(0.001, now + 0.4);
-        osc2.connect(gain2);
-        gain2.connect(audioCtx.destination);
-
-        osc1.start(now);
-        osc1.stop(now + 0.4);
-        
-        osc2.start(now + 0.05);
-        osc2.stop(now + 0.45);
-      } catch (err) {
-        console.error('Error al sintetizar el tono por defecto:', err);
-      }
+      // Si no hay tono seleccionado, reproducimos el sonido de alerta nativo de macOS (Ping) a través del proceso principal
+      ipcRenderer.send('play-native-mac-sound');
     }
   },
 

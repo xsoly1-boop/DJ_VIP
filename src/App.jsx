@@ -391,7 +391,8 @@ function AppContent() {
                 onClick={(e) => {
                   e.preventDefault();
                   e.stopPropagation();
-                  window.open(updateInfo.apkUrl, '_system');
+                  const downloadUrl = window.electronAPI ? (updateInfo.dmgUrl || updateInfo.apkUrl) : updateInfo.apkUrl;
+                  window.open(downloadUrl, '_system');
                   setShowUpdateModal(false);
                 }}
                 className="update-modal-btn-now"

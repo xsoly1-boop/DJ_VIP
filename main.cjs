@@ -289,35 +289,44 @@ ipcMain.on('save-config-sync', (event, config) => {
   event.returnValue = true;
 });
 
-ipcMain.on('show-native-notification', (event, { title, body }) => {
+ipcMain.on('play-native-mac-sound', () => {
+  if (process.platform === 'darwin') {
+    const { exec } = require('child_process');
+    exec('afplay /System/Library/Sounds/Ping.aiff', (err) => {
+      if (err) console.error('Error al reproducir sonido nativo de macOS:', err);
+    });
+  }
+});
+
+ipcMain.on('show-native-notification', (event, { title, body, silent }) => {
   const { Notification } = require('electron');
   
-  // 1. Intentar mostrar la notificación nativa de Electron (con el icono del vinilo)
+  // 1. Intentar mostrar la notificación nativa de Electron
   const notification = new Notification({
     title: title,
     body: body,
-    silent: false
+    silent: silent !== undefined ? silent : false
   });
   
-  // 2. Escuchar el evento 'failed'. Si macOS bloquea la notificación nativa por falta de firma o permisos,
-  // se activa el fallback de AppleScript (osascript) para garantizar que el DJ vea la alerta.
+  // 2. Escuchar el evento 'failed' para fallback en macOS sin firma
   notification.on('failed', (err) => {
     console.error('Error en notificación nativa:', err);
     if (process.platform === 'darwin') {
-      showMacOsFallbackNotification(title, body);
+      showMacOsFallbackNotification(title, body, silent);
     }
   });
 
   notification.show();
 });
 
-function showMacOsFallbackNotification(title, body) {
+function showMacOsFallbackNotification(title, body, silent) {
   try {
     const { exec } = require('child_process');
     // Sanitizar y escapar comillas dobles y caracteres especiales para AppleScript
     const escapedTitle = title.replace(/['"\\\r\n]/g, ' ');
     const escapedBody = body.replace(/['"\\\r\n]/g, ' ');
-    const cmd = `osascript -e 'display notification "${escapedBody}" with title "${escapedTitle}"'`;
+    const soundOpt = silent ? '' : ' sound name "Ping"';
+    const cmd = `osascript -e 'display notification "${escapedBody}" with title "${escapedTitle}"${soundOpt}'`;
     exec(cmd, (error) => {
       if (error) {
         console.error('Error al mostrar notificación de respaldo en macOS:', error);

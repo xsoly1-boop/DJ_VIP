@@ -53,10 +53,12 @@ echo ""
 # 1.5. Limpiar APKs de dist y assets para evitar anidamiento recursivo
 # -----------------------------------------------------------------------
 echo -e "${CYAN}[1.5/5] Limpiando instaladores de dist y assets...${RESET}"
-rm -f "dist/DJ a la Carta Pro.apk"
-rm -f "dist/app-debug.apk"
-rm -f "android/app/src/main/assets/public/DJ a la Carta Pro.apk"
-rm -f "android/app/src/main/assets/public/app-debug.apk"
+rm -f dist/*.apk
+rm -f dist/*.dmg
+rm -f dist/*.ipa
+rm -f "android/app/src/main/assets/public"/*.apk 2>/dev/null || true
+rm -f "android/app/src/main/assets/public"/*.dmg 2>/dev/null || true
+rm -f "android/app/src/main/assets/public"/*.ipa 2>/dev/null || true
 echo ""
 
 # -----------------------------------------------------------------------
