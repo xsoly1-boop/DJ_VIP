@@ -5672,10 +5672,10 @@ export default function DjDashboard() {
                 Atiende las consultas en tiempo real de los DJs con plan <strong style={{ color: 'var(--primary-color)' }}>PRO</strong>.
               </p>
 
-              <div style={{ display: 'grid', gridTemplateColumns: '300px 1fr', gap: '20px', flex: 1 }}>
+              <div style={{ display: 'grid', gridTemplateColumns: '180px 1fr', gap: '16px', flex: 1 }}>
                 {/* Columna Izquierda: Lista de chats */}
-                <div style={{ borderRight: '1px solid var(--surface-border)', paddingRight: '16px', display: 'flex', flexDirection: 'column', gap: '10px', maxHeight: '500px', overflowY: 'auto' }}>
-                  <h3 style={{ fontSize: '0.9rem', color: '#fff', marginBottom: '10px' }}>Conversaciones Activas</h3>
+                <div style={{ borderRight: '1px solid var(--surface-border)', paddingRight: '10px', display: 'flex', flexDirection: 'column', gap: '6px', maxHeight: '500px', overflowY: 'auto' }}>
+                  <h3 style={{ fontSize: '0.72rem', color: 'rgba(255,255,255,0.5)', marginBottom: '6px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Chats</h3>
                   {Object.keys(adminChats || {}).length === 0 ? (
                     <div style={{ padding: '20px', textAlign: 'center', color: 'var(--text-muted)', fontSize: '0.8rem' }}>
                       No hay chats de soporte iniciados.
@@ -5691,7 +5691,7 @@ export default function DjDashboard() {
                             key={uid}
                             onClick={() => setAdminSelectedChatUid(uid)}
                             style={{
-                              padding: '12px',
+                           padding: '8px',
                               borderRadius: 'var(--radius-md)',
                               background: isSelected ? 'rgba(124, 58, 237, 0.15)' : 'rgba(255, 255, 255, 0.02)',
                               border: isSelected ? '1px solid var(--primary-color)' : '1px solid var(--surface-border)',
@@ -5703,10 +5703,10 @@ export default function DjDashboard() {
                             }}
                           >
                             <div style={{ flex: 1, minWidth: 0, marginRight: '8px' }}>
-                              <div style={{ fontWeight: 'bold', fontSize: '0.85rem', color: isSelected ? 'var(--primary-color)' : '#fff', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                              <div style={{ fontWeight: 'bold', fontSize: '0.75rem', color: isSelected ? 'var(--primary-color)' : '#fff', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                                 {chat.metadata?.djName || 'DJ PRO'}
                               </div>
-                              <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', marginTop: '2px' }}>
+                              <div style={{ fontSize: '0.68rem', color: 'var(--text-secondary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', marginTop: '1px' }}>
                                 {chat.metadata?.lastMessage || 'Sin mensajes'}
                               </div>
                             </div>
