@@ -381,12 +381,20 @@ html[data-skin="skin_crystal"] body {
 
 @keyframes crystalBorderGlow {
   0%, 100% {
-    border-color: rgba(255, 255, 255, 0.18) !important;
-    box-shadow: 0 30px 60px rgba(0, 0, 0, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.2), 0 0 15px rgba(255, 255, 255, 0.05) !important;
+    border-color: rgba(255, 255, 255, 0.38) !important;
+    box-shadow: 
+      0 30px 60px rgba(0, 0, 0, 0.6), 
+      inset 0 1px 0 rgba(255, 255, 255, 0.4), 
+      0 0 15px rgba(255, 255, 255, 0.12),
+      inset 0 0 10px rgba(255, 255, 255, 0.05) !important;
   }
   50% {
-    border-color: rgba(255, 255, 255, 0.45) !important;
-    box-shadow: 0 30px 60px rgba(0, 0, 0, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.35), 0 0 26px rgba(255, 255, 255, 0.2) !important;
+    border-color: rgba(255, 255, 255, 0.88) !important;
+    box-shadow: 
+      0 30px 60px rgba(0, 0, 0, 0.7), 
+      inset 0 1px 0 rgba(255, 255, 255, 0.75), 
+      0 0 38px rgba(255, 255, 255, 0.45),
+      inset 0 0 20px rgba(255, 255, 255, 0.18) !important;
   }
 }
 
@@ -399,7 +407,7 @@ html[data-skin="skin_crystal"] body {
   background: rgba(255, 255, 255, 0.02) !important;
   backdrop-filter: blur(25px) saturate(180%) !important;
   -webkit-backdrop-filter: blur(25px) saturate(180%) !important;
-  border: 2px solid rgba(255, 255, 255, 0.18) !important;
+  border: 2px solid rgba(255, 255, 255, 0.38) !important;
   animation: crystalBorderGlow 8s infinite ease-in-out !important;
 }
 
