@@ -958,10 +958,12 @@ export default function DjDashboard() {
   // Sintetizador de audio premium con Web Audio API
   const playNotificationSound = (toneType = selectedTone) => {
     if (!soundEnabled) return;
-
-    // Si estamos en la app Android y tenemos la interfaz nativa
-    if (window.AndroidApp && window.AndroidApp.playSystemNotificationSound) {
-      window.AndroidApp.playSystemNotificationSound();
+    
+    // Si estamos en Android APK o iOS IPA (móvil nativo), delegamos a la interfaz nativa del dispositivo
+    if (window.AndroidApp && !window.electronAPI) {
+      if (window.AndroidApp.playSystemNotificationSound) {
+        window.AndroidApp.playSystemNotificationSound();
+      }
       return;
     }
 
@@ -2094,7 +2096,8 @@ export default function DjDashboard() {
             </button>
             {soundEnabled && (
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                {window.AndroidApp ? (
+                {window.AndroidApp && !window.electronAPI ? (
+                  // Android APK & iOS IPA (móvil nativo): Mantenemos intacto el selector de tonos locales personalizado
                   <>
                     <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', background: 'rgba(255,255,255,0.05)', padding: '6px 12px', borderRadius: 'var(--radius-sm)' }}>
                       🔊 Tono: {androidSoundName}
@@ -2109,18 +2112,21 @@ export default function DjDashboard() {
                     </button>
                   </>
                 ) : (
-                  <select value={selectedTone} onChange={(e) => { const t = e.target.value; setSelectedTone(t); localStorage.setItem('dj_notification_tone', t); playNotificationSound(t); }}
-                    className="input-field" style={{ padding: '4px 8px', fontSize: '0.75rem', height: '36px', width: '130px', border: 'none', background: 'rgba(255,255,255,0.05)', borderRadius: 'var(--radius-sm)' }}>
-                    <option value="chime">🔔 Campana</option>
-                    <option value="beep">📟 Bip Suave</option>
-                    <option value="retro">🎮 Alarma Retro</option>
-                    <option value="synth">🎹 Pulsos Synth</option>
-                  </select>
+                  // Web & macOS / Windows DMG (Escritorio): Usan el selector clásico de tonos sintetizados (sonidos API)
+                  <>
+                    <select value={selectedTone} onChange={(e) => { const t = e.target.value; setSelectedTone(t); localStorage.setItem('dj_notification_tone', t); playNotificationSound(t); }}
+                      className="input-field" style={{ padding: '4px 8px', fontSize: '0.75rem', height: '36px', width: '130px', border: 'none', background: 'rgba(255,255,255,0.05)', borderRadius: 'var(--radius-sm)' }}>
+                      <option value="chime">🔔 Campana</option>
+                      <option value="beep">📟 Bip Suave</option>
+                      <option value="retro">🎮 Alarma Retro</option>
+                      <option value="synth">🎹 Pulsos Synth</option>
+                    </select>
+                    <button className="btn btn-secondary btn-icon" onClick={() => playNotificationSound(selectedTone)}
+                      style={{ width: '36px', height: '36px', border: 'none', background: 'transparent' }} title="Probar Sonido">
+                      <Volume2 size={14} color="var(--text-secondary)" />
+                    </button>
+                  </>
                 )}
-                <button className="btn btn-secondary btn-icon" onClick={() => playNotificationSound(selectedTone)}
-                  style={{ width: '36px', height: '36px', border: 'none', background: 'transparent' }} title="Probar Sonido">
-                  <Volume2 size={14} color="var(--text-secondary)" />
-                </button>
               </div>
             )}
           </div>

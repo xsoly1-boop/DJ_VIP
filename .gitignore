@@ -43,3 +43,4 @@ djvip-c2cc9-*.json
 *.jks
 
 .vercel
+.env

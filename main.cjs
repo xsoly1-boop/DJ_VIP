@@ -371,16 +371,10 @@ app.on('before-quit', () => {
 });
 
 app.whenReady().then(() => {
-  // Registrar protocolo seguro para reproducir sonidos locales
-  protocol.handle('local-sound', async (request) => {
+  // Registrar protocolo seguro para reproducir sonidos locales (compatible con Electron 22)
+  protocol.registerFileProtocol('local-sound', (request, callback) => {
     const filePath = decodeURIComponent(request.url.replace('local-sound://', ''));
-    try {
-      const data = await fs.promises.readFile(filePath);
-      return new Response(data);
-    } catch (err) {
-      console.error('Error al cargar sonido local en Electron:', err);
-      return new Response('Not Found', { status: 404 });
-    }
+    callback({ path: filePath });
   });
 
   // Evitar reposo de la pantalla/sistema en macOS/desktop

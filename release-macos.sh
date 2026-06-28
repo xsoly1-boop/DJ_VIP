@@ -137,20 +137,33 @@ echo ""
 echo -e "${CYAN}[4/7] Creando GitHub Release v${NEW_VERSION}...${RESET}"
 
 TAG="v${NEW_VERSION}"
-RELEASE_BODY="### DJ Panel Pro ${NEW_VERSION}\n\n$(node -e "const v=require('./public/version.json'); v.releaseNotes.forEach((n,i)=>console.log((i+1)+'. '+n));")\n\n---\n**Descarga según tu Mac:**\n- 🍎 **Apple Silicon (M1/M2/M3/M4):** DJ Panel Pro-${NEW_VERSION}-arm64.dmg\n- 🖥️ **Intel (macOS 10.14+):** DJ Panel Pro-${NEW_VERSION}-x64.dmg\n\n*Primera apertura: clic derecho → Abrir (para omitir Gatekeeper)*"
+
+# Crear JSON de payload seguro usando Node.js
+JSON_PAYLOAD_FILE=$(mktemp)
+node -e "
+const fs = require('fs');
+const v = JSON.parse(fs.readFileSync('public/version.json', 'utf8'));
+const notes = v.releaseNotes.map((n, i) => (i + 1) + '. ' + n).join('\n');
+const body = '### DJ Panel Pro ${NEW_VERSION}\n\n' + notes + '\n\n---\n**Descarga según tu Mac:**\n- 🍎 **Apple Silicon (M1/M2/M3/M4):** DJ Panel Pro-${NEW_VERSION}-arm64.dmg\n- 🖥️ **Intel (macOS 10.14+):** DJ Panel Pro-${NEW_VERSION}-x64.dmg\n\n*Primera apertura: clic derecho → Abrir (para omitir Gatekeeper)*';
+
+const payload = {
+  tag_name: '${TAG}',
+  name: 'DJ Panel Pro v${NEW_VERSION}',
+  body: body,
+  draft: false,
+  prerelease: false
+};
+fs.writeFileSync('${JSON_PAYLOAD_FILE}', JSON.stringify(payload), 'utf8');
+"
 
 # Crear el release
 RELEASE_RESPONSE=$(curl -s -X POST \
     -H "Authorization: token ${GITHUB_TOKEN}" \
     -H "Content-Type: application/json" \
     "https://api.github.com/repos/${GITHUB_REPO}/releases" \
-    -d "{
-        \"tag_name\": \"${TAG}\",
-        \"name\": \"DJ Panel Pro ${NEW_VERSION}\",
-        \"body\": \"${RELEASE_BODY}\",
-        \"draft\": false,
-        \"prerelease\": false
-    }")
+    -d @"${JSON_PAYLOAD_FILE}")
+
+rm -f "${JSON_PAYLOAD_FILE}"
 
 RELEASE_ID=$(echo "$RELEASE_RESPONSE" | node -e "let d=''; process.stdin.on('data',c=>d+=c).on('end',()=>{try{console.log(JSON.parse(d).id||'')}catch(e){console.log('')}})")
 UPLOAD_URL=$(echo "$RELEASE_RESPONSE" | node -e "let d=''; process.stdin.on('data',c=>d+=c).on('end',()=>{try{const u=JSON.parse(d).upload_url||'';console.log(u.replace('{?name,label}',''))}catch(e){console.log('')}})")
