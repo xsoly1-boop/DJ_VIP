@@ -11,14 +11,8 @@ import { database, ref, onValue } from './firebase';
 
 // ─── Detección de plataforma ──────────────────────────────────────────────────
 function detectPlatform() {
-  // Android APK nativa
-  if (window.AndroidApp) return 'android';
-  // iOS WebView nativa (Capacitor / WKWebView)
-  if (
-    window.webkit?.messageHandlers ||
-    /iPhone|iPad|iPod/i.test(navigator.userAgent)
-  ) return 'ios';
-  // Electron (macOS / Windows)
+  // Electron (macOS / Windows) — DEBE ir ANTES de window.AndroidApp porque
+  // preload.cjs expone un polyfill AndroidApp dentro de Electron.
   if (window.electronAPI) {
     const ua = navigator.userAgent || '';
     if (/Windows/i.test(ua)) return 'windows';
@@ -27,6 +21,13 @@ function detectPlatform() {
       return /arm64|Apple M/i.test(ua) ? 'macos-silicon' : 'macos-intel';
     }
   }
+  // Android APK nativa (solo cuando NO hay electronAPI)
+  if (window.AndroidApp) return 'android';
+  // iOS WebView nativa (Capacitor / WKWebView)
+  if (
+    window.webkit?.messageHandlers ||
+    /iPhone|iPad|iPod/i.test(navigator.userAgent)
+  ) return 'ios';
   // Navegador web puro — no se muestra modal
   return 'web';
 }
