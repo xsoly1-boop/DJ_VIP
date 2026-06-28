@@ -240,6 +240,7 @@ export default function DjDashboard() {
   const [adminReleaseNotesRaw, setAdminReleaseNotesRaw] = useState('');
   const [isGeneratingNotes, setIsGeneratingNotes] = useState(false);
   const [isPublishingNotes, setIsPublishingNotes] = useState(false);
+  const [notifyUsersOnPublish, setNotifyUsersOnPublish] = useState(true);
 
   // Perfil del Admin Master
   const [adminAlias, setAdminAlias] = useState('');
@@ -455,10 +456,29 @@ export default function DjDashboard() {
         releaseNotes: parsedNotes
       });
 
-      showToast("🚀 ¡Actualización publicada en vivo para todos los usuarios!");
+      if (notifyUsersOnPublish) {
+        const backendUrl = `${API_BASE}/api/admin/notify-update`;
+        const response = await fetch(backendUrl, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            versionName: adminUpdateVersion,
+            releaseNotes: parsedNotes.join('\n')
+          })
+        });
+        const data = await response.json();
+        if (!response.ok || !data.success) {
+          throw new Error(data.error || "No se pudo despachar la notificación push masiva.");
+        }
+        showToast("🚀 ¡Actualización publicada y notificación masiva enviada con éxito!");
+      } else {
+        showToast("🚀 ¡Actualización publicada en el modal de inicio con éxito!");
+      }
     } catch (err) {
       console.error(err);
-      showToast("❌ Error al publicar la actualización: " + err.message);
+      showToast("❌ Error: " + err.message);
     } finally {
       setIsPublishingNotes(false);
     }
@@ -5854,6 +5874,19 @@ export default function DjDashboard() {
                     onChange={(e) => setAdminReleaseNotesRaw(e.target.value)}
                     style={{ minHeight: '120px', padding: '10px 12px', fontSize: '0.85rem', lineHeight: '1.4', resize: 'vertical', fontFamily: 'inherit' }}
                   />
+                </div>
+
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '20px', padding: '0 2px' }}>
+                  <input
+                    type="checkbox"
+                    id="notifyUsersOnPublish"
+                    checked={notifyUsersOnPublish}
+                    onChange={(e) => setNotifyUsersOnPublish(e.target.checked)}
+                    style={{ width: '16px', height: '16px', accentColor: 'var(--primary-color)', cursor: 'pointer' }}
+                  />
+                  <label htmlFor="notifyUsersOnPublish" style={{ fontSize: '0.82rem', color: '#e2e8f0', cursor: 'pointer', userSelect: 'none' }}>
+                    Notificar masivamente a todos los DJs (Notificación Push) al publicar
+                  </label>
                 </div>
 
                 <div style={{ display: 'flex', gap: '12px' }}>
