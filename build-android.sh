@@ -96,9 +96,9 @@ fi
 # -----------------------------------------------------------------------
 # 4. Compilar APK usando Gradle
 # -----------------------------------------------------------------------
-echo -e "${CYAN}[4/5] Ejecutando compilación del APK nativo con Gradle...${RESET}"
+echo -e "${CYAN}[4/5] Ejecutando compilación del APK nativo de Release con Gradle...${RESET}"
 cd android
-./gradlew assembleDebug
+./gradlew assembleRelease
 cd ..
 echo -e "  ✅ Gradle finalizó la compilación con éxito."
 echo ""
@@ -107,7 +107,7 @@ echo ""
 # 5. Copiar APK final a la raíz
 # -----------------------------------------------------------------------
 echo -e "${CYAN}[5/5] Copiando archivo APK generado...${RESET}"
-APK_PATH="android/app/build/outputs/apk/debug/app-debug.apk"
+APK_PATH="android/app/build/outputs/apk/release/app-release.apk"
 DEST_PATH="./DJ a la Carta Pro.apk"
 
 if [ -f "$APK_PATH" ]; then

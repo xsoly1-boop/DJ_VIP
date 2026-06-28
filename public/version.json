@@ -1,8 +1,8 @@
 {
-  "latestVersion": "1.0.0.39",
+  "latestVersion": "1.0.0.40",
   "apkUrl": "https://dj-vip.vercel.app/DJ%20a%20la%20Carta%20Pro.apk",
-  "dmgUrl": "https://github.com/xsoly1-boop/DJ_VIP/releases/download/v1.0.0.19/DJ.Panel.Pro-1.0.0.19-arm64.dmg",
-  "dmgUrlIntel": "https://github.com/xsoly1-boop/DJ_VIP/releases/download/v1.0.0.19/DJ.Panel.Pro-1.0.0.19-x64.dmg",
+  "dmgUrl": "https://github.com/xsoly1-boop/DJ_VIP/releases/download/v1.0.0.39/DJ%20Panel%20Pro-1.0.0.39-arm64.dmg",
+  "dmgUrlIntel": "https://github.com/xsoly1-boop/DJ_VIP/releases/download/v1.0.0.39/DJ%20Panel%20Pro-1.0.0.39-x64.dmg",
   "releaseNotes": [
     "Android: Restaurado el servicio de notificaciones en segundo plano con nuevas credenciales activas.",
     "macOS: Solucionado error crítico de inicio que dejaba la aplicación minimizada en el Dock.",
