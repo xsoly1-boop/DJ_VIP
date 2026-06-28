@@ -388,8 +388,11 @@ function AppContent() {
                 Later
               </button>
               <button 
-                onClick={() => {
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
                   window.open(updateInfo.apkUrl, '_system');
+                  setShowUpdateModal(false);
                 }}
                 className="update-modal-btn-now"
               >
