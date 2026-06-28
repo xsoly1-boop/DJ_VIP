@@ -1,9 +1,9 @@
 import { useState } from 'react';
 import { useFirebase } from '../context/FirebaseContext';
-import { Lock, Mail, ArrowRight, ShieldAlert, Phone, User, RefreshCw, Download } from 'lucide-react';
+import { Lock, Mail, ArrowRight, ShieldAlert, Phone, User, RefreshCw } from 'lucide-react';
 import { CURRENT_APP_VERSION } from '../utils/AppVersionConfig';
 
-const APK_URL = 'https://dj-vip.vercel.app/DJ.a.la.carta.apk';
+
 
 export default function LoginView() {
   const { loginDJ, recoverPassword, registerDJ, isMock } = useFirebase();
@@ -28,7 +28,7 @@ export default function LoginView() {
   // States for button hover glows
   const [btnHovered, setBtnHovered] = useState(false);
   const [toggleBtnHovered, setToggleBtnHovered] = useState(false);
-  const [downloadBtnHovered, setDownloadBtnHovered] = useState(false);
+
   const [forgotBtnHovered, setForgotBtnHovered] = useState(false);
 
   const handleSubmit = async (e) => {
@@ -457,41 +457,7 @@ export default function LoginView() {
         </p>
 
         {/* ── Footer: Botón descarga APK ── */}
-        <div style={{
-          marginTop: '16px',
-          borderTop: '1px solid rgba(255, 255, 255, 0.06)',
-          padding: '14px 0 20px',
-          display: 'flex',
-          justifyContent: 'center'
-        }}>
-          <a
-            href={APK_URL}
-            download
-            onMouseEnter={() => setDownloadBtnHovered(true)}
-            onMouseLeave={() => setDownloadBtnHovered(false)}
-            style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: '7px',
-              padding: '8px 24px',
-              borderRadius: '999px',
-              background: 'rgba(6, 182, 212, 0.04)',
-              border: '1px solid rgba(6, 182, 212, 0.45)',
-              color: '#06b6d4',
-              fontSize: '0.78rem',
-              fontWeight: '600',
-              letterSpacing: '0.02em',
-              textDecoration: 'none',
-              boxShadow: downloadBtnHovered ? '0 0 20px rgba(6, 182, 212, 0.45)' : '0 0 10px rgba(6, 182, 212, 0.15)',
-              borderColor: downloadBtnHovered ? 'rgba(6, 182, 212, 0.8)' : 'rgba(6, 182, 212, 0.45)',
-              transition: 'all 0.2s ease',
-              cursor: 'pointer'
-            }}
-          >
-            <Download size={13} />
-            Descargar App v{CURRENT_APP_VERSION}
-          </a>
-        </div>
+
 
       </div>
     </div>
