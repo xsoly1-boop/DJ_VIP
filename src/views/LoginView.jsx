@@ -292,6 +292,14 @@ export default function LoginView() {
             </div>
           </div>
 
+          {!isRegister && (
+            <div style={{ textAlign: 'right', marginTop: '-10px', padding: '0 4px' }}>
+              <span style={{ fontSize: '0.72rem', color: '#64748b', fontStyle: 'italic' }}>
+                ¿Olvidaste tu contraseña? Contacta al administrador para restablecerla.
+              </span>
+            </div>
+          )}
+
           {isRegister && (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', textAlign: 'left' }}>
               <label style={{ fontSize: '0.72rem', fontWeight: '700', letterSpacing: '0.08em', color: '#94a3b8', textTransform: 'uppercase' }}>Confirmar Contraseña</label>
