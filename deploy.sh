@@ -46,6 +46,14 @@ CUSTOM_VERSION=""
 SKIP_MENU=0
 QUIET=0
 
+# Flags para herramientas de testing / utilidades
+TEST_NOTIF_ADMIN=0
+TEST_NOTIF_USER=0
+INJECT_REQUESTS=0
+TEST_USER_EMAIL=""
+INJECT_EMAIL=""
+INJECT_COUNT=""
+
 # ─── FUNCIONES UTILITARIAS ───────────────────────────────────────────────────
 
 print_header() {
@@ -158,6 +166,21 @@ OPCIONES COMBINABLES (pueden usarse juntas)
   --version X.Y.Z.W  Versión manual (si se omite, auto-incrementa)
   --quiet            Menos output (solo resumen final)
 
+HERRAMIENTAS DE TESTING (todas opcionales)
+  --test-admin                    Test de notificaciones al Admin Master
+                                  Envía 3 tipos: petición canción, plan
+                                  expirado, nuevo usuario.
+
+  --test-user <email>             Test de notificación a un usuario específico.
+                                  Busca el UID por email en Firebase y envía
+                                  una notificación de prueba a sus dispositivos.
+
+  --inject <email> <cantidad>     Inyecta peticiones de canciones al evento
+                                  activo del DJ con ese email.
+                                  <cantidad> puede ser cualquier número (1-200).
+                                  Si el DJ no tiene canciones en autocomplete,
+                                  se generan títulos de prueba.
+
 EJEMPLOS
   # Compilar solo Android y hacer push:
   bash deploy.sh --android --push
@@ -170,6 +193,18 @@ EJEMPLOS
 
   # Solo sincronizar Firebase y Vercel sin compilar:
   bash deploy.sh --firebase --vercel --push
+
+  # Test de notificaciones al Admin Master:
+  bash deploy.sh --test-admin
+
+  # Test de notificación a un usuario específico:
+  bash deploy.sh --test-user dj@ejemplo.com
+
+  # Inyectar 33 peticiones al evento activo de un DJ:
+  bash deploy.sh --inject dj@ejemplo.com 33
+
+  # Combinar: compilar Android + inyectar 10 peticiones al mismo DJ:
+  bash deploy.sh --android --inject dj@ejemplo.com 10
 
 MENÚ INTERACTIVO
   Si ejecutas el script sin argumentos, se mostrará un menú con
@@ -229,6 +264,19 @@ parse_args() {
             --firebase)      SYNC_FIREBASE=1; SKIP_MENU=1 ;;
             --push)          DO_GIT_PUSH=1; SKIP_MENU=1 ;;
             --quiet|-q)      QUIET=1 ;;
+            # ── Herramientas de testing ─────────────────────────────────────────
+            --test-admin)    TEST_NOTIF_ADMIN=1; SKIP_MENU=1 ;;
+            --test-user)
+                TEST_NOTIF_USER=1; SKIP_MENU=1
+                shift
+                if [[ $# -gt 0 ]]; then TEST_USER_EMAIL="$1"; fi ;;
+            --inject)
+                INJECT_REQUESTS=1; SKIP_MENU=1
+                shift
+                if [[ $# -gt 0 ]]; then INJECT_EMAIL="$1"; fi
+                shift
+                if [[ $# -gt 0 ]]; then INJECT_COUNT="$1"; fi ;;
+            # ────────────────────────────────────────────────────────────────────
             --version|-v)
                 shift
                 if [[ $# -gt 0 ]]; then
@@ -286,6 +334,11 @@ show_interactive_menu() {
     echo -e "   ${GREEN}7${RESET}) 🔥 Firebase RTDB (sincronizar versión y URLs)"
     echo -e "   ${GREEN}8${RESET}) 📤 Git Push (commit + push → Render se autodespliega)"
     echo ""
+    echo -e "  ${YELLOW}── PRUEBAS / UTILIDADES ─────────────────────────────${RESET}"
+    echo -e "   ${CYAN}A${RESET}) 🔔 Test notificaciones → Admin Master"
+    echo -e "   ${CYAN}B${RESET}) 📨 Test notificaciones → usuario por email"
+    echo -e "   ${CYAN}C${RESET}) 🎵 Inyectar peticiones de canciones a un evento"
+    echo ""
     echo -e "  ${YELLOW}── ATAJOS ────────────────────────────────────────────────${RESET}"
     echo -e "   ${GREEN}9${RESET}) ⭐ TODO (compilar todas las plataformas + desplegar todo)"
     echo -e "   ${GREEN}0${RESET}) ❌ Cancelar"
@@ -313,6 +366,9 @@ show_interactive_menu() {
             9) BUILD_ANDROID=1; BUILD_MACOS_SILICON=1; BUILD_MACOS_INTEL=1
                BUILD_WINDOWS=1; DEPLOY_GITHUB=1; DEPLOY_VERCEL=1
                SYNC_FIREBASE=1; DO_GIT_PUSH=1 ;;
+            A|a) TEST_NOTIF_ADMIN=1 ;;
+            B|b) TEST_NOTIF_USER=1 ;;
+            C|c) INJECT_REQUESTS=1 ;;
             0) echo -e "  ${YELLOW}Cancelado.${RESET}"; exit 0 ;;
             *) echo -e "  ${RED}Opción inválida: ${opt} (ignorada)${RESET}" ;;
         esac
@@ -322,9 +378,31 @@ show_interactive_menu() {
     if [ $BUILD_ANDROID -eq 0 ] && [ $BUILD_MACOS_SILICON -eq 0 ] && \
        [ $BUILD_MACOS_INTEL -eq 0 ] && [ $BUILD_WINDOWS -eq 0 ] && \
        [ $DEPLOY_GITHUB -eq 0 ] && [ $DEPLOY_VERCEL -eq 0 ] && \
-       [ $SYNC_FIREBASE -eq 0 ] && [ $DO_GIT_PUSH -eq 0 ]; then
+       [ $SYNC_FIREBASE -eq 0 ] && [ $DO_GIT_PUSH -eq 0 ] && \
+       [ $TEST_NOTIF_ADMIN -eq 0 ] && [ $TEST_NOTIF_USER -eq 0 ] && \
+       [ $INJECT_REQUESTS -eq 0 ]; then
         echo -e "  ${YELLOW}No se seleccionó ninguna opción válida.${RESET}"
         exit 0
+    fi
+
+    # Preguntar parámetros de herramientas interactivas
+    if [ $TEST_NOTIF_USER -eq 1 ] && [ -z "$TEST_USER_EMAIL" ]; then
+        echo ""
+        echo -ne "  ${CYAN}Email del usuario destino para test de notificaciones: ${RESET}"
+        read -r TEST_USER_EMAIL
+    fi
+
+    if [ $INJECT_REQUESTS -eq 1 ]; then
+        if [ -z "$INJECT_EMAIL" ]; then
+            echo ""
+            echo -ne "  ${CYAN}Email del DJ destino para inyección de peticiones: ${RESET}"
+            read -r INJECT_EMAIL
+        fi
+        if [ -z "$INJECT_COUNT" ]; then
+            echo ""
+            echo -ne "  ${CYAN}Número de peticiones a inyectar ${DIM}(ej: 10, 33, 78): ${RESET}"
+            read -r INJECT_COUNT
+        fi
     fi
 
     # Preguntar por versión personalizada
@@ -1048,6 +1126,389 @@ do_git_push() {
 }
 
 # ═══════════════════════════════════════════════════════════════════════════════
+#  HERRAMIENTAS DE TESTING Y UTILIDADES
+# ═══════════════════════════════════════════════════════════════════════════════
+
+# ── A) TEST NOTIFICACIONES → ADMIN MASTER ───────────────────────────────────
+
+test_notif_admin() {
+    if [ $TEST_NOTIF_ADMIN -eq 0 ]; then return; fi
+
+    print_step "$CURRENT_STEP" "$TOTAL_STEPS" "Test notificaciones → Admin Master" "🔔"
+    CURRENT_STEP=$((CURRENT_STEP + 1))
+
+    if [ ! -f "serviceAccountKey.json" ]; then
+        log_warn "serviceAccountKey.json no encontrado — test omitido"
+        log_result "Test Notif Admin" "FAIL" "Sin credenciales"
+        return
+    fi
+
+    set +e
+    node -e "
+        const admin   = require('firebase-admin');
+        const sa      = require('./serviceAccountKey.json');
+        const fcmSnd  = require('./scripts/fcm-sender.cjs');
+
+        if (!admin.apps.length) {
+            admin.initializeApp({
+                credential: admin.credential.cert(sa),
+                databaseURL: 'https://djvip-c2cc9-default-rtdb.firebaseio.com'
+            });
+        }
+
+        const ADMIN_UID = 'WuOSSeOODRfxVnNpEVbc6S259f63';
+
+        async function run() {
+            console.log('🧪 Enviando 3 notificaciones de prueba al Admin Master...');
+
+            const results = [];
+
+            // Test 1: Petición de canción
+            try {
+                const r = await fcmSnd.sendSongRequestNotification(ADMIN_UID, 'Payaso de Rodeo 🤠', 'Test DJ');
+                results.push({ tipo: 'Petición canción', enviados: r.sent, fallidos: r.failed });
+                console.log('  ✅ [1/3] Petición de canción:', r.sent, 'enviados,', r.failed, 'fallidos');
+            } catch(e) {
+                console.error('  ❌ [1/3] Error:', e.message);
+                results.push({ tipo: 'Petición canción', error: e.message });
+            }
+
+            // Test 2: Vencimiento de plan
+            try {
+                const r = await fcmSnd.sendPlanExpiryNotification(ADMIN_UID, 24);
+                results.push({ tipo: 'Vencimiento plan', enviados: r.sent, fallidos: r.failed });
+                console.log('  ✅ [2/3] Vencimiento de plan:', r.sent, 'enviados,', r.failed, 'fallidos');
+            } catch(e) {
+                console.error('  ❌ [2/3] Error:', e.message);
+                results.push({ tipo: 'Vencimiento plan', error: e.message });
+            }
+
+            // Test 3: Nuevo usuario
+            try {
+                const r = await fcmSnd.sendNewUserNotification('DJ TestUser', 'test@djvip.com', 'uid-test-000');
+                results.push({ tipo: 'Nuevo usuario', enviados: r.sent, fallidos: r.failed });
+                console.log('  ✅ [3/3] Nuevo usuario:', r.sent, 'enviados,', r.failed, 'fallidos');
+            } catch(e) {
+                console.error('  ❌ [3/3] Error:', e.message);
+                results.push({ tipo: 'Nuevo usuario', error: e.message });
+            }
+
+            console.log('
+📊 Resumen:');
+            console.table(results);
+            process.exit(0);
+        }
+
+        run().catch(e => { console.error(e.message); process.exit(1); });
+    " 2>&1 | tee -a "$BUILD_LOG"
+    local EXIT_CODE=$?
+    set -e
+
+    if [ $EXIT_CODE -eq 0 ]; then
+        log_ok "Test de notificaciones al Admin Master completado"
+        log_result "Test Notif Admin" "OK" "3 tipos de notificación enviados"
+    else
+        log_err "Alguna notificación falló (revisa el log)"
+        log_result "Test Notif Admin" "FAIL" "Ver log para detalles"
+    fi
+}
+
+# ── B) TEST NOTIFICACIONES → USUARIO ESPECÍFICO POR EMAIL ────────────────
+
+test_notif_user() {
+    if [ $TEST_NOTIF_USER -eq 0 ]; then return; fi
+
+    print_step "$CURRENT_STEP" "$TOTAL_STEPS" "Test notificaciones → usuario: ${TEST_USER_EMAIL:-???}" "📨"
+    CURRENT_STEP=$((CURRENT_STEP + 1))
+
+    if [ -z "${TEST_USER_EMAIL:-}" ]; then
+        log_err "No se especificó email de usuario destino"
+        log_result "Test Notif Usuario" "FAIL" "Email no especificado"
+        return
+    fi
+
+    if [ ! -f "serviceAccountKey.json" ]; then
+        log_warn "serviceAccountKey.json no encontrado — test omitido"
+        log_result "Test Notif Usuario" "FAIL" "Sin credenciales"
+        return
+    fi
+
+    set +e
+    node -e "
+        const admin  = require('firebase-admin');
+        const sa     = require('./serviceAccountKey.json');
+        const fcmSnd = require('./scripts/fcm-sender.cjs');
+
+        if (!admin.apps.length) {
+            admin.initializeApp({
+                credential: admin.credential.cert(sa),
+                databaseURL: 'https://djvip-c2cc9-default-rtdb.firebaseio.com'
+            });
+        }
+
+        const TARGET_EMAIL = '${TEST_USER_EMAIL}';
+        const db = admin.database();
+
+        async function run() {
+            // 1. Buscar el UID del usuario por email en RTDB
+            console.log('🔍 Buscando usuario por email:', TARGET_EMAIL);
+            const usersSnap = await db.ref('users').once('value');
+
+            if (!usersSnap.exists()) {
+                console.error('❌ No hay usuarios en la base de datos');
+                process.exit(1);
+            }
+
+            let targetUid = null;
+            let targetName = '';
+
+            usersSnap.forEach(child => {
+                const user = child.val();
+                const profile = user.profile || {};
+                const email = profile.email || (user.email || '');
+                if (email.toLowerCase() === TARGET_EMAIL.toLowerCase()) {
+                    targetUid  = child.key;
+                    targetName = profile.displayName || profile.djName || email;
+                }
+            });
+
+            if (!targetUid) {
+                console.error('❌ Usuario no encontrado con email:', TARGET_EMAIL);
+                process.exit(1);
+            }
+
+            console.log('  ✅ Usuario encontrado:', targetName, '| UID:', targetUid);
+
+            // 2. Verificar dispositivos registrados
+            const devSnap = await db.ref('users/' + targetUid + '/devices').once('value');
+            const devices = devSnap.val() || {};
+            const tokens = Object.values(devices).filter(d => d && d.fcmToken && d.active !== false);
+            console.log('  📱 Dispositivos con token activo:', tokens.length);
+
+            if (tokens.length === 0) {
+                console.warn('  ⚠️  No hay tokens activos para este usuario');
+            }
+
+            // 3. Enviar notificación de prueba
+            console.log('
+🧪 Enviando notificación de petición de canción...');
+            try {
+                const r = await fcmSnd.sendSongRequestNotification(
+                    targetUid,
+                    'La Bamba 🎸 (TEST)',
+                    'Script de prueba'
+                );
+                console.log('  ✅ Notificación enviada:', r.sent, 'exitosos,', r.failed, 'fallidos');
+                if (r.sent > 0) {
+                    console.log('  📲 Deberías ver la notificación en el dispositivo de', targetName);
+                }
+            } catch(e) {
+                console.error('  ❌ Error al enviar:', e.message);
+                process.exit(1);
+            }
+
+            process.exit(0);
+        }
+
+        run().catch(e => { console.error(e.message); process.exit(1); });
+    " 2>&1 | tee -a "$BUILD_LOG"
+    local EXIT_CODE=$?
+    set -e
+
+    if [ $EXIT_CODE -eq 0 ]; then
+        log_ok "Test de notificación a ${TEST_USER_EMAIL} completado"
+        log_result "Test Notif Usuario" "OK" "Enviado a ${TEST_USER_EMAIL}"
+    else
+        log_err "Error en el test de notificación a ${TEST_USER_EMAIL}"
+        log_result "Test Notif Usuario" "FAIL" "Ver log para detalles"
+    fi
+}
+
+# ── C) INYECTAR PETICIONES DE CANCIONES ─────────────────────────────────
+
+inject_requests() {
+    if [ $INJECT_REQUESTS -eq 0 ]; then return; fi
+
+    print_step "$CURRENT_STEP" "$TOTAL_STEPS" "Inyectando peticiones al evento de: ${INJECT_EMAIL:-???}" "🎵"
+    CURRENT_STEP=$((CURRENT_STEP + 1))
+
+    if [ -z "${INJECT_EMAIL:-}" ]; then
+        log_err "No se especificó email del DJ destino"
+        log_result "Inyección peticiones" "FAIL" "Email no especificado"
+        return
+    fi
+
+    # Número de peticiones: usar el proporcionado o pedir por defecto 10
+    local N_COUNT="${INJECT_COUNT:-10}"
+    if ! [[ "$N_COUNT" =~ ^[0-9]+$ ]] || [ "$N_COUNT" -lt 1 ] || [ "$N_COUNT" -gt 200 ]; then
+        log_warn "Número inválido (${N_COUNT}), usando 10"
+        N_COUNT=10
+    fi
+
+    if [ ! -f "serviceAccountKey.json" ]; then
+        log_warn "serviceAccountKey.json no encontrado — inyección omitida"
+        log_result "Inyección peticiones" "FAIL" "Sin credenciales"
+        return
+    fi
+
+    log_info "Email DJ: ${INJECT_EMAIL} | Peticiones: ${N_COUNT}"
+
+    set +e
+    node -e "
+        const admin = require('firebase-admin');
+        const sa    = require('./serviceAccountKey.json');
+
+        if (!admin.apps.length) {
+            admin.initializeApp({
+                credential: admin.credential.cert(sa),
+                databaseURL: 'https://djvip-c2cc9-default-rtdb.firebaseio.com'
+            });
+        }
+
+        const db          = admin.database();
+        const TARGET_EMAIL = '${INJECT_EMAIL}';
+        const N           = ${N_COUNT};
+
+        const NAMES = ['Carlos','María','Jorge','Ana','Luis','Sofía','Roberto',
+            'Carmen','Miguel','Laura','Andrés','Valeria','Diego','Isabella',
+            'Fernando','Gabriela','Ricardo','Natalia','Eduardo','Alejandra',
+            'Javier','Mónica','Héctor','Claudia','Arturo','Verónica'];
+
+        const GENRES = ['Salsa','Cumbia','Reguetón','Bachata','Pop','Rock',
+            'Banda','Norteño','Electrónica','Hip-Hop'];
+
+        function pick(arr) { return arr[Math.floor(Math.random()*arr.length)]; }
+        function randInt(a,b) { return Math.floor(Math.random()*(b-a+1))+a; }
+
+        async function run() {
+            // 1. Buscar UID del DJ por email
+            console.log('🔍 Buscando DJ por email:', TARGET_EMAIL);
+            const usersSnap = await db.ref('users').once('value');
+            let djUid = null;
+            let djName = '';
+
+            usersSnap.forEach(child => {
+                const u = child.val();
+                const p = u.profile || {};
+                const email = p.email || u.email || '';
+                if (email.toLowerCase() === TARGET_EMAIL.toLowerCase()) {
+                    djUid  = child.key;
+                    djName = p.displayName || p.djName || email;
+                }
+            });
+
+            if (!djUid) {
+                console.error('❌ DJ no encontrado con email:', TARGET_EMAIL);
+                process.exit(1);
+            }
+            console.log('  ✅ DJ encontrado:', djName, '| UID:', djUid);
+
+            // 2. Obtener el evento activo del DJ
+            const eventIdSnap = await db.ref('djs/' + djUid + '/activeEventId').once('value');
+            const eventId = eventIdSnap.val();
+            if (!eventId) {
+                console.error('❌ El DJ', djName, 'no tiene un evento activo');
+                process.exit(1);
+            }
+            console.log('  🎵 Evento activo ID:', eventId);
+
+            // 3. Cargar canciones de autocomplete del DJ
+            const songsSnap = await db.ref('djs/' + djUid + '/autocomplete_songs').once('value');
+            let songs = [];
+
+            if (songsSnap.exists()) {
+                songsSnap.forEach(s => {
+                    const d = s.val();
+                    if (d && d.title) songs.push(d);
+                });
+            }
+
+            // Si no hay canciones, generar títulos inventados
+            if (songs.length === 0) {
+                console.warn('  ⚠️  Sin autocomplete_songs — generando canciones de prueba');
+                const SAMPLE_SONGS = [
+                    'La Bamba','Bamboleo','Gasolina','Obsesión','Vivir Mi Vida',
+                    'Suavemente','Que Calor','La Colegiala','Se Me Olvidó Otra Vez',
+                    'Payaso de Rodeo','El Rey','Cucurrucucú Paloma','Bésame Mucho',
+                    'La Cucaracha','Cielito Lindo','Guantanamera','El Amor','La Morena',
+                    'Oye Como Va','Bambalina','Asereje','El Alacrán','La Chona'
+                ];
+                songs = SAMPLE_SONGS.map(t => ({ title: t, artist: 'Artista ' + pick(NAMES) }));
+            }
+
+            // Fisher-Yates shuffle + tomar N
+            function sample(arr, n) {
+                const pool = [...arr];
+                for (let i = pool.length-1; i>0; i--) {
+                    const j = Math.floor(Math.random()*(i+1));
+                    [pool[i],pool[j]] = [pool[j],pool[i]];
+                }
+                return pool.slice(0, Math.min(n, pool.length));
+            }
+
+            const selected = sample(songs, N);
+            const now = Date.now();
+            let ok = 0;
+
+            // 4. Inyectar peticiones
+            console.log('
+📤 Inyectando', selected.length, 'peticiones al evento', eventId, '...');
+
+            for (let i = 0; i < selected.length; i++) {
+                const song = selected[i];
+                const requester = pick(NAMES);
+                const votes    = randInt(0, 12);
+                const contexts = ['bailar','ambiente','escuchar'];
+                const context  = pick(contexts);
+                const isPlayed = Math.random() < 0.15;
+                const status   = isPlayed ? 'played' : (Math.random() < 0.3 ? 'accepted' : 'pending');
+
+                const req = {
+                    song:       song.title || 'Desconocida',
+                    artist:     song.artist || '',
+                    requester:  requester,
+                    context:    context,
+                    dedication: '',
+                    votes:      votes,
+                    status:     status,
+                    timestamp:  now - (selected.length - i) * 60000,
+                    djId:       djUid
+                };
+
+                const refPath = isPlayed
+                    ? 'events/' + djUid + '/' + eventId + '/playedRequests'
+                    : 'events/' + djUid + '/' + eventId + '/requests';
+
+                const newRef = db.ref(refPath).push();
+                await newRef.set(req);
+
+                process.stdout.write('  [' + (i+1) + '/' + selected.length + '] '
+                    + req.song + ' ← ' + req.requester
+                    + ' (' + req.votes + '🔺, ' + req.status + ')\n');
+                ok++;
+            }
+
+            console.log('
+✅ Inyectadas', ok, 'peticiones exitosamente.');
+            console.log('  💻 Abre el panel del DJ', djName, 'para verlas en tiempo real.');
+            process.exit(0);
+        }
+
+        run().catch(e => { console.error(e.message); process.exit(1); });
+    " 2>&1 | tee -a "$BUILD_LOG"
+    local EXIT_CODE=$?
+    set -e
+
+    if [ $EXIT_CODE -eq 0 ]; then
+        log_ok "${N_COUNT} peticiones inyectadas al evento de ${INJECT_EMAIL}"
+        log_result "Inyección peticiones" "OK" "${N_COUNT} peticiones → ${INJECT_EMAIL}"
+    else
+        log_err "Error al inyectar peticiones"
+        log_result "Inyección peticiones" "FAIL" "Ver log para detalles"
+    fi
+}
+
+# ═══════════════════════════════════════════════════════════════════════════════
 #  RESUMEN FINAL
 # ═══════════════════════════════════════════════════════════════════════════════
 
@@ -1153,6 +1614,9 @@ main() {
     [ $SYNC_FIREBASE -eq 1 ]       && TOTAL_STEPS=$((TOTAL_STEPS + 1))
     [ $DEPLOY_VERCEL -eq 1 ]       && TOTAL_STEPS=$((TOTAL_STEPS + 1))
     [ $DO_GIT_PUSH -eq 1 ]         && TOTAL_STEPS=$((TOTAL_STEPS + 1))
+    [ $TEST_NOTIF_ADMIN -eq 1 ]    && TOTAL_STEPS=$((TOTAL_STEPS + 1))
+    [ $TEST_NOTIF_USER -eq 1 ]     && TOTAL_STEPS=$((TOTAL_STEPS + 1))
+    [ $INJECT_REQUESTS -eq 1 ]     && TOTAL_STEPS=$((TOTAL_STEPS + 1))
 
     CURRENT_STEP=4  # después de verificar(1), versión(2), frontend(3)
 
@@ -1187,6 +1651,15 @@ main() {
 
     # 12. Verificar URLs de descarga
     verify_urls
+
+    # 13. Test notificaciones → Admin Master
+    test_notif_admin
+
+    # 14. Test notificaciones → usuario específico
+    test_notif_user
+
+    # 15. Inyectar peticiones de canciones
+    inject_requests
 
     # ── RESUMEN FINAL ─────────────────────────────────────────────────────────
     print_summary
