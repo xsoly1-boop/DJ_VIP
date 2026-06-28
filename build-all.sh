@@ -145,11 +145,11 @@ echo -e "${PURPLE}━━━━━━━━━━━━━━━━━━━━�
 if [ "$JAVA_OK" -eq 1 ] && [ -d "android" ]; then
     set +e
     echo "  Limpiando instaladores de dist y assets..."
-    rm -f "dist/DJ a la Carta Pro.apk"
+    rm -f "dist/DJ.a.la.carta.apk"
     rm -f "dist/app-debug.apk"
     rm -f "dist/dj-panel-release.apk"
     rm -f "dist/app-release.apk"
-    rm -f "android/app/src/main/assets/public/DJ a la Carta Pro.apk"
+    rm -f "android/app/src/main/assets/public/DJ.a.la.carta.apk"
     rm -f "android/app/src/main/assets/public/app-debug.apk"
     rm -f "android/app/src/main/assets/public/dj-panel-release.apk"
     rm -f "android/app/src/main/assets/public/app-release.apk"
