@@ -2255,11 +2255,11 @@ export default function DjDashboard() {
       </section>
 
       {/* PANEL PRINCIPAL */}
-      <div className="dashboard-grid">
+      <div style={{ display: 'grid', gridTemplateColumns: '320px 1fr', gap: '24px', alignItems: 'start' }}>
 
         {/* COLUMNA IZQUIERDA */}
         <aside style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-          <nav className="glass-panel dashboard-sidebar-nav" style={{ padding: '8px', display: 'flex', flexDirection: 'column', gap: '4px' }}>
+          <nav className="glass-panel" style={{ padding: '8px', display: 'flex', flexDirection: 'column', gap: '4px' }}>
             <button className={`btn ${activeTab === 'requests' ? 'btn-primary' : 'btn-secondary'}`}
               onClick={() => setActiveTab('requests')} style={{ justifyContent: 'flex-start', width: '100%' }}>
               <Music size={16} /><span>Lista de Peticiones</span>
@@ -2327,7 +2327,7 @@ export default function DjDashboard() {
           </nav>
 
           {/* QR del Evento */}
-          <div className="glass-panel dashboard-sidebar-qr" style={{ padding: '20px', textAlign: 'center' }}>
+          <div className="glass-panel" style={{ padding: '20px', textAlign: 'center' }}>
             <h4 style={{ fontSize: '1rem', marginBottom: '12px' }}>Código QR para el Público</h4>
             <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginBottom: '16px' }}>
               Muestra o descarga este QR para que el público escanee y acceda a la web app.
@@ -2338,7 +2338,7 @@ export default function DjDashboard() {
                 <QRCodeCanvas id="qr-code-canvas" value={publicEventUrl} size={1500} level={"H"} includeMargin={true} />
               </div>
             </div>
-            <div className="dashboard-qr-actions" style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
               <button className="btn btn-secondary" onClick={downloadQR} style={{ width: '100%', padding: '10px' }}>
                 <Download size={14} /><span>Descargar QR PNG (1500px)</span>
               </button>
