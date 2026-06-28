@@ -1,14 +1,14 @@
 {
-  "latestVersion": "1.0.0.17",
+  "latestVersion": "1.0.0.18",
   "apkUrl": "https://dj-vip.vercel.app/DJ%20a%20la%20Carta%20Pro.apk",
-  "dmgUrl": "https://github.com/xsoly1-boop/DJ_VIP/releases/download/v1.0.0.17/DJ.Panel.Pro-1.0.0.17-arm64.dmg",
-  "dmgUrlIntel": "https://github.com/xsoly1-boop/DJ_VIP/releases/download/v1.0.0.17/DJ.Panel.Pro-1.0.0.17-x64.dmg",
+  "dmgUrl": "https://github.com/xsoly1-boop/DJ_VIP/releases/download/v1.0.0.18/DJ.Panel.Pro-1.0.0.18-arm64.dmg",
+  "dmgUrlIntel": "https://github.com/xsoly1-boop/DJ_VIP/releases/download/v1.0.0.18/DJ.Panel.Pro-1.0.0.18-x64.dmg",
   "releaseNotes": [
+    "Corrección crítica para macOS: Solucionado cuelgue de inicio que minimizaba la app en el Dock.",
+    "Compatibilidad extendida con protocolos antiguos en Electron 22 (macOS 10.14+).",
     "Impresión directa de tarjetas QR integrada de forma nativa en Android.",
     "Resolución del bloqueo de pantalla en la carga inicial de dispositivos iOS.",
     "Aviso de actualización optimizado para modo horizontal y fondo esmerilado.",
-    "Solución al error de descarga múltiple accidental de la aplicación APK.",
-    "Notificaciones sonoras nativas en macOS acopladas al volumen de la app.",
-    "Descargador de actualización inteligente de archivos DMG para macOS de escritorio."
+    "Notificaciones sonoras nativas en macOS acopladas al volumen de la app."
   ]
 }
