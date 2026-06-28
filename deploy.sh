@@ -1193,8 +1193,7 @@ test_notif_admin() {
                 results.push({ tipo: 'Nuevo usuario', error: e.message });
             }
 
-            console.log('
-📊 Resumen:');
+            console.log(''); console.log('📊 Resumen:');
             console.table(results);
             process.exit(0);
         }
@@ -1290,8 +1289,7 @@ test_notif_user() {
             }
 
             // 3. Enviar notificación de prueba
-            console.log('
-🧪 Enviando notificación de petición de canción...');
+            console.log(''); console.log('🧪 Enviando notificación de petición de canción...');
             try {
                 const r = await fcmSnd.sendSongRequestNotification(
                     targetUid,
@@ -1451,8 +1449,7 @@ inject_requests() {
             let ok = 0;
 
             // 4. Inyectar peticiones
-            console.log('
-📤 Inyectando', selected.length, 'peticiones al evento', eventId, '...');
+            console.log(''); console.log('📤 Inyectando', selected.length, 'peticiones al evento', eventId, '...');
 
             for (let i = 0; i < selected.length; i++) {
                 const song = selected[i];
@@ -1488,8 +1485,7 @@ inject_requests() {
                 ok++;
             }
 
-            console.log('
-✅ Inyectadas', ok, 'peticiones exitosamente.');
+            console.log(''); console.log('✅ Inyectadas', ok, 'peticiones exitosamente.');
             console.log('  💻 Abre el panel del DJ', djName, 'para verlas en tiempo real.');
             process.exit(0);
         }
