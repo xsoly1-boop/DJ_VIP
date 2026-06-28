@@ -2204,6 +2204,41 @@ export default function DjDashboard() {
                     : <>⏸ <strong style={{ fontWeight: '800' }}>{djName}</strong>&nbsp;· FUERA</>;
                 })()}
               </button>
+
+              {/* Indicador Modo */}
+              <span style={{ 
+                fontSize: '0.65rem', padding: '3px 10px', borderRadius: '8px', 
+                fontWeight: '700', border: isMock ? '1px solid rgba(245, 158, 11, 0.3)' : '1px solid rgba(34, 195, 93, 0.3)',
+                background: isMock ? 'rgba(245, 158, 11, 0.12)' : 'rgba(34, 195, 93, 0.12)',
+                color: isMock ? 'var(--warning-color)' : 'var(--success-color)',
+                display: 'inline-flex', alignItems: 'center', gap: '6px', whiteSpace: 'nowrap'
+              }}>
+                <span style={{
+                  width: '6px', height: '6px', borderRadius: '50%',
+                  background: isMock ? 'var(--warning-color)' : 'var(--success-color)',
+                  boxShadow: isMock ? '0 0 6px var(--warning-color)' : '0 0 6px var(--success-color)'
+                }} />
+                {isMock ? 'Modo Local' : 'Firebase Conectado'}
+              </span>
+
+              {/* Indicador Token FCM (Solo en Android) */}
+              {window.AndroidApp && (
+                <span style={{ 
+                  fontSize: '0.65rem', padding: '3px 10px', borderRadius: '8px', 
+                  fontWeight: '700', border: nativeFcmToken ? '1px solid rgba(34, 195, 93, 0.3)' : '1px solid rgba(232, 48, 91, 0.3)',
+                  background: nativeFcmToken ? 'rgba(34, 195, 93, 0.12)' : 'rgba(232, 48, 91, 0.12)',
+                  color: nativeFcmToken ? 'var(--success-color)' : 'var(--danger-color)',
+                  display: 'inline-flex', alignItems: 'center', gap: '6px', whiteSpace: 'nowrap'
+                }}>
+                  <span style={{
+                    width: '6px', height: '6px', borderRadius: '50%',
+                    background: nativeFcmToken ? 'var(--success-color)' : 'var(--danger-color)',
+                    boxShadow: nativeFcmToken ? '0 0 6px var(--success-color)' : '0 0 6px var(--danger-color)'
+                  }} />
+                  FCM: {nativeFcmToken ? 'Listo' : 'Obteniendo...'}
+                </span>
+              )}
+
               {isAdminMaster && !impersonatingUid && (
                 <span style={{ fontSize: '0.65rem', padding: '3px 8px', borderRadius: '8px', background: 'rgba(245,158,11,0.15)', color: 'var(--warning-color)', fontWeight: '700', border: '1px solid rgba(245,158,11,0.3)' }}>
                   👑 ADMIN MASTER
@@ -2318,42 +2353,6 @@ export default function DjDashboard() {
         </div>
 
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
-          {/* Indicador Modo */}
-          <div className="glass-panel" style={{ 
-            padding: '8px 12px', borderRadius: 'var(--radius-md)', 
-            display: 'flex', alignItems: 'center', gap: '8px',
-            background: 'rgba(255,255,255,0.04)', fontSize: '0.85rem',
-            border: isMock ? '1px solid rgba(245, 158, 11, 0.2)' : '1px solid rgba(16, 185, 129, 0.2)'
-          }}>
-            <div style={{
-              width: '8px', height: '8px', borderRadius: '50%',
-              background: isMock ? 'var(--warning-color)' : 'var(--success-color)',
-              boxShadow: isMock ? '0 0 8px var(--warning-color)' : '0 0 8px var(--success-color)'
-            }} />
-            <span style={{ color: isMock ? 'var(--warning-color)' : 'var(--success-color)', fontWeight: '600' }}>
-              {isMock ? 'Modo Local' : 'Firebase Conectado'}
-            </span>
-          </div>
-
-          {/* Indicador Token FCM (Solo en Android) */}
-          {window.AndroidApp && (
-            <div className="glass-panel" style={{ 
-              padding: '8px 12px', borderRadius: 'var(--radius-md)', 
-              display: 'flex', alignItems: 'center', gap: '8px',
-              background: 'rgba(255,255,255,0.04)', fontSize: '0.85rem',
-              border: nativeFcmToken ? '1px solid rgba(16, 185, 129, 0.2)' : '1px solid rgba(239, 68, 68, 0.2)'
-            }}>
-              <div style={{
-                width: '8px', height: '8px', borderRadius: '50%',
-                background: nativeFcmToken ? 'var(--success-color)' : 'var(--danger-color)',
-                boxShadow: nativeFcmToken ? '0 0 8px var(--success-color)' : '0 0 8px var(--danger-color)'
-              }} />
-              <span style={{ color: nativeFcmToken ? 'var(--success-color)' : 'var(--danger-color)', fontWeight: '600' }}>
-                FCM: {nativeFcmToken ? 'Listo' : '⏳ Obteniendo Token...'}
-              </span>
-            </div>
-          )}
-
           {/* Sonido */}
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px', background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)', padding: '4px 8px', borderRadius: 'var(--radius-md)' }}>
             <button className="btn btn-secondary btn-icon" 
