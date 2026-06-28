@@ -379,13 +379,22 @@ html[data-skin="skin_crystal"] body {
   background-color: #0d0a21 !important;
 }
 
+@keyframes crystalBorderGlow {
+  0%, 100% {
+    border-color: rgba(255, 255, 255, 0.15) !important;
+    box-shadow: 0 30px 60px rgba(0, 0, 0, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.2), 0 0 12px rgba(255, 255, 255, 0.04) !important;
+  }
+  50% {
+    border-color: rgba(255, 255, 255, 0.35) !important;
+    box-shadow: 0 30px 60px rgba(0, 0, 0, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.35), 0 0 22px rgba(255, 255, 255, 0.14) !important;
+  }
+}
+
 [data-skin="skin_crystal"] .glass-panel {
   background: rgba(255, 255, 255, 0.02) !important;
   backdrop-filter: blur(25px) saturate(180%) !important;
   -webkit-backdrop-filter: blur(25px) saturate(180%) !important;
-  border: 1px solid rgba(255, 255, 255, 0.08) !important;
-  box-shadow: 0 30px 60px rgba(0, 0, 0, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.1) !important;
-  animation: none !important;
+  animation: crystalBorderGlow 8s infinite ease-in-out !important;
 }
 
 [data-skin="skin_crystal"] .input-field {
