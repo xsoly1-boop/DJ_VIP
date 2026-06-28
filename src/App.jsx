@@ -388,11 +388,18 @@ function AppContent() {
                 Later
               </button>
               <button 
-                onClick={(e) => {
+                onClick={async (e) => {
                   e.preventDefault();
                   e.stopPropagation();
-                  const downloadUrl = window.electronAPI ? (updateInfo.dmgUrl || updateInfo.apkUrl) : updateInfo.apkUrl;
-                  window.open(downloadUrl, '_system');
+                  if (window.electronAPI?.openExternalUrl) {
+                    // macOS Electron: abre GitHub Releases en el navegador predeterminado
+                    const releaseUrl = updateInfo.dmgUrl || 'https://github.com/xsoly1-boop/DJ_VIP/releases/latest';
+                    await window.electronAPI.openExternalUrl(releaseUrl);
+                  } else {
+                    // Web / Android / iOS: descarga directa del APK
+                    const downloadUrl = updateInfo.apkUrl;
+                    window.open(downloadUrl, '_system');
+                  }
                   setShowUpdateModal(false);
                 }}
                 className="update-modal-btn-now"

@@ -42,8 +42,8 @@
     "@vitejs/plugin-react": "^6.0.1",
     "concurrently": "^9.1.2",
     "cross-env": "^7.0.3",
-    "electron": "^26.6.10",
-    "electron-builder": "^25.1.8",
+    "electron": "^22.3.27",
+    "electron-builder": "^24.13.3",
     "eslint": "^10.3.0",
     "eslint-plugin-react-hooks": "^7.1.1",
     "eslint-plugin-react-refresh": "^0.5.2",
@@ -51,6 +51,9 @@
     "vite": "^8.0.12"
   },
   "build": {
+    "extraMetadata": {
+      "dependencies": {}
+    },
     "appId": "com.dj.interactive.platform",
     "productName": "DJ Panel Pro",
     "copyright": "Copyright © 2026 DJ a la Carta",
@@ -62,11 +65,12 @@
       "dist/**/*",
       "main.cjs",
       "preload.cjs",
-      "package.json"
+      "package.json",
+      "!node_modules/**/*"
     ],
     "mac": {
       "category": "public.app-category.entertainment",
-      "minimumSystemVersion": "10.13",
+      "minimumSystemVersion": "10.14",
       "icon": "build-resources/icon.png",
       "target": [
         "dmg"
@@ -102,7 +106,9 @@
       "target": [
         {
           "target": "nsis",
-          "arch": ["x64"]
+          "arch": [
+            "x64"
+          ]
         }
       ],
       "icon": "build-resources/icon.png",
@@ -116,7 +122,9 @@
       "shortcutName": "DJ Panel Pro"
     },
     "linux": {
-      "target": ["AppImage"],
+      "target": [
+        "AppImage"
+      ],
       "category": "Audio",
       "icon": "build-resources/icon.png"
     }

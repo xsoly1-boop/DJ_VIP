@@ -1,7 +1,8 @@
 {
-  "latestVersion": "1.0.0.17",
+  "latestVersion": "1.0.0.18",
   "apkUrl": "https://dj-vip.vercel.app/DJ%20a%20la%20Carta%20Pro.apk",
-  "dmgUrl": "https://dj-vip.vercel.app/DJ%20Control%20Panel.dmg",
+  "dmgUrl": "https://github.com/xsoly1-boop/DJ_VIP/releases/latest",
+  "dmgUrlIntel": "https://github.com/xsoly1-boop/DJ_VIP/releases/latest",
   "releaseNotes": [
     "Impresión directa de tarjetas QR integrada de forma nativa en Android.",
     "Resolución del bloqueo de pantalla en la carga inicial de dispositivos iOS.",

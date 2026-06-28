@@ -354,6 +354,18 @@ ipcMain.handle('choose-sound-dialog', async () => {
   return null;
 });
 
+// Abrir una URL en el navegador predeterminado del sistema (para descarga del DMG)
+const { shell } = require('electron');
+ipcMain.handle('open-external-url', async (_event, url) => {
+  try {
+    await shell.openExternal(url);
+    return { success: true };
+  } catch (err) {
+    console.error('Error al abrir URL externa:', err);
+    return { success: false, error: err.message };
+  }
+});
+
 app.on('before-quit', () => {
   app.isQuitting = true;
 });

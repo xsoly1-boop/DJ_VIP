@@ -8,6 +8,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
   writePlaylist: (args) => ipcRenderer.invoke('write-playlist', args),
   detectVirtualDJPath: () => ipcRenderer.invoke('detect-virtualdj-path'),
   showNativeNotification: (title, body, soundEnabled) => ipcRenderer.send('show-native-notification', { title, body, silent: !soundEnabled }),
+  openExternalUrl: (url) => ipcRenderer.invoke('open-external-url', url),
   isDesktop: true
 });
 

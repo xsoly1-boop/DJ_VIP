@@ -224,27 +224,44 @@ echo ""
 #    CSC_IDENTITY_AUTO_DISCOVERY=false → deshabilita búsqueda de cert. de Apple
 #    CSC_LINK=""      → sin certificado = firma ad-hoc (funciona sin Developer ID)
 # -----------------------------------------------------------------------
-echo -e "${CYAN}[6/6] Empaquetando instalador macOS (${TARGET_ARCH})...${RESET}"
-echo -e "  ${YELLOW}ℹ️  Esto puede tardar varios minutos en la primera vez.${RESET}"
+echo -e "${CYAN}[6/6] Empaquetando instaladores macOS (arm64 + x64 para macOS 10.14+)...${RESET}"
+echo -e "  ${YELLOW}ℹ️  Se generarán DOS instaladores: Apple Silicon y Intel (macOS 10.14+).${RESET}"
 echo ""
 
-# Desactivar temporalmente set -e para capturar código de salida de electron-builder
+# -- Build arm64 (Apple Silicon M1/M2/M3/M4) --
+echo -e "  🔨 Compilando para ${GREEN}Apple Silicon (arm64)${RESET}..."
 set +e
 CSC_IDENTITY_AUTO_DISCOVERY=false \
 CSC_LINK="" \
-npx electron-builder --mac --${TARGET_ARCH} --publish never
-BUILD_EXIT=$?
+npx electron-builder --mac --arm64 --publish never
+BUILD_ARM_EXIT=$?
 set -e
 
-if [ $BUILD_EXIT -ne 0 ]; then
-    echo ""
-    echo -e "${RED}❌ Error durante el empaquetado de Electron.${RESET}"
-    echo -e "   Posibles causas:"
-    echo -e "   • Falta espacio en disco (se necesitan ~2 GB libres)"
-    echo -e "   • Sin conexión a internet para descargar electron binaries"
-    echo -e "   • Intenta: ${YELLOW}npm cache clean --force${RESET} y vuelve a ejecutar"
-    exit $BUILD_EXIT
+if [ $BUILD_ARM_EXIT -ne 0 ]; then
+    echo -e "${RED}❌ Error en la compilación arm64.${RESET}"
+    echo -e "   Revisa los logs y el espacio en disco (~2 GB libres requeridos)."
+    exit $BUILD_ARM_EXIT
 fi
+echo -e "  ✅ arm64 (Apple Silicon) compilado"
+
+# -- Build x64 (Intel — compatible con macOS 10.14 Mojave) --
+echo ""
+echo -e "  🔨 Compilando para ${GREEN}Intel x64 (macOS 10.14+)${RESET}..."
+set +e
+CSC_IDENTITY_AUTO_DISCOVERY=false \
+CSC_LINK="" \
+npx electron-builder --mac --x64 --publish never
+BUILD_X64_EXIT=$?
+set -e
+
+if [ $BUILD_X64_EXIT -ne 0 ]; then
+    echo -e "${RED}❌ Error en la compilación x64.${RESET}"
+    exit $BUILD_X64_EXIT
+fi
+echo -e "  ✅ x64 (Intel / macOS 10.14+) compilado"
+
+echo ""
+BUILD_EXIT=0
 
 echo ""
 
@@ -282,16 +299,19 @@ fi
 # -----------------------------------------------------------------------
 echo ""
 echo -e "${PURPLE}===================================================================${RESET}"
-echo -e "${GREEN}       🎉 ¡COMPILACIÓN EXITOSA! EL INSTALADOR ESTÁ LISTO 🎉       ${RESET}"
+echo -e "${GREEN}       🎉 ¡COMPILACIÓN EXITOSA! LOS INSTALADORES ESTÁN LISTOS 🎉  ${RESET}"
 echo -e "${PURPLE}===================================================================${RESET}"
 
-if [ -n "${DMG_FILE:-}" ]; then
-    DMG_SIZE=$(du -sh "${DMG_FILE}" 2>/dev/null | cut -f1)
-    echo -e "  📦 Archivo DMG  : ${CYAN}${DMG_FILE}${RESET}"
-    echo -e "  📏 Tamaño       : ${CYAN}${DMG_SIZE}${RESET}"
-else
-    echo -e "  📁 Revisa la carpeta: ${CYAN}dist-desktop/${RESET}"
+DMG_ARM=$(find dist-desktop -name "*arm64*.dmg" 2>/dev/null | head -1)
+DMG_X64=$(find dist-desktop -name "*x64*.dmg" 2>/dev/null | head -1)
+
+if [ -n "${DMG_ARM:-}" ]; then
+    echo -e "  🍎 Apple Silicon  : ${CYAN}${DMG_ARM}${RESET}  ($(du -sh "${DMG_ARM}" | cut -f1))"
 fi
+if [ -n "${DMG_X64:-}" ]; then
+    echo -e "  🖥️  Intel / 10.14+ : ${CYAN}${DMG_X64}${RESET}  ($(du -sh "${DMG_X64}" | cut -f1))"
+fi
+
 
 echo ""
 echo -e "${YELLOW}  ┌─────────────────────────────────────────────────────────┐${RESET}"
