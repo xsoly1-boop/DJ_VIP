@@ -84,15 +84,27 @@ function AppContent() {
 
   if (authLoading) {
     return (
-      <div className="flex-center" style={{ minHeight: '100vh', flexDirection: 'column', gap: '15px' }}>
-        <div style={{
-          width: '40px',
-          height: '40px',
-          border: '4px solid rgba(255, 255, 255, 0.1)',
-          borderTopColor: 'var(--primary-color)',
-          borderRadius: '50%'
-        }} className="animate-spin" />
-        <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>Cargando plataforma interactiva...</p>
+      <div className="flex-center" style={{ minHeight: '100vh', padding: '20px' }}>
+        <div className="glass-panel loading-card" style={{
+          padding: '40px 30px',
+          borderRadius: '24px',
+          textAlign: 'center',
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          gap: '20px',
+          maxWidth: '320px',
+          width: '100%'
+        }}>
+          <div style={{
+            width: '48px',
+            height: '48px',
+            border: '4px solid rgba(255, 255, 255, 0.1)',
+            borderTopColor: 'rgba(124, 58, 237, 0.8)',
+            borderRadius: '50%'
+          }} className="animate-spin" />
+          <p style={{ color: '#94a3b8', fontSize: '0.95rem', margin: 0 }}>Cargando plataforma interactiva...</p>
+        </div>
       </div>
     );
   }

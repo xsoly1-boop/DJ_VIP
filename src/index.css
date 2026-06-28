@@ -390,7 +390,12 @@ html[data-skin="skin_crystal"] body {
   }
 }
 
-[data-skin="skin_crystal"] .glass-panel {
+[data-skin="skin_crystal"] .glass-panel,
+[data-skin="skin_crystal"] .crystal-panel,
+[data-skin="skin_crystal"] .loading-card,
+[data-skin="skin_crystal"] .loading,
+[data-skin="skin_crystal"] .loader-container,
+[data-skin="skin_crystal"] .update-modal-card {
   background: rgba(255, 255, 255, 0.02) !important;
   backdrop-filter: blur(25px) saturate(180%) !important;
   -webkit-backdrop-filter: blur(25px) saturate(180%) !important;
