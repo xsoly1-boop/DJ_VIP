@@ -3,7 +3,7 @@ import { useFirebase } from '../context/FirebaseContext';
 import { Lock, Mail, ArrowRight, ShieldAlert, Phone, User, RefreshCw, Download } from 'lucide-react';
 import { CURRENT_APP_VERSION } from '../utils/AppVersionConfig';
 
-const APK_URL = 'https://dj-vip.vercel.app/DJ%20a%20la%20Carta%20Pro.apk';
+const APK_URL = 'https://dj-vip.vercel.app/DJ.a.la.carta.apk';
 
 export default function LoginView() {
   const { loginDJ, recoverPassword, registerDJ, isMock } = useFirebase();

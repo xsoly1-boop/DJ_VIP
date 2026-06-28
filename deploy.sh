@@ -507,13 +507,13 @@ build_android() {
     set -e
 
     local APK_SRC="android/app/build/outputs/apk/release/app-release.apk"
-    local APK_DEST="${OUTPUT_DIR}/DJ-Panel-Pro-v${NEW_VERSION}-android.apk"
+    local APK_DEST="${OUTPUT_DIR}/DJ.a.la.carta.apk"
 
     if [ $APK_EXIT -eq 0 ] && [ -f "$APK_SRC" ]; then
         cp "$APK_SRC" "$APK_DEST"
         # Copiar a public/ y raíz para Vercel
-        cp "$APK_SRC" "./DJ a la Carta Pro.apk"
-        cp "$APK_SRC" "./public/DJ a la Carta Pro.apk"
+        cp "$APK_SRC" "./DJ.a.la.carta.apk"
+        cp "$APK_SRC" "./public/DJ.a.la.carta.apk"
         local size
         size=$(du -sh "$APK_DEST" | cut -f1)
         log_ok "APK Android compilado (${size})"
@@ -528,9 +528,9 @@ build_android() {
         set -e
         local APK_DBG="android/app/build/outputs/apk/debug/app-debug.apk"
         if [ $DBG_EXIT -eq 0 ] && [ -f "$APK_DBG" ]; then
-            cp "$APK_DBG" "${OUTPUT_DIR}/DJ-Panel-Pro-v${NEW_VERSION}-android-debug.apk"
+            cp "$APK_DBG" "${OUTPUT_DIR}/DJ.a.la.carta-debug.apk"
             log_warn "Solo build debug exitoso"
-            log_result "Android APK (debug)" "OK" "${OUTPUT_DIR}/DJ-Panel-Pro-v${NEW_VERSION}-android-debug.apk"
+            log_result "Android APK (debug)" "OK" "${OUTPUT_DIR}/DJ.a.la.carta-debug.apk"
         else
             log_result "Android APK" "FAIL" "Gradle falló en release y debug"
         fi
@@ -754,13 +754,13 @@ deploy_github_release() {
     fi
 
     # APK
-    local APK_FILE="${OUTPUT_DIR}/DJ-Panel-Pro-v${NEW_VERSION}-android.apk"
+    local APK_FILE="${OUTPUT_DIR}/DJ.a.la.carta.apk"
     if [ -f "$APK_FILE" ]; then
         echo -e "  ${DIM}📤 Subiendo APK Android...${RESET}"
         curl -s -X POST \
             -H "Authorization: token ${GITHUB_TOKEN}" \
             -H "Content-Type: application/octet-stream" \
-            "${UPLOAD_URL}?name=DJ-Panel-Pro-v${NEW_VERSION}-android.apk" \
+            "${UPLOAD_URL}?name=DJ.a.la.carta.apk" \
             --data-binary @"${APK_FILE}" > /dev/null
         log_ok "APK Android subido"
         upload_count=$((upload_count + 1))

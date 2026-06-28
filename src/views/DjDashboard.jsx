@@ -236,12 +236,12 @@ export default function DjDashboard() {
 
   // Admin Master: Estados para Gestor de Actualizaciones
   const [adminUpdateVersion, setAdminUpdateVersion] = useState('');
-  const [adminUpdateApkUrl, setAdminUpdateApkUrl] = useState('https://dj-vip.vercel.app/DJ%20a%20la%20Carta%20Pro.apk');
+  const [adminUpdateApkUrl, setAdminUpdateApkUrl] = useState('https://dj-vip.vercel.app/DJ.a.la.carta.apk');
   const [adminReleaseNotesRaw, setAdminReleaseNotesRaw] = useState('');
   const [isGeneratingNotes, setIsGeneratingNotes] = useState(false);
   const [isPublishingNotes, setIsPublishingNotes] = useState(false);
   const [notifyUsersOnPublish, setNotifyUsersOnPublish] = useState(true);
-
+  
   // Perfil del Admin Master
   const [adminAlias, setAdminAlias] = useState('');
   const [adminWhatsapp, setAdminWhatsapp] = useState('');
@@ -272,7 +272,7 @@ export default function DjDashboard() {
         if (snapshot.exists()) {
           const data = snapshot.val();
           setAdminUpdateVersion(data.latestVersion || '');
-          setAdminUpdateApkUrl(data.apkUrl || 'https://dj-vip.vercel.app/DJ%20a%20la%20Carta%20Pro.apk');
+          setAdminUpdateApkUrl(data.apkUrl || 'https://dj-vip.vercel.app/DJ.a.la.carta.apk');
           if (data.releaseNotes) {
             setAdminReleaseNotesRaw(data.releaseNotes.join('\n'));
           }

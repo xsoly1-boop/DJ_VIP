@@ -112,14 +112,14 @@ echo ""
 # -----------------------------------------------------------------------
 echo -e "${CYAN}[5/5] Copiando archivo APK generado...${RESET}"
 APK_PATH="android/app/build/outputs/apk/release/app-release.apk"
-DEST_PATH="./DJ a la Carta Pro.apk"
+DEST_PATH="./DJ.a.la.carta.apk"
 
 if [ -f "$APK_PATH" ]; then
     cp "$APK_PATH" "$DEST_PATH"
-    cp "$APK_PATH" "./public/DJ a la Carta Pro.apk"
+    cp "$APK_PATH" "./public/DJ.a.la.carta.apk"
     echo -e "  🎉 ${GREEN}¡COMPILACIÓN EXITOSA!${RESET}"
     echo -e "  📱 APK generado en la raíz: ${GREEN}${DEST_PATH}${RESET}"
-    echo -e "  🌐 Copiado a la carpeta pública: ${GREEN}./public/DJ a la Carta Pro.apk${RESET}"
+    echo -e "  🌐 Copiado a la carpeta pública: ${GREEN}./public/DJ.a.la.carta.apk${RESET}"
     echo -e "  📂 Tamaño del archivo: ${CYAN}$(du -sh "$DEST_PATH" | cut -f1)${RESET}"
     echo ""
     echo "Puedes transferir este archivo a tu celular Android para instalar la actualización."

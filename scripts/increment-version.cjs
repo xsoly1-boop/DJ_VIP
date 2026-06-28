@@ -64,7 +64,7 @@ async function increment() {
   // Las URLs se actualizan correctamente en deploy.sh al leer los assets reales de GitHub
   jsonContent.latestVersion = newVersion;
   // Solo establecer defaults si no existen, NUNCA sobreescribir URLs existentes
-  if (!jsonContent.apkUrl) jsonContent.apkUrl = 'https://dj-vip.vercel.app/DJ%20a%20la%20Carta%20Pro.apk';
+  if (!jsonContent.apkUrl) jsonContent.apkUrl = 'https://dj-vip.vercel.app/DJ.a.la.carta.apk';
   if (!jsonContent.dmgUrl) jsonContent.dmgUrl = '';
   if (!jsonContent.dmgUrlIntel) jsonContent.dmgUrlIntel = '';
   if (!jsonContent.ipaUrl) jsonContent.ipaUrl = 'https://dj-vip.vercel.app/DJ-Panel-Pro.ipa';
@@ -97,7 +97,7 @@ async function increment() {
     try {
       await admin.database().ref('config/updates').update({
         latestVersion: newVersion,
-        apkUrl:    'https://dj-vip.vercel.app/DJ%20a%20la%20Carta%20Pro.apk',
+        apkUrl:    'https://dj-vip.vercel.app/DJ.a.la.carta.apk',
         dmgUrl:    'https://github.com/xsoly1-boop/DJ_VIP/releases/download/v1.0.0.39/DJ.Panel.Pro-1.0.0.39-arm64.dmg',
         dmgUrlIntel: 'https://github.com/xsoly1-boop/DJ_VIP/releases/download/v1.0.0.39/DJ.Panel.Pro-1.0.0.39-x64.dmg',
       });
