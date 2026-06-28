@@ -686,10 +686,10 @@ deploy_github_release() {
         const notes = (v.releaseNotes || []).map((n,i) => (i+1)+'. '+n).join('\n');
         const body = '### DJ Panel Pro ${NEW_VERSION}\n\n' + notes +
             '\n\n---\n**Descarga según tu plataforma:**\n' +
-            '- 🍎 **Apple Silicon (M1-M4):** DJ Panel Pro-${NEW_VERSION}-arm64.dmg\n' +
-            '- 💻 **Intel (macOS 10.14+):** DJ Panel Pro-${NEW_VERSION}-x64.dmg\n' +
-            '- 📱 **Android:** DJ-Panel-Pro-v${NEW_VERSION}-android.apk\n' +
-            '- 🪟 **Windows:** DJ-Panel-Pro-v${NEW_VERSION}-Windows-x64-Setup.exe\n' +
+            '- 🍎 **Apple Silicon (M1-M4):** DMG arm64\n' +
+            '- 💻 **Intel (macOS 10.14+):** DMG x64\n' +
+            '- 📱 **Android:** APK\n' +
+            '- 🪟 **Windows:** EXE Installer\n' +
             '\n*macOS: clic derecho → Abrir (Gatekeeper)*';
         const payload = {
             tag_name: '${TAG}',
@@ -724,34 +724,32 @@ deploy_github_release() {
 
     log_ok "Release creado: ID ${RELEASE_ID}"
 
-    # Subir binarios como assets
+    # Subir binarios como assets (nombres SIN espacios para URLs limpias)
     local upload_count=0
 
     # DMG arm64
     if [ -n "${DMG_ARM_FINAL:-}" ] && [ -f "${DMG_ARM_FINAL}" ]; then
         echo -e "  ${DIM}📤 Subiendo DMG arm64...${RESET}"
-        local ARM_NAME
-        ARM_NAME=$(basename "${DMG_ARM_FINAL}" | sed 's/ /%20/g')
+        local ARM_UPLOAD_NAME="DJ.Panel.Pro-${NEW_VERSION}-arm64.dmg"
         curl -s -X POST \
             -H "Authorization: token ${GITHUB_TOKEN}" \
             -H "Content-Type: application/octet-stream" \
-            "${UPLOAD_URL}?name=${ARM_NAME}" \
+            "${UPLOAD_URL}?name=${ARM_UPLOAD_NAME}" \
             --data-binary @"${DMG_ARM_FINAL}" > /dev/null
-        log_ok "DMG arm64 subido"
+        log_ok "DMG arm64 subido como ${ARM_UPLOAD_NAME}"
         upload_count=$((upload_count + 1))
     fi
 
     # DMG x64
     if [ -n "${DMG_X64_FINAL:-}" ] && [ -f "${DMG_X64_FINAL}" ]; then
         echo -e "  ${DIM}📤 Subiendo DMG x64...${RESET}"
-        local X64_NAME
-        X64_NAME=$(basename "${DMG_X64_FINAL}" | sed 's/ /%20/g')
+        local X64_UPLOAD_NAME="DJ.Panel.Pro-${NEW_VERSION}-x64.dmg"
         curl -s -X POST \
             -H "Authorization: token ${GITHUB_TOKEN}" \
             -H "Content-Type: application/octet-stream" \
-            "${UPLOAD_URL}?name=${X64_NAME}" \
+            "${UPLOAD_URL}?name=${X64_UPLOAD_NAME}" \
             --data-binary @"${DMG_X64_FINAL}" > /dev/null
-        log_ok "DMG x64 subido"
+        log_ok "DMG x64 subido como ${X64_UPLOAD_NAME}"
         upload_count=$((upload_count + 1))
     fi
 
@@ -782,20 +780,66 @@ deploy_github_release() {
     fi
 
     log_ok "${upload_count} binario(s) subidos a GitHub Release"
-    log_result "GitHub Release" "OK" "https://github.com/${GITHUB_REPO}/releases/tag/${TAG}"
 
-    # Actualizar URLs en version.json
-    DMG_ARM_URL="https://github.com/${GITHUB_REPO}/releases/download/${TAG}/DJ%20Panel%20Pro-${NEW_VERSION}-arm64.dmg"
-    DMG_X64_URL="https://github.com/${GITHUB_REPO}/releases/download/${TAG}/DJ%20Panel%20Pro-${NEW_VERSION}-x64.dmg"
+    # ── LEER URLs REALES del API de GitHub (no construir manualmente) ──────
+    echo -e "  ${DIM}🔗 Obteniendo URLs reales de los assets...${RESET}"
+    sleep 2  # Esperar a que GitHub procese los assets
 
     node -e "
+        const https = require('https');
         const fs = require('fs');
-        const v = JSON.parse(fs.readFileSync('public/version.json','utf8'));
-        v.dmgUrl = '${DMG_ARM_URL}';
-        v.dmgUrlIntel = '${DMG_X64_URL}';
-        fs.writeFileSync('public/version.json', JSON.stringify(v, null, 2) + '\n', 'utf8');
+        const options = {
+            hostname: 'api.github.com',
+            path: '/repos/${GITHUB_REPO}/releases/${RELEASE_ID}',
+            headers: {
+                'Authorization': 'token ${GITHUB_TOKEN}',
+                'User-Agent': 'DJ-Panel-Deploy',
+                'Accept': 'application/vnd.github.v3+json'
+            }
+        };
+        https.get(options, (res) => {
+            let data = '';
+            res.on('data', c => data += c);
+            res.on('end', () => {
+                try {
+                    const release = JSON.parse(data);
+                    const assets = release.assets || [];
+                    const v = JSON.parse(fs.readFileSync('public/version.json','utf8'));
+
+                    // Buscar cada asset por patrón en el nombre
+                    for (const a of assets) {
+                        const name = a.name.toLowerCase();
+                        const url = a.browser_download_url;
+                        if (name.includes('arm64') && name.endsWith('.dmg')) {
+                            v.dmgUrl = url;
+                            console.log('  ✅ dmgUrl (arm64): ' + url);
+                        } else if (name.includes('x64') && name.endsWith('.dmg')) {
+                            v.dmgUrlIntel = url;
+                            console.log('  ✅ dmgUrlIntel (x64): ' + url);
+                        } else if (name.endsWith('.apk')) {
+                            // APK se sirve desde Vercel, no cambiar
+                            console.log('  ℹ️  APK en GitHub: ' + url);
+                        } else if (name.endsWith('.exe')) {
+                            v.exeUrl = url;
+                            console.log('  ✅ exeUrl: ' + url);
+                        }
+                    }
+
+                    fs.writeFileSync('public/version.json', JSON.stringify(v, null, 2) + '\n', 'utf8');
+                    console.log('  ✅ version.json actualizado con URLs reales de GitHub');
+                    process.exit(0);
+                } catch(e) {
+                    console.error('  ❌ Error parseando assets:', e.message);
+                    process.exit(1);
+                }
+            });
+        }).on('error', e => {
+            console.error('  ❌ Error consultando API:', e.message);
+            process.exit(1);
+        });
     "
-    log_ok "version.json actualizado con URLs de GitHub"
+
+    log_result "GitHub Release" "OK" "https://github.com/${GITHUB_REPO}/releases/tag/${TAG}"
 }
 
 sync_firebase() {
@@ -850,6 +894,81 @@ sync_firebase() {
         log_result "Firebase RTDB" "OK" "config/updates → v${NEW_VERSION}"
     else
         log_result "Firebase RTDB" "FAIL" "Error al sincronizar"
+    fi
+}
+
+# ═══════════════════════════════════════════════════════════════════════════════
+#  VERIFICACIÓN DE URLs
+# ═══════════════════════════════════════════════════════════════════════════════
+
+verify_urls() {
+    print_step "$CURRENT_STEP" "$TOTAL_STEPS" "Verificando URLs de descarga" "🔗"
+    CURRENT_STEP=$((CURRENT_STEP + 1))
+
+    local url_pass=0
+    local url_fail=0
+    local url_total=0
+
+    # Leer todas las URLs de version.json
+    local URLS_JSON
+    URLS_JSON=$(node -e "
+        const v = JSON.parse(require('fs').readFileSync('public/version.json','utf8'));
+        const urls = [
+            { name: 'APK (apkUrl)', url: v.apkUrl || '' },
+            { name: 'DMG arm64 (dmgUrl)', url: v.dmgUrl || '' },
+            { name: 'DMG x64 (dmgUrlIntel)', url: v.dmgUrlIntel || '' },
+            { name: 'IPA (ipaUrl)', url: v.ipaUrl || '' },
+            { name: 'EXE (exeUrl)', url: v.exeUrl || '' }
+        ];
+        console.log(JSON.stringify(urls));
+    ")
+
+    echo -e "  ${DIM}Testeando cada URL con HTTP HEAD...${RESET}"
+    echo ""
+
+    # Parsear y testear cada URL
+    local i=0
+    while true; do
+        local entry
+        entry=$(echo "$URLS_JSON" | node -e "let d='';process.stdin.on('data',c=>d+=c).on('end',()=>{const a=JSON.parse(d);if(${i}<a.length)console.log(a[${i}].name+'|||'+a[${i}].url);else console.log('END')})")
+
+        if [ "$entry" = "END" ]; then break; fi
+
+        local url_name="${entry%%|||*}"
+        local url_value="${entry##*|||}"
+
+        if [ -z "$url_value" ] || [ "$url_value" = "undefined" ]; then
+            echo -e "  ${DIM}⏭️  ${url_name}: (sin URL configurada)${RESET}"
+            i=$((i + 1))
+            continue
+        fi
+
+        url_total=$((url_total + 1))
+
+        # HTTP HEAD — seguir redirects (-L), timeout 10s
+        local http_code
+        http_code=$(curl -s -o /dev/null -w '%{http_code}' -L --max-time 15 -I "$url_value" 2>/dev/null || echo "000")
+
+        if [ "$http_code" = "200" ] || [ "$http_code" = "302" ] || [ "$http_code" = "301" ]; then
+            echo -e "  ${GREEN}✅ ${url_name}: ${http_code}${RESET}"
+            echo -e "     ${DIM}${url_value}${RESET}"
+            url_pass=$((url_pass + 1))
+        else
+            echo -e "  ${RED}❌ ${url_name}: HTTP ${http_code}${RESET}"
+            echo -e "     ${RED}${url_value}${RESET}"
+            url_fail=$((url_fail + 1))
+        fi
+
+        i=$((i + 1))
+    done
+
+    echo ""
+    if [ $url_fail -eq 0 ]; then
+        log_ok "Todas las URLs verificadas: ${url_pass}/${url_total} válidas"
+        log_result "Verificación URLs" "OK" "${url_pass}/${url_total} URLs válidas"
+    else
+        log_err "${url_fail} URL(s) inválidas de ${url_total} testeadas"
+        log_result "Verificación URLs" "FAIL" "${url_fail}/${url_total} URLs fallaron"
     fi
 }
 
@@ -1025,7 +1144,7 @@ main() {
     show_selection_summary
 
     # Calcular total de pasos
-    TOTAL_STEPS=3  # base: verificar + versión + frontend
+    TOTAL_STEPS=4  # base: verificar + versión + frontend + verificar URLs
     [ $BUILD_ANDROID -eq 1 ]       && TOTAL_STEPS=$((TOTAL_STEPS + 1))
     [ $BUILD_MACOS_SILICON -eq 1 ] && TOTAL_STEPS=$((TOTAL_STEPS + 1))
     [ $BUILD_MACOS_INTEL -eq 1 ]   && TOTAL_STEPS=$((TOTAL_STEPS + 1))
@@ -1065,6 +1184,9 @@ main() {
 
     # 11. Git Push → Render
     do_git_push
+
+    # 12. Verificar URLs de descarga
+    verify_urls
 
     # ── RESUMEN FINAL ─────────────────────────────────────────────────────────
     print_summary

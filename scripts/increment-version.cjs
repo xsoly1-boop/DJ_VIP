@@ -60,11 +60,13 @@ async function increment() {
       jsonContent = JSON.parse(fs.readFileSync(jsonPath, 'utf8'));
     } catch (e) { /* vacío */ }
   }
-  // URLs correctas con puntos (no espacios) tal como están en GitHub Releases
+  // Preservar las URLs existentes — solo actualizar latestVersion
+  // Las URLs se actualizan correctamente en deploy.sh al leer los assets reales de GitHub
   jsonContent.latestVersion = newVersion;
-  jsonContent.apkUrl    = 'https://dj-vip.vercel.app/DJ%20a%20la%20Carta%20Pro.apk';
-  jsonContent.dmgUrl    = 'https://github.com/xsoly1-boop/DJ_VIP/releases/download/v1.0.0.39/DJ.Panel.Pro-1.0.0.39-arm64.dmg';
-  jsonContent.dmgUrlIntel = 'https://github.com/xsoly1-boop/DJ_VIP/releases/download/v1.0.0.39/DJ.Panel.Pro-1.0.0.39-x64.dmg';
+  // Solo establecer defaults si no existen, NUNCA sobreescribir URLs existentes
+  if (!jsonContent.apkUrl) jsonContent.apkUrl = 'https://dj-vip.vercel.app/DJ%20a%20la%20Carta%20Pro.apk';
+  if (!jsonContent.dmgUrl) jsonContent.dmgUrl = '';
+  if (!jsonContent.dmgUrlIntel) jsonContent.dmgUrlIntel = '';
   if (!jsonContent.ipaUrl) jsonContent.ipaUrl = 'https://dj-vip.vercel.app/DJ-Panel-Pro.ipa';
   if (!jsonContent.exeUrl) jsonContent.exeUrl = 'https://dj-vip.vercel.app/DJ-Panel-Pro-Setup.exe';
   fs.writeFileSync(jsonPath, JSON.stringify(jsonContent, null, 2) + '\n', 'utf8');
