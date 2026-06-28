@@ -196,23 +196,11 @@ function AppContent() {
           alignItems: 'center',
           zIndex: 99999,
           padding: '20px',
-          overflow: 'hidden'
+          overflow: 'hidden',
+          backgroundColor: 'rgba(8, 6, 14, 0.85)',
+          backdropFilter: 'blur(16px)',
+          WebkitBackdropFilter: 'blur(16px)'
         }}>
-          {/* Background Blurred Image matching mockup */}
-          <div style={{
-            position: 'absolute',
-            top: 0,
-            left: 0,
-            width: '100%',
-            height: '100%',
-            backgroundImage: "url('/dj_bg.jpg')",
-            backgroundSize: 'cover',
-            backgroundPosition: 'center',
-            backgroundRepeat: 'no-repeat',
-            filter: 'blur(10px) brightness(0.45)',
-            transform: 'scale(1.08)',
-            zIndex: -1
-          }} />
           <style>{`
             .update-modal-card {
               position: relative;
