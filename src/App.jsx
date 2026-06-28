@@ -450,12 +450,17 @@ function AppContent() {
               const handleDownload = (e, url, useElectron = false) => {
                 e.preventDefault();
                 e.stopPropagation();
+                // Guard JS: bloquea doble-tap antes de llegar al nativo
                 if (downloadGuardRef.current) return;
                 downloadGuardRef.current = true;
                 setIsDownloading(true);
                 if (useElectron && window.electronAPI?.openExternalUrl) {
                   window.electronAPI.openExternalUrl(url);
+                } else if (window.AndroidApp?.downloadApk) {
+                  // Bridge nativo Android con guard AtomicBoolean — sin window.open duplicado
+                  window.AndroidApp.downloadApk(url);
                 } else {
+                  // iOS / web fallback
                   window.open(url, '_system');
                 }
                 if (updateInfo?.latestVersion) {

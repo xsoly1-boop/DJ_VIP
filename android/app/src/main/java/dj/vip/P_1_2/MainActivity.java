@@ -253,6 +253,9 @@ public class MainActivity extends BridgeActivity {
     // ─────────────────────────────────────────────────────────────────────────
     public class WebAppInterface {
         Context mContext;
+        // Guard atómico: evita que múltiples taps disparen múltiples descargas
+        private final java.util.concurrent.atomic.AtomicBoolean downloadInProgress =
+                new java.util.concurrent.atomic.AtomicBoolean(false);
 
         WebAppInterface(Context c) {
             mContext = c;
@@ -398,6 +401,35 @@ public class MainActivity extends BridgeActivity {
                             printManager.print(jobName, printAdapter, new PrintAttributes.Builder().build());
                         }
                     }
+                }
+            });
+        }
+
+        /**
+         * Descargar APK usando un Intent de Android nativo.
+         * Guard atómico: si ya hay una descarga en curso, ignora llamadas adicionales.
+         * Llamada desde JS: AndroidApp.downloadApk(url)
+         */
+        @JavascriptInterface
+        public void downloadApk(String url) {
+            // compareAndSet: solo pasa a true si era false → atómico, sin race condition
+            if (!downloadInProgress.compareAndSet(false, true)) {
+                Log.w(TAG, "downloadApk: descarga ya en curso, llamada extra ignorada.");
+                return;
+            }
+            Log.d(TAG, "downloadApk: iniciando descarga → " + url);
+            runOnUiThread(() -> {
+                try {
+                    Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse(url));
+                    intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                    mContext.startActivity(intent);
+                } catch (Exception e) {
+                    Log.e(TAG, "downloadApk: error abriendo Intent → " + e.getMessage());
+                } finally {
+                    // Resetear guard después de 3 segundos para permitir reintento en error
+                    new android.os.Handler(android.os.Looper.getMainLooper()).postDelayed(
+                        () -> downloadInProgress.set(false), 3000
+                    );
                 }
             });
         }
