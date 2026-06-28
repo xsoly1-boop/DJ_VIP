@@ -195,8 +195,8 @@ curl -s -X POST \
 echo -e "  ✅ x64 DMG subido"
 
 # Obtener URLs de descarga directa
-DMG_ARM_URL="https://github.com/${GITHUB_REPO}/releases/download/${TAG}/$(basename "${DMG_ARM}" | sed 's/ /%20/g')"
-DMG_X64_URL="https://github.com/${GITHUB_REPO}/releases/download/${TAG}/$(basename "${DMG_X64}" | sed 's/ /%20/g')"
+DMG_ARM_URL="https://github.com/${GITHUB_REPO}/releases/download/${TAG}/$(basename "${DMG_ARM}" | sed 's/ /./g')"
+DMG_X64_URL="https://github.com/${GITHUB_REPO}/releases/download/${TAG}/$(basename "${DMG_X64}" | sed 's/ /./g')"
 
 echo ""
 echo -e "  🔗 arm64: ${CYAN}${DMG_ARM_URL}${RESET}"
