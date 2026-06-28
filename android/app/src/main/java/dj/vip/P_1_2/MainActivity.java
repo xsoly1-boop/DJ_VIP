@@ -69,6 +69,16 @@ public class MainActivity extends BridgeActivity {
 
         // Obtener y guardar el token FCM actual
         fetchAndStoreFCMToken();
+
+        // Aplicar orientación de pantalla inicial según el estado del usuario
+        String userUid = preferences.getString("user_uid", "");
+        if (!userUid.isEmpty()) {
+            setRequestedOrientation(android.content.pm.ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE);
+            Log.d(TAG, "Usuario autenticado detectado al inicio. Orientación: LANDSCAPE");
+        } else {
+            setRequestedOrientation(android.content.pm.ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
+            Log.d(TAG, "Usuario no autenticado detectado al inicio. Orientación: PORTRAIT");
+        }
     }
 
     // ─────────────────────────────────────────────────────────────────────────
@@ -319,9 +329,17 @@ public class MainActivity extends BridgeActivity {
             if (uid != null && !uid.isEmpty()) {
                 preferences.edit().putString("user_uid", uid).apply();
                 Log.d(TAG, "UID de usuario guardado: " + uid.substring(0, Math.min(8, uid.length())) + "...");
+                runOnUiThread(() -> {
+                    setRequestedOrientation(android.content.pm.ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE);
+                    Log.d(TAG, "Cambio de orientación dinámico: LANDSCAPE (Inicio de sesión)");
+                });
             } else {
                 preferences.edit().remove("user_uid").apply();
                 Log.d(TAG, "UID de usuario eliminado de preferences.");
+                runOnUiThread(() -> {
+                    setRequestedOrientation(android.content.pm.ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
+                    Log.d(TAG, "Cambio de orientación dinámico: PORTRAIT (Cierre de sesión / Sin sesión)");
+                });
             }
         }
 
