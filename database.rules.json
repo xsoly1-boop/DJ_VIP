@@ -7,6 +7,10 @@
       ".read": "auth != null && auth.token.email == 'dj@admin.com'",
       ".write": "auth != null && auth.token.email == 'dj@admin.com'",
       "$uid": {
+        "devices": {
+          ".read": "auth != null && (auth.uid == $uid || auth.token.email == 'dj@admin.com')",
+          ".write": "auth != null && (auth.uid == $uid || auth.token.email == 'dj@admin.com')"
+        },
         ".read": "auth != null && (auth.uid == $uid || auth.token.email == 'dj@admin.com')",
         ".write": "auth != null && (auth.uid == $uid || auth.token.email == 'dj@admin.com')"
       }

@@ -1418,12 +1418,17 @@ export const signOut = async (authInstance) => {
         const backendUrl = import.meta.env.VITE_PUBLIC_URL
           ? `${import.meta.env.VITE_PUBLIC_URL}api/unregister-fcm-token`
           : '/api/unregister-fcm-token';
-        await fetch(backendUrl, {
+        fetch(backendUrl, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ uid, fcmToken })
+        }).then(res => {
+          if (res.ok) {
+            console.log('[FCM] ✅ Token desregistrado del servidor en el cierre de sesión.');
+          }
+        }).catch(err => {
+          console.error('[FCM] Error desregistrando token en el cierre de sesión:', err.message);
         });
-        console.log('[FCM] ✅ Token desregistrado del servidor en el cierre de sesión.');
       }
     } catch (err) {
       console.error('[FCM] Error desregistrando token en el cierre de sesión:', err.message);
@@ -1735,12 +1740,31 @@ export async function registerFCMToken(userId, role = 'dj', retryCount = 0) {
       return;
     }
 
-    // 3. Enviar el token al backend para guardarlo en la base de datos
+    // 3. Escribir directamente al cliente Firebase (Más robusto sin depender del backend Vercel)
+    try {
+      const deviceId = btoa(fcmToken.trim())
+        .replace(/\//g, '_')
+        .replace(/\+/g, '-')
+        .replace(/=/g, '')
+        .substring(0, 30);
+
+      await set(ref(database, `users/${userId}/devices/${deviceId}`), {
+        fcmToken: fcmToken.trim(),
+        platform: 'android',
+        updatedAt: Date.now(),
+        active: true
+      });
+      console.log('[FCM] ✅ Token FCM registrado directamente en Firebase RTDB desde el cliente.');
+    } catch (dbErr) {
+      console.warn('[FCM] Registro directo en base de datos falló:', dbErr.message);
+    }
+
+    // 4. Enviar el token al backend de forma secundaria
     const backendUrl = import.meta.env.VITE_PUBLIC_URL
       ? `${import.meta.env.VITE_PUBLIC_URL}api/register-fcm-token`
       : '/api/register-fcm-token';
 
-    const response = await fetch(backendUrl, {
+    fetch(backendUrl, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -1749,14 +1773,16 @@ export async function registerFCMToken(userId, role = 'dj', retryCount = 0) {
         platform: 'android',
         role
       })
-    });
-
-    const result = await response.json();
-    if (result.success) {
-      console.log('[FCM] ✅ Token FCM registrado correctamente en el servidor.');
-    } else {
-      console.error('[FCM] ❌ Error registrando token:', result.error);
-    }
+    }).then(res => res.json())
+      .then(result => {
+        if (result.success) {
+          console.log('[FCM] ✅ Token FCM registrado en el servidor backend.');
+        } else {
+          console.warn('[FCM] Backend reportó error registrando token:', result.error);
+        }
+      }).catch(err => {
+        console.warn('[FCM] Error en llamada secundaria de registro al backend:', err.message);
+      });
   } catch (err) {
     // No lanzar error — las notificaciones son opcionales, no deben romper el flujo de login
     console.error('[FCM] Error en registerFCMToken:', err.message);

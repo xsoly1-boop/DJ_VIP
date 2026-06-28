@@ -319,6 +319,9 @@ public class MainActivity extends BridgeActivity {
             if (uid != null && !uid.isEmpty()) {
                 preferences.edit().putString("user_uid", uid).apply();
                 Log.d(TAG, "UID de usuario guardado: " + uid.substring(0, Math.min(8, uid.length())) + "...");
+            } else {
+                preferences.edit().remove("user_uid").apply();
+                Log.d(TAG, "UID de usuario eliminado de preferences.");
             }
         }
 
@@ -337,9 +340,12 @@ public class MainActivity extends BridgeActivity {
          */
         @JavascriptInterface
         public void setUserRole(String role) {
-            if (role != null) {
+            if (role != null && !role.isEmpty()) {
                 preferences.edit().putString("user_role", role).apply();
                 Log.d(TAG, "Rol de usuario guardado: " + role);
+            } else {
+                preferences.edit().remove("user_role").apply();
+                Log.d(TAG, "Rol de usuario eliminado de preferences.");
             }
         }
 

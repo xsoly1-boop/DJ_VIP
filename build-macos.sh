@@ -229,36 +229,69 @@ echo -e "  ${YELLOW}ℹ️  Se generarán DOS instaladores: Apple Silicon y Inte
 echo ""
 
 # -- Build arm64 (Apple Silicon M1/M2/M3/M4) --
-echo -e "  🔨 Compilando para ${GREEN}Apple Silicon (arm64)${RESET}..."
+echo -e "  🔨 Generando estructura de archivos para ${GREEN}Apple Silicon (arm64)${RESET}..."
 set +e
-CSC_IDENTITY_AUTO_DISCOVERY=false \
-CSC_LINK="" \
-npx electron-builder --mac --arm64 --publish never
+CSC_IDENTITY_AUTO_DISCOVERY=false CSC_LINK="" npx electron-builder --mac --dir --arm64 --publish never
+BUILD_ARM_DIR_EXIT=$?
+set -e
+
+if [ $BUILD_ARM_DIR_EXIT -ne 0 ]; then
+    echo -e "${RED}❌ Error al generar directorio arm64.${RESET}"
+    exit $BUILD_ARM_DIR_EXIT
+fi
+
+# Aplicar firma a la carpeta antes de empaquetar
+APP_ARM_PATH=$(find dist-desktop/mac-arm64 -name "*.app" -maxdepth 2 2>/dev/null | head -1)
+if [ -n "${APP_ARM_PATH:-}" ] && command -v codesign &>/dev/null; then
+    echo -e "  🔏 Aplicando firma ad-hoc a la App arm64..."
+    codesign --force --deep --sign - "${APP_ARM_PATH}" 2>/dev/null || true
+fi
+
+# Empaquetar la App ya firmada en el DMG
+echo -e "  📦 Creando instalador DMG arm64 con la App firmada..."
+set +e
+CSC_IDENTITY_AUTO_DISCOVERY=false CSC_LINK="" npx electron-builder --mac --arm64 --prepackaged "${APP_ARM_PATH}" --publish never
 BUILD_ARM_EXIT=$?
 set -e
 
 if [ $BUILD_ARM_EXIT -ne 0 ]; then
-    echo -e "${RED}❌ Error en la compilación arm64.${RESET}"
-    echo -e "   Revisa los logs y el espacio en disco (~2 GB libres requeridos)."
+    echo -e "${RED}❌ Error en el empaquetado del DMG arm64.${RESET}"
     exit $BUILD_ARM_EXIT
 fi
-echo -e "  ✅ arm64 (Apple Silicon) compilado"
+echo -e "  ✅ arm64 (Apple Silicon) compilado y firmado"
 
 # -- Build x64 (Intel — compatible con macOS 10.14 Mojave) --
 echo ""
-echo -e "  🔨 Compilando para ${GREEN}Intel x64 (macOS 10.14+)${RESET}..."
+echo -e "  🔨 Generando estructura de archivos para ${GREEN}Intel x64 (macOS 10.14+)${RESET}..."
 set +e
-CSC_IDENTITY_AUTO_DISCOVERY=false \
-CSC_LINK="" \
-npx electron-builder --mac --x64 --publish never
+CSC_IDENTITY_AUTO_DISCOVERY=false CSC_LINK="" npx electron-builder --mac --dir --x64 --publish never
+BUILD_X64_DIR_EXIT=$?
+set -e
+
+if [ $BUILD_X64_DIR_EXIT -ne 0 ]; then
+    echo -e "${RED}❌ Error al generar directorio x64.${RESET}"
+    exit $BUILD_X64_DIR_EXIT
+fi
+
+# Aplicar firma a la carpeta antes de empaquetar
+APP_X64_PATH=$(find dist-desktop/mac -name "*.app" -maxdepth 2 2>/dev/null | head -1)
+if [ -n "${APP_X64_PATH:-}" ] && command -v codesign &>/dev/null; then
+    echo -e "  🔏 Aplicando firma ad-hoc a la App x64..."
+    codesign --force --deep --sign - "${APP_X64_PATH}" 2>/dev/null || true
+fi
+
+# Empaquetar la App ya firmada en el DMG
+echo -e "  📦 Creando instalador DMG x64 con la App firmada..."
+set +e
+CSC_IDENTITY_AUTO_DISCOVERY=false CSC_LINK="" npx electron-builder --mac --x64 --prepackaged "${APP_X64_PATH}" --publish never
 BUILD_X64_EXIT=$?
 set -e
 
 if [ $BUILD_X64_EXIT -ne 0 ]; then
-    echo -e "${RED}❌ Error en la compilación x64.${RESET}"
+    echo -e "${RED}❌ Error en el empaquetado del DMG x64.${RESET}"
     exit $BUILD_X64_EXIT
 fi
-echo -e "  ✅ x64 (Intel / macOS 10.14+) compilado"
+echo -e "  ✅ x64 (Intel / macOS 10.14+) compilado y firmado"
 
 echo ""
 BUILD_EXIT=0

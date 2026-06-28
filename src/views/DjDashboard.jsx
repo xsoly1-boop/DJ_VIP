@@ -239,6 +239,22 @@ export default function DjDashboard() {
   const [adminWhatsapp, setAdminWhatsapp] = useState('');
   const [adminCallmebotApiKey, setAdminCallmebotApiKey] = useState('');
   const [saveAdminProfileLoading, setSaveAdminProfileLoading] = useState(false);
+  const [nativeFcmToken, setNativeFcmToken] = useState('');
+
+  // Sincronizar token FCM nativo (polling para diagnosticar en caliente)
+  useEffect(() => {
+    if (typeof window !== 'undefined' && window.AndroidApp) {
+      const token = window.AndroidApp.getFCMToken?.() || '';
+      setNativeFcmToken(token);
+
+      const interval = setInterval(() => {
+        const freshToken = window.AndroidApp.getFCMToken?.() || '';
+        setNativeFcmToken(freshToken);
+      }, 2000);
+
+      return () => clearInterval(interval);
+    }
+  }, []);
 
   // Estados para Twilio SMS
   const [twilioAccountSid, setTwilioAccountSid] = useState('');
@@ -1026,6 +1042,11 @@ export default function DjDashboard() {
       setNotificationsEnabled(newValue);
       localStorage.setItem('dj_notifications_enabled', String(newValue));
       showToast(newValue ? '🔔 Notificaciones activadas' : '❌ Notificaciones desactivadas');
+      return;
+    }
+
+    if (window.AndroidApp) {
+      showToast('🔊 Las notificaciones de Android son nativas. Confirma que tienes concedidos los permisos en los ajustes de tu celular.');
       return;
     }
 
@@ -2085,6 +2106,25 @@ export default function DjDashboard() {
               {isMock ? 'Modo Local' : 'Firebase Conectado'}
             </span>
           </div>
+
+          {/* Indicador Token FCM (Solo en Android) */}
+          {window.AndroidApp && (
+            <div className="glass-panel" style={{ 
+              padding: '8px 12px', borderRadius: 'var(--radius-md)', 
+              display: 'flex', alignItems: 'center', gap: '8px',
+              background: 'rgba(255,255,255,0.04)', fontSize: '0.85rem',
+              border: nativeFcmToken ? '1px solid rgba(16, 185, 129, 0.2)' : '1px solid rgba(239, 68, 68, 0.2)'
+            }}>
+              <div style={{
+                width: '8px', height: '8px', borderRadius: '50%',
+                background: nativeFcmToken ? 'var(--success-color)' : 'var(--danger-color)',
+                boxShadow: nativeFcmToken ? '0 0 8px var(--success-color)' : '0 0 8px var(--danger-color)'
+              }} />
+              <span style={{ color: nativeFcmToken ? 'var(--success-color)' : 'var(--danger-color)', fontWeight: '600' }}>
+                FCM: {nativeFcmToken ? 'Listo' : '⏳ Obteniendo Token...'}
+              </span>
+            </div>
+          )}
 
           {/* Sonido */}
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px', background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)', padding: '4px 8px', borderRadius: 'var(--radius-md)' }}>

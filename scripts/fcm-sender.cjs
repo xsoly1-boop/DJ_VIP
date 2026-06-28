@@ -296,7 +296,7 @@ async function sendSubscriptionPendingNotification(username, planName, djUid = '
       channel_id: 'djvip_admin_subscriptions',
       timestamp: String(Date.now())
     }
-  }, true);
+  }, false);
 }
 
 /**
@@ -326,7 +326,7 @@ async function sendSupportMessageNotification(fromUser, messagePreview, djUid = 
       channel_id: 'djvip_admin_support',
       timestamp: String(Date.now())
     }
-  }, true);
+  }, false);
 }
 
 /**
@@ -352,7 +352,7 @@ async function sendNewUserNotification(username, email, uid = '') {
       channel_id: 'djvip_admin_users',
       timestamp: String(Date.now())
     }
-  }, true);
+  }, false);
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
