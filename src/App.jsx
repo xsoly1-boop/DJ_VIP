@@ -17,11 +17,22 @@ function AppContent() {
   const [updateInfo, setUpdateInfo] = React.useState(null);
   const [showUpdateModal, setShowUpdateModal] = React.useState(false);
   const [isDownloading, setIsDownloading] = React.useState(false);
+  // Ref permanente para bloquear doble-tap / doble ejecución de la descarga
+  const downloadGuardRef = React.useRef(false);
 
-  // Comprobar actualizaciones al iniciar
+  // Comprobar actualizaciones UNA SOLA VEZ al iniciar (get, no onValue)
+  // Usamos onValue pero con un flag para ignorar actualizaciones posteriores
   React.useEffect(() => {
+    let alreadyChecked = false;
     const updatesRef = ref(database, 'config/updates');
     const unsubscribe = onValue(updatesRef, async (snapshot) => {
+      // Solo procesar la PRIMERA entrega del listener; ignorar disparos posteriores
+      if (alreadyChecked) return;
+      alreadyChecked = true;
+      // Desuscribirse inmediatamente para que cambios futuros en el nodo no
+      // vuelvan a mostrar el modal a usuarios que ya lo descartaron.
+      unsubscribe();
+
       try {
         let data = snapshot.val();
         if (!data) {
@@ -48,17 +59,20 @@ function AppContent() {
             return false;
           };
 
+          // Si el usuario ya descartó este modal en esta sesión, no volver a mostrarlo
+          const dismissedKey = `update_dismissed_${data.latestVersion}`;
+          if (sessionStorage.getItem(dismissedKey)) return;
+
           if (isNewer(data.latestVersion, CURRENT_APP_VERSION)) {
             setUpdateInfo(data);
             setShowUpdateModal(true);
-          } else {
-            setShowUpdateModal(false);
           }
         }
       } catch (err) {
         console.warn('[Update Check] Error comprobando actualizaciones:', err);
       }
     });
+    // Limpiar solo si el listener aún está activo (en caso de desmontaje antes del primer disparo)
     return () => unsubscribe();
   }, []);
 
@@ -404,34 +418,45 @@ function AppContent() {
             {/* Action Buttons */}
             <div className="update-modal-actions">
               <button 
-                onClick={() => setShowUpdateModal(false)}
+                onClick={() => {
+                  // Guardar en sesión que el usuario descartó este modal para esta versión
+                  if (updateInfo?.latestVersion) {
+                    sessionStorage.setItem(`update_dismissed_${updateInfo.latestVersion}`, '1');
+                  }
+                  setShowUpdateModal(false);
+                }}
                 className="update-modal-btn-later"
               >
                 Later
               </button>
               <button 
                 disabled={isDownloading}
-                onClick={async (e) => {
+                onClick={(e) => {
                   e.preventDefault();
                   e.stopPropagation();
-                  if (isDownloading) return;
+                  // Guard global de referencia: bloquea doble-tap y re-renders
+                  if (downloadGuardRef.current) return;
+                  downloadGuardRef.current = true;
                   setIsDownloading(true);
                   
                   if (window.electronAPI?.openExternalUrl) {
                     // macOS Electron: abre GitHub Releases en el navegador predeterminado
                     const releaseUrl = updateInfo.dmgUrl || 'https://github.com/xsoly1-boop/DJ_VIP/releases/latest';
-                    await window.electronAPI.openExternalUrl(releaseUrl);
+                    window.electronAPI.openExternalUrl(releaseUrl);
                   } else {
                     // Web / Android / iOS: descarga directa del APK
                     const downloadUrl = updateInfo.apkUrl;
                     window.open(downloadUrl, '_system');
                   }
-                  
-                  // Retrasar el cierre del modal un momento para asegurar que el render se limpie correctamente
-                  setTimeout(() => {
-                    setShowUpdateModal(false);
-                    setIsDownloading(false);
-                  }, 500);
+
+                  // Guardar en sesión que ya se descargó esta versión
+                  if (updateInfo?.latestVersion) {
+                    sessionStorage.setItem(`update_dismissed_${updateInfo.latestVersion}`, '1');
+                  }
+
+                  // Cerrar el modal inmediatamente — sin setTimeout que reabre la ventana
+                  setShowUpdateModal(false);
+                  // No reseteamos downloadGuardRef: permanece bloqueado toda la sesión
                 }}
                 className="update-modal-btn-now"
                 style={{ opacity: isDownloading ? 0.6 : 1, cursor: isDownloading ? 'not-allowed' : 'pointer' }}
