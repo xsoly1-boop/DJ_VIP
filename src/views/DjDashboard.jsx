@@ -2483,7 +2483,7 @@ export default function DjDashboard() {
       </section>
 
       {/* PANEL PRINCIPAL */}
-      <div style={{ display: 'grid', gridTemplateColumns: '320px 1fr', gap: '24px', alignItems: 'start' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: '250px 1fr', gap: '24px', alignItems: 'start' }}>
 
         {/* COLUMNA IZQUIERDA */}
         <aside style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
