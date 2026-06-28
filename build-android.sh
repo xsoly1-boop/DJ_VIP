@@ -37,8 +37,12 @@ fi
 # -----------------------------------------------------------------------
 # 0.5. Incrementar versión automáticamente
 # -----------------------------------------------------------------------
-echo -e "${CYAN}[0.5/5] Incrementando la versión del proyecto...${RESET}"
-node scripts/increment-version.cjs
+if [ "${NO_INCREMENT:-false}" = "true" ]; then
+    echo -e "${CYAN}[0.5/5] Salteando incremento de versión (NO_INCREMENT=true)...${RESET}"
+else
+    echo -e "${CYAN}[0.5/5] Incrementando la versión del proyecto...${RESET}"
+    node scripts/increment-version.cjs
+fi
 echo ""
 
 # -----------------------------------------------------------------------
