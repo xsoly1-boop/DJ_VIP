@@ -9,6 +9,29 @@ import PaymentView from './views/PaymentView';
 
 import { database, ref, onValue } from './firebase';
 
+// ─── Detección de plataforma ──────────────────────────────────────────────────
+function detectPlatform() {
+  // Android APK nativa
+  if (window.AndroidApp) return 'android';
+  // iOS WebView nativa (Capacitor / WKWebView)
+  if (
+    window.webkit?.messageHandlers ||
+    /iPhone|iPad|iPod/i.test(navigator.userAgent)
+  ) return 'ios';
+  // Electron (macOS / Windows)
+  if (window.electronAPI) {
+    const ua = navigator.userAgent || '';
+    if (/Windows/i.test(ua)) return 'windows';
+    if (/Mac/i.test(ua)) {
+      // Apple Silicon tiene «arm64» o «Apple M» en el UA del proceso
+      return /arm64|Apple M/i.test(ua) ? 'macos-silicon' : 'macos-intel';
+    }
+  }
+  // Navegador web puro — no se muestra modal
+  return 'web';
+}
+// ─────────────────────────────────────────────────────────────────────────────
+
 function AppContent() {
   const { user, userProfile, authLoading, changeEvent, isAdminMaster } = useFirebase();
   const [bypassPaymentLock, setBypassPaymentLock] = React.useState(() => {
@@ -62,6 +85,10 @@ function AppContent() {
           // Si el usuario ya descartó este modal en esta sesión, no volver a mostrarlo
           const dismissedKey = `update_dismissed_${data.latestVersion}`;
           if (sessionStorage.getItem(dismissedKey)) return;
+
+          // En navegador web puro no hay descarga disponible → no mostrar
+          const platform = detectPlatform();
+          if (platform === 'web') return;
 
           if (isNewer(data.latestVersion, CURRENT_APP_VERSION)) {
             setUpdateInfo(data);
@@ -415,55 +442,156 @@ function AppContent() {
               </div>
             )}
 
-            {/* Action Buttons */}
-            <div className="update-modal-actions">
-              <button 
-                onClick={() => {
-                  // Guardar en sesión que el usuario descartó este modal para esta versión
-                  if (updateInfo?.latestVersion) {
-                    sessionStorage.setItem(`update_dismissed_${updateInfo.latestVersion}`, '1');
-                  }
-                  setShowUpdateModal(false);
-                }}
-                className="update-modal-btn-later"
-              >
-                Later
-              </button>
-              <button 
-                disabled={isDownloading}
-                onClick={(e) => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  // Guard global de referencia: bloquea doble-tap y re-renders
-                  if (downloadGuardRef.current) return;
-                  downloadGuardRef.current = true;
-                  setIsDownloading(true);
-                  
-                  if (window.electronAPI?.openExternalUrl) {
-                    // macOS Electron: abre GitHub Releases en el navegador predeterminado
-                    const releaseUrl = updateInfo.dmgUrl || 'https://github.com/xsoly1-boop/DJ_VIP/releases/latest';
-                    window.electronAPI.openExternalUrl(releaseUrl);
-                  } else {
-                    // Web / Android / iOS: descarga directa del APK
-                    const downloadUrl = updateInfo.apkUrl;
-                    window.open(downloadUrl, '_system');
-                  }
+            {/* Action Buttons — por plataforma */}
+            {(() => {
+              const platform = detectPlatform();
 
-                  // Guardar en sesión que ya se descargó esta versión
-                  if (updateInfo?.latestVersion) {
-                    sessionStorage.setItem(`update_dismissed_${updateInfo.latestVersion}`, '1');
-                  }
+              // Helper para disparar la descarga con guard anti doble-tap
+              const handleDownload = (e, url, useElectron = false) => {
+                e.preventDefault();
+                e.stopPropagation();
+                if (downloadGuardRef.current) return;
+                downloadGuardRef.current = true;
+                setIsDownloading(true);
+                if (useElectron && window.electronAPI?.openExternalUrl) {
+                  window.electronAPI.openExternalUrl(url);
+                } else {
+                  window.open(url, '_system');
+                }
+                if (updateInfo?.latestVersion) {
+                  sessionStorage.setItem(`update_dismissed_${updateInfo.latestVersion}`, '1');
+                }
+                setShowUpdateModal(false);
+              };
 
-                  // Cerrar el modal inmediatamente — sin setTimeout que reabre la ventana
-                  setShowUpdateModal(false);
-                  // No reseteamos downloadGuardRef: permanece bloqueado toda la sesión
-                }}
-                className="update-modal-btn-now"
-                style={{ opacity: isDownloading ? 0.6 : 1, cursor: isDownloading ? 'not-allowed' : 'pointer' }}
-              >
-                {isDownloading ? 'Downloading...' : 'Update Now'}
-              </button>
-            </div>
+              const dismissBtn = (
+                <button
+                  onClick={() => {
+                    if (updateInfo?.latestVersion) {
+                      sessionStorage.setItem(`update_dismissed_${updateInfo.latestVersion}`, '1');
+                    }
+                    setShowUpdateModal(false);
+                  }}
+                  className="update-modal-btn-later"
+                >
+                  Ahora no
+                </button>
+              );
+
+              // ── ANDROID ──────────────────────────────────────────────────
+              if (platform === 'android') return (
+                <div className="update-modal-actions" style={{ flexDirection: 'column', gap: '10px' }}>
+                  <button
+                    disabled={isDownloading}
+                    onClick={(e) => handleDownload(e, updateInfo.apkUrl)}
+                    className="update-modal-btn-now"
+                    style={{
+                      background: 'linear-gradient(135deg, #16a34a 0%, #15803d 100%)',
+                      boxShadow: '0 0 18px rgba(22,163,74,0.45)',
+                      opacity: isDownloading ? 0.6 : 1,
+                      cursor: isDownloading ? 'not-allowed' : 'pointer',
+                    }}
+                  >
+                    {isDownloading ? 'Descargando...' : '📥 Descargar APK'}
+                  </button>
+                  <span style={{ fontSize: '0.72rem', color: 'rgba(255,255,255,0.35)' }}>Archivo .apk para Android</span>
+                  {dismissBtn}
+                </div>
+              );
+
+              // ── macOS Silicon (arm64) ─────────────────────────────────────
+              if (platform === 'macos-silicon') return (
+                <div className="update-modal-actions" style={{ flexDirection: 'column', gap: '8px' }}>
+                  <button
+                    disabled={isDownloading}
+                    onClick={(e) => handleDownload(e, updateInfo.dmgUrl || 'https://github.com/xsoly1-boop/DJ_VIP/releases/latest', true)}
+                    className="update-modal-btn-now"
+                    style={{ opacity: isDownloading ? 0.6 : 1, cursor: isDownloading ? 'not-allowed' : 'pointer' }}
+                  >
+                    {isDownloading ? 'Abriendo...' : '🍎 Apple Silicon (arm64)'}
+                  </button>
+                  <button
+                    disabled={isDownloading}
+                    onClick={(e) => handleDownload(e, updateInfo.dmgUrlIntel || 'https://github.com/xsoly1-boop/DJ_VIP/releases/latest', true)}
+                    className="update-modal-btn-later"
+                    style={{ fontSize: '0.82rem' }}
+                  >
+                    💻 Intel (x64)
+                  </button>
+                  <span style={{ fontSize: '0.72rem', color: 'rgba(255,255,255,0.35)' }}>Archivo .dmg · macOS 10.14+</span>
+                  {dismissBtn}
+                </div>
+              );
+
+              // ── macOS Intel (x64) ─────────────────────────────────────────
+              if (platform === 'macos-intel') return (
+                <div className="update-modal-actions" style={{ flexDirection: 'column', gap: '8px' }}>
+                  <button
+                    disabled={isDownloading}
+                    onClick={(e) => handleDownload(e, updateInfo.dmgUrlIntel || updateInfo.dmgUrl || 'https://github.com/xsoly1-boop/DJ_VIP/releases/latest', true)}
+                    className="update-modal-btn-now"
+                    style={{ opacity: isDownloading ? 0.6 : 1, cursor: isDownloading ? 'not-allowed' : 'pointer' }}
+                  >
+                    {isDownloading ? 'Abriendo...' : '💻 Descargar para Intel (x64)'}
+                  </button>
+                  <button
+                    disabled={isDownloading}
+                    onClick={(e) => handleDownload(e, updateInfo.dmgUrl || 'https://github.com/xsoly1-boop/DJ_VIP/releases/latest', true)}
+                    className="update-modal-btn-later"
+                    style={{ fontSize: '0.82rem' }}
+                  >
+                    🍎 Apple Silicon (arm64)
+                  </button>
+                  <span style={{ fontSize: '0.72rem', color: 'rgba(255,255,255,0.35)' }}>Archivo .dmg · macOS 10.14+</span>
+                  {dismissBtn}
+                </div>
+              );
+
+              // ── iOS ───────────────────────────────────────────────────────
+              if (platform === 'ios') return (
+                <div className="update-modal-actions" style={{ flexDirection: 'column', gap: '10px' }}>
+                  <button
+                    disabled={isDownloading}
+                    onClick={(e) => handleDownload(e, updateInfo.ipaUrl || 'https://dj-vip.vercel.app/DJ-Panel-Pro.ipa')}
+                    className="update-modal-btn-now"
+                    style={{
+                      background: 'linear-gradient(135deg, #0ea5e9 0%, #0284c7 100%)',
+                      boxShadow: '0 0 18px rgba(14,165,233,0.4)',
+                      opacity: isDownloading ? 0.6 : 1,
+                      cursor: isDownloading ? 'not-allowed' : 'pointer',
+                    }}
+                  >
+                    {isDownloading ? 'Descargando...' : '📲 Descargar IPA'}
+                  </button>
+                  <span style={{ fontSize: '0.72rem', color: 'rgba(255,255,255,0.35)' }}>Requiere iOS 13+</span>
+                  {dismissBtn}
+                </div>
+              );
+
+              // ── Windows ───────────────────────────────────────────────────
+              if (platform === 'windows') return (
+                <div className="update-modal-actions" style={{ flexDirection: 'column', gap: '10px' }}>
+                  <button
+                    disabled={isDownloading}
+                    onClick={(e) => handleDownload(e, updateInfo.exeUrl || 'https://dj-vip.vercel.app/DJ-Panel-Pro-Setup.exe', true)}
+                    className="update-modal-btn-now"
+                    style={{
+                      background: 'linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%)',
+                      boxShadow: '0 0 18px rgba(59,130,246,0.4)',
+                      opacity: isDownloading ? 0.6 : 1,
+                      cursor: isDownloading ? 'not-allowed' : 'pointer',
+                    }}
+                  >
+                    {isDownloading ? 'Descargando...' : '🪟 Descargar instalador .exe'}
+                  </button>
+                  <span style={{ fontSize: '0.72rem', color: 'rgba(255,255,255,0.35)' }}>Windows 10 / 11 · 64-bit</span>
+                  {dismissBtn}
+                </div>
+              );
+
+              // Fallback (no debería llegar aquí si platform === 'web' se filtra arriba)
+              return null;
+            })()}
           </div>
         </div>
       )}

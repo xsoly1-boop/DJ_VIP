@@ -1,11 +1,13 @@
 {
-  "latestVersion": "1.0.0.43",
+  "latestVersion": "1.0.0.45",
   "apkUrl": "https://dj-vip.vercel.app/DJ%20a%20la%20Carta%20Pro.apk",
   "dmgUrl": "https://github.com/xsoly1-boop/DJ_VIP/releases/download/v1.0.0.39/DJ%20Panel%20Pro-1.0.0.39-arm64.dmg",
   "dmgUrlIntel": "https://github.com/xsoly1-boop/DJ_VIP/releases/download/v1.0.0.39/DJ%20Panel%20Pro-1.0.0.39-x64.dmg",
+  "ipaUrl": "https://dj-vip.vercel.app/DJ-Panel-Pro.ipa",
+  "exeUrl": "https://dj-vip.vercel.app/DJ-Panel-Pro-Setup.exe",
   "releaseNotes": [
-    "Reducción del ancho del menú lateral (sidebar) en pantalla de escritorio para optimizar el área útil del panel.",
-    "Bordes blancos más nítidos y resplandor de luz optimizado en el skin Crystal.",
-    "Efecto cristal translúcido extendido a las pantallas y componentes de carga."
+    "Modal de actualización ahora muestra el botón de descarga exclusivo para tu plataforma (Android, macOS, iOS, Windows).",
+    "Corrección: el botón de actualización ya no descarga el APK múltiples veces.",
+    "Panel de Soporte PRO: lista de conversaciones compacta para dar prioridad al área de chat."
   ]
 }
