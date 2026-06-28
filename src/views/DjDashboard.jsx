@@ -3052,7 +3052,7 @@ export default function DjDashboard() {
                     {(() => {
                       const isSkinUnlocked = (skinKey) => {
                         if (skinKey === 'default') return true;
-                        if (skinKey === 'skin_luxury') return isProUser;
+                        if (skinKey === 'skin_luxury' || skinKey === 'skin_crystal') return isProUser;
                         return ['vip', 'eventual', 'pro'].includes(currentPlan);
                       };
 
@@ -3063,7 +3063,8 @@ export default function DjDashboard() {
                         { key: 'skin3', name: 'Azul', color: '#032557' },
                         { key: 'skin4', name: 'Turquesa', color: '#02313f' },
                         { key: 'skin5', name: 'Guinda', color: '#3f020a' },
-                        { key: 'skin_luxury', name: 'Luxury', color: '#d4af37' }
+                        { key: 'skin_luxury', name: 'Luxury', color: '#d4af37' },
+                        { key: 'skin_crystal', name: 'Crystal', color: '#7c3aed' }
                       ].map((skin) => {
                         const isSelected = bgSkinInput === skin.key;
                         const unlocked = isSkinUnlocked(skin.key);
@@ -3107,7 +3108,7 @@ export default function DjDashboard() {
                   ) : (
                     !isProUser && (
                       <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '8px' }}>
-                        👑 Adquiere el plan <strong>PRO</strong> para desbloquear el exclusivo tema <strong>Luxury</strong>.
+                        👑 Adquiere el plan <strong>PRO</strong> para desbloquear los exclusivos temas <strong>Luxury</strong> y <strong>Crystal</strong>.
                       </p>
                     )
                   )}

@@ -371,4 +371,45 @@ p {
   background: linear-gradient(135deg, var(--surface-color), rgba(250, 204, 21, 0.02)) !important;
 }
 
+/* ─── TEMA CRYSTAL (PRO EXCLUSIVO) ────────────────────────────────────────── */
+html[data-skin="skin_crystal"], 
+html[data-skin="skin_crystal"] body {
+  background-image: radial-gradient(circle at 50% 30%, #1e124a 0%, #0d0a21 55%, #05050b 100%) !important;
+  background-attachment: fixed !important;
+  background-color: #0d0a21 !important;
+}
+
+[data-skin="skin_crystal"] .glass-panel {
+  background: rgba(255, 255, 255, 0.02) !important;
+  backdrop-filter: blur(25px) saturate(180%) !important;
+  -webkit-backdrop-filter: blur(25px) saturate(180%) !important;
+  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+  box-shadow: 0 30px 60px rgba(0, 0, 0, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.1) !important;
+  animation: none !important;
+}
+
+[data-skin="skin_crystal"] .input-field {
+  background: rgba(255, 255, 255, 0.02) !important;
+  border: 1px solid rgba(255, 255, 255, 0.07) !important;
+  border-radius: 12px !important;
+  color: #ffffff !important;
+}
+
+[data-skin="skin_crystal"] .input-field:focus {
+  border-color: rgba(124, 58, 237, 0.8) !important;
+  box-shadow: 0 0 15px rgba(124, 58, 237, 0.35) !important;
+}
+
+[data-skin="skin_crystal"] .btn-primary {
+  background: linear-gradient(135deg, #7c3aed 0%, #6d28d9 100%) !important;
+  box-shadow: 0 8px 25px rgba(124, 58, 237, 0.5) !important;
+  border-radius: 999px !important;
+}
+
+[data-skin="skin_crystal"] .btn-primary:hover {
+  box-shadow: 0 12px 30px rgba(124, 58, 237, 0.75) !important;
+  filter: brightness(1.1) !important;
+}
+
+
 

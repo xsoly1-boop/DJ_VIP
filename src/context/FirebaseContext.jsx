@@ -822,6 +822,19 @@ export const FirebaseProvider = ({ children }) => {
           document.documentElement.style.setProperty('--text-primary', '#ffffff');
           document.documentElement.style.setProperty('--text-secondary', '#fcdbdc');
           document.documentElement.style.setProperty('--text-muted', '#f7a9ac');
+        } else if (bgSkin === 'skin_crystal') {
+          // Crystal (Premium Glassmorphism)
+          document.documentElement.style.setProperty('--bg-color', '#0d0a21');
+          document.documentElement.style.setProperty('--surface-color', 'rgba(255, 255, 255, 0.02)');
+          document.documentElement.style.setProperty('--surface-border', 'rgba(255, 255, 255, 0.08)');
+          document.documentElement.style.setProperty('--text-primary', '#ffffff');
+          document.documentElement.style.setProperty('--text-secondary', '#94a3b8');
+          document.documentElement.style.setProperty('--text-muted', '#64748b');
+          // Purple/Cyan branding override
+          document.documentElement.style.setProperty('--primary-color', '#7c3aed');
+          document.documentElement.style.setProperty('--primary-glow', 'rgba(124, 58, 237, 0.35)');
+          document.documentElement.style.setProperty('--secondary-color', '#06b6d4');
+          document.documentElement.style.setProperty('--secondary-glow', 'rgba(6, 182, 212, 0.35)');
         } else if (bgSkin === 'skin_luxury') {
           // Luxury (Black, Gold & Silver)
           document.documentElement.style.setProperty('--bg-color', '#050505');
