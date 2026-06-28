@@ -142,8 +142,8 @@ function AppContent() {
               width: 100%;
               padding: 40px 32px 30px;
               border-radius: 24px;
-              border: 2px solid rgba(168, 85, 247, 0.4);
-              box-shadow: 0 0 30px rgba(168, 85, 247, 0.25), 0 20px 50px rgba(0, 0, 0, 0.75);
+              border: 2px solid rgba(168, 85, 247, 0.45);
+              box-shadow: 0 0 30px rgba(168, 85, 247, 0.3), 0 20px 50px rgba(0, 0, 0, 0.85);
               text-align: center;
               background: #110c1c;
               animation: modalScaleIn 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
@@ -168,7 +168,7 @@ function AppContent() {
               border: 5px solid #110c1c;
               display: flex;
               align-items: center;
-              justifyContent: center;
+              justify-content: center;
               z-index: 100000;
             }
             .update-modal-title {
@@ -221,10 +221,13 @@ function AppContent() {
               gap: 10px;
             }
             .update-modal-bullet {
-              color: #a855f7;
-              font-size: 1.2rem;
-              line-height: 1;
+              display: inline-block;
+              width: 6px;
+              height: 6px;
+              background-color: #a855f7;
+              border-radius: 50%;
               flex-shrink: 0;
+              margin-top: 8px;
             }
             .update-modal-actions {
               display: flex;
@@ -275,6 +278,64 @@ function AppContent() {
               box-shadow: 0 0 25px rgba(168, 85, 247, 0.7);
               transform: translateY(-1px);
             }
+
+            /* Responsive landscape layout rules (80% width / 70% height) */
+            @media (max-height: 500px) or (orientation: landscape) {
+              .update-modal-card {
+                width: 80% !important;
+                max-width: 80vw !important;
+                height: 70% !important;
+                max-height: 70vh !important;
+                padding: 16px 24px 12px !important;
+                border-radius: 18px !important;
+              }
+              .update-modal-rocket-wrapper {
+                width: 48px !important;
+                height: 48px !important;
+                top: -24px !important;
+                border-width: 3px !important;
+              }
+              .update-modal-rocket-wrapper span {
+                font-size: 1.5rem !important;
+              }
+              .update-modal-title {
+                font-size: 1.2rem !important;
+                margin-top: 5px !important;
+                margin-bottom: 2px !important;
+              }
+              .update-modal-version {
+                font-size: 0.8rem !important;
+                margin-bottom: 8px !important;
+              }
+              .update-modal-heading {
+                font-size: 0.95rem !important;
+                margin-bottom: 10px !important;
+              }
+              .update-modal-list-container {
+                padding: 10px 16px !important;
+                margin-bottom: 12px !important;
+                max-height: 110px !important;
+              }
+              .update-modal-list {
+                gap: 8px !important;
+              }
+              .update-modal-list-item {
+                font-size: 0.8rem !important;
+                gap: 8px !important;
+                line-height: 1.4 !important;
+              }
+              .update-modal-bullet {
+                margin-top: 6px !important;
+              }
+              .update-modal-actions {
+                gap: 12px !important;
+              }
+              .update-modal-btn-later, .update-modal-btn-now {
+                padding: 8px 18px !important;
+                font-size: 0.85rem !important;
+                border-radius: 20px !important;
+              }
+            }
           `}</style>
           
           <div className="update-modal-card">
@@ -296,31 +357,11 @@ function AppContent() {
                 <ul className="update-modal-list">
                   {updateInfo.releaseNotes.map((note, idx) => (
                     <li key={idx} className="update-modal-list-item">
-                      <span className="update-modal-bullet">🟣</span>
+                      <span className="update-modal-bullet"></span>
                       <span>{note}</span>
                     </li>
                   ))}
                 </ul>
-
-                {/* Nota de soporte/resolución de problemas al pie de las notas de versión */}
-                <div style={{
-                  fontSize: '0.8rem',
-                  color: 'rgba(239, 68, 68, 0.9)',
-                  lineHeight: '1.45',
-                  marginTop: '18px',
-                  padding: '10px 14px',
-                  background: 'rgba(239, 68, 68, 0.05)',
-                  borderRadius: '12px',
-                  border: '1px solid rgba(239, 68, 68, 0.15)',
-                  display: 'flex',
-                  alignItems: 'flex-start',
-                  gap: '8px'
-                }}>
-                  <span style={{ fontSize: '1.05rem', lineHeight: '1' }}>💡</span>
-                  <span>
-                    <strong>Nota:</strong> Si la instalación automática falla, desinstala por completo la aplicación anterior del dispositivo e instálala de nuevo usando el archivo recién descargado.
-                  </span>
-                </div>
               </div>
             )}
 

@@ -2308,7 +2308,11 @@ export default function DjDashboard() {
                   if (!isPrintAllowed) {
                     showToast("🔒 La impresión de tarjetas QR en tamaño A4 es una función exclusiva para planes VIP, PRO y Eventual. ¡Mejora tu plan para desbloquearla!");
                   } else {
-                    window.print();
+                    if (window.AndroidApp && window.AndroidApp.printPage) {
+                      window.AndroidApp.printPage();
+                    } else {
+                      window.print();
+                    }
                   }
                 }}
                 style={{ width: '100%', padding: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}

@@ -1,6 +1,8 @@
 import { initializeApp } from 'firebase/app';
 import { 
-  getAuth, 
+  initializeAuth,
+  indexedDBLocalPersistence,
+  browserLocalPersistence,
   signInWithEmailAndPassword as realSignIn, 
   signOut as realSignOut, 
   onAuthStateChanged as realAuthChanged,
@@ -8,6 +10,7 @@ import {
   EmailAuthProvider,
   createUserWithEmailAndPassword as realCreateUser
 } from 'firebase/auth';
+import { Capacitor } from '@capacitor/core';
 import { 
   getDatabase, 
   ref as realDbRef, 
@@ -50,7 +53,16 @@ let app, auth, database, storage;
 
 if (!isMockMode) {
   app = initializeApp(firebaseConfig);
-  auth = getAuth(app);
+  
+  // Usar persistencia adecuada para Capacitor en plataformas nativas
+  const persistence = Capacitor.isNativePlatform()
+    ? indexedDBLocalPersistence
+    : browserLocalPersistence;
+    
+  auth = initializeAuth(app, {
+    persistence: persistence
+  });
+  
   database = getDatabase(app);
   storage = getStorage(app);
 } else {

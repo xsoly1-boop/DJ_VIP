@@ -13,6 +13,9 @@ import android.media.RingtoneManager;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
+import android.print.PrintAttributes;
+import android.print.PrintDocumentAdapter;
+import android.print.PrintManager;
 import android.util.Log;
 import android.view.View;
 import android.view.WindowInsets;
@@ -347,6 +350,32 @@ public class MainActivity extends BridgeActivity {
         @JavascriptInterface
         public String getUserRole() {
             return preferences.getString("user_role", "");
+        }
+
+        /**
+         * Imprimir la página web actual
+         * Llamada desde JS: AndroidApp.printPage()
+         */
+        @JavascriptInterface
+        public void printPage() {
+            runOnUiThread(() -> {
+                WebView webView = getBridge().getWebView();
+                if (webView != null) {
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
+                        PrintManager printManager = (PrintManager) mContext.getSystemService(Context.PRINT_SERVICE);
+                        if (printManager != null) {
+                            String jobName = "DJ VIP QR Tarjetas";
+                            PrintDocumentAdapter printAdapter;
+                            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+                                printAdapter = webView.createPrintDocumentAdapter(jobName);
+                            } else {
+                                printAdapter = webView.createPrintDocumentAdapter();
+                            }
+                            printManager.print(jobName, printAdapter, new PrintAttributes.Builder().build());
+                        }
+                    }
+                }
+            });
         }
     }
 

@@ -74,12 +74,23 @@ rm -rf build
 # 4. Generar Archivo (.xcarchive)
 echo -e "${CYAN}[3/4] Creando archivo Xcode (.xcarchive)...${RESET}"
 set +e
-xcodebuild -workspace ios/App/App.xcworkspace \
-           -scheme App \
-           -configuration Debug \
-           -archivePath build/App.xcarchive \
-           archive \
-           -allowProvisioningUpdates
+if [ -d "ios/App/App.xcworkspace" ]; then
+    xcodebuild -workspace ios/App/App.xcworkspace \
+               -scheme App \
+               -configuration Debug \
+               -destination 'generic/platform=iOS' \
+               -archivePath build/App.xcarchive \
+               archive \
+               -allowProvisioningUpdates
+else
+    xcodebuild -project ios/App/App.xcodeproj \
+               -scheme App \
+               -configuration Debug \
+               -destination 'generic/platform=iOS' \
+               -archivePath build/App.xcarchive \
+               archive \
+               -allowProvisioningUpdates
+fi
 ARCHIVE_EXIT=$?
 set -e
 
