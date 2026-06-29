@@ -3198,27 +3198,40 @@ export default function DjDashboard() {
                               <option value="large">Grande (130px)</option>
                             </select>
                             {isAdminMaster && (
-                              <div style={{ marginTop: '8px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', fontWeight: '600' }}>
-                                  Dimensión manual (px):
+                              <div style={{ marginTop: '12px', borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: '10px' }}>
+                                <span style={{ fontSize: '0.8rem', fontWeight: '700', display: 'block', marginBottom: '8px', color: 'var(--secondary-color)' }}>
+                                  📏 Dimensión de Contenedores (Admin Master)
                                 </span>
-                                <input
-                                  type="number"
-                                  className="input-field"
-                                  placeholder="ej. 120"
-                                  value={logoSize && !['small', 'medium', 'large'].includes(logoSize) ? logoSize.replace('px', '') : ''}
-                                  onChange={(e) => {
-                                    const val = e.target.value.trim();
-                                    if (val) {
-                                      setLogoSize(`${val}px`);
-                                      updateEventSettings({ logoSize: `${val}px` });
-                                    } else {
-                                      setLogoSize('medium');
-                                      updateEventSettings({ logoSize: 'medium' });
-                                    }
-                                  }}
-                                  style={{ padding: '4px 8px', fontSize: '0.8rem', width: '80px', minWidth: '80px' }}
-                                />
+                                <div style={{ display: 'flex', gap: '15px', alignItems: 'center', flexWrap: 'wrap' }}>
+                                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                    <span style={{ fontSize: '0.72rem', color: 'var(--text-secondary)', fontWeight: '600' }}>Altura (px):</span>
+                                    <input
+                                      type="number"
+                                      className="input-field"
+                                      placeholder="ej. 100"
+                                      value={eventSettings.logoHeight || ''}
+                                      onChange={(e) => {
+                                        const val = e.target.value.trim();
+                                        updateEventSettings({ logoHeight: val });
+                                      }}
+                                      style={{ padding: '4px 8px', fontSize: '0.8rem', width: '70px', minWidth: '70px' }}
+                                    />
+                                  </div>
+                                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                    <span style={{ fontSize: '0.72rem', color: 'var(--text-secondary)', fontWeight: '600' }}>Ancho (px):</span>
+                                    <input
+                                      type="number"
+                                      className="input-field"
+                                      placeholder="ej. 250"
+                                      value={eventSettings.logoWidth || ''}
+                                      onChange={(e) => {
+                                        const val = e.target.value.trim();
+                                        updateEventSettings({ logoWidth: val });
+                                      }}
+                                      style={{ padding: '4px 8px', fontSize: '0.8rem', width: '70px', minWidth: '70px' }}
+                                    />
+                                  </div>
+                                </div>
                               </div>
                             )}
                           </div>
