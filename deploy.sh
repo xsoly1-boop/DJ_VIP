@@ -985,8 +985,8 @@ sync_firebase() {
             apkUrl: v.apkUrl,
             dmgUrl: v.dmgUrl,
             dmgUrlIntel: v.dmgUrlIntel,
-            ipaUrl: v.ipaUrl || 'https://dj-vip.vercel.app/DJ-Panel-Pro.ipa',
-            exeUrl: v.exeUrl || 'https://dj-vip.vercel.app/DJ-Panel-Pro-Setup.exe',
+            ipaUrl: v.ipaUrl || '',
+            exeUrl: v.exeUrl || '',
             releaseNotes: v.releaseNotes || []
         }).then(() => {
             console.log('Firebase RTDB sincronizado con v${NEW_VERSION}');

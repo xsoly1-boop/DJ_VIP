@@ -3,7 +3,7 @@
   "apkUrl": "https://dj-vip.vercel.app/DJ.a.la.carta.apk",
   "dmgUrl": "https://github.com/xsoly1-boop/DJ_VIP/releases/download/v10.0.0.48/DJ.a.la.carta.silicon.dmg",
   "dmgUrlIntel": "https://github.com/xsoly1-boop/DJ_VIP/releases/download/v10.0.0.48/DJ.a.la.carta.dmg",
-  "ipaUrl": "https://dj-vip.vercel.app/DJ-Panel-Pro.ipa",
+  "ipaUrl": "",
   "exeUrl": "https://github.com/xsoly1-boop/DJ_VIP/releases/download/v10.0.0.48/DJ.a.la.carta.exe",
   "releaseNotes": [
     "Modal de actualización ahora muestra el botón de descarga exclusivo para tu plataforma (Android, macOS, iOS, Windows).",
