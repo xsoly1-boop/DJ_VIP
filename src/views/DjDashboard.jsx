@@ -259,6 +259,7 @@ export default function DjDashboard() {
   // Personalización de Plataforma (Admin Master)
   const [statsCardHeightInput, setStatsCardHeightInput] = useState('');
   const [statsCardWidthInput, setStatsCardWidthInput] = useState('');
+  const [statsCardGapInput, setStatsCardGapInput] = useState('');
   const [queueContainerWidthInput, setQueueContainerWidthInput] = useState('');
   const [statsCardTitlesInput, setStatsCardTitlesInput] = useState({
     total: '', pending: '', playing: '', votes: '', db: '', rating: '', plan: '', djs: '', queue: ''
@@ -273,6 +274,7 @@ export default function DjDashboard() {
     if (userProfile) {
       setStatsCardHeightInput(userProfile.statsCardHeight || '');
       setStatsCardWidthInput(userProfile.statsCardWidth || '');
+      setStatsCardGapInput(userProfile.statsCardGap || '');
       setQueueContainerWidthInput(userProfile.queueContainerWidth || '');
       setStatsCardTitlesInput({
         total: userProfile.statsCardTitles?.total || '',
@@ -541,6 +543,7 @@ export default function DjDashboard() {
       await updateDjOwnProfile({
         statsCardHeight: statsCardHeightInput,
         statsCardWidth: statsCardWidthInput,
+        statsCardGap: statsCardGapInput,
         queueContainerWidth: queueContainerWidthInput,
         statsCardTitles: statsCardTitlesInput,
         sidebarTitles: sidebarTitlesInput
@@ -2489,7 +2492,7 @@ export default function DjDashboard() {
       </header>
 
       {/* MÉTRICAS RÁPIDAS (Opción B2: Split Layout con Icono Neón Circular a la Izquierda ~54px) */}
-      <section style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(135px, 1fr))', gap: (userProfile?.statsCardHeight || userProfile?.statsCardWidth) ? '0px' : '8px', marginBottom: '16px' }}>
+      <section style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(135px, 1fr))', gap: userProfile?.statsCardGap !== undefined && userProfile.statsCardGap !== '' ? `${userProfile.statsCardGap}px` : '8px', marginBottom: '16px' }}>
         
         {/* Total Peticiones */}
         <div className="glass-panel metric-card-total" style={{ 
@@ -4794,6 +4797,17 @@ export default function DjDashboard() {
                     placeholder="ej. 150"
                     value={statsCardWidthInput}
                     onChange={(e) => setStatsCardWidthInput(e.target.value.trim())}
+                    style={{ padding: '8px 12px', fontSize: '0.85rem', width: '120px' }}
+                  />
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                  <label style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', fontWeight: '600' }}>Espacio entre tarjetas (px):</label>
+                  <input
+                    type="number"
+                    className="input-field"
+                    placeholder="ej. 8"
+                    value={statsCardGapInput}
+                    onChange={(e) => setStatsCardGapInput(e.target.value.trim())}
                     style={{ padding: '8px 12px', fontSize: '0.85rem', width: '120px' }}
                   />
                 </div>
