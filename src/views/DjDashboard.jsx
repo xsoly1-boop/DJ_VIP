@@ -2427,81 +2427,104 @@ export default function DjDashboard() {
         </div>
       </header>
 
-      {/* MÉTRICAS RÁPIDAS (Opción B: Grid 2x2 / Multi-column con Tarjetas Robustas ~75px) */}
-      <section style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))', gap: '10px', marginBottom: '16px' }}>
-        <div className="glass-panel metric-card-total" style={{ padding: '12px 14px', minHeight: '75px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', boxSizing: 'border-box' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
-            <span style={{ fontSize: '0.65rem', color: 'var(--text-secondary)', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Total Peticiones</span>
-            <Layers size={14} color="var(--primary-color)" style={{ opacity: 0.8 }} />
-          </div>
-          <h3 style={{ fontSize: '1.5rem', fontWeight: '700', marginTop: '6px', lineHeight: 1 }}>{stats.total}</h3>
-        </div>
+      {/* MÉTRICAS RÁPIDAS (Opción B2: Split Layout con Icono Neón Circular a la Izquierda ~54px) */}
+      <section style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(135px, 1fr))', gap: '8px', marginBottom: '16px' }}>
         
-        <div className="glass-panel metric-card-pending" style={{ padding: '12px 14px', minHeight: '75px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', boxSizing: 'border-box' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
-            <span style={{ fontSize: '0.65rem', color: 'var(--text-secondary)', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Por Aceptar</span>
-            <RefreshCw size={14} color="var(--warning-color)" style={{ opacity: 0.8 }} className={stats.pending > 0 ? 'animate-spin' : ''} />
+        {/* Total Peticiones */}
+        <div className="glass-panel metric-card-total" style={{ padding: '8px 12px', minHeight: '54px', display: 'flex', alignItems: 'center', gap: '10px', boxSizing: 'border-box' }}>
+          <div style={{ width: '32px', height: '32px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(168, 85, 247, 0.1)', border: '1.5px solid var(--primary-color)', boxShadow: '0 0 8px rgba(168, 85, 247, 0.3)', flexShrink: 0 }}>
+            <Layers size={14} color="var(--primary-color)" />
           </div>
-          <h3 style={{ fontSize: '1.5rem', fontWeight: '700', marginTop: '6px', color: 'var(--warning-color)', lineHeight: 1 }}>{stats.pending}</h3>
-        </div>
-        
-        <div className="glass-panel metric-card-playing" style={{ padding: '12px 14px', minHeight: '75px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', boxSizing: 'border-box' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
-            <span style={{ fontSize: '0.65rem', color: 'var(--text-secondary)', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Sonando Ahora</span>
-            <Play size={14} color="var(--secondary-color)" style={{ opacity: 0.8 }} />
-          </div>
-          <h3 style={{ fontSize: '1.5rem', fontWeight: '700', marginTop: '6px', color: 'var(--secondary-color)', lineHeight: 1 }}>{stats.playing}</h3>
-        </div>
-        
-        <div className="glass-panel metric-card-votes" style={{ padding: '12px 14px', minHeight: '75px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', boxSizing: 'border-box' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
-            <span style={{ fontSize: '0.65rem', color: 'var(--text-secondary)', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Votos Audiencia</span>
-            <Users size={14} color="var(--success-color)" style={{ opacity: 0.8 }} />
-          </div>
-          <h3 style={{ fontSize: '1.5rem', fontWeight: '700', marginTop: '6px', color: 'var(--success-color)', lineHeight: 1 }}>{stats.votes}</h3>
-        </div>
-        
-        <div className="glass-panel metric-card-db" style={{ padding: '12px 14px', minHeight: '75px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', boxSizing: 'border-box' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
-            <span style={{ fontSize: '0.65rem', color: 'var(--text-secondary)', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Canciones BD</span>
-            <Database size={14} color="var(--primary-color)" style={{ opacity: 0.8 }} />
-          </div>
-          <h3 style={{ fontSize: '1.5rem', fontWeight: '700', marginTop: '6px', color: 'var(--primary-color)', lineHeight: 1 }}>{(autocompleteSongs || []).length}</h3>
-        </div>
-        
-        <div className="glass-panel metric-card-rating" style={{ padding: '12px 14px', minHeight: '75px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', boxSizing: 'border-box' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
-            <span style={{ fontSize: '0.65rem', color: 'var(--text-secondary)', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Calificación</span>
-            <Star size={14} color="#f59e0b" style={{ opacity: 0.8 }} />
-          </div>
-          <div style={{ display: 'flex', alignItems: 'baseline', gap: '4px', marginTop: '6px' }}>
-            <h3 style={{ fontSize: '1.5rem', fontWeight: '700', color: '#f59e0b', lineHeight: 1 }}>{ratingsStats?.avg || 0}</h3>
-            <span style={{ fontSize: '0.65rem', color: 'var(--text-muted)' }}>({ratingsStats?.total || 0})</span>
+          <div style={{ display: 'flex', flexDirection: 'column', minWidth: 0, flex: 1 }}>
+            <span style={{ fontSize: '0.58rem', color: 'var(--text-secondary)', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.3px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>Total Peticiones</span>
+            <h3 style={{ fontSize: '1.25rem', fontWeight: '700', margin: '2px 0 0 0', lineHeight: 1 }}>{stats.total}</h3>
           </div>
         </div>
         
-        <div className="glass-panel metric-card-plan" style={{ padding: '12px 14px', minHeight: '75px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', boxSizing: 'border-box' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
-            <span style={{ fontSize: '0.65rem', color: 'var(--text-secondary)', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Plan</span>
-            <Clock size={14} color="#a855f7" style={{ opacity: 0.8 }} />
+        {/* Por Aceptar */}
+        <div className="glass-panel metric-card-pending" style={{ padding: '8px 12px', minHeight: '54px', display: 'flex', alignItems: 'center', gap: '10px', boxSizing: 'border-box' }}>
+          <div style={{ width: '32px', height: '32px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(234, 179, 8, 0.1)', border: '1.5px solid var(--warning-color)', boxShadow: '0 0 8px rgba(234, 179, 8, 0.3)', flexShrink: 0 }}>
+            <RefreshCw size={14} color="var(--warning-color)" className={stats.pending > 0 ? 'animate-spin' : ''} />
           </div>
-          <div style={{ display: 'flex', flexDirection: 'column', marginTop: '4px' }}>
-            <h3 style={{ fontSize: '1.1rem', color: '#a855f7', fontWeight: '700', lineHeight: 1.1 }}>
-              {(userProfile?.activePlan || 'free').toUpperCase()}
-            </h3>
-            <PlanValidityDisplay activePlan={userProfile?.activePlan || 'free'} expiresAt={userProfile?.expiresAt} />
+          <div style={{ display: 'flex', flexDirection: 'column', minWidth: 0, flex: 1 }}>
+            <span style={{ fontSize: '0.58rem', color: 'var(--text-secondary)', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.3px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>Por Aceptar</span>
+            <h3 style={{ fontSize: '1.25rem', fontWeight: '700', margin: '2px 0 0 0', color: 'var(--warning-color)', lineHeight: 1 }}>{stats.pending}</h3>
           </div>
         </div>
         
-        {isAdminMaster && (
-          <div className="glass-panel metric-card-djs" style={{ padding: '12px 14px', minHeight: '75px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', boxSizing: 'border-box' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
-              <span style={{ fontSize: '0.65rem', color: 'var(--text-secondary)', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.5px' }}>DJs Registrados</span>
-              <Users size={14} color="#06b6d4" style={{ opacity: 0.8 }} />
+        {/* Sonando Ahora */}
+        <div className="glass-panel metric-card-playing" style={{ padding: '8px 12px', minHeight: '54px', display: 'flex', alignItems: 'center', gap: '10px', boxSizing: 'border-box' }}>
+          <div style={{ width: '32px', height: '32px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(6, 182, 212, 0.1)', border: '1.5px solid var(--secondary-color)', boxShadow: '0 0 8px rgba(6, 182, 212, 0.3)', flexShrink: 0 }}>
+            <Play size={14} color="var(--secondary-color)" />
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column', minWidth: 0, flex: 1 }}>
+            <span style={{ fontSize: '0.58rem', color: 'var(--text-secondary)', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.3px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>Sonando Ahora</span>
+            <h3 style={{ fontSize: '1.25rem', fontWeight: '700', margin: '2px 0 0 0', color: 'var(--secondary-color)', lineHeight: 1 }}>{stats.playing}</h3>
+          </div>
+        </div>
+        
+        {/* Votos Audiencia */}
+        <div className="glass-panel metric-card-votes" style={{ padding: '8px 12px', minHeight: '54px', display: 'flex', alignItems: 'center', gap: '10px', boxSizing: 'border-box' }}>
+          <div style={{ width: '32px', height: '32px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(16, 185, 129, 0.1)', border: '1.5px solid var(--success-color)', boxShadow: '0 0 8px rgba(16, 185, 129, 0.3)', flexShrink: 0 }}>
+            <Users size={14} color="var(--success-color)" />
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column', minWidth: 0, flex: 1 }}>
+            <span style={{ fontSize: '0.58rem', color: 'var(--text-secondary)', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.3px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>Votos Audiencia</span>
+            <h3 style={{ fontSize: '1.25rem', fontWeight: '700', margin: '2px 0 0 0', color: 'var(--success-color)', lineHeight: 1 }}>{stats.votes}</h3>
+          </div>
+        </div>
+        
+        {/* Canciones BD */}
+        <div className="glass-panel metric-card-db" style={{ padding: '8px 12px', minHeight: '54px', display: 'flex', alignItems: 'center', gap: '10px', boxSizing: 'border-box' }}>
+          <div style={{ width: '32px', height: '32px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(99, 102, 241, 0.1)', border: '1.5px solid #6366f1', boxShadow: '0 0 8px rgba(99, 102, 241, 0.3)', flexShrink: 0 }}>
+            <Database size={14} color="#6366f1" />
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column', minWidth: 0, flex: 1 }}>
+            <span style={{ fontSize: '0.58rem', color: 'var(--text-secondary)', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.3px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>Canciones BD</span>
+            <h3 style={{ fontSize: '1.25rem', fontWeight: '700', margin: '2px 0 0 0', color: '#6366f1', lineHeight: 1 }}>{(autocompleteSongs || []).length}</h3>
+          </div>
+        </div>
+        
+        {/* Calificación */}
+        <div className="glass-panel metric-card-rating" style={{ padding: '8px 12px', minHeight: '54px', display: 'flex', alignItems: 'center', gap: '10px', boxSizing: 'border-box' }}>
+          <div style={{ width: '32px', height: '32px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(245, 158, 11, 0.1)', border: '1.5px solid #f59e0b', boxShadow: '0 0 8px rgba(245, 158, 11, 0.3)', flexShrink: 0 }}>
+            <Star size={14} color="#f59e0b" />
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column', minWidth: 0, flex: 1 }}>
+            <span style={{ fontSize: '0.58rem', color: 'var(--text-secondary)', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.3px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>Calificación</span>
+            <div style={{ display: 'flex', alignItems: 'baseline', gap: '3px', margin: '2px 0 0 0' }}>
+              <h3 style={{ fontSize: '1.25rem', fontWeight: '700', color: '#f59e0b', lineHeight: 1 }}>{ratingsStats?.avg || 0}</h3>
+              <span style={{ fontSize: '0.6rem', color: 'var(--text-muted)' }}>({ratingsStats?.total || 0})</span>
             </div>
-            <h3 style={{ fontSize: '1.5rem', fontWeight: '700', marginTop: '6px', color: '#06b6d4', lineHeight: 1 }}>
-              {Object.keys(allUsersData || {}).filter(uid => uid !== 'uid-admin-master' && allUsersData[uid]?.profile?.email !== 'dj@admin.com').length}
-            </h3>
+          </div>
+        </div>
+        
+        {/* Plan */}
+        <div className="glass-panel metric-card-plan" style={{ padding: '8px 12px', minHeight: '54px', display: 'flex', alignItems: 'center', gap: '10px', boxSizing: 'border-box' }}>
+          <div style={{ width: '32px', height: '32px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(168, 85, 247, 0.1)', border: '1.5px solid #a855f7', boxShadow: '0 0 8px rgba(168, 85, 247, 0.3)', flexShrink: 0 }}>
+            <Clock size={14} color="#a855f7" />
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column', minWidth: 0, flex: 1 }}>
+            <span style={{ fontSize: '0.58rem', color: 'var(--text-secondary)', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.3px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>Plan</span>
+            <div style={{ display: 'flex', flexDirection: 'column', margin: 0, lineHeight: 1.1 }}>
+              <h3 style={{ fontSize: '0.9rem', color: '#a855f7', fontWeight: '700' }}>{(userProfile?.activePlan || 'free').toUpperCase()}</h3>
+              <PlanValidityDisplay activePlan={userProfile?.activePlan || 'free'} expiresAt={userProfile?.expiresAt} />
+            </div>
+          </div>
+        </div>
+        
+        {/* DJs Registrados */}
+        {isAdminMaster && (
+          <div className="glass-panel metric-card-djs" style={{ padding: '8px 12px', minHeight: '54px', display: 'flex', alignItems: 'center', gap: '10px', boxSizing: 'border-box' }}>
+            <div style={{ width: '32px', height: '32px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(6, 182, 212, 0.1)', border: '1.5px solid #06b6d4', boxShadow: '0 0 8px rgba(6, 182, 212, 0.3)', flexShrink: 0 }}>
+              <Users size={14} color="#06b6d4" />
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', minWidth: 0, flex: 1 }}>
+              <span style={{ fontSize: '0.58rem', color: 'var(--text-secondary)', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.3px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>DJs Registrados</span>
+              <h3 style={{ fontSize: '1.25rem', fontWeight: '700', margin: '2px 0 0 0', color: '#06b6d4', lineHeight: 1 }}>
+                {Object.keys(allUsersData || {}).filter(uid => uid !== 'uid-admin-master' && allUsersData[uid]?.profile?.email !== 'dj@admin.com').length}
+              </h3>
+            </div>
           </div>
         )}
       </section>
