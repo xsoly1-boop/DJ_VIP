@@ -4739,9 +4739,9 @@ export default function DjDashboard() {
                                       <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
                                         <label style={{ fontSize: '0.68rem', color: 'var(--text-secondary)', fontWeight: 'bold' }}>Tamaño del Logo (Pantalla Pública)</label>
                                         <select className="input-field" style={{ padding: '5px 8px', fontSize: '0.78rem', width: '100%', cursor: 'pointer' }} value={editEventLogoSize} onChange={(e) => setEditEventLogoSize(e.target.value)}>
-                                          <option value="small">🔎 Chico (50px)</option>
-                                          <option value="medium">🔎 Mediano (75px)</option>
-                                          <option value="large">🔎 Grande (100px)</option>
+                                          <option value="small">🔎 Chico (80px)</option>
+                                          <option value="medium">🔎 Mediano (100px)</option>
+                                          <option value="large">🔎 Grande (130px)</option>
                                         </select>
                                       </div>
                                     </div>
