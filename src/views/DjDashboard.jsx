@@ -261,12 +261,16 @@ export default function DjDashboard() {
   const [statsCardWidthInput, setStatsCardWidthInput] = useState('');
   const [statsCardGapInput, setStatsCardGapInput] = useState('');
   const [queueContainerWidthInput, setQueueContainerWidthInput] = useState('');
+  const [sidebarWidthInput, setSidebarWidthInput] = useState('');
+  const [sidebarMenuHeightInput, setSidebarMenuHeightInput] = useState('');
+  const [qrContainerHeightInput, setQrContainerHeightInput] = useState('');
   const [statsCardTitlesInput, setStatsCardTitlesInput] = useState({
     total: '', pending: '', playing: '', votes: '', db: '', rating: '', plan: '', djs: '', queue: ''
   });
   const [sidebarTitlesInput, setSidebarTitlesInput] = useState({
     requests: '', settings: '', calendar: '', optimization: '', benefits: '',
-    platform_customization: '', admin: '', support: '', admin_profile: '', revenue: ''
+    platform_customization: '', admin: '', support: '', admin_profile: '', revenue: '',
+    qrTitle: '', qrDesc: ''
   });
 
   // Inicializar estados locales de personalización
@@ -276,6 +280,9 @@ export default function DjDashboard() {
       setStatsCardWidthInput(userProfile.statsCardWidth || '');
       setStatsCardGapInput(userProfile.statsCardGap || '');
       setQueueContainerWidthInput(userProfile.queueContainerWidth || '');
+      setSidebarWidthInput(userProfile.sidebarWidth || '');
+      setSidebarMenuHeightInput(userProfile.sidebarMenuHeight || '');
+      setQrContainerHeightInput(userProfile.qrContainerHeight || '');
       setStatsCardTitlesInput({
         total: userProfile.statsCardTitles?.total || '',
         pending: userProfile.statsCardTitles?.pending || '',
@@ -297,7 +304,9 @@ export default function DjDashboard() {
         admin: userProfile.sidebarTitles?.admin || '',
         support: userProfile.sidebarTitles?.support || '',
         admin_profile: userProfile.sidebarTitles?.admin_profile || '',
-        revenue: userProfile.sidebarTitles?.revenue || ''
+        revenue: userProfile.sidebarTitles?.revenue || '',
+        qrTitle: userProfile.sidebarTitles?.qrTitle || '',
+        qrDesc: userProfile.sidebarTitles?.qrDesc || ''
       });
     }
   }, [userProfile]);
@@ -545,6 +554,9 @@ export default function DjDashboard() {
         statsCardWidth: statsCardWidthInput,
         statsCardGap: statsCardGapInput,
         queueContainerWidth: queueContainerWidthInput,
+        sidebarWidth: sidebarWidthInput,
+        sidebarMenuHeight: sidebarMenuHeightInput,
+        qrContainerHeight: qrContainerHeightInput,
         statsCardTitles: statsCardTitlesInput,
         sidebarTitles: sidebarTitlesInput
       });
@@ -2239,7 +2251,7 @@ export default function DjDashboard() {
       <header className={`glass-panel ${isProUser ? 'pro-gold-frame' : ''}`} style={{
         padding: '20px 30px', borderRadius: 'var(--radius-lg)',
         display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-        flexWrap: 'wrap', gap: '20px', marginBottom: '24px'
+        flexWrap: 'wrap', gap: '20px', marginBottom: '2px'
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
           <div className="flex-center animate-pulse-glow" style={{
@@ -2658,11 +2670,11 @@ export default function DjDashboard() {
       </section>
 
       {/* PANEL PRINCIPAL */}
-      <div style={{ display: 'grid', gridTemplateColumns: '250px 1fr', gap: '24px', alignItems: 'start' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: `${userProfile?.sidebarWidth ? (isNaN(userProfile.sidebarWidth) ? userProfile.sidebarWidth : `${userProfile.sidebarWidth}px`) : '250px'} 1fr`, gap: '0px', alignItems: 'start' }}>
 
         {/* COLUMNA IZQUIERDA */}
         <aside style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-          <nav className="glass-panel sidebar-nav" style={{ padding: '8px', display: 'flex', flexDirection: 'column', gap: '4px' }}>
+          <nav className="glass-panel sidebar-nav" style={{ padding: '8px', display: 'flex', flexDirection: 'column', gap: '4px', height: userProfile?.sidebarMenuHeight ? (isNaN(userProfile.sidebarMenuHeight) ? userProfile.sidebarMenuHeight : `${userProfile.sidebarMenuHeight}px`) : 'auto', overflowY: 'auto' }}>
             <button className={`btn ${activeTab === 'requests' ? 'btn-primary' : 'btn-secondary'}`}
               onClick={() => setActiveTab('requests')} style={{ justifyContent: 'flex-start', width: '100%' }}>
               <Music size={16} /><span>{userProfile?.sidebarTitles?.requests || 'Lista de Peticiones'}</span>
@@ -2740,10 +2752,10 @@ export default function DjDashboard() {
           </nav>
 
           {/* QR del Evento */}
-          <div className="glass-panel" style={{ padding: '20px', textAlign: 'center' }}>
-            <h4 style={{ fontSize: '1rem', marginBottom: '12px' }}>Código QR para el Público</h4>
+          <div className="glass-panel" style={{ padding: '20px', textAlign: 'center', height: userProfile?.qrContainerHeight ? (isNaN(userProfile.qrContainerHeight) ? userProfile.qrContainerHeight : `${userProfile.qrContainerHeight}px`) : 'auto', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+            <h4 style={{ fontSize: '1rem', marginBottom: '12px' }}>{userProfile?.sidebarTitles?.qrTitle || 'Código QR para el Público'}</h4>
             <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginBottom: '16px' }}>
-              Muestra o descarga este QR para que el público escanee y acceda a la web app.
+              {userProfile?.sidebarTitles?.qrDesc || 'Muestra o descarga este QR para que el público escanee y acceda a la web app.'}
             </p>
             <div className="flex-center" style={{ background: '#fff', padding: '15px', borderRadius: 'var(--radius-md)', display: 'inline-flex', boxShadow: 'var(--shadow-sm)', marginBottom: '16px' }}>
               <QRCodeSVG id="qr-code-svg" value={publicEventUrl} size={180} level={"H"} includeMargin={false} />
@@ -4839,6 +4851,76 @@ export default function DjDashboard() {
                     value={statsCardTitlesInput.queue}
                     onChange={(e) => setStatsCardTitlesInput({ ...statsCardTitlesInput, queue: e.target.value })}
                     style={{ padding: '8px 12px', fontSize: '0.85rem', width: '240px' }}
+                  />
+                </div>
+              </div>
+            </div>
+
+            <div style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid var(--surface-border)', borderRadius: 'var(--radius-md)', padding: '20px', marginTop: '16px' }}>
+              <span style={{ fontSize: '0.9rem', fontWeight: '700', display: 'block', marginBottom: '14px', color: 'var(--secondary-color)' }}>
+                📐 Dimensión del Menú Lateral y QR
+              </span>
+              <div style={{ display: 'flex', gap: '20px', alignItems: 'center', flexWrap: 'wrap' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                  <label style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', fontWeight: '600' }}>Ancho de la Columna (px o %):</label>
+                  <input
+                    type="text"
+                    className="input-field"
+                    placeholder="ej. 250 o 25%"
+                    value={sidebarWidthInput}
+                    onChange={(e) => setSidebarWidthInput(e.target.value)}
+                    style={{ padding: '8px 12px', fontSize: '0.85rem', width: '200px' }}
+                  />
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                  <label style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', fontWeight: '600' }}>Altura del Menú (px o auto):</label>
+                  <input
+                    type="text"
+                    className="input-field"
+                    placeholder="ej. 400 o auto"
+                    value={sidebarMenuHeightInput}
+                    onChange={(e) => setSidebarMenuHeightInput(e.target.value)}
+                    style={{ padding: '8px 12px', fontSize: '0.85rem', width: '200px' }}
+                  />
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                  <label style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', fontWeight: '600' }}>Altura Contenedor QR (px o auto):</label>
+                  <input
+                    type="text"
+                    className="input-field"
+                    placeholder="ej. 400 o auto"
+                    value={qrContainerHeightInput}
+                    onChange={(e) => setQrContainerHeightInput(e.target.value)}
+                    style={{ padding: '8px 12px', fontSize: '0.85rem', width: '200px' }}
+                  />
+                </div>
+              </div>
+            </div>
+
+            <div style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid var(--surface-border)', borderRadius: 'var(--radius-md)', padding: '20px', marginTop: '16px' }}>
+              <span style={{ fontSize: '0.9rem', fontWeight: '700', display: 'block', marginBottom: '14px', color: 'var(--secondary-color)' }}>
+                📝 Títulos del Contenedor QR
+              </span>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                  <label style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', fontWeight: '600' }}>Título del QR:</label>
+                  <input
+                    type="text"
+                    className="input-field"
+                    placeholder="Código QR para el Público"
+                    value={sidebarTitlesInput.qrTitle || ''}
+                    onChange={(e) => setSidebarTitlesInput({ ...sidebarTitlesInput, qrTitle: e.target.value })}
+                    style={{ padding: '8px 12px', fontSize: '0.85rem' }}
+                  />
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', gridColumn: '1 / -1' }}>
+                  <label style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', fontWeight: '600' }}>Descripción del QR:</label>
+                  <textarea
+                    className="input-field"
+                    placeholder="Muestra o descarga este QR para que el público escanee y acceda a la web app."
+                    value={sidebarTitlesInput.qrDesc || ''}
+                    onChange={(e) => setSidebarTitlesInput({ ...sidebarTitlesInput, qrDesc: e.target.value })}
+                    style={{ padding: '8px 12px', fontSize: '0.85rem', resize: 'vertical', minHeight: '60px' }}
                   />
                 </div>
               </div>
