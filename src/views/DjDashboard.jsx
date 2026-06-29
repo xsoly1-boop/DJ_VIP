@@ -2611,6 +2611,13 @@ export default function DjDashboard() {
               <Sparkles size={16} /><span>Beneficios para el DJ</span>
               {(!currentPlan || currentPlan === 'free' || currentPlan === 'premium') && <Lock size={14} style={{ marginLeft: 'auto', opacity: 0.6 }} />}
             </button>
+            {isAdminMaster && (
+              <button className={`btn ${activeTab === 'platform_customization' ? 'btn-primary' : 'btn-secondary'}`}
+                onClick={() => setActiveTab('platform_customization')} style={{ justifyContent: 'flex-start', width: '100%', borderColor: activeTab === 'platform_customization' ? undefined : 'rgba(6,182,212,0.2)' }}>
+                <Sliders size={16} /><span>Personalizacion de plataforma</span>
+                <span style={{ marginLeft: 'auto', fontSize: '0.65rem', background: 'rgba(6,182,212,0.15)', color: 'var(--secondary-color)', padding: '2px 6px', borderRadius: '8px', fontWeight: '700' }}>MASTER</span>
+              </button>
+            )}
             {/* Tab Admin: solo visible para dj@admin.com sin impersonar */}
             {isAdminMaster && !impersonatingUid && (
               <>
@@ -3245,43 +3252,6 @@ export default function DjDashboard() {
                               <option value="medium">Mediano (100px)</option>
                               <option value="large">Grande (130px)</option>
                             </select>
-                            {isAdminMaster && (
-                              <div style={{ marginTop: '12px', borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: '10px' }}>
-                                <span style={{ fontSize: '0.8rem', fontWeight: '700', display: 'block', marginBottom: '8px', color: 'var(--secondary-color)' }}>
-                                  📏 Dimensión de Contenedores (Admin Master)
-                                </span>
-                                <div style={{ display: 'flex', gap: '15px', alignItems: 'center', flexWrap: 'wrap' }}>
-                                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                                    <span style={{ fontSize: '0.72rem', color: 'var(--text-secondary)', fontWeight: '600' }}>Altura (px):</span>
-                                    <input
-                                      type="number"
-                                      className="input-field"
-                                      placeholder="ej. 54"
-                                      value={userProfile?.statsCardHeight || ''}
-                                      onChange={(e) => {
-                                        const val = e.target.value.trim();
-                                        updateDjOwnProfile({ statsCardHeight: val });
-                                      }}
-                                      style={{ padding: '4px 8px', fontSize: '0.8rem', width: '70px', minWidth: '70px' }}
-                                    />
-                                  </div>
-                                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                                    <span style={{ fontSize: '0.72rem', color: 'var(--text-secondary)', fontWeight: '600' }}>Ancho (px):</span>
-                                    <input
-                                      type="number"
-                                      className="input-field"
-                                      placeholder="ej. 150"
-                                      value={userProfile?.statsCardWidth || ''}
-                                      onChange={(e) => {
-                                        const val = e.target.value.trim();
-                                        updateDjOwnProfile({ statsCardWidth: val });
-                                      }}
-                                      style={{ padding: '4px 8px', fontSize: '0.8rem', width: '70px', minWidth: '70px' }}
-                                    />
-                                  </div>
-                                </div>
-                              </div>
-                            )}
                           </div>
                         </div>
                       )}
@@ -4701,8 +4671,62 @@ export default function DjDashboard() {
         </div>
       )}
 
-          {/* 3. PANEL CALENDARIO Y GESTIÓN DE EVENTOS */}
-          {activeTab === 'calendar' && (
+      {/* PANEL PERSONALIZACION DE PLATAFORMA (Exclusivo Admin Master) */}
+      {activeTab === 'platform_customization' && isAdminMaster && (
+        <div className="glass-panel animate-slide-in" style={{ padding: '24px' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', borderBottom: '1px solid var(--surface-border)', paddingBottom: '16px' }}>
+            <h2 style={{ fontSize: '1.25rem', display: 'flex', alignItems: 'center', gap: '8px', margin: 0 }}>
+              <Sliders size={20} color="var(--secondary-color)" />
+              Personalizacion de plataforma
+            </h2>
+          </div>
+
+          <div style={{ marginBottom: '20px' }}>
+            <span style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', display: 'block', marginBottom: '16px', lineHeight: '1.6' }}>
+              Como **Admin Master**, tienes control manual avanzado sobre las dimensiones físicas de los contenedores de estadísticas rápidas del panel. Los cambios surten efecto de forma inmediata.
+            </span>
+
+            <div style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid var(--surface-border)', borderRadius: 'var(--radius-md)', padding: '20px' }}>
+              <span style={{ fontSize: '0.9rem', fontWeight: '700', display: 'block', marginBottom: '14px', color: 'var(--secondary-color)' }}>
+                📏 Dimensión de Contenedores
+              </span>
+              <div style={{ display: 'flex', gap: '20px', alignItems: 'center', flexWrap: 'wrap' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                  <label style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', fontWeight: '600' }}>Altura de contenedores (px):</label>
+                  <input
+                    type="number"
+                    className="input-field"
+                    placeholder="ej. 54"
+                    value={userProfile?.statsCardHeight || ''}
+                    onChange={(e) => {
+                      const val = e.target.value.trim();
+                      updateDjOwnProfile({ statsCardHeight: val });
+                    }}
+                    style={{ padding: '8px 12px', fontSize: '0.85rem', width: '120px' }}
+                  />
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                  <label style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', fontWeight: '600' }}>Ancho de contenedores (px):</label>
+                  <input
+                    type="number"
+                    className="input-field"
+                    placeholder="ej. 150"
+                    value={userProfile?.statsCardWidth || ''}
+                    onChange={(e) => {
+                      const val = e.target.value.trim();
+                      updateDjOwnProfile({ statsCardWidth: val });
+                    }}
+                    style={{ padding: '8px 12px', fontSize: '0.85rem', width: '120px' }}
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 3. PANEL CALENDARIO Y GESTIÓN DE EVENTOS */}
+      {activeTab === 'calendar' && (
             <div className="glass-panel" style={{ padding: '24px' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', borderBottom: '1px solid var(--surface-border)', paddingBottom: '16px' }}>
                 <h2 style={{ fontSize: '1.25rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
