@@ -439,6 +439,7 @@ export const FirebaseProvider = ({ children }) => {
   const [allUsersData, setAllUsersData] = useState({});
   const [allSuggestions, setAllSuggestions] = useState({});
   const [plansConfig, setPlansConfig] = useState(DEFAULT_PLANS_CONFIG);
+  const [revenueResetTimestamp, setRevenueResetTimestamp] = useState(0);
   const [publicPaymentInfo, setPublicPaymentInfo] = useState({
     paypalClientId: '',
     mercadopagoPublicKey: '',
@@ -495,6 +496,21 @@ export const FirebaseProvider = ({ children }) => {
     });
     return () => unsubscribe();
   }, []);
+
+  // 1d_alt. Escuchar configuración de reset de finanzas
+  useEffect(() => {
+    if (!isAdminMaster) return;
+    const resetRef = ref(database, 'config/revenueResetTimestamp');
+    
+    const unsubscribe = onValue(resetRef, (snapshot) => {
+      if (snapshot.exists()) {
+        setRevenueResetTimestamp(snapshot.val() || 0);
+      } else {
+        setRevenueResetTimestamp(0);
+      }
+    });
+    return () => unsubscribe();
+  }, [isAdminMaster]);
 
   // 1f. Escuchar configuración de Twilio (solo para el Admin Master)
   useEffect(() => {
@@ -1986,7 +2002,7 @@ export const FirebaseProvider = ({ children }) => {
     await update(indexRef, { archived: archivedState });
   };
 
-  const updateEventMetadata = async (eventId, title, djName, date, eventType) => {
+  const updateEventMetadata = async (eventId, title, djName, date, eventType, logoUrl = null) => {
     if (!userBasePath) return;
 
     if (!isAdminMaster) {
@@ -2001,31 +2017,37 @@ export const FirebaseProvider = ({ children }) => {
 
     // Actualizar index
     const indexRef = ref(database, `${userBasePath}/events_index/${eventId}`);
-    await update(indexRef, {
+    const indexUpdates = {
       title,
       djName: djName || 'DJ MasterMix',
       date,
       eventType: eventType || 'Otro'
-    });
+    };
+    if (logoUrl !== null) indexUpdates.logoUrl = logoUrl;
+    await update(indexRef, indexUpdates);
 
     // Actualizar settings
     const settingsRef = ref(database, `${userBasePath}/events/${eventId}/settings`);
-    await update(settingsRef, {
+    const settingsUpdates = {
       title,
       djName: djName || 'DJ MasterMix',
       date,
       eventType: eventType || 'Otro',
       djNameSaved: true
-    });
+    };
+    if (logoUrl !== null) settingsUpdates.logoUrl = logoUrl;
+    await update(settingsRef, settingsUpdates);
 
     // Actualizar registro público si existe
     const targetRegistryId = eventId === 'default-event' ? `default-event-${activeUid}` : eventId;
     const registryRef = ref(database, `events_registry/${targetRegistryId}`);
-    await update(registryRef, {
+    const registryUpdates = {
       title,
       djName: djName || 'DJ MasterMix',
       eventType: eventType || 'Otro'
-    });
+    };
+    if (logoUrl !== null) registryUpdates.logoUrl = logoUrl;
+    await update(registryRef, registryUpdates);
   };
 
   // Validar si el DJ puede borrar las peticiones (restricción por límite de plan dentro de las primeras 8 horas)
@@ -2966,6 +2988,7 @@ export const FirebaseProvider = ({ children }) => {
   return (
     <FirebaseContext.Provider value={{
       plansConfig,
+      revenueResetTimestamp,
       updatePlansConfig,
       refreshAdminData,
       sendSupportMessage,

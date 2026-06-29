@@ -850,50 +850,14 @@ router.post('/resetRevenue', async (req, res) => {
     return res.status(403).json({ success: false, error: 'Invalid admin secret' });
   }
   try {
-    const usersSnap = await getDbRef('users').once('value');
-    if (usersSnap.exists()) {
-      const users = usersSnap.val();
-      const uids = Object.keys(users);
-      
-      let firestore;
-      try {
-        firestore = getFirestoreMock();
-      } catch (e) {}
-
-      for (const uid of uids) {
-        // Reset profile in Realtime Database
-        await getDbRef(`users/${uid}/profile`).update({
-          subscriptionStatus: 'free',
-          activePlan: 'free',
-          selectedPlan: 'free',
-          expiresAt: 0,
-          extraRequests: 0,
-          extraRequestsExpiresAt: 0,
-          gateway: null,
-          transactionId: null,
-          submittedAt: null,
-          paymentRejectedReason: null
-        });
-
-        // Reset status in Firestore (if document exists)
-        if (firestore) {
-          try {
-            const docRef = firestore.collection('users').doc(uid);
-            const doc = await docRef.get();
-            if (doc.exists) {
-              await docRef.update({ subscriptionStatus: 'free' });
-            }
-          } catch (err) {
-            console.error(`Error resetting Firestore for user ${uid}:`, err);
-          }
-        }
-      }
-    }
+    const currentTimestamp = Date.now();
+    // Guardar marca de tiempo del reset en la configuración general
+    await getDbRef('config/revenueResetTimestamp').set(currentTimestamp);
 
     // Eliminar todas las suscripciones pendientes de validación
     await getDbRef('pending_subscriptions').remove();
 
-    return res.json({ success: true });
+    return res.json({ success: true, message: 'Finances reset successfully', timestamp: currentTimestamp });
   } catch (e) {
     console.error('Error resetting revenue data', e);
     return res.status(500).json({ success: false, error: e.message });
@@ -1269,7 +1233,7 @@ function setupSmsListeners() {
       Object.entries(users).forEach(([uid, u]) => {
         if (uid === 'uid-admin-master' || !u || typeof u !== 'object') return;
         const profile = u.profile;
-        if (!profile || profile.email === 'dj@admin.com') return;
+        if (!profile || profile.email === 'dj@admin.com' || profile.email === 'misturyflash@yahoo.com.mx') return;
         
         totalDjs++;
         

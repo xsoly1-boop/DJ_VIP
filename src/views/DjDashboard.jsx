@@ -105,6 +105,7 @@ export default function DjDashboard() {
     userProfile,
     selectPlan,
     plansConfig,
+    revenueResetTimestamp,
     updatePlansConfig,
     sendSupportMessage,
     markSupportChatAsRead,
@@ -166,6 +167,7 @@ export default function DjDashboard() {
   const [editEventDjName, setEditEventDjName] = useState('');
   const [editEventDate, setEditEventDate] = useState('');
   const [editEventType, setEditEventType] = useState('Otro');
+  const [editEventLogoUrl, setEditEventLogoUrl] = useState('');
 
   // Admin Master: Editar DJ
   const [editingDjUid, setEditingDjUid] = useState(null);
@@ -1703,7 +1705,14 @@ export default function DjDashboard() {
   const handleSaveEditEvent = async (eventId) => {
     if (!editEventTitle.trim()) { showToast('⚠️ El título es requerido'); return; }
     try {
-      await updateEventMetadata(eventId, editEventTitle.trim(), editEventDjName.trim() || djNameInput, editEventDate, editEventType);
+      await updateEventMetadata(
+        eventId,
+        editEventTitle.trim(),
+        editEventDjName.trim() || djNameInput,
+        editEventDate,
+        editEventType,
+        editEventLogoUrl.trim()
+      );
       showToast('✅ Evento actualizado correctamente');
       setEditingEventId(null);
     } catch (err) {
@@ -2410,73 +2419,74 @@ export default function DjDashboard() {
         </div>
       </header>
 
-      {/* MÉTRICAS RÁPIDAS */}
-      <section style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(100px, 1fr))', gap: '8px', marginBottom: '20px' }}>
-        <div className="glass-panel" style={{ padding: '8px 10px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+      {/* MÉTRICAS RÁPIDAS (Opción A: Horizontal Minimalist ~45px) */}
+      <section style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(115px, 1fr))', gap: '6px', marginBottom: '16px' }}>
+        <div className="glass-panel metric-card-total" style={{ padding: '5px 8px', height: '42px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', boxSizing: 'border-box' }}>
           <div>
-            <p style={{ fontSize: '0.65rem', color: 'var(--text-secondary)', fontWeight: '500', lineHeight: 1.2 }}>Total<br/>Peticiones</p>
-            <h3 style={{ fontSize: '1.25rem', marginTop: '2px' }}>{stats.total}</h3>
+            <p style={{ fontSize: '0.56rem', color: 'var(--text-secondary)', fontWeight: '500', lineHeight: 1.1, whiteSpace: 'nowrap' }}>Total Peticiones</p>
+            <h3 style={{ fontSize: '1.15rem', marginTop: '1px', lineHeight: 1.1 }}>{stats.total}</h3>
           </div>
-          <Layers size={18} color="var(--primary-color)" style={{ opacity: 0.6, flexShrink: 0 }} />
+          <Layers size={14} color="var(--primary-color)" style={{ opacity: 0.6, flexShrink: 0 }} />
         </div>
-        <div className="glass-panel" style={{ padding: '8px 10px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <div className="glass-panel metric-card-pending" style={{ padding: '5px 8px', height: '42px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', boxSizing: 'border-box' }}>
           <div>
-            <p style={{ fontSize: '0.65rem', color: 'var(--text-secondary)', fontWeight: '500', lineHeight: 1.2 }}>Por<br/>Aceptar</p>
-            <h3 style={{ fontSize: '1.25rem', marginTop: '2px', color: 'var(--warning-color)' }}>{stats.pending}</h3>
+            <p style={{ fontSize: '0.56rem', color: 'var(--text-secondary)', fontWeight: '500', lineHeight: 1.1, whiteSpace: 'nowrap' }}>Por Aceptar</p>
+            <h3 style={{ fontSize: '1.15rem', marginTop: '1px', color: 'var(--warning-color)', lineHeight: 1.1 }}>{stats.pending}</h3>
           </div>
-          <RefreshCw size={18} color="var(--warning-color)" style={{ opacity: 0.6, flexShrink: 0 }} className={stats.pending > 0 ? 'animate-spin' : ''} />
+          <RefreshCw size={14} color="var(--warning-color)" style={{ opacity: 0.6, flexShrink: 0 }} className={stats.pending > 0 ? 'animate-spin' : ''} />
         </div>
-        <div className="glass-panel" style={{ padding: '8px 10px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <div className="glass-panel metric-card-playing" style={{ padding: '5px 8px', height: '42px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', boxSizing: 'border-box' }}>
           <div>
-            <p style={{ fontSize: '0.65rem', color: 'var(--text-secondary)', fontWeight: '500', lineHeight: 1.2 }}>Sonando<br/>Ahora</p>
-            <h3 style={{ fontSize: '1.25rem', marginTop: '2px', color: 'var(--secondary-color)' }}>{stats.playing}</h3>
+            <p style={{ fontSize: '0.56rem', color: 'var(--text-secondary)', fontWeight: '500', lineHeight: 1.1, whiteSpace: 'nowrap' }}>Sonando Ahora</p>
+            <h3 style={{ fontSize: '1.15rem', marginTop: '1px', color: 'var(--secondary-color)', lineHeight: 1.1 }}>{stats.playing}</h3>
           </div>
-          <Play size={18} color="var(--secondary-color)" style={{ opacity: 0.6, flexShrink: 0 }} />
+          <Play size={14} color="var(--secondary-color)" style={{ opacity: 0.6, flexShrink: 0 }} />
         </div>
-        <div className="glass-panel" style={{ padding: '8px 10px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <div className="glass-panel metric-card-votes" style={{ padding: '5px 8px', height: '42px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', boxSizing: 'border-box' }}>
           <div>
-            <p style={{ fontSize: '0.65rem', color: 'var(--text-secondary)', fontWeight: '500', lineHeight: 1.2 }}>Votos<br/>Audiencia</p>
-            <h3 style={{ fontSize: '1.25rem', marginTop: '2px', color: 'var(--success-color)' }}>{stats.votes}</h3>
+            <p style={{ fontSize: '0.56rem', color: 'var(--text-secondary)', fontWeight: '500', lineHeight: 1.1, whiteSpace: 'nowrap' }}>Votos Audiencia</p>
+            <h3 style={{ fontSize: '1.15rem', marginTop: '1px', color: 'var(--success-color)', lineHeight: 1.1 }}>{stats.votes}</h3>
           </div>
-          <Users size={18} color="var(--success-color)" style={{ opacity: 0.6, flexShrink: 0 }} />
+          <Users size={14} color="var(--success-color)" style={{ opacity: 0.6, flexShrink: 0 }} />
         </div>
-        <div className="glass-panel" style={{ padding: '8px 10px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <div className="glass-panel metric-card-db" style={{ padding: '5px 8px', height: '42px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', boxSizing: 'border-box' }}>
           <div>
-            <p style={{ fontSize: '0.65rem', color: 'var(--text-secondary)', fontWeight: '500', lineHeight: 1.2 }}>Canciones<br/>BD</p>
-            <h3 style={{ fontSize: '1.25rem', marginTop: '2px', color: 'var(--primary-color)' }}>{(autocompleteSongs || []).length}</h3>
+            <p style={{ fontSize: '0.56rem', color: 'var(--text-secondary)', fontWeight: '500', lineHeight: 1.1, whiteSpace: 'nowrap' }}>Canciones BD</p>
+            <h3 style={{ fontSize: '1.15rem', marginTop: '1px', color: 'var(--primary-color)', lineHeight: 1.1 }}>{(autocompleteSongs || []).length}</h3>
           </div>
-          <Database size={18} color="var(--primary-color)" style={{ opacity: 0.6, flexShrink: 0 }} />
+          <Database size={14} color="var(--primary-color)" style={{ opacity: 0.6, flexShrink: 0 }} />
         </div>
-        <div className="glass-panel" style={{ padding: '8px 10px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <div className="glass-panel metric-card-rating" style={{ padding: '5px 8px', height: '42px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', boxSizing: 'border-box' }}>
           <div>
-            <p style={{ fontSize: '0.65rem', color: 'var(--text-secondary)', fontWeight: '500', lineHeight: 1.2 }}>Calificación<br/>Servicio</p>
-            <div style={{ display: 'flex', alignItems: 'baseline', gap: '4px', marginTop: '2px' }}>
-              <h3 style={{ fontSize: '1.25rem', color: '#f59e0b' }}>{ratingsStats?.avg || 0}</h3>
-              <span style={{ fontSize: '0.65rem', color: 'var(--text-muted)' }}>({ratingsStats?.total || 0})</span>
+            <p style={{ fontSize: '0.56rem', color: 'var(--text-secondary)', fontWeight: '500', lineHeight: 1.1, whiteSpace: 'nowrap' }}>Calificación Servicio</p>
+            <div style={{ display: 'flex', alignItems: 'baseline', gap: '3px', marginTop: '1px' }}>
+              <h3 style={{ fontSize: '1.15rem', color: '#f59e0b', lineHeight: 1.1 }}>{ratingsStats?.avg || 0}</h3>
+              <span style={{ fontSize: '0.58rem', color: 'var(--text-muted)' }}>({ratingsStats?.total || 0})</span>
             </div>
           </div>
-          <Star size={18} color="#f59e0b" style={{ opacity: 0.6, flexShrink: 0 }} />
+          <Star size={14} color="#f59e0b" style={{ opacity: 0.6, flexShrink: 0 }} />
         </div>
-        <div className="glass-panel" style={{ padding: '8px 10px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <div className="glass-panel metric-card-plan" style={{ padding: '5px 8px', height: '42px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', boxSizing: 'border-box' }}>
           <div>
-            <p style={{ fontSize: '0.65rem', color: 'var(--text-secondary)', fontWeight: '500', lineHeight: 1.2 }}>Vigencia<br/>Plan Activo</p>
-            <h3 style={{ fontSize: '1rem', marginTop: '2px', color: '#a855f7', display: 'flex', alignItems: 'center', gap: '4px' }}>
-              {(userProfile?.activePlan || 'free').toUpperCase()}
-              {((userProfile?.activePlan === 'pro' || userProfile?.activePlan === 'pro_1d') && ' 😎')}
-            </h3>
-            <PlanValidityDisplay activePlan={userProfile?.activePlan || 'free'} expiresAt={userProfile?.expiresAt} />
+            <p style={{ fontSize: '0.56rem', color: 'var(--text-secondary)', fontWeight: '500', lineHeight: 1.1, whiteSpace: 'nowrap' }}>Vigencia Plan</p>
+            <div style={{ display: 'flex', alignItems: 'baseline', gap: '4px', marginTop: '1px' }}>
+              <h3 style={{ fontSize: '0.9rem', color: '#a855f7', fontWeight: '700', lineHeight: 1.1 }}>
+                {(userProfile?.activePlan || 'free').toUpperCase()}
+              </h3>
+              <PlanValidityDisplay activePlan={userProfile?.activePlan || 'free'} expiresAt={userProfile?.expiresAt} />
+            </div>
           </div>
-          <Clock size={18} color="#a855f7" style={{ opacity: 0.6, flexShrink: 0 }} />
+          <Clock size={14} color="#a855f7" style={{ opacity: 0.6, flexShrink: 0 }} />
         </div>
         {isAdminMaster && (
-          <div className="glass-panel" style={{ padding: '8px 10px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <div className="glass-panel metric-card-djs" style={{ padding: '5px 8px', height: '42px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', boxSizing: 'border-box' }}>
             <div>
-              <p style={{ fontSize: '0.65rem', color: 'var(--text-secondary)', fontWeight: '500', lineHeight: 1.2 }}>DJs<br/>Registrados</p>
-              <h3 style={{ fontSize: '1.25rem', marginTop: '2px', color: '#06b6d4' }}>
+              <p style={{ fontSize: '0.56rem', color: 'var(--text-secondary)', fontWeight: '500', lineHeight: 1.1, whiteSpace: 'nowrap' }}>DJs Registrados</p>
+              <h3 style={{ fontSize: '1.15rem', marginTop: '1px', color: '#06b6d4', lineHeight: 1.1 }}>
                 {Object.keys(allUsersData || {}).filter(uid => uid !== 'uid-admin-master' && allUsersData[uid]?.profile?.email !== 'dj@admin.com').length}
               </h3>
             </div>
-            <Users size={18} color="#06b6d4" style={{ opacity: 0.6, flexShrink: 0 }} />
+            <Users size={14} color="#06b6d4" style={{ opacity: 0.6, flexShrink: 0 }} />
           </div>
         )}
       </section>
@@ -4703,7 +4713,24 @@ export default function DjDashboard() {
                                     <input type="text" className="input-field" style={{ padding: '6px 10px', fontSize: '0.85rem' }} value={editEventDjName} onChange={(e) => setEditEventDjName(e.target.value)} placeholder="Nombre DJ" />
                                     <input type="date" className="input-field" style={{ padding: '6px 10px', fontSize: '0.85rem' }} value={editEventDate} onChange={(e) => setEditEventDate(e.target.value)} />
                                   </div>
-                                  <div style={{ display: 'flex', gap: '8px' }}>
+                                  {['pro', 'vip', 'pro_1d'].includes(userProfile?.activePlan || 'free') && (
+                                    <div style={{ display: 'flex', gap: '10px', alignItems: 'center', background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: '8px', padding: '8px 10px', marginTop: '4px' }}>
+                                      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '2px' }}>
+                                        <label style={{ fontSize: '0.68rem', color: 'var(--text-secondary)', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                          Logo del Evento (URL Externa)
+                                          <span style={{ color: '#a855f7', fontSize: '0.58rem', background: 'rgba(168,85,247,0.15)', padding: '1px 5px', borderRadius: '4px', fontWeight: 'bold' }}>VIP / PRO</span>
+                                        </label>
+                                        <input type="text" className="input-field" style={{ padding: '5px 8px', fontSize: '0.78rem', width: '100%', boxSizing: 'border-box' }} value={editEventLogoUrl} onChange={(e) => setEditEventLogoUrl(e.target.value)} placeholder="https://ejemplo.com/mi-logo.png" />
+                                        <span style={{ fontSize: '0.6rem', color: 'var(--text-muted)' }}>Reemplaza el logo de vinilo en la pantalla del público para este evento.</span>
+                                      </div>
+                                      {editEventLogoUrl && editEventLogoUrl.startsWith('http') && (
+                                        <div style={{ width: '42px', height: '42px', border: '1px solid rgba(168,85,247,0.3)', borderRadius: '6px', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#000', flexShrink: 0 }}>
+                                          <img src={editEventLogoUrl} alt="Preview" style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }} onError={(e) => { e.target.style.display = 'none'; }} />
+                                        </div>
+                                      )}
+                                    </div>
+                                  )}
+                                  <div style={{ display: 'flex', gap: '8px', marginTop: '6px' }}>
                                     <button className="btn btn-primary" style={{ padding: '6px 14px', fontSize: '0.8rem' }} onClick={() => handleSaveEditEvent(ev.id)}><Check size={13} /> Guardar</button>
                                     <button className="btn btn-secondary" style={{ padding: '6px 14px', fontSize: '0.8rem' }} onClick={() => setEditingEventId(null)}><X size={13} /> Cancelar</button>
                                   </div>
@@ -4733,7 +4760,14 @@ export default function DjDashboard() {
                                     <Play size={13} /> Activar
                                   </button>
                                 )}
-                                <button title="Editar evento" className="btn btn-secondary" style={{ padding: '6px 10px', fontSize: '0.75rem' }} onClick={() => { setEditingEventId(ev.id); setEditEventTitle(ev.title); setEditEventDjName(ev.djName || ''); setEditEventDate(ev.date || ''); setEditEventType(ev.eventType || 'Otro'); }}>
+                                <button title="Editar evento" className="btn btn-secondary" style={{ padding: '6px 10px', fontSize: '0.75rem' }} onClick={() => {
+                                  setEditingEventId(ev.id);
+                                  setEditEventTitle(ev.title);
+                                  setEditEventDjName(ev.djName || '');
+                                  setEditEventDate(ev.date || '');
+                                  setEditEventType(ev.eventType || 'Otro');
+                                  setEditEventLogoUrl(ev.logoUrl || allEventsData?.[ev.id]?.settings?.logoUrl || '');
+                                }}>
                                   <Edit size={13} />
                                 </button>
                                 <button title={isArchived ? 'Desarchivar' : 'Archivar'} className="btn btn-secondary" style={{ padding: '6px 10px', fontSize: '0.75rem' }} onClick={() => { archiveEvent(ev.id, !isArchived); showToast(isArchived ? `📂 Evento desarchivado` : `🗄️ Evento archivado`); }}>
@@ -6175,7 +6209,7 @@ export default function DjDashboard() {
                 return { ...u, uid, profile };
               })
               .filter(Boolean)
-              .filter(u => u.uid !== 'uid-admin-master' && u.profile?.email !== 'dj@admin.com');
+              .filter(u => u.uid !== 'uid-admin-master' && u.profile?.email !== 'dj@admin.com' && u.profile?.email !== 'misturyflash@yahoo.com.mx');
 
               // Calcular usuarios con plan de pago o bonus activos
               const activePayingUsers = [];
@@ -6192,17 +6226,24 @@ export default function DjDashboard() {
                 if (plan && plan !== 'free' && plan !== 'bonus' && PAID_PLANS.includes(plan)) {
                   const price = parseFloat(plansConfig?.[plan]?.price || 0);
                   const currency = plansConfig?.[plan]?.currency || 'MXN';
-                  totalRevenue += price;
                   
-                  if (!byPlan[plan]) {
-                    byPlan[plan] = { count: 0, subtotal: 0, price, currency, name: plansConfig?.[plan]?.name || plan };
-                  }
-                  byPlan[plan].count++;
-                  byPlan[plan].subtotal += price;
-                  activations.push({ ...profile, plan, price });
+                  // Obtener la fecha de activación real o estimada
+                  const activatedAt = profile.submittedAt || (profile.expiresAt ? (profile.expiresAt - 30 * 24 * 60 * 60 * 1000) : 0);
                   
-                  if (!activePayingUsers.some(au => au.uid === u.uid)) {
-                    activePayingUsers.push(u);
+                  // Solo acumular si se activó después de la última fecha de reset
+                  if (activatedAt > (revenueResetTimestamp || 0)) {
+                    totalRevenue += price;
+                    
+                    if (!byPlan[plan]) {
+                      byPlan[plan] = { count: 0, subtotal: 0, price, currency, name: plansConfig?.[plan]?.name || plan };
+                    }
+                    byPlan[plan].count++;
+                    byPlan[plan].subtotal += price;
+                    activations.push({ ...profile, plan, price, activatedAt });
+                    
+                    if (!activePayingUsers.some(au => au.uid === u.uid)) {
+                      activePayingUsers.push(u);
+                    }
                   }
                 }
 
@@ -6213,24 +6254,29 @@ export default function DjDashboard() {
                 if (isBonusActive) {
                   const bonusPrice = parseFloat(plansConfig?.bonus?.price || 50);
                   const bonusCurrency = plansConfig?.bonus?.currency || 'MXN';
-                  totalRevenue += bonusPrice;
+                  const bonusActivatedAt = extraRequestsExpiresAt - 30 * 24 * 60 * 60 * 1000;
                   
-                  if (!byPlan.bonus) {
-                    byPlan.bonus = { count: 0, subtotal: 0, price: bonusPrice, currency: bonusCurrency, name: plansConfig?.bonus?.name || 'Plan Bonus (Extra)' };
-                  }
-                  byPlan.bonus.count++;
-                  byPlan.bonus.subtotal += bonusPrice;
-                  
-                  activations.push({
-                    ...profile,
-                    plan: 'bonus',
-                    price: bonusPrice,
-                    activatedAt: extraRequestsExpiresAt - 30 * 24 * 60 * 60 * 1000,
-                    expiresAt: extraRequestsExpiresAt
-                  });
-                  
-                  if (!activePayingUsers.some(au => au.uid === u.uid)) {
-                    activePayingUsers.push(u);
+                  // Solo acumular si el bonus se activó después del reset
+                  if (bonusActivatedAt > (revenueResetTimestamp || 0)) {
+                    totalRevenue += bonusPrice;
+                    
+                    if (!byPlan.bonus) {
+                      byPlan.bonus = { count: 0, subtotal: 0, price: bonusPrice, currency: bonusCurrency, name: plansConfig?.bonus?.name || 'Plan Bonus (Extra)' };
+                    }
+                    byPlan.bonus.count++;
+                    byPlan.bonus.subtotal += bonusPrice;
+                    
+                    activations.push({
+                      ...profile,
+                      plan: 'bonus',
+                      price: bonusPrice,
+                      activatedAt: bonusActivatedAt,
+                      expiresAt: extraRequestsExpiresAt
+                    });
+                    
+                    if (!activePayingUsers.some(au => au.uid === u.uid)) {
+                      activePayingUsers.push(u);
+                    }
                   }
                 }
               });
