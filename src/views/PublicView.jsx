@@ -48,9 +48,9 @@ export default function PublicView() {
 
   const eventSettings = rawEventSettings ? { ...defaults, ...rawEventSettings } : defaults;
 
-  // Personalización de branding (Solo disponible para planes PRO, VIP y Eventual)
-  const isBrandingAllowed = ['pro', 'vip', 'pro_1d', 'eventual'].includes(ownerProfile?.activePlan || 'free');
-  const logoToDisplay = isBrandingAllowed ? (eventSettings.logoUrl || ownerProfile?.logoUrl || '') : '';
+  // Personalización de branding (Exclusiva de planes PRO y VIP, sin fallback a logo global)
+  const isBrandingAllowed = ['pro', 'vip', 'pro_1d'].includes(ownerProfile?.activePlan || 'free') || eventOwnerUid === 'uid-admin-master';
+  const logoToDisplay = isBrandingAllowed ? (eventSettings.logoUrl || '') : '';
 
   const sessionId = getSessionId();
 

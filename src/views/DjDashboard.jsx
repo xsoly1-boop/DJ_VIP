@@ -3074,8 +3074,8 @@ export default function DjDashboard() {
               ) : (
                 <form onSubmit={handleSaveBranding} style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
 
-                {/* Logo Personalizado - Habilitado exclusivamente para planes Premium y Admin Master */}
-                {(isAdminMaster || currentPlan === 'premium') && (
+                {/* Logo Personalizado - Habilitado exclusivamente para el Admin Master (DJs PRO/VIP lo configuran por evento, Premium no tiene permitido branding) */}
+                {isAdminMaster && (
                 <div className="form-group" style={{ borderBottom: '1px solid rgba(255,255,255,0.05)', paddingBottom: '20px' }}>
                   <label className="form-label" style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px' }}>
                     <Image size={15} color="var(--secondary-color)" />
