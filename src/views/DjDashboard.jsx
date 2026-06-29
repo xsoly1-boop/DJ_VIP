@@ -2489,7 +2489,7 @@ export default function DjDashboard() {
       </header>
 
       {/* MÉTRICAS RÁPIDAS (Opción B2: Split Layout con Icono Neón Circular a la Izquierda ~54px) */}
-      <section style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(135px, 1fr))', gap: '8px', marginBottom: '16px' }}>
+      <section style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(135px, 1fr))', gap: (userProfile?.statsCardHeight || userProfile?.statsCardWidth) ? '0px' : '8px', marginBottom: '16px' }}>
         
         {/* Total Peticiones */}
         <div className="glass-panel metric-card-total" style={{ 
