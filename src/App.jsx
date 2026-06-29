@@ -8,6 +8,7 @@ import PlanSelection from './views/PlanSelection';
 import PaymentView from './views/PaymentView';
 
 import { database, ref, onValue } from './firebase';
+import { CURRENT_APP_VERSION } from './utils/AppVersionConfig';
 
 // ─── Detección de plataforma ──────────────────────────────────────────────────
 function detectPlatform() {
@@ -69,7 +70,6 @@ function AppContent() {
         }
         
         if (data && data.latestVersion) {
-          const { CURRENT_APP_VERSION } = await import('./utils/AppVersionConfig');
           
           const isNewer = (latest, current) => {
             const lParts = latest.split('.').map(Number);

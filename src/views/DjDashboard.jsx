@@ -185,6 +185,9 @@ export default function DjDashboard() {
 
   // Confirmación de borrado de evento
   const [deletingEventId, setDeletingEventId] = useState(null);
+  
+  // Optimización de Historial: Límite de renderizado en DOM
+  const [visibleHistoryCount, setVisibleHistoryCount] = useState(20);
 
   
   // Modal Borrar Historial Opcional con palabra clave
@@ -2822,7 +2825,7 @@ export default function DjDashboard() {
                     <span>✅ Historial: Ya Reproducidas ({playedRequestsList.length})</span>
                   </h3>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                    {playedRequestsList.map((req) => (
+                    {playedRequestsList.slice(0, visibleHistoryCount).map((req) => (
                       <div key={req.id} className="glass-panel" style={{
                         padding: '12px 16px', borderRadius: 'var(--radius-md)',
                         display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '12px',
@@ -2879,6 +2882,16 @@ export default function DjDashboard() {
                         </div>
                       </div>
                     ))}
+                    {playedRequestsList.length > visibleHistoryCount && (
+                      <button 
+                        type="button"
+                        onClick={() => setVisibleHistoryCount(prev => prev + 30)}
+                        className="btn btn-secondary" 
+                        style={{ padding: '8px 16px', fontSize: '0.8rem', alignSelf: 'center', marginTop: '10px', width: 'auto', display: 'flex', gap: '6px', alignItems: 'center' }}
+                      >
+                        📂 Cargar más historial (+30)
+                      </button>
+                    )}
                   </div>
                 </div>
               )}

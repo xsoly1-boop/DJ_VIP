@@ -24,6 +24,7 @@ import {
   firebaseConfig,
   syncChannel,
   MOCK_ACCOUNTS,
+  registerFCMToken,
   get
 } from '../firebase';
 import { getDeviceId } from '../utils/deviceFingerprint';
@@ -476,9 +477,7 @@ export const FirebaseProvider = ({ children }) => {
       // 🔔 FCM — Registrar token cuando el usuario inicia sesión en Android
       if (currentUser) {
         const isAdmin = currentUser.email && MASTER_ADMIN_EMAIL && currentUser.email.toLowerCase() === MASTER_ADMIN_EMAIL.toLowerCase();
-        import('../firebase.js').then(({ registerFCMToken }) => {
-          registerFCMToken(currentUser.uid, isAdmin ? 'admin_master' : 'dj');
-        }).catch(() => {}); // No-op si el import falla
+        registerFCMToken(currentUser.uid, isAdmin ? 'admin_master' : 'dj').catch(() => {});
       }
     });
     return () => unsubscribe();
@@ -1079,8 +1078,6 @@ export const FirebaseProvider = ({ children }) => {
     // 2. Obtener device fingerprint
     let deviceId = null;
     try {
-      // Dynamically import the fingerprint utility to avoid SSR issues
-      const { getDeviceId } = await import('../utils/deviceFingerprint');
       deviceId = await getDeviceId();
     } catch (e) {
       console.warn('Device fingerprint not obtained:', e);
