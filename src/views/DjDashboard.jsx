@@ -76,6 +76,7 @@ export default function DjDashboard() {
     updateEventSettings, 
     createNewEvent,
     changeEvent,
+    updateDjOwnProfile,
     isMock,
     isAdminMaster,
     impersonatingUid,
@@ -168,6 +169,7 @@ export default function DjDashboard() {
   const [editEventDate, setEditEventDate] = useState('');
   const [editEventType, setEditEventType] = useState('Otro');
   const [editEventLogoUrl, setEditEventLogoUrl] = useState('');
+  const [editEventLogoSize, setEditEventLogoSize] = useState('medium');
 
   // Admin Master: Editar DJ
   const [editingDjUid, setEditingDjUid] = useState(null);
@@ -1509,6 +1511,8 @@ export default function DjDashboard() {
         dedicationsEnabled: dedicationsEnabledInput,
         customGenres: customGenresInput.trim()
       });
+      // Guardar el skin del DJ de forma global en su perfil para mantenerlo activo
+      await updateDjOwnProfile({ bgSkin: bgSkinInput });
       showToast("💾 Configuración de marca guardada");
     } catch (err) {
       console.error('Error guardando configuración:', err);
@@ -1711,7 +1715,8 @@ export default function DjDashboard() {
         editEventDjName.trim() || djNameInput,
         editEventDate,
         editEventType,
-        editEventLogoUrl.trim()
+        editEventLogoUrl.trim(),
+        editEventLogoSize
       );
       showToast('✅ Evento actualizado correctamente');
       setEditingEventId(null);
@@ -4714,20 +4719,31 @@ export default function DjDashboard() {
                                     <input type="date" className="input-field" style={{ padding: '6px 10px', fontSize: '0.85rem' }} value={editEventDate} onChange={(e) => setEditEventDate(e.target.value)} />
                                   </div>
                                   {['pro', 'vip', 'pro_1d'].includes(userProfile?.activePlan || 'free') && (
-                                    <div style={{ display: 'flex', gap: '10px', alignItems: 'center', background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: '8px', padding: '8px 10px', marginTop: '4px' }}>
-                                      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '2px' }}>
-                                        <label style={{ fontSize: '0.68rem', color: 'var(--text-secondary)', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                                          Logo del Evento (URL Externa)
-                                          <span style={{ color: '#a855f7', fontSize: '0.58rem', background: 'rgba(168,85,247,0.15)', padding: '1px 5px', borderRadius: '4px', fontWeight: 'bold' }}>VIP / PRO</span>
-                                        </label>
-                                        <input type="text" className="input-field" style={{ padding: '5px 8px', fontSize: '0.78rem', width: '100%', boxSizing: 'border-box' }} value={editEventLogoUrl} onChange={(e) => setEditEventLogoUrl(e.target.value)} placeholder="https://ejemplo.com/mi-logo.png" />
-                                        <span style={{ fontSize: '0.6rem', color: 'var(--text-muted)' }}>Reemplaza el logo de vinilo en la pantalla del público para este evento.</span>
-                                      </div>
-                                      {editEventLogoUrl && editEventLogoUrl.startsWith('http') && (
-                                        <div style={{ width: '42px', height: '42px', border: '1px solid rgba(168,85,247,0.3)', borderRadius: '6px', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#000', flexShrink: 0 }}>
-                                          <img src={editEventLogoUrl} alt="Preview" style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }} onError={(e) => { e.target.style.display = 'none'; }} />
+                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: '8px', padding: '10px', marginTop: '4px' }}>
+                                      <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+                                        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '2px' }}>
+                                          <label style={{ fontSize: '0.68rem', color: 'var(--text-secondary)', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                            Logo del Evento (URL Externa)
+                                            <span style={{ color: '#a855f7', fontSize: '0.58rem', background: 'rgba(168,85,247,0.15)', padding: '1px 5px', borderRadius: '4px', fontWeight: 'bold' }}>VIP / PRO</span>
+                                          </label>
+                                          <input type="text" className="input-field" style={{ padding: '5px 8px', fontSize: '0.78rem', width: '100%', boxSizing: 'border-box' }} value={editEventLogoUrl} onChange={(e) => setEditEventLogoUrl(e.target.value)} placeholder="https://ejemplo.com/mi-logo.png" />
+                                          <span style={{ fontSize: '0.6rem', color: 'var(--text-muted)' }}>Reemplaza el logo de vinilo en la pantalla del público para este evento.</span>
                                         </div>
-                                      )}
+                                        {editEventLogoUrl && editEventLogoUrl.startsWith('http') && (
+                                          <div style={{ width: '42px', height: '42px', border: '1px solid rgba(168,85,247,0.3)', borderRadius: '6px', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#000', flexShrink: 0 }}>
+                                            <img src={editEventLogoUrl} alt="Preview" style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }} onError={(e) => { e.target.style.display = 'none'; }} />
+                                          </div>
+                                        )}
+                                      </div>
+
+                                      <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+                                        <label style={{ fontSize: '0.68rem', color: 'var(--text-secondary)', fontWeight: 'bold' }}>Tamaño del Logo (Pantalla Pública)</label>
+                                        <select className="input-field" style={{ padding: '5px 8px', fontSize: '0.78rem', width: '100%', cursor: 'pointer' }} value={editEventLogoSize} onChange={(e) => setEditEventLogoSize(e.target.value)}>
+                                          <option value="small">🔎 Chico (50px)</option>
+                                          <option value="medium">🔎 Mediano (75px)</option>
+                                          <option value="large">🔎 Grande (100px)</option>
+                                        </select>
+                                      </div>
                                     </div>
                                   )}
                                   <div style={{ display: 'flex', gap: '8px', marginTop: '6px' }}>
@@ -4767,6 +4783,7 @@ export default function DjDashboard() {
                                   setEditEventDate(ev.date || '');
                                   setEditEventType(ev.eventType || 'Otro');
                                   setEditEventLogoUrl(ev.logoUrl || allEventsData?.[ev.id]?.settings?.logoUrl || '');
+                                  setEditEventLogoSize(ev.logoSize || allEventsData?.[ev.id]?.settings?.logoSize || 'medium');
                                 }}>
                                   <Edit size={13} />
                                 </button>

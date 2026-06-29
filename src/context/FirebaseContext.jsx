@@ -773,6 +773,90 @@ export const FirebaseProvider = ({ children }) => {
     return () => unsubscribe();
   }, [currentEventId, activeUid, isPublicView]);
 
+  const applySkinThemeVars = (bgSkin) => {
+    if (bgSkin === 'skin1') {
+      // Charcoal
+      document.documentElement.style.setProperty('--bg-color', '#383636');
+      document.documentElement.style.setProperty('--surface-color', 'rgba(20, 20, 20, 0.7)');
+      document.documentElement.style.setProperty('--surface-border', 'rgba(255, 255, 255, 0.1)');
+      document.documentElement.style.setProperty('--text-primary', '#ffffff');
+      document.documentElement.style.setProperty('--text-secondary', '#cbd5e1');
+      document.documentElement.style.setProperty('--text-muted', '#94a3b8');
+    } else if (bgSkin === 'skin2') {
+      // Deep Purple
+      document.documentElement.style.setProperty('--bg-color', '#380357');
+      document.documentElement.style.setProperty('--surface-color', 'rgba(22, 1, 36, 0.75)');
+      document.documentElement.style.setProperty('--surface-border', 'rgba(255, 255, 255, 0.12)');
+      document.documentElement.style.setProperty('--text-primary', '#ffffff');
+      document.documentElement.style.setProperty('--text-secondary', '#e2d9f3');
+      document.documentElement.style.setProperty('--text-muted', '#bda8e4');
+    } else if (bgSkin === 'skin3') {
+      // Deep Blue
+      document.documentElement.style.setProperty('--bg-color', '#032557');
+      document.documentElement.style.setProperty('--surface-color', 'rgba(1, 15, 38, 0.75)');
+      document.documentElement.style.setProperty('--surface-border', 'rgba(255, 255, 255, 0.12)');
+      document.documentElement.style.setProperty('--text-primary', '#ffffff');
+      document.documentElement.style.setProperty('--text-secondary', '#d0e1fd');
+      document.documentElement.style.setProperty('--text-muted', '#a1c5fb');
+    } else if (bgSkin === 'skin4') {
+      // Deep Teal
+      document.documentElement.style.setProperty('--bg-color', '#02313f');
+      document.documentElement.style.setProperty('--surface-color', 'rgba(1, 25, 33, 0.75)');
+      document.documentElement.style.setProperty('--surface-border', 'rgba(255, 255, 255, 0.12)');
+      document.documentElement.style.setProperty('--text-primary', '#ffffff');
+      document.documentElement.style.setProperty('--text-secondary', '#cde3ea');
+      document.documentElement.style.setProperty('--text-muted', '#9bc1cc');
+    } else if (bgSkin === 'skin5') {
+      // Deep Maroon
+      document.documentElement.style.setProperty('--bg-color', '#3f020a');
+      document.documentElement.style.setProperty('--surface-color', 'rgba(28, 1, 5, 0.75)');
+      document.documentElement.style.setProperty('--surface-border', 'rgba(255, 255, 255, 0.12)');
+      document.documentElement.style.setProperty('--text-primary', '#ffffff');
+      document.documentElement.style.setProperty('--text-secondary', '#fcdbdc');
+      document.documentElement.style.setProperty('--text-muted', '#f7a9ac');
+    } else if (bgSkin === 'skin_crystal') {
+      // Crystal (Premium Glassmorphism)
+      document.documentElement.style.setProperty('--bg-color', '#0d0a21');
+      document.documentElement.style.setProperty('--surface-color', 'rgba(255, 255, 255, 0.02)');
+      document.documentElement.style.setProperty('--surface-border', 'rgba(255, 255, 255, 0.08)');
+      document.documentElement.style.setProperty('--text-primary', '#ffffff');
+      document.documentElement.style.setProperty('--text-secondary', '#94a3b8');
+      document.documentElement.style.setProperty('--text-muted', '#64748b');
+      document.documentElement.style.setProperty('--primary-color', '#7c3aed');
+      document.documentElement.style.setProperty('--primary-glow', 'rgba(124, 58, 237, 0.35)');
+      document.documentElement.style.setProperty('--secondary-color', '#06b6d4');
+      document.documentElement.style.setProperty('--secondary-glow', 'rgba(6, 182, 212, 0.35)');
+    } else if (bgSkin === 'skin_luxury') {
+      // Luxury (Black, Gold & Silver)
+      document.documentElement.style.setProperty('--bg-color', '#050505');
+      document.documentElement.style.setProperty('--surface-color', 'rgba(12, 12, 14, 0.85)');
+      document.documentElement.style.setProperty('--surface-border', 'rgba(212, 175, 55, 0.2)');
+      document.documentElement.style.setProperty('--text-primary', '#f3f4f6');
+      document.documentElement.style.setProperty('--text-secondary', '#cbd5e1');
+      document.documentElement.style.setProperty('--text-muted', '#9ca3af');
+      document.documentElement.style.setProperty('--primary-color', '#d4af37');
+      document.documentElement.style.setProperty('--primary-glow', 'rgba(212, 175, 55, 0.35)');
+      document.documentElement.style.setProperty('--secondary-color', '#cbd5e1');
+      document.documentElement.style.setProperty('--secondary-glow', 'rgba(203, 213, 225, 0.35)');
+    } else {
+      // Default
+      document.documentElement.style.setProperty('--bg-color', '#060609');
+      document.documentElement.style.setProperty('--surface-color', 'rgba(18, 18, 24, 0.65)');
+      document.documentElement.style.setProperty('--surface-border', 'rgba(255, 255, 255, 0.08)');
+      document.documentElement.style.setProperty('--text-primary', '#f8fafc');
+      document.documentElement.style.setProperty('--text-secondary', '#94a3b8');
+      document.documentElement.style.setProperty('--text-muted', '#64748b');
+    }
+  };
+
+  // Mantener el skin preferido del DJ en el panel de control (Dashboard)
+  useEffect(() => {
+    if (isPublicView) return;
+    const djPreferredSkin = userProfile?.bgSkin || 'default';
+    applySkinThemeVars(djPreferredSkin);
+    document.documentElement.setAttribute('data-skin', djPreferredSkin);
+  }, [userProfile?.bgSkin, isPublicView]);
+
   const ownerBasePath = eventOwnerUid ? `users/${eventOwnerUid}` : null;
   const effectiveReadPath = isPublicView ? (ownerBasePath || userBasePath) : (userBasePath || ownerBasePath);
 
@@ -810,84 +894,12 @@ export const FirebaseProvider = ({ children }) => {
           document.documentElement.style.setProperty('--base-font-size', '1rem');
         }
 
-        // Configurar tema de fondo (Skin)
-        const bgSkin = data.bgSkin || 'default';
-        if (bgSkin === 'skin1') {
-          // Charcoal
-          document.documentElement.style.setProperty('--bg-color', '#383636');
-          document.documentElement.style.setProperty('--surface-color', 'rgba(20, 20, 20, 0.7)');
-          document.documentElement.style.setProperty('--surface-border', 'rgba(255, 255, 255, 0.1)');
-          document.documentElement.style.setProperty('--text-primary', '#ffffff');
-          document.documentElement.style.setProperty('--text-secondary', '#cbd5e1');
-          document.documentElement.style.setProperty('--text-muted', '#94a3b8');
-        } else if (bgSkin === 'skin2') {
-          // Deep Purple
-          document.documentElement.style.setProperty('--bg-color', '#380357');
-          document.documentElement.style.setProperty('--surface-color', 'rgba(22, 1, 36, 0.75)');
-          document.documentElement.style.setProperty('--surface-border', 'rgba(255, 255, 255, 0.12)');
-          document.documentElement.style.setProperty('--text-primary', '#ffffff');
-          document.documentElement.style.setProperty('--text-secondary', '#e2d9f3');
-          document.documentElement.style.setProperty('--text-muted', '#bda8e4');
-        } else if (bgSkin === 'skin3') {
-          // Deep Blue
-          document.documentElement.style.setProperty('--bg-color', '#032557');
-          document.documentElement.style.setProperty('--surface-color', 'rgba(1, 15, 38, 0.75)');
-          document.documentElement.style.setProperty('--surface-border', 'rgba(255, 255, 255, 0.12)');
-          document.documentElement.style.setProperty('--text-primary', '#ffffff');
-          document.documentElement.style.setProperty('--text-secondary', '#d0e1fd');
-          document.documentElement.style.setProperty('--text-muted', '#a1c5fb');
-        } else if (bgSkin === 'skin4') {
-          // Deep Teal
-          document.documentElement.style.setProperty('--bg-color', '#02313f');
-          document.documentElement.style.setProperty('--surface-color', 'rgba(1, 25, 33, 0.75)');
-          document.documentElement.style.setProperty('--surface-border', 'rgba(255, 255, 255, 0.12)');
-          document.documentElement.style.setProperty('--text-primary', '#ffffff');
-          document.documentElement.style.setProperty('--text-secondary', '#cde3ea');
-          document.documentElement.style.setProperty('--text-muted', '#9bc1cc');
-        } else if (bgSkin === 'skin5') {
-          // Deep Maroon
-          document.documentElement.style.setProperty('--bg-color', '#3f020a');
-          document.documentElement.style.setProperty('--surface-color', 'rgba(28, 1, 5, 0.75)');
-          document.documentElement.style.setProperty('--surface-border', 'rgba(255, 255, 255, 0.12)');
-          document.documentElement.style.setProperty('--text-primary', '#ffffff');
-          document.documentElement.style.setProperty('--text-secondary', '#fcdbdc');
-          document.documentElement.style.setProperty('--text-muted', '#f7a9ac');
-        } else if (bgSkin === 'skin_crystal') {
-          // Crystal (Premium Glassmorphism)
-          document.documentElement.style.setProperty('--bg-color', '#0d0a21');
-          document.documentElement.style.setProperty('--surface-color', 'rgba(255, 255, 255, 0.02)');
-          document.documentElement.style.setProperty('--surface-border', 'rgba(255, 255, 255, 0.08)');
-          document.documentElement.style.setProperty('--text-primary', '#ffffff');
-          document.documentElement.style.setProperty('--text-secondary', '#94a3b8');
-          document.documentElement.style.setProperty('--text-muted', '#64748b');
-          // Purple/Cyan branding override
-          document.documentElement.style.setProperty('--primary-color', '#7c3aed');
-          document.documentElement.style.setProperty('--primary-glow', 'rgba(124, 58, 237, 0.35)');
-          document.documentElement.style.setProperty('--secondary-color', '#06b6d4');
-          document.documentElement.style.setProperty('--secondary-glow', 'rgba(6, 182, 212, 0.35)');
-        } else if (bgSkin === 'skin_luxury') {
-          // Luxury (Black, Gold & Silver)
-          document.documentElement.style.setProperty('--bg-color', '#050505');
-          document.documentElement.style.setProperty('--surface-color', 'rgba(12, 12, 14, 0.85)');
-          document.documentElement.style.setProperty('--surface-border', 'rgba(212, 175, 55, 0.2)');
-          document.documentElement.style.setProperty('--text-primary', '#f3f4f6');
-          document.documentElement.style.setProperty('--text-secondary', '#cbd5e1');
-          document.documentElement.style.setProperty('--text-muted', '#9ca3af');
-          // Gold & Silver branding override
-          document.documentElement.style.setProperty('--primary-color', '#d4af37');
-          document.documentElement.style.setProperty('--primary-glow', 'rgba(212, 175, 55, 0.35)');
-          document.documentElement.style.setProperty('--secondary-color', '#cbd5e1');
-          document.documentElement.style.setProperty('--secondary-glow', 'rgba(203, 213, 225, 0.35)');
-        } else {
-          // Default
-          document.documentElement.style.setProperty('--bg-color', '#060609');
-          document.documentElement.style.setProperty('--surface-color', 'rgba(18, 18, 24, 0.65)');
-          document.documentElement.style.setProperty('--surface-border', 'rgba(255, 255, 255, 0.08)');
-          document.documentElement.style.setProperty('--text-primary', '#f8fafc');
-          document.documentElement.style.setProperty('--text-secondary', '#94a3b8');
-          document.documentElement.style.setProperty('--text-muted', '#64748b');
+        // Configurar tema de fondo (Skin) solo si es la vista del público
+        if (isPublicView) {
+          const bgSkin = data.bgSkin || 'default';
+          applySkinThemeVars(bgSkin);
+          document.documentElement.setAttribute('data-skin', bgSkin);
         }
-        document.documentElement.setAttribute('data-skin', bgSkin);
       } else {
         setEventSettings({
           title: 'Mi Gran Evento VIP',
@@ -1825,6 +1837,13 @@ export const FirebaseProvider = ({ children }) => {
     }
   };
 
+  // Actualizar perfil del propio DJ (ej. preferencia de Skin global)
+  const updateDjOwnProfile = async (updates) => {
+    if (!activeUid) return;
+    const profileRef = ref(database, `users/${activeUid}/profile`);
+    await update(profileRef, updates);
+  };
+
   // Subir logotipo personalizado (DJ) — mantiene compatibilidad Firebase Storage real
   const uploadLogo = async (file) => {
     if (!userBasePath) return;
@@ -2037,7 +2056,7 @@ export const FirebaseProvider = ({ children }) => {
     await update(indexRef, { archived: archivedState });
   };
 
-  const updateEventMetadata = async (eventId, title, djName, date, eventType, logoUrl = null) => {
+  const updateEventMetadata = async (eventId, title, djName, date, eventType, logoUrl = null, logoSize = null) => {
     if (!userBasePath) return;
 
     if (!isAdminMaster) {
@@ -2059,6 +2078,7 @@ export const FirebaseProvider = ({ children }) => {
       eventType: eventType || 'Otro'
     };
     if (logoUrl !== null) indexUpdates.logoUrl = logoUrl;
+    if (logoSize !== null) indexUpdates.logoSize = logoSize;
     await update(indexRef, indexUpdates);
 
     // Actualizar settings
@@ -2071,6 +2091,7 @@ export const FirebaseProvider = ({ children }) => {
       djNameSaved: true
     };
     if (logoUrl !== null) settingsUpdates.logoUrl = logoUrl;
+    if (logoSize !== null) settingsUpdates.logoSize = logoSize;
     await update(settingsRef, settingsUpdates);
 
     // Actualizar registro público si existe
@@ -2082,6 +2103,7 @@ export const FirebaseProvider = ({ children }) => {
       eventType: eventType || 'Otro'
     };
     if (logoUrl !== null) registryUpdates.logoUrl = logoUrl;
+    if (logoSize !== null) registryUpdates.logoSize = logoSize;
     await update(registryRef, registryUpdates);
   };
 
@@ -3026,6 +3048,7 @@ export const FirebaseProvider = ({ children }) => {
       revenueResetTimestamp,
       ownerProfile,
       updatePlansConfig,
+      updateDjOwnProfile,
       refreshAdminData,
       sendSupportMessage,
       markSupportChatAsRead,
