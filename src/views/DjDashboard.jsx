@@ -261,7 +261,7 @@ export default function DjDashboard() {
   const [statsCardWidthInput, setStatsCardWidthInput] = useState('');
   const [queueContainerWidthInput, setQueueContainerWidthInput] = useState('');
   const [statsCardTitlesInput, setStatsCardTitlesInput] = useState({
-    total: '', pending: '', playing: '', votes: '', db: '', rating: '', plan: '', djs: ''
+    total: '', pending: '', playing: '', votes: '', db: '', rating: '', plan: '', djs: '', queue: ''
   });
   const [sidebarTitlesInput, setSidebarTitlesInput] = useState({
     requests: '', settings: '', calendar: '', optimization: '', benefits: '',
@@ -282,7 +282,8 @@ export default function DjDashboard() {
         db: userProfile.statsCardTitles?.db || '',
         rating: userProfile.statsCardTitles?.rating || '',
         plan: userProfile.statsCardTitles?.plan || '',
-        djs: userProfile.statsCardTitles?.djs || ''
+        djs: userProfile.statsCardTitles?.djs || '',
+        queue: userProfile.statsCardTitles?.queue || ''
       });
       setSidebarTitlesInput({
         requests: userProfile.sidebarTitles?.requests || '',
@@ -2793,7 +2794,7 @@ export default function DjDashboard() {
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '15px', marginBottom: '20px', borderBottom: '1px solid var(--surface-border)', paddingBottom: '16px' }}>
                 <h2 style={{ fontSize: '1.25rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
                   <Sliders size={20} color="var(--primary-color)" />
-                  Peticiones en Cola
+                  {userProfile?.statsCardTitles?.queue || 'Peticiones en Cola'}
                 </h2>
                 <div style={{ display: 'flex', gap: '10px', alignItems: 'center', flexWrap: 'wrap' }}>
                   <button
@@ -4902,6 +4903,17 @@ export default function DjDashboard() {
                     />
                   </div>
                 )}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                  <label style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', fontWeight: '600' }}>Contenedor Grande (Peticiones en Cola):</label>
+                  <input
+                    type="text"
+                    className="input-field"
+                    placeholder="Peticiones en Cola"
+                    value={statsCardTitlesInput.queue}
+                    onChange={(e) => setStatsCardTitlesInput({ ...statsCardTitlesInput, queue: e.target.value })}
+                    style={{ padding: '8px 12px', fontSize: '0.85rem' }}
+                  />
+                </div>
               </div>
             </div>
 
