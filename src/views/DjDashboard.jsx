@@ -2442,7 +2442,9 @@ export default function DjDashboard() {
             <Layers size={14} color="var(--primary-color)" />
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', minWidth: 0, flex: 1 }}>
-            <span style={{ fontSize: '0.58rem', color: 'var(--text-secondary)', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.3px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>Total Peticiones</span>
+            <span style={{ fontSize: '0.58rem', color: 'var(--text-secondary)', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.3px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+              {userProfile?.statsCardTitles?.total || 'Total Peticiones'}
+            </span>
             <h3 style={{ fontSize: '1.25rem', fontWeight: '700', margin: '2px 0 0 0', lineHeight: 1 }}>{stats.total}</h3>
           </div>
         </div>
@@ -2459,7 +2461,9 @@ export default function DjDashboard() {
             <RefreshCw size={14} color="var(--warning-color)" className={stats.pending > 0 ? 'animate-spin' : ''} />
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', minWidth: 0, flex: 1 }}>
-            <span style={{ fontSize: '0.58rem', color: 'var(--text-secondary)', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.3px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>Por Aceptar</span>
+            <span style={{ fontSize: '0.58rem', color: 'var(--text-secondary)', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.3px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+              {userProfile?.statsCardTitles?.pending || 'Por Aceptar'}
+            </span>
             <h3 style={{ fontSize: '1.25rem', fontWeight: '700', margin: '2px 0 0 0', color: 'var(--warning-color)', lineHeight: 1 }}>{stats.pending}</h3>
           </div>
         </div>
@@ -2476,7 +2480,9 @@ export default function DjDashboard() {
             <Play size={14} color="var(--secondary-color)" />
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', minWidth: 0, flex: 1 }}>
-            <span style={{ fontSize: '0.58rem', color: 'var(--text-secondary)', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.3px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>Sonando Ahora</span>
+            <span style={{ fontSize: '0.58rem', color: 'var(--text-secondary)', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.3px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+              {userProfile?.statsCardTitles?.playing || 'Sonando Ahora'}
+            </span>
             <h3 style={{ fontSize: '1.25rem', fontWeight: '700', margin: '2px 0 0 0', color: 'var(--secondary-color)', lineHeight: 1 }}>{stats.playing}</h3>
           </div>
         </div>
@@ -2493,7 +2499,9 @@ export default function DjDashboard() {
             <Users size={14} color="var(--success-color)" />
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', minWidth: 0, flex: 1 }}>
-            <span style={{ fontSize: '0.58rem', color: 'var(--text-secondary)', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.3px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>Votos Audiencia</span>
+            <span style={{ fontSize: '0.58rem', color: 'var(--text-secondary)', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.3px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+              {userProfile?.statsCardTitles?.votes || 'Votos Audiencia'}
+            </span>
             <h3 style={{ fontSize: '1.25rem', fontWeight: '700', margin: '2px 0 0 0', color: 'var(--success-color)', lineHeight: 1 }}>{stats.votes}</h3>
           </div>
         </div>
@@ -2510,7 +2518,9 @@ export default function DjDashboard() {
             <Database size={14} color="#6366f1" />
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', minWidth: 0, flex: 1 }}>
-            <span style={{ fontSize: '0.58rem', color: 'var(--text-secondary)', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.3px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>Canciones BD</span>
+            <span style={{ fontSize: '0.58rem', color: 'var(--text-secondary)', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.3px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+              {userProfile?.statsCardTitles?.db || 'Canciones BD'}
+            </span>
             <h3 style={{ fontSize: '1.25rem', fontWeight: '700', margin: '2px 0 0 0', color: '#6366f1', lineHeight: 1 }}>{(autocompleteSongs || []).length}</h3>
           </div>
         </div>
@@ -2527,7 +2537,9 @@ export default function DjDashboard() {
             <Star size={14} color="#f59e0b" />
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', minWidth: 0, flex: 1 }}>
-            <span style={{ fontSize: '0.58rem', color: 'var(--text-secondary)', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.3px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>Calificación</span>
+            <span style={{ fontSize: '0.58rem', color: 'var(--text-secondary)', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.3px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+              {userProfile?.statsCardTitles?.rating || 'Calificación'}
+            </span>
             <div style={{ display: 'flex', alignItems: 'baseline', gap: '3px', margin: '2px 0 0 0' }}>
               <h3 style={{ fontSize: '1.25rem', fontWeight: '700', color: '#f59e0b', lineHeight: 1 }}>{ratingsStats?.avg || 0}</h3>
               <span style={{ fontSize: '0.6rem', color: 'var(--text-muted)' }}>({ratingsStats?.total || 0})</span>
@@ -2547,7 +2559,9 @@ export default function DjDashboard() {
             <Clock size={14} color="#a855f7" />
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', minWidth: 0, flex: 1 }}>
-            <span style={{ fontSize: '0.58rem', color: 'var(--text-secondary)', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.3px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>Plan</span>
+            <span style={{ fontSize: '0.58rem', color: 'var(--text-secondary)', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.3px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+              {userProfile?.statsCardTitles?.plan || 'Plan'}
+            </span>
             <div style={{ display: 'flex', flexDirection: 'column', margin: 0, lineHeight: 1.1 }}>
               <h3 style={{ fontSize: '0.9rem', color: '#a855f7', fontWeight: '700' }}>{(userProfile?.activePlan || 'free').toUpperCase()}</h3>
               <PlanValidityDisplay activePlan={userProfile?.activePlan || 'free'} expiresAt={userProfile?.expiresAt} />
@@ -2568,7 +2582,9 @@ export default function DjDashboard() {
               <Users size={14} color="#06b6d4" />
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', minWidth: 0, flex: 1 }}>
-              <span style={{ fontSize: '0.58rem', color: 'var(--text-secondary)', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.3px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>DJs Registrados</span>
+              <span style={{ fontSize: '0.58rem', color: 'var(--text-secondary)', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.3px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                {userProfile?.statsCardTitles?.djs || 'DJs Registrados'}
+              </span>
               <h3 style={{ fontSize: '1.25rem', fontWeight: '700', margin: '2px 0 0 0', color: '#06b6d4', lineHeight: 1 }}>
                 {Object.keys(allUsersData || {}).filter(uid => uid !== 'uid-admin-master' && allUsersData[uid]?.profile?.email !== 'dj@admin.com').length}
               </h3>
@@ -4719,6 +4735,136 @@ export default function DjDashboard() {
                     style={{ padding: '8px 12px', fontSize: '0.85rem', width: '120px' }}
                   />
                 </div>
+              </div>
+            </div>
+
+            <div style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid var(--surface-border)', borderRadius: 'var(--radius-md)', padding: '20px', marginTop: '16px' }}>
+              <span style={{ fontSize: '0.9rem', fontWeight: '700', display: 'block', marginBottom: '14px', color: 'var(--secondary-color)' }}>
+                ✍️ Título de Contenedores
+              </span>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                  <label style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', fontWeight: '600' }}>Contenedor 1 (Total Peticiones):</label>
+                  <input
+                    type="text"
+                    className="input-field"
+                    placeholder="Total Peticiones"
+                    value={userProfile?.statsCardTitles?.total || ''}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      const currentTitles = userProfile?.statsCardTitles || {};
+                      updateDjOwnProfile({ statsCardTitles: { ...currentTitles, total: val } });
+                    }}
+                    style={{ padding: '8px 12px', fontSize: '0.85rem' }}
+                  />
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                  <label style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', fontWeight: '600' }}>Contenedor 2 (Por Aceptar):</label>
+                  <input
+                    type="text"
+                    className="input-field"
+                    placeholder="Por Aceptar"
+                    value={userProfile?.statsCardTitles?.pending || ''}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      const currentTitles = userProfile?.statsCardTitles || {};
+                      updateDjOwnProfile({ statsCardTitles: { ...currentTitles, pending: val } });
+                    }}
+                    style={{ padding: '8px 12px', fontSize: '0.85rem' }}
+                  />
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                  <label style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', fontWeight: '600' }}>Contenedor 3 (Sonando Ahora):</label>
+                  <input
+                    type="text"
+                    className="input-field"
+                    placeholder="Sonando Ahora"
+                    value={userProfile?.statsCardTitles?.playing || ''}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      const currentTitles = userProfile?.statsCardTitles || {};
+                      updateDjOwnProfile({ statsCardTitles: { ...currentTitles, playing: val } });
+                    }}
+                    style={{ padding: '8px 12px', fontSize: '0.85rem' }}
+                  />
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                  <label style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', fontWeight: '600' }}>Contenedor 4 (Votos Audiencia):</label>
+                  <input
+                    type="text"
+                    className="input-field"
+                    placeholder="Votos Audiencia"
+                    value={userProfile?.statsCardTitles?.votes || ''}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      const currentTitles = userProfile?.statsCardTitles || {};
+                      updateDjOwnProfile({ statsCardTitles: { ...currentTitles, votes: val } });
+                    }}
+                    style={{ padding: '8px 12px', fontSize: '0.85rem' }}
+                  />
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                  <label style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', fontWeight: '600' }}>Contenedor 5 (Canciones BD):</label>
+                  <input
+                    type="text"
+                    className="input-field"
+                    placeholder="Canciones BD"
+                    value={userProfile?.statsCardTitles?.db || ''}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      const currentTitles = userProfile?.statsCardTitles || {};
+                      updateDjOwnProfile({ statsCardTitles: { ...currentTitles, db: val } });
+                    }}
+                    style={{ padding: '8px 12px', fontSize: '0.85rem' }}
+                  />
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                  <label style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', fontWeight: '600' }}>Contenedor 6 (Calificación):</label>
+                  <input
+                    type="text"
+                    className="input-field"
+                    placeholder="Calificación"
+                    value={userProfile?.statsCardTitles?.rating || ''}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      const currentTitles = userProfile?.statsCardTitles || {};
+                      updateDjOwnProfile({ statsCardTitles: { ...currentTitles, rating: val } });
+                    }}
+                    style={{ padding: '8px 12px', fontSize: '0.85rem' }}
+                  />
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                  <label style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', fontWeight: '600' }}>Contenedor 7 (Plan):</label>
+                  <input
+                    type="text"
+                    className="input-field"
+                    placeholder="Plan"
+                    value={userProfile?.statsCardTitles?.plan || ''}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      const currentTitles = userProfile?.statsCardTitles || {};
+                      updateDjOwnProfile({ statsCardTitles: { ...currentTitles, plan: val } });
+                    }}
+                    style={{ padding: '8px 12px', fontSize: '0.85rem' }}
+                  />
+                </div>
+                {isAdminMaster && (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                    <label style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', fontWeight: '600' }}>Contenedor 8 (DJs Registrados):</label>
+                    <input
+                      type="text"
+                      className="input-field"
+                      placeholder="DJs Registrados"
+                      value={userProfile?.statsCardTitles?.djs || ''}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        const currentTitles = userProfile?.statsCardTitles || {};
+                        updateDjOwnProfile({ statsCardTitles: { ...currentTitles, djs: val } });
+                      }}
+                      style={{ padding: '8px 12px', fontSize: '0.85rem' }}
+                    />
+                  </div>
+                )}
               </div>
             </div>
           </div>
