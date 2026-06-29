@@ -260,17 +260,41 @@ export default function DjDashboard() {
   const [statsCardHeightInput, setStatsCardHeightInput] = useState('');
   const [statsCardWidthInput, setStatsCardWidthInput] = useState('');
   const [statsCardGapInput, setStatsCardGapInput] = useState('');
+  const [statsCardIconSizeInput, setStatsCardIconSizeInput] = useState('');
+  const [statsCardLabelSizeInput, setStatsCardLabelSizeInput] = useState('');
+  const [statsCardValueSizeInput, setStatsCardValueSizeInput] = useState('');
+  const [headerMarginBottomInput, setHeaderMarginBottomInput] = useState('');
+  const [statsSectionMarginBottomInput, setStatsSectionMarginBottomInput] = useState('');
   const [queueContainerWidthInput, setQueueContainerWidthInput] = useState('');
+  const [mainLayoutGapInput, setMainLayoutGapInput] = useState('');
   const [sidebarWidthInput, setSidebarWidthInput] = useState('');
   const [sidebarMenuHeightInput, setSidebarMenuHeightInput] = useState('');
   const [qrContainerHeightInput, setQrContainerHeightInput] = useState('');
+
+  // Estados de Personalización del Header
+  const [headerLogoSizeInput, setHeaderLogoSizeInput] = useState('');
+  const [headerTitleTextInput, setHeaderTitleTextInput] = useState('');
+  const [headerTitleTextSizeInput, setHeaderTitleTextSizeInput] = useState('');
+  const [headerPwaTextInput, setHeaderPwaTextInput] = useState('');
+  const [headerPwaTextSizeInput, setHeaderPwaTextSizeInput] = useState('');
+  const [headerStatusOnlineTextInput, setHeaderStatusOnlineTextInput] = useState('');
+  const [headerStatusOfflineTextInput, setHeaderStatusOfflineTextInput] = useState('');
+  const [headerStatusTextSizeInput, setHeaderStatusTextSizeInput] = useState('');
+  const [headerConnTextInput, setHeaderConnTextInput] = useState('');
+  const [headerConnTextSizeInput, setHeaderConnTextSizeInput] = useState('');
+  const [headerEventTextSizeInput, setHeaderEventTextSizeInput] = useState('');
+  const [headerPlanTextSizeInput, setHeaderPlanTextSizeInput] = useState('');
+  const [headerExitTextInput, setHeaderExitTextInput] = useState('');
+  const [headerExitTextSizeInput, setHeaderExitTextSizeInput] = useState('');
   const [statsCardTitlesInput, setStatsCardTitlesInput] = useState({
     total: '', pending: '', playing: '', votes: '', db: '', rating: '', plan: '', djs: '', queue: ''
   });
   const [sidebarTitlesInput, setSidebarTitlesInput] = useState({
     requests: '', settings: '', calendar: '', optimization: '', benefits: '',
     platform_customization: '', admin: '', support: '', admin_profile: '', revenue: '',
-    qrTitle: '', qrDesc: ''
+    qrTitle: '', qrDesc: '',
+    qrBtn1: '', qrBtn1Size: '', qrBtn2: '', qrBtn2Size: '',
+    qrBtn3: '', qrBtn3Size: '', qrBtn4: '', qrBtn4Size: ''
   });
 
   // Inicializar estados locales de personalización
@@ -279,10 +303,32 @@ export default function DjDashboard() {
       setStatsCardHeightInput(userProfile.statsCardHeight || '');
       setStatsCardWidthInput(userProfile.statsCardWidth || '');
       setStatsCardGapInput(userProfile.statsCardGap || '');
+      setStatsCardIconSizeInput(userProfile.statsCardIconSize || '');
+      setStatsCardLabelSizeInput(userProfile.statsCardLabelSize || '');
+      setStatsCardValueSizeInput(userProfile.statsCardValueSize || '');
+      setHeaderMarginBottomInput(userProfile.headerMarginBottom !== undefined ? userProfile.headerMarginBottom : '');
+      setStatsSectionMarginBottomInput(userProfile.statsSectionMarginBottom !== undefined ? userProfile.statsSectionMarginBottom : '');
       setQueueContainerWidthInput(userProfile.queueContainerWidth || '');
+      setMainLayoutGapInput(userProfile.mainLayoutGap !== undefined ? userProfile.mainLayoutGap : '');
       setSidebarWidthInput(userProfile.sidebarWidth || '');
       setSidebarMenuHeightInput(userProfile.sidebarMenuHeight || '');
       setQrContainerHeightInput(userProfile.qrContainerHeight || '');
+
+      // Cargar configuración del Header
+      setHeaderLogoSizeInput(userProfile.headerLogoSize || '');
+      setHeaderTitleTextInput(userProfile.headerTitleText || '');
+      setHeaderTitleTextSizeInput(userProfile.headerTitleTextSize || '');
+      setHeaderPwaTextInput(userProfile.headerPwaText || '');
+      setHeaderPwaTextSizeInput(userProfile.headerPwaTextSize || '');
+      setHeaderStatusOnlineTextInput(userProfile.headerStatusOnlineText || '');
+      setHeaderStatusOfflineTextInput(userProfile.headerStatusOfflineText || '');
+      setHeaderStatusTextSizeInput(userProfile.headerStatusTextSize || '');
+      setHeaderConnTextInput(userProfile.headerConnText || '');
+      setHeaderConnTextSizeInput(userProfile.headerConnTextSize || '');
+      setHeaderEventTextSizeInput(userProfile.headerEventTextSize || '');
+      setHeaderPlanTextSizeInput(userProfile.headerPlanTextSize || '');
+      setHeaderExitTextInput(userProfile.headerExitText || '');
+      setHeaderExitTextSizeInput(userProfile.headerExitTextSize || '');
       setStatsCardTitlesInput({
         total: userProfile.statsCardTitles?.total || '',
         pending: userProfile.statsCardTitles?.pending || '',
@@ -306,7 +352,15 @@ export default function DjDashboard() {
         admin_profile: userProfile.sidebarTitles?.admin_profile || '',
         revenue: userProfile.sidebarTitles?.revenue || '',
         qrTitle: userProfile.sidebarTitles?.qrTitle || '',
-        qrDesc: userProfile.sidebarTitles?.qrDesc || ''
+        qrDesc: userProfile.sidebarTitles?.qrDesc || '',
+        qrBtn1: userProfile.sidebarTitles?.qrBtn1 || '',
+        qrBtn1Size: userProfile.sidebarTitles?.qrBtn1Size || '',
+        qrBtn2: userProfile.sidebarTitles?.qrBtn2 || '',
+        qrBtn2Size: userProfile.sidebarTitles?.qrBtn2Size || '',
+        qrBtn3: userProfile.sidebarTitles?.qrBtn3 || '',
+        qrBtn3Size: userProfile.sidebarTitles?.qrBtn3Size || '',
+        qrBtn4: userProfile.sidebarTitles?.qrBtn4 || '',
+        qrBtn4Size: userProfile.sidebarTitles?.qrBtn4Size || ''
       });
     }
   }, [userProfile]);
@@ -553,12 +607,36 @@ export default function DjDashboard() {
         statsCardHeight: statsCardHeightInput,
         statsCardWidth: statsCardWidthInput,
         statsCardGap: statsCardGapInput,
+        statsCardIconSize: statsCardIconSizeInput,
+        statsCardLabelSize: statsCardLabelSizeInput,
+        statsCardValueSize: statsCardValueSizeInput,
+        headerMarginBottom: headerMarginBottomInput,
+        statsSectionMarginBottom: statsSectionMarginBottomInput,
+        statsCardLabelSize: statsCardLabelSizeInput,
+        statsCardValueSize: statsCardValueSizeInput,
         queueContainerWidth: queueContainerWidthInput,
+        mainLayoutGap: mainLayoutGapInput,
         sidebarWidth: sidebarWidthInput,
         sidebarMenuHeight: sidebarMenuHeightInput,
         qrContainerHeight: qrContainerHeightInput,
         statsCardTitles: statsCardTitlesInput,
-        sidebarTitles: sidebarTitlesInput
+        sidebarTitles: sidebarTitlesInput,
+
+        // Guardar configuración del Header
+        headerLogoSize: headerLogoSizeInput,
+        headerTitleText: headerTitleTextInput,
+        headerTitleTextSize: headerTitleTextSizeInput,
+        headerPwaText: headerPwaTextInput,
+        headerPwaTextSize: headerPwaTextSizeInput,
+        headerStatusOnlineText: headerStatusOnlineTextInput,
+        headerStatusOfflineText: headerStatusOfflineTextInput,
+        headerStatusTextSize: headerStatusTextSizeInput,
+        headerConnText: headerConnTextInput,
+        headerConnTextSize: headerConnTextSizeInput,
+        headerEventTextSize: headerEventTextSizeInput,
+        headerPlanTextSize: headerPlanTextSizeInput,
+        headerExitText: headerExitTextInput,
+        headerExitTextSize: headerExitTextSizeInput
       });
       showToast("💾 Cambios de personalización respaldados en la base de datos.");
     } catch (err) {
@@ -2251,20 +2329,24 @@ export default function DjDashboard() {
       <header className={`glass-panel ${isProUser ? 'pro-gold-frame' : ''}`} style={{
         padding: '20px 30px', borderRadius: 'var(--radius-lg)',
         display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-        flexWrap: 'wrap', gap: '20px', marginBottom: '2px'
+        flexWrap: 'wrap', gap: '20px', marginBottom: userProfile?.headerMarginBottom !== undefined && userProfile.headerMarginBottom !== '' ? `${userProfile.headerMarginBottom}px` : '2px'
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
           <div className="flex-center animate-pulse-glow" style={{
-            width: '48px', height: '48px', borderRadius: 'var(--radius-full)',
+            width: userProfile?.headerLogoSize ? `${userProfile.headerLogoSize}px` : '48px',
+            height: userProfile?.headerLogoSize ? `${userProfile.headerLogoSize}px` : '48px',
+            borderRadius: 'var(--radius-full)',
             background: 'linear-gradient(135deg, var(--primary-color), var(--secondary-color))',
             overflow: 'hidden'
           }}>
             <img src="./logo_vinyl.png" alt="DJ Panel Logo" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
           </div>
           <div>
-            <h1 style={{ fontSize: '1.5rem', display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
-              DJ Panel
-              <span className="badge badge-playing" style={{ fontSize: '0.65rem' }}>PWA Activo 💻</span>
+            <h1 style={{ fontSize: userProfile?.headerTitleTextSize ? `${userProfile.headerTitleTextSize}px` : '1.5rem', display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+              {userProfile?.headerTitleText || 'DJ Panel'}
+              <span className="badge badge-playing" style={{ fontSize: userProfile?.headerPwaTextSize ? `${userProfile.headerPwaTextSize}px` : '0.65rem' }}>
+                {userProfile?.headerPwaText || 'PWA Activo 💻'}
+              </span>
               {/* Botón de Estado DJ */}
               <button
                 onClick={() => {
@@ -2275,7 +2357,7 @@ export default function DjDashboard() {
                 }}
                 title={djOnline ? 'Haz clic para marcar como Fuera de Cabina' : 'Haz clic para marcar como En Cabina'}
                 style={{
-                  fontSize: '0.65rem',
+                  fontSize: userProfile?.headerStatusTextSize ? `${userProfile.headerStatusTextSize}px` : '0.65rem',
                   padding: '3px 10px',
                   borderRadius: '8px',
                   fontWeight: '700',
@@ -2293,14 +2375,15 @@ export default function DjDashboard() {
                 {(() => {
                   const djName = eventSettings.djName || user?.displayName || (user?.email ? user.email.split('@')[0] : 'DJ');
                   return djOnline
-                    ? <>🎧 <strong style={{ fontWeight: '800' }}>{djName}</strong>&nbsp;· EN CABINA</>
-                    : <>⏸ <strong style={{ fontWeight: '800' }}>{djName}</strong>&nbsp;· FUERA</>;
+                    ? <>🎧 <strong style={{ fontWeight: '800' }}>{djName}</strong>&nbsp;· {userProfile?.headerStatusOnlineText || 'EN CABINA'}</>
+                    : <>⏸ <strong style={{ fontWeight: '800' }}>{djName}</strong>&nbsp;· {userProfile?.headerStatusOfflineText || 'FUERA'}</>;
                 })()}
               </button>
-
+ 
               {/* Indicador Modo */}
               <span style={{ 
-                fontSize: '0.65rem', padding: '3px 10px', borderRadius: '8px', 
+                fontSize: userProfile?.headerConnTextSize ? `${userProfile.headerConnTextSize}px` : '0.65rem',
+                padding: '3px 10px', borderRadius: '8px', 
                 fontWeight: '700', border: isMock ? '1px solid rgba(245, 158, 11, 0.3)' : '1px solid rgba(34, 195, 93, 0.3)',
                 background: isMock ? 'rgba(245, 158, 11, 0.12)' : 'rgba(34, 195, 93, 0.12)',
                 color: isMock ? 'var(--warning-color)' : 'var(--success-color)',
@@ -2311,13 +2394,14 @@ export default function DjDashboard() {
                   background: isMock ? 'var(--warning-color)' : 'var(--success-color)',
                   boxShadow: isMock ? '0 0 6px var(--warning-color)' : '0 0 6px var(--success-color)'
                 }} />
-                {isMock ? 'Modo Local' : 'Firebase Conectado'}
+                {isMock ? 'Modo Local' : (userProfile?.headerConnText || 'Firebase Conectado')}
               </span>
-
+ 
               {/* Indicador Token FCM (Solo en Android) */}
               {window.AndroidApp && (
                 <span style={{ 
-                  fontSize: '0.65rem', padding: '3px 10px', borderRadius: '8px', 
+                  fontSize: userProfile?.headerConnTextSize ? `${userProfile.headerConnTextSize}px` : '0.65rem',
+                  padding: '3px 10px', borderRadius: '8px', 
                   fontWeight: '700', border: nativeFcmToken ? '1px solid rgba(34, 195, 93, 0.3)' : '1px solid rgba(232, 48, 91, 0.3)',
                   background: nativeFcmToken ? 'rgba(34, 195, 93, 0.12)' : 'rgba(232, 48, 91, 0.12)',
                   color: nativeFcmToken ? 'var(--success-color)' : 'var(--danger-color)',
@@ -2331,20 +2415,20 @@ export default function DjDashboard() {
                   FCM: {nativeFcmToken ? 'Listo' : 'Obteniendo...'}
                 </span>
               )}
-
+ 
               {isAdminMaster && !impersonatingUid && (
                 <span style={{ fontSize: '0.65rem', padding: '3px 8px', borderRadius: '8px', background: 'rgba(245,158,11,0.15)', color: 'var(--warning-color)', fontWeight: '700', border: '1px solid rgba(245,158,11,0.3)' }}>
                   👑 ADMIN MASTER
                 </span>
               )}
             </h1>
-            <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
+            <p style={{ fontSize: userProfile?.headerEventTextSize ? `${userProfile.headerEventTextSize}px` : '0.85rem', color: 'var(--text-secondary)' }}>
               {impersonatingUid
                 ? <span style={{ color: 'var(--warning-color)' }}>Viendo: {impersonatingUid}</span>
                 : <>Evento: <strong style={{ color: 'var(--secondary-color)' }}>{eventSettings.title}</strong></>
               }
             </p>
-            <p style={{ fontSize: '0.75rem', color: '#facc15', fontWeight: '600', marginTop: '2px', letterSpacing: '0.5px' }}>
+            <p style={{ fontSize: userProfile?.headerPlanTextSize ? `${userProfile.headerPlanTextSize}px` : '0.75rem', color: '#facc15', fontWeight: '600', marginTop: '2px', letterSpacing: '0.5px' }}>
               {(() => {
                 const plan = userProfile?.activePlan || 'free';
                 const planName = plansConfig?.[plan]?.name || (plan === 'free' ? 'Plan Demo' : plan);
@@ -2445,28 +2529,28 @@ export default function DjDashboard() {
           </div>
         </div>
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
           {/* Sonido */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)', padding: '4px 8px', borderRadius: 'var(--radius-md)' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)', padding: '3px 6px', borderRadius: 'var(--radius-md)' }}>
             <button className="btn btn-secondary btn-icon" 
               onClick={() => { setSoundEnabled(!soundEnabled); showToast(soundEnabled ? '🔇 Sonido apagado' : '🔊 Sonido encendido'); }}
-              style={{ width: '36px', height: '36px' }} title={soundEnabled ? "Silenciar" : "Activar Sonido"}
+              style={{ width: '28px', height: '28px', padding: 0 }} title={soundEnabled ? "Silenciar" : "Activar Sonido"}
             >
-              {soundEnabled ? <Volume2 size={16} /> : <Volume2 size={16} style={{ opacity: 0.4 }} />}
+              {soundEnabled ? <Volume2 size={13} /> : <Volume2 size={13} style={{ opacity: 0.4 }} />}
             </button>
             {soundEnabled && (
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                 {window.AndroidApp && !window.electronAPI ? (
                   // Android APK & iOS IPA (móvil nativo): Mantenemos intacto el selector de tonos locales personalizado
                   <>
-                    <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', background: 'rgba(255,255,255,0.05)', padding: '6px 12px', borderRadius: 'var(--radius-sm)' }}>
+                    <span style={{ fontSize: '0.7rem', color: 'var(--text-secondary)', background: 'rgba(255,255,255,0.05)', padding: '4px 8px', borderRadius: 'var(--radius-sm)' }}>
                       🔊 Tono: {androidSoundName}
                     </span>
                     <button 
                       type="button" 
                       className="btn btn-secondary" 
                       onClick={() => { if (window.AndroidApp.chooseNotificationSound) window.AndroidApp.chooseNotificationSound(); }}
-                      style={{ height: '36px', padding: '0 12px', fontSize: '0.8rem', whiteSpace: 'nowrap' }}
+                      style={{ height: '28px', padding: '0 8px', fontSize: '0.7rem', whiteSpace: 'nowrap' }}
                     >
                       Cambiar tono
                     </button>
@@ -2475,15 +2559,15 @@ export default function DjDashboard() {
                   // Web & macOS / Windows DMG (Escritorio): Usan el selector clásico de tonos sintetizados (sonidos API)
                   <>
                     <select value={selectedTone} onChange={(e) => { const t = e.target.value; setSelectedTone(t); localStorage.setItem('dj_notification_tone', t); playNotificationSound(t); }}
-                      className="input-field" style={{ padding: '4px 8px', fontSize: '0.75rem', height: '36px', width: '130px', border: 'none', background: 'rgba(255,255,255,0.05)', borderRadius: 'var(--radius-sm)' }}>
+                      className="input-field" style={{ padding: '2px 6px', fontSize: '0.7rem', height: '28px', width: '105px', border: 'none', background: 'rgba(255,255,255,0.05)', borderRadius: 'var(--radius-sm)', lineHeight: 1 }}>
                       <option value="chime">🔔 Campana</option>
                       <option value="beep">📟 Bip Suave</option>
                       <option value="retro">🎮 Alarma Retro</option>
                       <option value="synth">🎹 Pulsos Synth</option>
                     </select>
                     <button className="btn btn-secondary btn-icon" onClick={() => playNotificationSound(selectedTone)}
-                      style={{ width: '36px', height: '36px', border: 'none', background: 'transparent' }} title="Probar Sonido">
-                      <Volume2 size={14} color="var(--text-secondary)" />
+                      style={{ width: '28px', height: '28px', border: 'none', background: 'transparent', padding: 0 }} title="Probar Sonido">
+                      <Volume2 size={12} color="var(--text-secondary)" />
                     </button>
                   </>
                 )}
@@ -2492,19 +2576,19 @@ export default function DjDashboard() {
           </div>
 
           {/* Notificaciones Push */}
-          <button className="btn btn-secondary btn-icon" onClick={requestNotificationPermission} title="Activar Notificaciones Push">
-            {notificationsEnabled ? <Bell size={18} color="var(--secondary-color)" /> : <BellOff size={18} />}
+          <button className="btn btn-secondary btn-icon" onClick={requestNotificationPermission} title="Activar Notificaciones Push" style={{ width: '28px', height: '28px', padding: 0 }}>
+            {notificationsEnabled ? <Bell size={14} color="var(--secondary-color)" /> : <BellOff size={14} />}
           </button>
 
           {/* Cerrar Sesión */}
-          <button className="btn btn-danger" onClick={logoutDJ} style={{ padding: '10px 18px' }}>
-            <LogOut size={16} /><span>Salir</span>
+          <button className="btn btn-danger" onClick={logoutDJ} style={{ padding: '10px 18px', fontSize: userProfile?.headerExitTextSize ? `${userProfile.headerExitTextSize}px` : '0.85rem' }}>
+            <LogOut size={16} /><span>{userProfile?.headerExitText || 'Salir'}</span>
           </button>
         </div>
       </header>
 
       {/* MÉTRICAS RÁPIDAS (Opción B2: Split Layout con Icono Neón Circular a la Izquierda ~54px) */}
-      <section style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(135px, 1fr))', gap: userProfile?.statsCardGap !== undefined && userProfile.statsCardGap !== '' ? `${userProfile.statsCardGap}px` : '8px', marginBottom: '16px' }}>
+      <section style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(135px, 1fr))', gap: '2px', marginBottom: userProfile?.statsSectionMarginBottom !== undefined && userProfile.statsSectionMarginBottom !== '' ? `${userProfile.statsSectionMarginBottom}px` : '16px' }}>
         
         {/* Total Peticiones */}
         <div className="glass-panel metric-card-total" style={{ 
@@ -2514,14 +2598,14 @@ export default function DjDashboard() {
           minHeight: userProfile?.statsCardHeight ? (isNaN(userProfile.statsCardHeight) ? userProfile.statsCardHeight : `${userProfile.statsCardHeight}px`) : '54px',
           display: 'flex', alignItems: 'center', gap: '10px', boxSizing: 'border-box' 
         }}>
-          <div style={{ width: '32px', height: '32px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(168, 85, 247, 0.1)', border: '1.5px solid var(--primary-color)', boxShadow: '0 0 8px rgba(168, 85, 247, 0.3)', flexShrink: 0 }}>
-            <Layers size={14} color="var(--primary-color)" />
+          <div style={{ width: userProfile?.statsCardIconSize ? `${userProfile.statsCardIconSize}px` : '24px', height: userProfile?.statsCardIconSize ? `${userProfile.statsCardIconSize}px` : '24px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(168, 85, 247, 0.1)', border: '1.5px solid var(--primary-color)', boxShadow: '0 0 8px rgba(168, 85, 247, 0.3)', flexShrink: 0 }}>
+            <Layers size={userProfile?.statsCardIconSize ? Math.round(Number(userProfile.statsCardIconSize) * 0.46) : 11} color="var(--primary-color)" />
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', minWidth: 0, flex: 1 }}>
             <span style={{ fontSize: '0.58rem', color: 'var(--text-secondary)', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.3px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
               {userProfile?.statsCardTitles?.total || 'Total Peticiones'}
             </span>
-            <h3 style={{ fontSize: '1.25rem', fontWeight: '700', margin: '2px 0 0 0', lineHeight: 1 }}>{stats.total}</h3>
+            <h3 style={{ fontSize: userProfile?.statsCardValueSize ? `${userProfile.statsCardValueSize}px` : '1.25rem', fontWeight: '700', margin: '2px 0 0 0', lineHeight: 1 }}>{stats.total}</h3>
           </div>
         </div>
         
@@ -2533,11 +2617,11 @@ export default function DjDashboard() {
           minHeight: userProfile?.statsCardHeight ? (isNaN(userProfile.statsCardHeight) ? userProfile.statsCardHeight : `${userProfile.statsCardHeight}px`) : '54px',
           display: 'flex', alignItems: 'center', gap: '10px', boxSizing: 'border-box' 
         }}>
-          <div style={{ width: '32px', height: '32px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(234, 179, 8, 0.1)', border: '1.5px solid var(--warning-color)', boxShadow: '0 0 8px rgba(234, 179, 8, 0.3)', flexShrink: 0 }}>
-            <RefreshCw size={14} color="var(--warning-color)" className={stats.pending > 0 ? 'animate-spin' : ''} />
+          <div style={{ width: userProfile?.statsCardIconSize ? `${userProfile.statsCardIconSize}px` : '24px', height: userProfile?.statsCardIconSize ? `${userProfile.statsCardIconSize}px` : '24px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(234, 179, 8, 0.1)', border: '1.5px solid var(--warning-color)', boxShadow: '0 0 8px rgba(234, 179, 8, 0.3)', flexShrink: 0 }}>
+            <RefreshCw size={userProfile?.statsCardIconSize ? Math.round(Number(userProfile.statsCardIconSize) * 0.46) : 11} color="var(--warning-color)" className={stats.pending > 0 ? 'animate-spin' : ''} />
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', minWidth: 0, flex: 1 }}>
-            <span style={{ fontSize: '0.58rem', color: 'var(--text-secondary)', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.3px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+            <span style={{ fontSize: userProfile?.statsCardLabelSize ? `${userProfile.statsCardLabelSize}px` : '0.58rem', color: 'var(--text-secondary)', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.3px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
               {userProfile?.statsCardTitles?.pending || 'Por Aceptar'}
             </span>
             <h3 style={{ fontSize: '1.25rem', fontWeight: '700', margin: '2px 0 0 0', color: 'var(--warning-color)', lineHeight: 1 }}>{stats.pending}</h3>
@@ -2552,11 +2636,11 @@ export default function DjDashboard() {
           minHeight: userProfile?.statsCardHeight ? (isNaN(userProfile.statsCardHeight) ? userProfile.statsCardHeight : `${userProfile.statsCardHeight}px`) : '54px',
           display: 'flex', alignItems: 'center', gap: '10px', boxSizing: 'border-box' 
         }}>
-          <div style={{ width: '32px', height: '32px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(6, 182, 212, 0.1)', border: '1.5px solid var(--secondary-color)', boxShadow: '0 0 8px rgba(6, 182, 212, 0.3)', flexShrink: 0 }}>
-            <Play size={14} color="var(--secondary-color)" />
+          <div style={{ width: userProfile?.statsCardIconSize ? `${userProfile.statsCardIconSize}px` : '24px', height: userProfile?.statsCardIconSize ? `${userProfile.statsCardIconSize}px` : '24px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(6, 182, 212, 0.1)', border: '1.5px solid var(--secondary-color)', boxShadow: '0 0 8px rgba(6, 182, 212, 0.3)', flexShrink: 0 }}>
+            <Play size={userProfile?.statsCardIconSize ? Math.round(Number(userProfile.statsCardIconSize) * 0.46) : 11} color="var(--secondary-color)" />
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', minWidth: 0, flex: 1 }}>
-            <span style={{ fontSize: '0.58rem', color: 'var(--text-secondary)', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.3px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+            <span style={{ fontSize: userProfile?.statsCardLabelSize ? `${userProfile.statsCardLabelSize}px` : '0.58rem', color: 'var(--text-secondary)', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.3px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
               {userProfile?.statsCardTitles?.playing || 'Sonando Ahora'}
             </span>
             <h3 style={{ fontSize: '1.25rem', fontWeight: '700', margin: '2px 0 0 0', color: 'var(--secondary-color)', lineHeight: 1 }}>{stats.playing}</h3>
@@ -2571,11 +2655,11 @@ export default function DjDashboard() {
           minHeight: userProfile?.statsCardHeight ? (isNaN(userProfile.statsCardHeight) ? userProfile.statsCardHeight : `${userProfile.statsCardHeight}px`) : '54px',
           display: 'flex', alignItems: 'center', gap: '10px', boxSizing: 'border-box' 
         }}>
-          <div style={{ width: '32px', height: '32px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(16, 185, 129, 0.1)', border: '1.5px solid var(--success-color)', boxShadow: '0 0 8px rgba(16, 185, 129, 0.3)', flexShrink: 0 }}>
-            <Users size={14} color="var(--success-color)" />
+          <div style={{ width: userProfile?.statsCardIconSize ? `${userProfile.statsCardIconSize}px` : '24px', height: userProfile?.statsCardIconSize ? `${userProfile.statsCardIconSize}px` : '24px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(16, 185, 129, 0.1)', border: '1.5px solid var(--success-color)', boxShadow: '0 0 8px rgba(16, 185, 129, 0.3)', flexShrink: 0 }}>
+            <Users size={userProfile?.statsCardIconSize ? Math.round(Number(userProfile.statsCardIconSize) * 0.46) : 11} color="var(--success-color)" />
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', minWidth: 0, flex: 1 }}>
-            <span style={{ fontSize: '0.58rem', color: 'var(--text-secondary)', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.3px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+            <span style={{ fontSize: userProfile?.statsCardLabelSize ? `${userProfile.statsCardLabelSize}px` : '0.58rem', color: 'var(--text-secondary)', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.3px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
               {userProfile?.statsCardTitles?.votes || 'Votos Audiencia'}
             </span>
             <h3 style={{ fontSize: '1.25rem', fontWeight: '700', margin: '2px 0 0 0', color: 'var(--success-color)', lineHeight: 1 }}>{stats.votes}</h3>
@@ -2590,11 +2674,11 @@ export default function DjDashboard() {
           minHeight: userProfile?.statsCardHeight ? (isNaN(userProfile.statsCardHeight) ? userProfile.statsCardHeight : `${userProfile.statsCardHeight}px`) : '54px',
           display: 'flex', alignItems: 'center', gap: '10px', boxSizing: 'border-box' 
         }}>
-          <div style={{ width: '32px', height: '32px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(99, 102, 241, 0.1)', border: '1.5px solid #6366f1', boxShadow: '0 0 8px rgba(99, 102, 241, 0.3)', flexShrink: 0 }}>
-            <Database size={14} color="#6366f1" />
+          <div style={{ width: userProfile?.statsCardIconSize ? `${userProfile.statsCardIconSize}px` : '24px', height: userProfile?.statsCardIconSize ? `${userProfile.statsCardIconSize}px` : '24px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(99, 102, 241, 0.1)', border: '1.5px solid #6366f1', boxShadow: '0 0 8px rgba(99, 102, 241, 0.3)', flexShrink: 0 }}>
+            <Database size={userProfile?.statsCardIconSize ? Math.round(Number(userProfile.statsCardIconSize) * 0.46) : 11} color="#6366f1" />
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', minWidth: 0, flex: 1 }}>
-            <span style={{ fontSize: '0.58rem', color: 'var(--text-secondary)', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.3px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+            <span style={{ fontSize: userProfile?.statsCardLabelSize ? `${userProfile.statsCardLabelSize}px` : '0.58rem', color: 'var(--text-secondary)', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.3px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
               {userProfile?.statsCardTitles?.db || 'Canciones BD'}
             </span>
             <h3 style={{ fontSize: '1.25rem', fontWeight: '700', margin: '2px 0 0 0', color: '#6366f1', lineHeight: 1 }}>{(autocompleteSongs || []).length}</h3>
@@ -2609,11 +2693,11 @@ export default function DjDashboard() {
           minHeight: userProfile?.statsCardHeight ? (isNaN(userProfile.statsCardHeight) ? userProfile.statsCardHeight : `${userProfile.statsCardHeight}px`) : '54px',
           display: 'flex', alignItems: 'center', gap: '10px', boxSizing: 'border-box' 
         }}>
-          <div style={{ width: '32px', height: '32px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(245, 158, 11, 0.1)', border: '1.5px solid #f59e0b', boxShadow: '0 0 8px rgba(245, 158, 11, 0.3)', flexShrink: 0 }}>
-            <Star size={14} color="#f59e0b" />
+          <div style={{ width: userProfile?.statsCardIconSize ? `${userProfile.statsCardIconSize}px` : '24px', height: userProfile?.statsCardIconSize ? `${userProfile.statsCardIconSize}px` : '24px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(245, 158, 11, 0.1)', border: '1.5px solid #f59e0b', boxShadow: '0 0 8px rgba(245, 158, 11, 0.3)', flexShrink: 0 }}>
+            <Star size={userProfile?.statsCardIconSize ? Math.round(Number(userProfile.statsCardIconSize) * 0.46) : 11} color="#f59e0b" />
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', minWidth: 0, flex: 1 }}>
-            <span style={{ fontSize: '0.58rem', color: 'var(--text-secondary)', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.3px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+            <span style={{ fontSize: userProfile?.statsCardLabelSize ? `${userProfile.statsCardLabelSize}px` : '0.58rem', color: 'var(--text-secondary)', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.3px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
               {userProfile?.statsCardTitles?.rating || 'Calificación'}
             </span>
             <div style={{ display: 'flex', alignItems: 'baseline', gap: '3px', margin: '2px 0 0 0' }}>
@@ -2631,11 +2715,11 @@ export default function DjDashboard() {
           minHeight: userProfile?.statsCardHeight ? (isNaN(userProfile.statsCardHeight) ? userProfile.statsCardHeight : `${userProfile.statsCardHeight}px`) : '54px',
           display: 'flex', alignItems: 'center', gap: '10px', boxSizing: 'border-box' 
         }}>
-          <div style={{ width: '32px', height: '32px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(168, 85, 247, 0.1)', border: '1.5px solid #a855f7', boxShadow: '0 0 8px rgba(168, 85, 247, 0.3)', flexShrink: 0 }}>
-            <Clock size={14} color="#a855f7" />
+          <div style={{ width: userProfile?.statsCardIconSize ? `${userProfile.statsCardIconSize}px` : '24px', height: userProfile?.statsCardIconSize ? `${userProfile.statsCardIconSize}px` : '24px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(168, 85, 247, 0.1)', border: '1.5px solid #a855f7', boxShadow: '0 0 8px rgba(168, 85, 247, 0.3)', flexShrink: 0 }}>
+            <Clock size={userProfile?.statsCardIconSize ? Math.round(Number(userProfile.statsCardIconSize) * 0.46) : 11} color="#a855f7" />
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', minWidth: 0, flex: 1 }}>
-            <span style={{ fontSize: '0.58rem', color: 'var(--text-secondary)', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.3px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+            <span style={{ fontSize: userProfile?.statsCardLabelSize ? `${userProfile.statsCardLabelSize}px` : '0.58rem', color: 'var(--text-secondary)', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.3px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
               {userProfile?.statsCardTitles?.plan || 'Plan'}
             </span>
             <div style={{ display: 'flex', flexDirection: 'column', margin: 0, lineHeight: 1.1 }}>
@@ -2654,11 +2738,11 @@ export default function DjDashboard() {
             minHeight: userProfile?.statsCardHeight ? (isNaN(userProfile.statsCardHeight) ? userProfile.statsCardHeight : `${userProfile.statsCardHeight}px`) : '54px',
             display: 'flex', alignItems: 'center', gap: '10px', boxSizing: 'border-box' 
           }}>
-            <div style={{ width: '32px', height: '32px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(6, 182, 212, 0.1)', border: '1.5px solid #06b6d4', boxShadow: '0 0 8px rgba(6, 182, 212, 0.3)', flexShrink: 0 }}>
-              <Users size={14} color="#06b6d4" />
+            <div style={{ width: userProfile?.statsCardIconSize ? `${userProfile.statsCardIconSize}px` : '24px', height: userProfile?.statsCardIconSize ? `${userProfile.statsCardIconSize}px` : '24px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(6, 182, 212, 0.1)', border: '1.5px solid #06b6d4', boxShadow: '0 0 8px rgba(6, 182, 212, 0.3)', flexShrink: 0 }}>
+              <Users size={userProfile?.statsCardIconSize ? Math.round(Number(userProfile.statsCardIconSize) * 0.46) : 11} color="#06b6d4" />
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', minWidth: 0, flex: 1 }}>
-              <span style={{ fontSize: '0.58rem', color: 'var(--text-secondary)', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.3px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+              <span style={{ fontSize: userProfile?.statsCardLabelSize ? `${userProfile.statsCardLabelSize}px` : '0.58rem', color: 'var(--text-secondary)', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.3px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                 {userProfile?.statsCardTitles?.djs || 'DJs Registrados'}
               </span>
               <h3 style={{ fontSize: '1.25rem', fontWeight: '700', margin: '2px 0 0 0', color: '#06b6d4', lineHeight: 1 }}>
@@ -2670,10 +2754,10 @@ export default function DjDashboard() {
       </section>
 
       {/* PANEL PRINCIPAL */}
-      <div style={{ display: 'grid', gridTemplateColumns: `${userProfile?.sidebarWidth ? (isNaN(userProfile.sidebarWidth) ? userProfile.sidebarWidth : `${userProfile.sidebarWidth}px`) : '250px'} 1fr`, gap: '0px', alignItems: 'start' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: `${userProfile?.sidebarWidth ? (isNaN(userProfile.sidebarWidth) ? userProfile.sidebarWidth : `${userProfile.sidebarWidth}px`) : '250px'} 1fr`, gap: userProfile?.mainLayoutGap !== undefined && userProfile.mainLayoutGap !== '' ? `${userProfile.mainLayoutGap}px` : '5px', alignItems: 'start' }}>
 
         {/* COLUMNA IZQUIERDA */}
-        <aside style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+        <aside style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
           <nav className="glass-panel sidebar-nav" style={{ padding: '8px', display: 'flex', flexDirection: 'column', gap: '4px', height: userProfile?.sidebarMenuHeight ? (isNaN(userProfile.sidebarMenuHeight) ? userProfile.sidebarMenuHeight : `${userProfile.sidebarMenuHeight}px`) : 'auto', overflowY: 'auto' }}>
             <button className={`btn ${activeTab === 'requests' ? 'btn-primary' : 'btn-secondary'}`}
               onClick={() => setActiveTab('requests')} style={{ justifyContent: 'flex-start', width: '100%' }}>
@@ -2764,14 +2848,14 @@ export default function DjDashboard() {
               </div>
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-              <button className="btn btn-secondary" onClick={downloadQR} style={{ width: '100%', padding: '10px' }}>
-                <Download size={14} /><span>Descargar QR PNG (1500px)</span>
+              <button className="btn btn-secondary" onClick={downloadQR} style={{ width: '100%', padding: '10px', fontSize: userProfile?.sidebarTitles?.qrBtn1Size ? `${userProfile.sidebarTitles.qrBtn1Size}px` : undefined }}>
+                <Download size={14} /><span>{userProfile?.sidebarTitles?.qrBtn1 || 'Descargar QR PNG (1500px)'}</span>
               </button>
-              <button className="btn btn-secondary" onClick={downloadQRSvg} style={{ width: '100%', padding: '10px' }}>
-                <Download size={14} /><span>Descargar QR SVG (Vectorial)</span>
+              <button className="btn btn-secondary" onClick={downloadQRSvg} style={{ width: '100%', padding: '10px', fontSize: userProfile?.sidebarTitles?.qrBtn2Size ? `${userProfile.sidebarTitles.qrBtn2Size}px` : undefined }}>
+                <Download size={14} /><span>{userProfile?.sidebarTitles?.qrBtn2 || 'Descargar QR SVG (Vectorial)'}</span>
               </button>
-              <a href={publicEventUrl} target="_blank" rel="noreferrer" className="btn btn-primary" style={{ width: '100%', padding: '10px', textDecoration: 'none', justifyContent: 'center' }}>
-                <ExternalLink size={14} /><span>Abrir Panel del Público</span>
+              <a href={publicEventUrl} target="_blank" rel="noreferrer" className="btn btn-primary" style={{ width: '100%', padding: '10px', textDecoration: 'none', justifyContent: 'center', fontSize: userProfile?.sidebarTitles?.qrBtn3Size ? `${userProfile.sidebarTitles.qrBtn3Size}px` : undefined }}>
+                <ExternalLink size={14} /><span>{userProfile?.sidebarTitles?.qrBtn3 || 'Abrir Panel del Público'}</span>
               </a>
               <button
                 className="btn btn-secondary"
@@ -2786,10 +2870,10 @@ export default function DjDashboard() {
                     }
                   }
                 }}
-                style={{ width: '100%', padding: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}
+                style={{ width: '100%', padding: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', fontSize: userProfile?.sidebarTitles?.qrBtn4Size ? `${userProfile.sidebarTitles.qrBtn4Size}px` : undefined }}
               >
                 <Printer size={14} />
-                <span>Imprimir Tarjetas QR (A4)</span>
+                <span>{userProfile?.sidebarTitles?.qrBtn4 || 'Imprimir Tarjetas QR (A4)'}</span>
                 {!isPrintAllowed && <Lock size={12} style={{ marginLeft: 'auto', opacity: 0.6 }} />}
               </button>
               <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', wordBreak: 'break-all', marginTop: '4px' }}>
@@ -2797,6 +2881,80 @@ export default function DjDashboard() {
               </div>
             </div>
           </div>
+
+          {/* TOP 10 DJs - Solo Admin Master */}
+          {isAdminMaster && (() => {
+            const djRanking = Object.entries(allUsersData || {})
+              .filter(([uid]) => uid !== 'uid-admin-master')
+              .map(([uid, data]) => {
+                const profile = data?.profile || {};
+                const events = data?.events || {};
+                const totalRequests = Object.values(events).reduce((sum, ev) => {
+                  return sum + Object.keys(ev?.requests || {}).length;
+                }, 0);
+                return {
+                  uid,
+                  name: profile.displayName || profile.email?.split('@')[0] || 'DJ',
+                  plan: profile.activePlan || 'free',
+                  totalRequests
+                };
+              })
+              .filter(dj => dj.totalRequests > 0)
+              .sort((a, b) => b.totalRequests - a.totalRequests)
+              .slice(0, 10);
+
+            if (djRanking.length === 0) return null;
+
+            const planColor = (plan) => {
+              if (plan === 'pro' || plan === 'pro_1d') return '#a855f7';
+              if (plan === 'vip') return '#f59e0b';
+              if (plan === 'premium') return '#06b6d4';
+              return 'var(--text-muted)';
+            };
+
+            return (
+              <div className="glass-panel" style={{ padding: '12px 14px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '10px', borderBottom: '1px solid var(--surface-border)', paddingBottom: '8px' }}>
+                  <span style={{ fontSize: '0.7rem' }}>🏆</span>
+                  <span style={{ fontSize: '0.72rem', fontWeight: '700', color: 'var(--secondary-color)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                    Top 10 DJs más activos
+                  </span>
+                </div>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '3px 8px' }}>
+                  {djRanking.map((dj, idx) => (
+                    <div key={dj.uid} style={{
+                      display: 'flex', alignItems: 'center', gap: '4px',
+                      padding: '3px 0',
+                      borderBottom: '1px solid rgba(255,255,255,0.03)'
+                    }}>
+                      <span style={{
+                        fontSize: '0.58rem', fontWeight: '800', color: idx < 3 ? '#f59e0b' : 'var(--text-muted)',
+                        minWidth: '14px', textAlign: 'right', flexShrink: 0
+                      }}>
+                        {idx + 1}.
+                      </span>
+                      <span style={{
+                        fontSize: '0.6rem', fontWeight: '600', color: 'var(--text-primary)',
+                        overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1
+                      }} title={dj.name}>
+                        {dj.name}
+                      </span>
+                      <span style={{
+                        fontSize: '0.55rem', fontWeight: '700', color: planColor(dj.plan),
+                        background: `${planColor(dj.plan)}15`, borderRadius: '4px',
+                        padding: '0 4px', flexShrink: 0
+                      }}>
+                        {dj.totalRequests}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+                <div style={{ marginTop: '8px', fontSize: '0.55rem', color: 'var(--text-muted)', textAlign: 'right' }}>
+                  Peticiones acumuladas
+                </div>
+              </div>
+            );
+          })()}
         </aside>
 
         {/* COLUMNA DERECHA */}
@@ -3207,10 +3365,10 @@ export default function DjDashboard() {
                       <Sparkles size={14} color="var(--secondary-color)" />
                       Géneros más pedidos (aprendidos del público)
                     </h4>
-                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px' }}>
                       {sorted.map(([genre, count]) => (
-                        <span key={genre} style={{ padding: '5px 12px', borderRadius: 'var(--radius-full)', background: 'rgba(6, 182, 212, 0.08)', border: '1px solid rgba(6, 182, 212, 0.2)', color: 'var(--secondary-color)', fontSize: '0.8rem', fontWeight: '600', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                          {genre}<span style={{ background: 'rgba(6,182,212,0.2)', borderRadius: '10px', padding: '1px 7px', fontSize: '0.7rem', fontWeight: '800' }}>{count}</span>
+                        <span key={genre} style={{ padding: '2px 8px', borderRadius: 'var(--radius-full)', background: 'rgba(6, 182, 212, 0.08)', border: '1px solid rgba(6, 182, 212, 0.2)', color: 'var(--secondary-color)', fontSize: '0.65rem', fontWeight: '600', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                          {genre}<span style={{ background: 'rgba(6,182,212,0.2)', borderRadius: '10px', padding: '0px 5px', fontSize: '0.6rem', fontWeight: '800' }}>{count}</span>
                         </span>
                       ))}
                     </div>
@@ -4823,6 +4981,138 @@ export default function DjDashboard() {
                     style={{ padding: '8px 12px', fontSize: '0.85rem', width: '120px' }}
                   />
                 </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                  <label style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', fontWeight: '600' }}>Tamaño de ícono (px, opcional):</label>
+                  <input
+                    type="number"
+                    className="input-field"
+                    placeholder="ej. 24"
+                    value={statsCardIconSizeInput}
+                    onChange={(e) => setStatsCardIconSizeInput(e.target.value.trim())}
+                    style={{ padding: '8px 12px', fontSize: '0.85rem', width: '120px' }}
+                  />
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                  <label style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', fontWeight: '600' }}>Fuente del título (px, opcional):</label>
+                  <input
+                    type="number"
+                    className="input-field"
+                    placeholder="ej. 9"
+                    value={statsCardLabelSizeInput}
+                    onChange={(e) => setStatsCardLabelSizeInput(e.target.value.trim())}
+                    style={{ padding: '8px 12px', fontSize: '0.85rem', width: '120px' }}
+                  />
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                  <label style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', fontWeight: '600' }}>Fuente del valor (px, opcional):</label>
+                  <input
+                    type="number"
+                    className="input-field"
+                    placeholder="ej. 20"
+                    value={statsCardValueSizeInput}
+                    onChange={(e) => setStatsCardValueSizeInput(e.target.value.trim())}
+                    style={{ padding: '8px 12px', fontSize: '0.85rem', width: '120px' }}
+                  />
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                  <label style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', fontWeight: '600' }}>Espacio sobre tarjetas (px):</label>
+                  <input
+                    type="number"
+                    className="input-field"
+                    placeholder="ej. 2"
+                    value={headerMarginBottomInput}
+                    onChange={(e) => setHeaderMarginBottomInput(e.target.value.trim())}
+                    style={{ padding: '8px 12px', fontSize: '0.85rem', width: '120px' }}
+                  />
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                  <label style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', fontWeight: '600' }}>Espacio bajo tarjetas (px):</label>
+                  <input
+                    type="number"
+                    className="input-field"
+                    placeholder="ej. 16"
+                    value={statsSectionMarginBottomInput}
+                    onChange={(e) => setStatsSectionMarginBottomInput(e.target.value.trim())}
+                    style={{ padding: '8px 12px', fontSize: '0.85rem', width: '120px' }}
+                  />
+                </div>
+              </div>
+            </div>
+
+            <div style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid var(--surface-border)', borderRadius: 'var(--radius-md)', padding: '20px', marginTop: '16px' }}>
+              <span style={{ fontSize: '0.9rem', fontWeight: '700', display: 'block', marginBottom: '14px', color: 'var(--secondary-color)' }}>
+                🎨 Personalización del Encabezado (Header)
+              </span>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '16px 24px' }}>
+                
+                {/* Logo & Título */}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                  <label style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', fontWeight: '600' }}>Tamaño del Logo Vinilo (px):</label>
+                  <input type="number" className="input-field" placeholder="ej. 48" value={headerLogoSizeInput} onChange={(e) => setHeaderLogoSizeInput(e.target.value.trim())} style={{ padding: '8px 12px', fontSize: '0.85rem' }} />
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                  <label style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', fontWeight: '600' }}>Título del Header (Texto):</label>
+                  <input type="text" className="input-field" placeholder="DJ Panel" value={headerTitleTextInput} onChange={(e) => setHeaderTitleTextInput(e.target.value)} style={{ padding: '8px 12px', fontSize: '0.85rem' }} />
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                  <label style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', fontWeight: '600' }}>Tamaño de fuente del Título (px):</label>
+                  <input type="number" className="input-field" placeholder="ej. 24" value={headerTitleTextSizeInput} onChange={(e) => setHeaderTitleTextSizeInput(e.target.value.trim())} style={{ padding: '8px 12px', fontSize: '0.85rem' }} />
+                </div>
+
+                {/* Badge PWA */}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                  <label style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', fontWeight: '600' }}>Etiqueta PWA (Texto):</label>
+                  <input type="text" className="input-field" placeholder="PWA Activo 💻" value={headerPwaTextInput} onChange={(e) => setHeaderPwaTextInput(e.target.value)} style={{ padding: '8px 12px', fontSize: '0.85rem' }} />
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                  <label style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', fontWeight: '600' }}>Tamaño de fuente Etiqueta PWA (px):</label>
+                  <input type="number" className="input-field" placeholder="ej. 10" value={headerPwaTextSizeInput} onChange={(e) => setHeaderPwaTextSizeInput(e.target.value.trim())} style={{ padding: '8px 12px', fontSize: '0.85rem' }} />
+                </div>
+
+                {/* Estado Cabina */}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                  <label style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', fontWeight: '600' }}>Estado En Cabina (Texto):</label>
+                  <input type="text" className="input-field" placeholder="EN CABINA" value={headerStatusOnlineTextInput} onChange={(e) => setHeaderStatusOnlineTextInput(e.target.value)} style={{ padding: '8px 12px', fontSize: '0.85rem' }} />
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                  <label style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', fontWeight: '600' }}>Estado Fuera (Texto):</label>
+                  <input type="text" className="input-field" placeholder="FUERA" value={headerStatusOfflineTextInput} onChange={(e) => setHeaderStatusOfflineTextInput(e.target.value)} style={{ padding: '8px 12px', fontSize: '0.85rem' }} />
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                  <label style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', fontWeight: '600' }}>Tamaño de fuente Estados (px):</label>
+                  <input type="number" className="input-field" placeholder="ej. 10" value={headerStatusTextSizeInput} onChange={(e) => setHeaderStatusTextSizeInput(e.target.value.trim())} style={{ padding: '8px 12px', fontSize: '0.85rem' }} />
+                </div>
+
+                {/* Conexión */}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                  <label style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', fontWeight: '600' }}>Etiqueta Conexión (Texto):</label>
+                  <input type="text" className="input-field" placeholder="Firebase Conectado" value={headerConnTextInput} onChange={(e) => setHeaderConnTextInput(e.target.value)} style={{ padding: '8px 12px', fontSize: '0.85rem' }} />
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                  <label style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', fontWeight: '600' }}>Tamaño de fuente Conexión (px):</label>
+                  <input type="number" className="input-field" placeholder="ej. 10" value={headerConnTextSizeInput} onChange={(e) => setHeaderConnTextSizeInput(e.target.value.trim())} style={{ padding: '8px 12px', fontSize: '0.85rem' }} />
+                </div>
+
+                {/* Subtítulos */}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                  <label style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', fontWeight: '600' }}>Tamaño de fuente Nombre Evento (px):</label>
+                  <input type="number" className="input-field" placeholder="ej. 14" value={headerEventTextSizeInput} onChange={(e) => setHeaderEventTextSizeInput(e.target.value.trim())} style={{ padding: '8px 12px', fontSize: '0.85rem' }} />
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                  <label style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', fontWeight: '600' }}>Tamaño de fuente Plan Activo (px):</label>
+                  <input type="number" className="input-field" placeholder="ej. 12" value={headerPlanTextSizeInput} onChange={(e) => setHeaderPlanTextSizeInput(e.target.value.trim())} style={{ padding: '8px 12px', fontSize: '0.85rem' }} />
+                </div>
+
+                {/* Botón Salir */}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                  <label style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', fontWeight: '600' }}>Botón Salir (Texto):</label>
+                  <input type="text" className="input-field" placeholder="Salir" value={headerExitTextInput} onChange={(e) => setHeaderExitTextInput(e.target.value)} style={{ padding: '8px 12px', fontSize: '0.85rem' }} />
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                  <label style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', fontWeight: '600' }}>Tamaño de fuente Salir (px):</label>
+                  <input type="number" className="input-field" placeholder="ej. 14" value={headerExitTextSizeInput} onChange={(e) => setHeaderExitTextSizeInput(e.target.value.trim())} style={{ padding: '8px 12px', fontSize: '0.85rem' }} />
+                </div>
+
               </div>
             </div>
 
@@ -4851,6 +5141,23 @@ export default function DjDashboard() {
                     value={statsCardTitlesInput.queue}
                     onChange={(e) => setStatsCardTitlesInput({ ...statsCardTitlesInput, queue: e.target.value })}
                     style={{ padding: '8px 12px', fontSize: '0.85rem', width: '240px' }}
+                  />
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                  <label style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', fontWeight: '600' }}>Separación central entre columnas (px):</label>
+                  <input
+                    type="number"
+                    className="input-field"
+                    placeholder="ej. 5"
+                    min="0"
+                    value={mainLayoutGapInput}
+                    onChange={(e) => {
+                      const val = e.target.value.trim();
+                      if (val === '' || Number(val) >= 0) {
+                        setMainLayoutGapInput(val);
+                      }
+                    }}
+                    style={{ padding: '8px 12px', fontSize: '0.85rem', width: '120px' }}
                   />
                 </div>
               </div>
@@ -4922,6 +5229,50 @@ export default function DjDashboard() {
                     onChange={(e) => setSidebarTitlesInput({ ...sidebarTitlesInput, qrDesc: e.target.value })}
                     style={{ padding: '8px 12px', fontSize: '0.85rem', resize: 'vertical', minHeight: '60px' }}
                   />
+                </div>
+              </div>
+
+              {/* Botones QR */}
+              <div style={{ marginTop: '16px', borderTop: '1px solid var(--surface-border)', paddingTop: '14px' }}>
+                <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', fontWeight: '600', display: 'block', marginBottom: '10px' }}>🔘 Textos y tamaño de fuente de los 4 botones:</span>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr auto', gap: '8px 12px', alignItems: 'end' }}>
+
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                    <label style={{ fontSize: '0.7rem', color: 'var(--text-secondary)', fontWeight: '600' }}>Botón 1 - Descargar PNG:</label>
+                    <input type="text" className="input-field" placeholder="Descargar QR PNG (1500px)" value={sidebarTitlesInput.qrBtn1 || ''} onChange={(e) => setSidebarTitlesInput({ ...sidebarTitlesInput, qrBtn1: e.target.value })} style={{ padding: '6px 10px', fontSize: '0.8rem' }} />
+                  </div>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                    <label style={{ fontSize: '0.7rem', color: 'var(--text-secondary)', fontWeight: '600' }}>Fuente (px):</label>
+                    <input type="number" className="input-field" placeholder="ej. 14" value={sidebarTitlesInput.qrBtn1Size || ''} onChange={(e) => setSidebarTitlesInput({ ...sidebarTitlesInput, qrBtn1Size: e.target.value })} style={{ padding: '6px 10px', fontSize: '0.8rem', width: '80px' }} />
+                  </div>
+
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                    <label style={{ fontSize: '0.7rem', color: 'var(--text-secondary)', fontWeight: '600' }}>Botón 2 - Descargar SVG:</label>
+                    <input type="text" className="input-field" placeholder="Descargar QR SVG (Vectorial)" value={sidebarTitlesInput.qrBtn2 || ''} onChange={(e) => setSidebarTitlesInput({ ...sidebarTitlesInput, qrBtn2: e.target.value })} style={{ padding: '6px 10px', fontSize: '0.8rem' }} />
+                  </div>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                    <label style={{ fontSize: '0.7rem', color: 'var(--text-secondary)', fontWeight: '600' }}>Fuente (px):</label>
+                    <input type="number" className="input-field" placeholder="ej. 14" value={sidebarTitlesInput.qrBtn2Size || ''} onChange={(e) => setSidebarTitlesInput({ ...sidebarTitlesInput, qrBtn2Size: e.target.value })} style={{ padding: '6px 10px', fontSize: '0.8rem', width: '80px' }} />
+                  </div>
+
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                    <label style={{ fontSize: '0.7rem', color: 'var(--text-secondary)', fontWeight: '600' }}>Botón 3 - Abrir Panel:</label>
+                    <input type="text" className="input-field" placeholder="Abrir Panel del Público" value={sidebarTitlesInput.qrBtn3 || ''} onChange={(e) => setSidebarTitlesInput({ ...sidebarTitlesInput, qrBtn3: e.target.value })} style={{ padding: '6px 10px', fontSize: '0.8rem' }} />
+                  </div>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                    <label style={{ fontSize: '0.7rem', color: 'var(--text-secondary)', fontWeight: '600' }}>Fuente (px):</label>
+                    <input type="number" className="input-field" placeholder="ej. 14" value={sidebarTitlesInput.qrBtn3Size || ''} onChange={(e) => setSidebarTitlesInput({ ...sidebarTitlesInput, qrBtn3Size: e.target.value })} style={{ padding: '6px 10px', fontSize: '0.8rem', width: '80px' }} />
+                  </div>
+
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                    <label style={{ fontSize: '0.7rem', color: 'var(--text-secondary)', fontWeight: '600' }}>Botón 4 - Imprimir QR:</label>
+                    <input type="text" className="input-field" placeholder="Imprimir Tarjetas QR (A4)" value={sidebarTitlesInput.qrBtn4 || ''} onChange={(e) => setSidebarTitlesInput({ ...sidebarTitlesInput, qrBtn4: e.target.value })} style={{ padding: '6px 10px', fontSize: '0.8rem' }} />
+                  </div>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                    <label style={{ fontSize: '0.7rem', color: 'var(--text-secondary)', fontWeight: '600' }}>Fuente (px):</label>
+                    <input type="number" className="input-field" placeholder="ej. 14" value={sidebarTitlesInput.qrBtn4Size || ''} onChange={(e) => setSidebarTitlesInput({ ...sidebarTitlesInput, qrBtn4Size: e.target.value })} style={{ padding: '6px 10px', fontSize: '0.8rem', width: '80px' }} />
+                  </div>
+
                 </div>
               </div>
             </div>

@@ -60,6 +60,9 @@ export default function PublicView() {
   } else if (isProOrVipDj) {
     // PRO y VIP manejan su branding individual y personalizado por cada evento activo
     logoToDisplay = eventSettings.logoUrl || '';
+  } else {
+    // Cualquier otro plan: si el evento tiene logo guardado, también se muestra
+    logoToDisplay = eventSettings.logoUrl || '';
   }
 
   const sessionId = getSessionId();
@@ -509,9 +512,8 @@ export default function PublicView() {
       )}
 
       {/* HEADER DEL EVENTO (BRANDING DINÁMICO) */}
+      <div style={{ maxWidth: '500px', margin: '20px auto 0', padding: '0 15px', boxSizing: 'border-box', width: '100%' }}>
       <header className="glass-panel" style={{
-        margin: '20px auto',
-        maxWidth: '500px',
         padding: '20px',
         borderRadius: 'var(--radius-lg)',
         display: 'flex',
@@ -627,6 +629,7 @@ export default function PublicView() {
           </div>
         </div>
       </header>
+      </div>
 
 
       {/* FORMULARIO DE PETICIÓN (PÚBLICO) */}
