@@ -722,6 +722,18 @@ export const FirebaseProvider = ({ children }) => {
     return () => unsubscribe();
   }, [activeUid, userBasePath, user]);
 
+  // 1b_alt. Restaurar el evento activo del DJ desde localStorage al cambiar de usuario/iniciar sesión
+  useEffect(() => {
+    if (activeUid && !window.location.search.includes('event=')) {
+      const savedEventId = localStorage.getItem(`djvip_active_event_id_${activeUid}`);
+      if (savedEventId) {
+        setCurrentEventId(savedEventId);
+      } else {
+        setCurrentEventId('default-event');
+      }
+    }
+  }, [activeUid]);
+
   // Ruta de lectura efectiva para settings/requests:
   // - DJ en dashboard → Prioriza userBasePath
   // - Público en vista de evento → Prioriza ownerBasePath (independiente de si está logueado)
@@ -1823,7 +1835,12 @@ export const FirebaseProvider = ({ children }) => {
     return downloadUrl;
   };
 
-  const changeEvent = (eventId) => { setCurrentEventId(eventId); };
+  const changeEvent = (eventId) => {
+    setCurrentEventId(eventId);
+    if (activeUid) {
+      localStorage.setItem(`djvip_active_event_id_${activeUid}`, eventId);
+    }
+  };
 
   const createNewEvent = async (eventId, title, djName, date, eventType) => {
     if (!userBasePath) return;
