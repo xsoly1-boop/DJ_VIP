@@ -256,6 +256,47 @@ export default function DjDashboard() {
   const [saveAdminProfileLoading, setSaveAdminProfileLoading] = useState(false);
   const [nativeFcmToken, setNativeFcmToken] = useState('');
 
+  // Personalización de Plataforma (Admin Master)
+  const [statsCardHeightInput, setStatsCardHeightInput] = useState('');
+  const [statsCardWidthInput, setStatsCardWidthInput] = useState('');
+  const [statsCardTitlesInput, setStatsCardTitlesInput] = useState({
+    total: '', pending: '', playing: '', votes: '', db: '', rating: '', plan: '', djs: ''
+  });
+  const [sidebarTitlesInput, setSidebarTitlesInput] = useState({
+    requests: '', settings: '', calendar: '', optimization: '', benefits: '',
+    platform_customization: '', admin: '', support: '', admin_profile: '', revenue: ''
+  });
+
+  // Inicializar estados locales de personalización
+  useEffect(() => {
+    if (userProfile) {
+      setStatsCardHeightInput(userProfile.statsCardHeight || '');
+      setStatsCardWidthInput(userProfile.statsCardWidth || '');
+      setStatsCardTitlesInput({
+        total: userProfile.statsCardTitles?.total || '',
+        pending: userProfile.statsCardTitles?.pending || '',
+        playing: userProfile.statsCardTitles?.playing || '',
+        votes: userProfile.statsCardTitles?.votes || '',
+        db: userProfile.statsCardTitles?.db || '',
+        rating: userProfile.statsCardTitles?.rating || '',
+        plan: userProfile.statsCardTitles?.plan || '',
+        djs: userProfile.statsCardTitles?.djs || ''
+      });
+      setSidebarTitlesInput({
+        requests: userProfile.sidebarTitles?.requests || '',
+        settings: userProfile.sidebarTitles?.settings || '',
+        calendar: userProfile.sidebarTitles?.calendar || '',
+        optimization: userProfile.sidebarTitles?.optimization || '',
+        benefits: userProfile.sidebarTitles?.benefits || '',
+        platform_customization: userProfile.sidebarTitles?.platform_customization || '',
+        admin: userProfile.sidebarTitles?.admin || '',
+        support: userProfile.sidebarTitles?.support || '',
+        admin_profile: userProfile.sidebarTitles?.admin_profile || '',
+        revenue: userProfile.sidebarTitles?.revenue || ''
+      });
+    }
+  }, [userProfile]);
+
   // Sincronizar token FCM nativo (polling para diagnosticar en caliente)
   useEffect(() => {
     if (typeof window !== 'undefined' && window.AndroidApp) {
@@ -488,6 +529,22 @@ export default function DjDashboard() {
       showToast("❌ Error: " + err.message);
     } finally {
       setIsPublishingNotes(false);
+    }
+  };
+
+  // Guardar configuración de personalización de plataforma en Firebase RTDB
+  const handleSavePlatformCustomization = async () => {
+    try {
+      await updateDjOwnProfile({
+        statsCardHeight: statsCardHeightInput,
+        statsCardWidth: statsCardWidthInput,
+        statsCardTitles: statsCardTitlesInput,
+        sidebarTitles: sidebarTitlesInput
+      });
+      showToast("💾 Cambios de personalización respaldados en la base de datos.");
+    } catch (err) {
+      console.error(err);
+      showToast("❌ Error al respaldar la personalización: " + err.message);
     }
   };
 
@@ -4699,7 +4756,7 @@ export default function DjDashboard() {
 
           <div style={{ marginBottom: '20px' }}>
             <span style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', display: 'block', marginBottom: '16px', lineHeight: '1.6' }}>
-              Como **Admin Master**, tienes control manual avanzado sobre las dimensiones físicas de los contenedores de estadísticas rápidas del panel. Los cambios surten efecto de forma inmediata.
+              Como **Admin Master**, tienes control manual avanzado sobre las dimensiones físicas y etiquetas del panel. Realiza los cambios correspondientes y presiona **"Guardar Cambios"** al finalizar para respaldar la configuración en la base de datos.
             </span>
 
             <div style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid var(--surface-border)', borderRadius: 'var(--radius-md)', padding: '20px' }}>
@@ -4713,11 +4770,8 @@ export default function DjDashboard() {
                     type="number"
                     className="input-field"
                     placeholder="ej. 54"
-                    value={userProfile?.statsCardHeight || ''}
-                    onChange={(e) => {
-                      const val = e.target.value.trim();
-                      updateDjOwnProfile({ statsCardHeight: val });
-                    }}
+                    value={statsCardHeightInput}
+                    onChange={(e) => setStatsCardHeightInput(e.target.value.trim())}
                     style={{ padding: '8px 12px', fontSize: '0.85rem', width: '120px' }}
                   />
                 </div>
@@ -4727,11 +4781,8 @@ export default function DjDashboard() {
                     type="number"
                     className="input-field"
                     placeholder="ej. 150"
-                    value={userProfile?.statsCardWidth || ''}
-                    onChange={(e) => {
-                      const val = e.target.value.trim();
-                      updateDjOwnProfile({ statsCardWidth: val });
-                    }}
+                    value={statsCardWidthInput}
+                    onChange={(e) => setStatsCardWidthInput(e.target.value.trim())}
                     style={{ padding: '8px 12px', fontSize: '0.85rem', width: '120px' }}
                   />
                 </div>
@@ -4749,12 +4800,8 @@ export default function DjDashboard() {
                     type="text"
                     className="input-field"
                     placeholder="Total Peticiones"
-                    value={userProfile?.statsCardTitles?.total || ''}
-                    onChange={(e) => {
-                      const val = e.target.value;
-                      const currentTitles = userProfile?.statsCardTitles || {};
-                      updateDjOwnProfile({ statsCardTitles: { ...currentTitles, total: val } });
-                    }}
+                    value={statsCardTitlesInput.total}
+                    onChange={(e) => setStatsCardTitlesInput({ ...statsCardTitlesInput, total: e.target.value })}
                     style={{ padding: '8px 12px', fontSize: '0.85rem' }}
                   />
                 </div>
@@ -4764,12 +4811,8 @@ export default function DjDashboard() {
                     type="text"
                     className="input-field"
                     placeholder="Por Aceptar"
-                    value={userProfile?.statsCardTitles?.pending || ''}
-                    onChange={(e) => {
-                      const val = e.target.value;
-                      const currentTitles = userProfile?.statsCardTitles || {};
-                      updateDjOwnProfile({ statsCardTitles: { ...currentTitles, pending: val } });
-                    }}
+                    value={statsCardTitlesInput.pending}
+                    onChange={(e) => setStatsCardTitlesInput({ ...statsCardTitlesInput, pending: e.target.value })}
                     style={{ padding: '8px 12px', fontSize: '0.85rem' }}
                   />
                 </div>
@@ -4779,12 +4822,8 @@ export default function DjDashboard() {
                     type="text"
                     className="input-field"
                     placeholder="Sonando Ahora"
-                    value={userProfile?.statsCardTitles?.playing || ''}
-                    onChange={(e) => {
-                      const val = e.target.value;
-                      const currentTitles = userProfile?.statsCardTitles || {};
-                      updateDjOwnProfile({ statsCardTitles: { ...currentTitles, playing: val } });
-                    }}
+                    value={statsCardTitlesInput.playing}
+                    onChange={(e) => setStatsCardTitlesInput({ ...statsCardTitlesInput, playing: e.target.value })}
                     style={{ padding: '8px 12px', fontSize: '0.85rem' }}
                   />
                 </div>
@@ -4794,12 +4833,8 @@ export default function DjDashboard() {
                     type="text"
                     className="input-field"
                     placeholder="Votos Audiencia"
-                    value={userProfile?.statsCardTitles?.votes || ''}
-                    onChange={(e) => {
-                      const val = e.target.value;
-                      const currentTitles = userProfile?.statsCardTitles || {};
-                      updateDjOwnProfile({ statsCardTitles: { ...currentTitles, votes: val } });
-                    }}
+                    value={statsCardTitlesInput.votes}
+                    onChange={(e) => setStatsCardTitlesInput({ ...statsCardTitlesInput, votes: e.target.value })}
                     style={{ padding: '8px 12px', fontSize: '0.85rem' }}
                   />
                 </div>
@@ -4809,12 +4844,8 @@ export default function DjDashboard() {
                     type="text"
                     className="input-field"
                     placeholder="Canciones BD"
-                    value={userProfile?.statsCardTitles?.db || ''}
-                    onChange={(e) => {
-                      const val = e.target.value;
-                      const currentTitles = userProfile?.statsCardTitles || {};
-                      updateDjOwnProfile({ statsCardTitles: { ...currentTitles, db: val } });
-                    }}
+                    value={statsCardTitlesInput.db}
+                    onChange={(e) => setStatsCardTitlesInput({ ...statsCardTitlesInput, db: e.target.value })}
                     style={{ padding: '8px 12px', fontSize: '0.85rem' }}
                   />
                 </div>
@@ -4824,12 +4855,8 @@ export default function DjDashboard() {
                     type="text"
                     className="input-field"
                     placeholder="Calificación"
-                    value={userProfile?.statsCardTitles?.rating || ''}
-                    onChange={(e) => {
-                      const val = e.target.value;
-                      const currentTitles = userProfile?.statsCardTitles || {};
-                      updateDjOwnProfile({ statsCardTitles: { ...currentTitles, rating: val } });
-                    }}
+                    value={statsCardTitlesInput.rating}
+                    onChange={(e) => setStatsCardTitlesInput({ ...statsCardTitlesInput, rating: e.target.value })}
                     style={{ padding: '8px 12px', fontSize: '0.85rem' }}
                   />
                 </div>
@@ -4839,12 +4866,8 @@ export default function DjDashboard() {
                     type="text"
                     className="input-field"
                     placeholder="Plan"
-                    value={userProfile?.statsCardTitles?.plan || ''}
-                    onChange={(e) => {
-                      const val = e.target.value;
-                      const currentTitles = userProfile?.statsCardTitles || {};
-                      updateDjOwnProfile({ statsCardTitles: { ...currentTitles, plan: val } });
-                    }}
+                    value={statsCardTitlesInput.plan}
+                    onChange={(e) => setStatsCardTitlesInput({ ...statsCardTitlesInput, plan: e.target.value })}
                     style={{ padding: '8px 12px', fontSize: '0.85rem' }}
                   />
                 </div>
@@ -4855,12 +4878,8 @@ export default function DjDashboard() {
                       type="text"
                       className="input-field"
                       placeholder="DJs Registrados"
-                      value={userProfile?.statsCardTitles?.djs || ''}
-                      onChange={(e) => {
-                        const val = e.target.value;
-                        const currentTitles = userProfile?.statsCardTitles || {};
-                        updateDjOwnProfile({ statsCardTitles: { ...currentTitles, djs: val } });
-                      }}
+                      value={statsCardTitlesInput.djs}
+                      onChange={(e) => setStatsCardTitlesInput({ ...statsCardTitlesInput, djs: e.target.value })}
                       style={{ padding: '8px 12px', fontSize: '0.85rem' }}
                     />
                   </div>
@@ -4879,12 +4898,8 @@ export default function DjDashboard() {
                     type="text"
                     className="input-field"
                     placeholder="Lista de Peticiones"
-                    value={userProfile?.sidebarTitles?.requests || ''}
-                    onChange={(e) => {
-                      const val = e.target.value;
-                      const currentTitles = userProfile?.sidebarTitles || {};
-                      updateDjOwnProfile({ sidebarTitles: { ...currentTitles, requests: val } });
-                    }}
+                    value={sidebarTitlesInput.requests}
+                    onChange={(e) => setSidebarTitlesInput({ ...sidebarTitlesInput, requests: e.target.value })}
                     style={{ padding: '8px 12px', fontSize: '0.85rem' }}
                   />
                 </div>
@@ -4894,12 +4909,8 @@ export default function DjDashboard() {
                     type="text"
                     className="input-field"
                     placeholder="Personalizar mi Panel"
-                    value={userProfile?.sidebarTitles?.settings || ''}
-                    onChange={(e) => {
-                      const val = e.target.value;
-                      const currentTitles = userProfile?.sidebarTitles || {};
-                      updateDjOwnProfile({ sidebarTitles: { ...currentTitles, settings: val } });
-                    }}
+                    value={sidebarTitlesInput.settings}
+                    onChange={(e) => setSidebarTitlesInput({ ...sidebarTitlesInput, settings: e.target.value })}
                     style={{ padding: '8px 12px', fontSize: '0.85rem' }}
                   />
                 </div>
@@ -4909,12 +4920,8 @@ export default function DjDashboard() {
                     type="text"
                     className="input-field"
                     placeholder="Mis Eventos"
-                    value={userProfile?.sidebarTitles?.calendar || ''}
-                    onChange={(e) => {
-                      const val = e.target.value;
-                      const currentTitles = userProfile?.sidebarTitles || {};
-                      updateDjOwnProfile({ sidebarTitles: { ...currentTitles, calendar: val } });
-                    }}
+                    value={sidebarTitlesInput.calendar}
+                    onChange={(e) => setSidebarTitlesInput({ ...sidebarTitlesInput, calendar: e.target.value })}
                     style={{ padding: '8px 12px', fontSize: '0.85rem' }}
                   />
                 </div>
@@ -4924,12 +4931,8 @@ export default function DjDashboard() {
                     type="text"
                     className="input-field"
                     placeholder="Ajustes de Optimización"
-                    value={userProfile?.sidebarTitles?.optimization || ''}
-                    onChange={(e) => {
-                      const val = e.target.value;
-                      const currentTitles = userProfile?.sidebarTitles || {};
-                      updateDjOwnProfile({ sidebarTitles: { ...currentTitles, optimization: val } });
-                    }}
+                    value={sidebarTitlesInput.optimization}
+                    onChange={(e) => setSidebarTitlesInput({ ...sidebarTitlesInput, optimization: e.target.value })}
                     style={{ padding: '8px 12px', fontSize: '0.85rem' }}
                   />
                 </div>
@@ -4939,12 +4942,8 @@ export default function DjDashboard() {
                     type="text"
                     className="input-field"
                     placeholder="Beneficios para el DJ"
-                    value={userProfile?.sidebarTitles?.benefits || ''}
-                    onChange={(e) => {
-                      const val = e.target.value;
-                      const currentTitles = userProfile?.sidebarTitles || {};
-                      updateDjOwnProfile({ sidebarTitles: { ...currentTitles, benefits: val } });
-                    }}
+                    value={sidebarTitlesInput.benefits}
+                    onChange={(e) => setSidebarTitlesInput({ ...sidebarTitlesInput, benefits: e.target.value })}
                     style={{ padding: '8px 12px', fontSize: '0.85rem' }}
                   />
                 </div>
@@ -4955,12 +4954,8 @@ export default function DjDashboard() {
                       type="text"
                       className="input-field"
                       placeholder="Personalizacion de plataforma"
-                      value={userProfile?.sidebarTitles?.platform_customization || ''}
-                      onChange={(e) => {
-                        const val = e.target.value;
-                        const currentTitles = userProfile?.sidebarTitles || {};
-                        updateDjOwnProfile({ sidebarTitles: { ...currentTitles, platform_customization: val } });
-                      }}
+                      value={sidebarTitlesInput.platform_customization}
+                      onChange={(e) => setSidebarTitlesInput({ ...sidebarTitlesInput, platform_customization: e.target.value })}
                       style={{ padding: '8px 12px', fontSize: '0.85rem' }}
                     />
                   </div>
@@ -4972,12 +4967,8 @@ export default function DjDashboard() {
                       type="text"
                       className="input-field"
                       placeholder="Panel Admin"
-                      value={userProfile?.sidebarTitles?.admin || ''}
-                      onChange={(e) => {
-                        const val = e.target.value;
-                        const currentTitles = userProfile?.sidebarTitles || {};
-                        updateDjOwnProfile({ sidebarTitles: { ...currentTitles, admin: val } });
-                      }}
+                      value={sidebarTitlesInput.admin}
+                      onChange={(e) => setSidebarTitlesInput({ ...sidebarTitlesInput, admin: e.target.value })}
                       style={{ padding: '8px 12px', fontSize: '0.85rem' }}
                     />
                   </div>
@@ -4989,12 +4980,8 @@ export default function DjDashboard() {
                       type="text"
                       className="input-field"
                       placeholder="Soporte PRO"
-                      value={userProfile?.sidebarTitles?.support || ''}
-                      onChange={(e) => {
-                        const val = e.target.value;
-                        const currentTitles = userProfile?.sidebarTitles || {};
-                        updateDjOwnProfile({ sidebarTitles: { ...currentTitles, support: val } });
-                      }}
+                      value={sidebarTitlesInput.support}
+                      onChange={(e) => setSidebarTitlesInput({ ...sidebarTitlesInput, support: e.target.value })}
                       style={{ padding: '8px 12px', fontSize: '0.85rem' }}
                     />
                   </div>
@@ -5006,12 +4993,8 @@ export default function DjDashboard() {
                       type="text"
                       className="input-field"
                       placeholder="Mi Perfil Admin"
-                      value={userProfile?.sidebarTitles?.admin_profile || ''}
-                      onChange={(e) => {
-                        const val = e.target.value;
-                        const currentTitles = userProfile?.sidebarTitles || {};
-                        updateDjOwnProfile({ sidebarTitles: { ...currentTitles, admin_profile: val } });
-                      }}
+                      value={sidebarTitlesInput.admin_profile}
+                      onChange={(e) => setSidebarTitlesInput({ ...sidebarTitlesInput, admin_profile: e.target.value })}
                       style={{ padding: '8px 12px', fontSize: '0.85rem' }}
                     />
                   </div>
@@ -5023,18 +5006,38 @@ export default function DjDashboard() {
                       type="text"
                       className="input-field"
                       placeholder="Finanzas"
-                      value={userProfile?.sidebarTitles?.revenue || ''}
-                      onChange={(e) => {
-                        const val = e.target.value;
-                        const currentTitles = userProfile?.sidebarTitles || {};
-                        updateDjOwnProfile({ sidebarTitles: { ...currentTitles, revenue: val } });
-                      }}
+                      value={sidebarTitlesInput.revenue}
+                      onChange={(e) => setSidebarTitlesInput({ ...sidebarTitlesInput, revenue: e.target.value })}
                       style={{ padding: '8px 12px', fontSize: '0.85rem' }}
                     />
                   </div>
                 )}
               </div>
             </div>
+
+            <div style={{ marginTop: '24px', borderTop: '1px solid var(--surface-border)', paddingTop: '20px', display: 'flex', justifyContent: 'flex-end' }}>
+              <button 
+                type="button" 
+                className="btn btn-primary" 
+                onClick={handleSavePlatformCustomization}
+                style={{ 
+                  padding: '10px 24px', 
+                  fontSize: '0.9rem', 
+                  fontWeight: '700',
+                  background: 'linear-gradient(135deg, var(--secondary-color) 0%, var(--primary-color) 100%)',
+                  border: 'none',
+                  boxShadow: '0 4px 15px rgba(6, 182, 212, 0.25)',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px'
+                }}
+              >
+                <Save size={16} />
+                <span>Guardar Cambios</span>
+              </button>
+            </div>
+
           </div>
         </div>
       )}
