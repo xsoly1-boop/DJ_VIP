@@ -2431,7 +2431,13 @@ export default function DjDashboard() {
       <section style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(135px, 1fr))', gap: '8px', marginBottom: '16px' }}>
         
         {/* Total Peticiones */}
-        <div className="glass-panel metric-card-total" style={{ padding: '8px 12px', minHeight: '54px', display: 'flex', alignItems: 'center', gap: '10px', boxSizing: 'border-box' }}>
+        <div className="glass-panel metric-card-total" style={{ 
+          padding: '8px 12px', 
+          height: userProfile?.statsCardHeight ? (isNaN(userProfile.statsCardHeight) ? userProfile.statsCardHeight : `${userProfile.statsCardHeight}px`) : '54px',
+          width: userProfile?.statsCardWidth ? (isNaN(userProfile.statsCardWidth) ? userProfile.statsCardWidth : `${userProfile.statsCardWidth}px`) : 'auto',
+          minHeight: userProfile?.statsCardHeight ? (isNaN(userProfile.statsCardHeight) ? userProfile.statsCardHeight : `${userProfile.statsCardHeight}px`) : '54px',
+          display: 'flex', alignItems: 'center', gap: '10px', boxSizing: 'border-box' 
+        }}>
           <div style={{ width: '32px', height: '32px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(168, 85, 247, 0.1)', border: '1.5px solid var(--primary-color)', boxShadow: '0 0 8px rgba(168, 85, 247, 0.3)', flexShrink: 0 }}>
             <Layers size={14} color="var(--primary-color)" />
           </div>
@@ -2442,7 +2448,13 @@ export default function DjDashboard() {
         </div>
         
         {/* Por Aceptar */}
-        <div className="glass-panel metric-card-pending" style={{ padding: '8px 12px', minHeight: '54px', display: 'flex', alignItems: 'center', gap: '10px', boxSizing: 'border-box' }}>
+        <div className="glass-panel metric-card-pending" style={{ 
+          padding: '8px 12px', 
+          height: userProfile?.statsCardHeight ? (isNaN(userProfile.statsCardHeight) ? userProfile.statsCardHeight : `${userProfile.statsCardHeight}px`) : '54px',
+          width: userProfile?.statsCardWidth ? (isNaN(userProfile.statsCardWidth) ? userProfile.statsCardWidth : `${userProfile.statsCardWidth}px`) : 'auto',
+          minHeight: userProfile?.statsCardHeight ? (isNaN(userProfile.statsCardHeight) ? userProfile.statsCardHeight : `${userProfile.statsCardHeight}px`) : '54px',
+          display: 'flex', alignItems: 'center', gap: '10px', boxSizing: 'border-box' 
+        }}>
           <div style={{ width: '32px', height: '32px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(234, 179, 8, 0.1)', border: '1.5px solid var(--warning-color)', boxShadow: '0 0 8px rgba(234, 179, 8, 0.3)', flexShrink: 0 }}>
             <RefreshCw size={14} color="var(--warning-color)" className={stats.pending > 0 ? 'animate-spin' : ''} />
           </div>
@@ -2453,7 +2465,13 @@ export default function DjDashboard() {
         </div>
         
         {/* Sonando Ahora */}
-        <div className="glass-panel metric-card-playing" style={{ padding: '8px 12px', minHeight: '54px', display: 'flex', alignItems: 'center', gap: '10px', boxSizing: 'border-box' }}>
+        <div className="glass-panel metric-card-playing" style={{ 
+          padding: '8px 12px', 
+          height: userProfile?.statsCardHeight ? (isNaN(userProfile.statsCardHeight) ? userProfile.statsCardHeight : `${userProfile.statsCardHeight}px`) : '54px',
+          width: userProfile?.statsCardWidth ? (isNaN(userProfile.statsCardWidth) ? userProfile.statsCardWidth : `${userProfile.statsCardWidth}px`) : 'auto',
+          minHeight: userProfile?.statsCardHeight ? (isNaN(userProfile.statsCardHeight) ? userProfile.statsCardHeight : `${userProfile.statsCardHeight}px`) : '54px',
+          display: 'flex', alignItems: 'center', gap: '10px', boxSizing: 'border-box' 
+        }}>
           <div style={{ width: '32px', height: '32px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(6, 182, 212, 0.1)', border: '1.5px solid var(--secondary-color)', boxShadow: '0 0 8px rgba(6, 182, 212, 0.3)', flexShrink: 0 }}>
             <Play size={14} color="var(--secondary-color)" />
           </div>
@@ -2464,7 +2482,13 @@ export default function DjDashboard() {
         </div>
         
         {/* Votos Audiencia */}
-        <div className="glass-panel metric-card-votes" style={{ padding: '8px 12px', minHeight: '54px', display: 'flex', alignItems: 'center', gap: '10px', boxSizing: 'border-box' }}>
+        <div className="glass-panel metric-card-votes" style={{ 
+          padding: '8px 12px', 
+          height: userProfile?.statsCardHeight ? (isNaN(userProfile.statsCardHeight) ? userProfile.statsCardHeight : `${userProfile.statsCardHeight}px`) : '54px',
+          width: userProfile?.statsCardWidth ? (isNaN(userProfile.statsCardWidth) ? userProfile.statsCardWidth : `${userProfile.statsCardWidth}px`) : 'auto',
+          minHeight: userProfile?.statsCardHeight ? (isNaN(userProfile.statsCardHeight) ? userProfile.statsCardHeight : `${userProfile.statsCardHeight}px`) : '54px',
+          display: 'flex', alignItems: 'center', gap: '10px', boxSizing: 'border-box' 
+        }}>
           <div style={{ width: '32px', height: '32px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(16, 185, 129, 0.1)', border: '1.5px solid var(--success-color)', boxShadow: '0 0 8px rgba(16, 185, 129, 0.3)', flexShrink: 0 }}>
             <Users size={14} color="var(--success-color)" />
           </div>
@@ -2475,7 +2499,13 @@ export default function DjDashboard() {
         </div>
         
         {/* Canciones BD */}
-        <div className="glass-panel metric-card-db" style={{ padding: '8px 12px', minHeight: '54px', display: 'flex', alignItems: 'center', gap: '10px', boxSizing: 'border-box' }}>
+        <div className="glass-panel metric-card-db" style={{ 
+          padding: '8px 12px', 
+          height: userProfile?.statsCardHeight ? (isNaN(userProfile.statsCardHeight) ? userProfile.statsCardHeight : `${userProfile.statsCardHeight}px`) : '54px',
+          width: userProfile?.statsCardWidth ? (isNaN(userProfile.statsCardWidth) ? userProfile.statsCardWidth : `${userProfile.statsCardWidth}px`) : 'auto',
+          minHeight: userProfile?.statsCardHeight ? (isNaN(userProfile.statsCardHeight) ? userProfile.statsCardHeight : `${userProfile.statsCardHeight}px`) : '54px',
+          display: 'flex', alignItems: 'center', gap: '10px', boxSizing: 'border-box' 
+        }}>
           <div style={{ width: '32px', height: '32px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(99, 102, 241, 0.1)', border: '1.5px solid #6366f1', boxShadow: '0 0 8px rgba(99, 102, 241, 0.3)', flexShrink: 0 }}>
             <Database size={14} color="#6366f1" />
           </div>
@@ -2486,7 +2516,13 @@ export default function DjDashboard() {
         </div>
         
         {/* Calificación */}
-        <div className="glass-panel metric-card-rating" style={{ padding: '8px 12px', minHeight: '54px', display: 'flex', alignItems: 'center', gap: '10px', boxSizing: 'border-box' }}>
+        <div className="glass-panel metric-card-rating" style={{ 
+          padding: '8px 12px', 
+          height: userProfile?.statsCardHeight ? (isNaN(userProfile.statsCardHeight) ? userProfile.statsCardHeight : `${userProfile.statsCardHeight}px`) : '54px',
+          width: userProfile?.statsCardWidth ? (isNaN(userProfile.statsCardWidth) ? userProfile.statsCardWidth : `${userProfile.statsCardWidth}px`) : 'auto',
+          minHeight: userProfile?.statsCardHeight ? (isNaN(userProfile.statsCardHeight) ? userProfile.statsCardHeight : `${userProfile.statsCardHeight}px`) : '54px',
+          display: 'flex', alignItems: 'center', gap: '10px', boxSizing: 'border-box' 
+        }}>
           <div style={{ width: '32px', height: '32px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(245, 158, 11, 0.1)', border: '1.5px solid #f59e0b', boxShadow: '0 0 8px rgba(245, 158, 11, 0.3)', flexShrink: 0 }}>
             <Star size={14} color="#f59e0b" />
           </div>
@@ -2500,7 +2536,13 @@ export default function DjDashboard() {
         </div>
         
         {/* Plan */}
-        <div className="glass-panel metric-card-plan" style={{ padding: '8px 12px', minHeight: '54px', display: 'flex', alignItems: 'center', gap: '10px', boxSizing: 'border-box' }}>
+        <div className="glass-panel metric-card-plan" style={{ 
+          padding: '8px 12px', 
+          height: userProfile?.statsCardHeight ? (isNaN(userProfile.statsCardHeight) ? userProfile.statsCardHeight : `${userProfile.statsCardHeight}px`) : '54px',
+          width: userProfile?.statsCardWidth ? (isNaN(userProfile.statsCardWidth) ? userProfile.statsCardWidth : `${userProfile.statsCardWidth}px`) : 'auto',
+          minHeight: userProfile?.statsCardHeight ? (isNaN(userProfile.statsCardHeight) ? userProfile.statsCardHeight : `${userProfile.statsCardHeight}px`) : '54px',
+          display: 'flex', alignItems: 'center', gap: '10px', boxSizing: 'border-box' 
+        }}>
           <div style={{ width: '32px', height: '32px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(168, 85, 247, 0.1)', border: '1.5px solid #a855f7', boxShadow: '0 0 8px rgba(168, 85, 247, 0.3)', flexShrink: 0 }}>
             <Clock size={14} color="#a855f7" />
           </div>
@@ -2515,7 +2557,13 @@ export default function DjDashboard() {
         
         {/* DJs Registrados */}
         {isAdminMaster && (
-          <div className="glass-panel metric-card-djs" style={{ padding: '8px 12px', minHeight: '54px', display: 'flex', alignItems: 'center', gap: '10px', boxSizing: 'border-box' }}>
+          <div className="glass-panel metric-card-djs" style={{ 
+            padding: '8px 12px', 
+            height: userProfile?.statsCardHeight ? (isNaN(userProfile.statsCardHeight) ? userProfile.statsCardHeight : `${userProfile.statsCardHeight}px`) : '54px',
+            width: userProfile?.statsCardWidth ? (isNaN(userProfile.statsCardWidth) ? userProfile.statsCardWidth : `${userProfile.statsCardWidth}px`) : 'auto',
+            minHeight: userProfile?.statsCardHeight ? (isNaN(userProfile.statsCardHeight) ? userProfile.statsCardHeight : `${userProfile.statsCardHeight}px`) : '54px',
+            display: 'flex', alignItems: 'center', gap: '10px', boxSizing: 'border-box' 
+          }}>
             <div style={{ width: '32px', height: '32px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(6, 182, 212, 0.1)', border: '1.5px solid #06b6d4', boxShadow: '0 0 8px rgba(6, 182, 212, 0.3)', flexShrink: 0 }}>
               <Users size={14} color="#06b6d4" />
             </div>
@@ -3208,11 +3256,11 @@ export default function DjDashboard() {
                                     <input
                                       type="number"
                                       className="input-field"
-                                      placeholder="ej. 100"
-                                      value={eventSettings.logoHeight || ''}
+                                      placeholder="ej. 54"
+                                      value={userProfile?.statsCardHeight || ''}
                                       onChange={(e) => {
                                         const val = e.target.value.trim();
-                                        updateEventSettings({ logoHeight: val });
+                                        updateDjOwnProfile({ statsCardHeight: val });
                                       }}
                                       style={{ padding: '4px 8px', fontSize: '0.8rem', width: '70px', minWidth: '70px' }}
                                     />
@@ -3222,11 +3270,11 @@ export default function DjDashboard() {
                                     <input
                                       type="number"
                                       className="input-field"
-                                      placeholder="ej. 250"
-                                      value={eventSettings.logoWidth || ''}
+                                      placeholder="ej. 150"
+                                      value={userProfile?.statsCardWidth || ''}
                                       onChange={(e) => {
                                         const val = e.target.value.trim();
-                                        updateEventSettings({ logoWidth: val });
+                                        updateDjOwnProfile({ statsCardWidth: val });
                                       }}
                                       style={{ padding: '4px 8px', fontSize: '0.8rem', width: '70px', minWidth: '70px' }}
                                     />

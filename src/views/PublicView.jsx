@@ -526,11 +526,9 @@ export default function PublicView() {
             src={logoToDisplay} 
             alt="Logo Evento" 
             style={{ 
-              height: eventSettings.logoHeight ? (isNaN(eventSettings.logoHeight) ? eventSettings.logoHeight : `${eventSettings.logoHeight}px`) :
-                      (eventSettings.logoSize === 'small' ? '80px' :
-                       eventSettings.logoSize === 'medium' ? '100px' :
-                       eventSettings.logoSize === 'large' ? '130px' : '100px'),
-              width: eventSettings.logoWidth ? (isNaN(eventSettings.logoWidth) ? eventSettings.logoWidth : `${eventSettings.logoWidth}px`) : 'auto',
+              height: eventSettings.logoSize === 'small' ? '80px' :
+                      eventSettings.logoSize === 'medium' ? '100px' :
+                      eventSettings.logoSize === 'large' ? '130px' : '100px', 
               objectFit: 'contain',
               borderRadius: 'var(--radius-md)',
               border: '1px solid var(--surface-border)'
