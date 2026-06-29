@@ -1,10 +1,10 @@
 {
-  "latestVersion": "10.0.0.54",
+  "latestVersion": "10.0.0.55",
   "apkUrl": "https://dj-vip.vercel.app/DJ.a.la.carta.apk",
-  "dmgUrl": "https://github.com/xsoly1-boop/DJ_VIP/releases/download/v10.0.0.54/DJ.a.la.carta.silicon.dmg",
-  "dmgUrlIntel": "https://github.com/xsoly1-boop/DJ_VIP/releases/download/v10.0.0.54/DJ.a.la.carta.dmg",
+  "dmgUrl": "https://github.com/xsoly1-boop/DJ_VIP/releases/download/v10.0.0.55/DJ.a.la.carta.silicon.dmg",
+  "dmgUrlIntel": "https://github.com/xsoly1-boop/DJ_VIP/releases/download/v10.0.0.55/DJ.a.la.carta.dmg",
   "ipaUrl": "",
-  "exeUrl": "https://github.com/xsoly1-boop/DJ_VIP/releases/download/v10.0.0.54/DJ.a.la.carta.exe",
+  "exeUrl": "https://github.com/xsoly1-boop/DJ_VIP/releases/download/v10.0.0.55/DJ.a.la.carta.exe",
   "releaseNotes": [
     "Modal de actualización ahora muestra el botón de descarga exclusivo para tu plataforma (Android, macOS, iOS, Windows).",
     "Corrección: el botón de actualización ya no descarga el APK múltiples veces.",

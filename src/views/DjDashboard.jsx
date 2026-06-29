@@ -1511,6 +1511,43 @@ export default function DjDashboard() {
     setTimeout(() => setToastMessage(null), 3000);
   };
 
+  const handleTestSync = async () => {
+    if (!virtualDJPath) {
+      showToast("⚠️ Primero detecta o introduce una ruta válida.");
+      return;
+    }
+    
+    let filename = '';
+    let content = '';
+    
+    if (virtualDJFormat === 'm3u') {
+      filename = 'Peticiones DJ a la Carta Prueba.m3u';
+      content = '#EXTM3U\n#EXTINF:-1,DJ VIP - Sincronizacion Exitosa\nDJ VIP - Sincronizacion Exitosa\n';
+    } else {
+      filename = 'Peticiones DJ a la Carta Prueba.vdjfolder';
+      content = '<?xml version="1.0" encoding="UTF-8"?>\n<virtualfolder>\n  <song path="DJ VIP - Sincronizacion Exitosa" />\n</virtualfolder>\n';
+    }
+    
+    if (window.electronAPI && window.electronAPI.writePlaylist) {
+      try {
+        const res = await window.electronAPI.writePlaylist({
+          vdjPath: virtualDJPath,
+          filename,
+          content
+        });
+        if (res.success) {
+          showToast(`✅ ¡Sincronización de prueba exitosa!`);
+        } else {
+          showToast(`❌ Error: ${res.error}`);
+        }
+      } catch (err) {
+        showToast(`❌ Error de comunicación: ${err.message}`);
+      }
+    } else {
+      showToast("❌ Solo disponible en la app de escritorio.");
+    }
+  };
+
   useEffect(() => {
     if (virtualDJEnabled && virtualDJPath) {
       const syncVirtualDJPlaylist = async (currentRequests) => {
@@ -1532,7 +1569,7 @@ export default function DjDashboard() {
           content = '#EXTM3U\n';
           filtered.forEach(req => {
             content += `#EXTINF:-1,${req.artist} - ${req.title} (${req.genre})\n`;
-            content += `${req.artist} - ${req.title}\n`;
+            content += `${req.artist} - ${req.title}.mp3\n`;
           });
         } else if (virtualDJFormat === 'vdjfolder') {
           filename = 'Peticiones DJ a la Carta.vdjfolder';
@@ -1540,7 +1577,7 @@ export default function DjDashboard() {
           filtered.forEach(req => {
             const safeTitle = (req.title || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
             const safeArtist = (req.artist || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
-            content += `  <song path="${safeArtist} - ${safeTitle}" />\n`;
+            content += `  <song path="${safeArtist} - ${safeTitle}.mp3" />\n`;
           });
           content += '</virtualfolder>\n';
         }
@@ -2325,11 +2362,11 @@ export default function DjDashboard() {
         </div>
       )}
 
-      {/* HEADER DE CABINA */}
       <header className={`glass-panel ${isProUser ? 'pro-gold-frame' : ''} dj-panel-header-drag`} style={{
         padding: '14px 24px 14px 24px', borderRadius: 'var(--radius-lg)',
         display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-        flexWrap: 'wrap', gap: '20px', marginBottom: userProfile?.headerMarginBottom !== undefined && userProfile.headerMarginBottom !== '' ? `${userProfile.headerMarginBottom}px` : '2px'
+        flexWrap: 'wrap', gap: '20px', marginBottom: userProfile?.headerMarginBottom !== undefined && userProfile.headerMarginBottom !== '' ? `${userProfile.headerMarginBottom}px` : '2px',
+        position: 'relative'
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
           {/* Espaciador para botones de semáforo en macOS Electron */}
@@ -2536,45 +2573,97 @@ export default function DjDashboard() {
           </div>
         </div>
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', position: 'absolute', top: '20px', right: '24px' }}>
           {/* Sonido */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)', padding: '3px 6px', borderRadius: 'var(--radius-md)' }}>
-            <button className="btn btn-secondary btn-icon" 
+          <div style={{ 
+            display: 'flex', 
+            alignItems: 'center', 
+            gap: '8px', 
+            background: 'rgba(255, 255, 255, 0.03)', 
+            border: '1px solid rgba(255, 255, 255, 0.08)', 
+            padding: '4px 10px', 
+            borderRadius: '24px',
+            backdropFilter: 'blur(10px)'
+          }}>
+            <button 
               onClick={() => { setSoundEnabled(!soundEnabled); showToast(soundEnabled ? '🔇 Sonido apagado' : '🔊 Sonido encendido'); }}
-              style={{ width: '28px', height: '28px', padding: 0 }} title={soundEnabled ? "Silenciar" : "Activar Sonido"}
+              style={{ 
+                background: 'transparent', 
+                border: 'none', 
+                width: '24px', 
+                height: '24px', 
+                display: 'flex', 
+                alignItems: 'center', 
+                justifyContent: 'center', 
+                cursor: 'pointer', 
+                padding: 0,
+                color: soundEnabled ? 'var(--text-primary)' : 'var(--text-muted)',
+                opacity: soundEnabled ? 1 : 0.5,
+                transition: 'opacity 0.2s'
+              }} 
+              title={soundEnabled ? "Silenciar" : "Activar Sonido"}
             >
-              {soundEnabled ? <Volume2 size={13} /> : <Volume2 size={13} style={{ opacity: 0.4 }} />}
+              <Volume2 size={14} />
             </button>
+            
             {soundEnabled && (
-              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                 {window.AndroidApp && !window.electronAPI ? (
-                  // Android APK & iOS IPA (móvil nativo): Mantenemos intacto el selector de tonos locales personalizado
                   <>
-                    <span style={{ fontSize: '0.7rem', color: 'var(--text-secondary)', background: 'rgba(255,255,255,0.05)', padding: '4px 8px', borderRadius: 'var(--radius-sm)' }}>
+                    <span style={{ fontSize: '0.7rem', color: 'var(--text-secondary)', background: 'rgba(255,255,255,0.05)', padding: '3px 8px', borderRadius: '10px' }}>
                       🔊 Tono: {androidSoundName}
                     </span>
                     <button 
                       type="button" 
-                      className="btn btn-secondary" 
+                      className="btn"
                       onClick={() => { if (window.AndroidApp.chooseNotificationSound) window.AndroidApp.chooseNotificationSound(); }}
-                      style={{ height: '28px', padding: '0 8px', fontSize: '0.7rem', whiteSpace: 'nowrap' }}
+                      style={{ height: '22px', padding: '0 8px', fontSize: '0.65rem', borderRadius: '10px', background: 'rgba(255,255,255,0.1)', border: 'none', color: '#fff', cursor: 'pointer' }}
                     >
                       Cambiar tono
                     </button>
                   </>
                 ) : (
-                  // Web & macOS / Windows DMG (Escritorio): Usan el selector clásico de tonos sintetizados (sonidos API)
                   <>
-                    <select value={selectedTone} onChange={(e) => { const t = e.target.value; setSelectedTone(t); localStorage.setItem('dj_notification_tone', t); playNotificationSound(t); }}
-                      className="input-field" style={{ padding: '2px 6px', fontSize: '0.7rem', height: '28px', width: '105px', border: 'none', background: 'rgba(255,255,255,0.05)', borderRadius: 'var(--radius-sm)', lineHeight: 1 }}>
+                    <select 
+                      value={selectedTone} 
+                      onChange={(e) => { const t = e.target.value; setSelectedTone(t); localStorage.setItem('dj_notification_tone', t); playNotificationSound(t); }}
+                      style={{ 
+                        padding: '0 8px', 
+                        fontSize: '0.75rem', 
+                        height: '24px', 
+                        width: '100px', 
+                        border: 'none', 
+                        background: 'rgba(255,255,255,0.06)', 
+                        color: 'var(--text-primary)', 
+                        borderRadius: '12px', 
+                        outline: 'none', 
+                        cursor: 'pointer' 
+                      }}
+                    >
                       <option value="chime">🔔 Campana</option>
                       <option value="beep">📟 Bip Suave</option>
                       <option value="retro">🎮 Alarma Retro</option>
                       <option value="synth">🎹 Pulsos Synth</option>
                     </select>
-                    <button className="btn btn-secondary btn-icon" onClick={() => playNotificationSound(selectedTone)}
-                      style={{ width: '28px', height: '28px', border: 'none', background: 'transparent', padding: 0 }} title="Probar Sonido">
-                      <Volume2 size={12} color="var(--text-secondary)" />
+                    <button 
+                      onClick={() => playNotificationSound(selectedTone)}
+                      style={{ 
+                        background: 'rgba(255,255,255,0.06)', 
+                        border: 'none', 
+                        width: '24px', 
+                        height: '24px', 
+                        borderRadius: '50%', 
+                        display: 'flex', 
+                        alignItems: 'center', 
+                        justifyContent: 'center', 
+                        cursor: 'pointer', 
+                        padding: 0,
+                        color: 'var(--text-secondary)',
+                        transition: 'background 0.2s'
+                      }} 
+                      title="Probar Sonido"
+                    >
+                      <Play size={10} style={{ marginLeft: '1px' }} />
                     </button>
                   </>
                 )}
@@ -2583,13 +2672,48 @@ export default function DjDashboard() {
           </div>
 
           {/* Notificaciones Push */}
-          <button className="btn btn-secondary btn-icon" onClick={requestNotificationPermission} title="Activar Notificaciones Push" style={{ width: '28px', height: '28px', padding: 0 }}>
-            {notificationsEnabled ? <Bell size={14} color="var(--secondary-color)" /> : <BellOff size={14} />}
+          <button 
+            onClick={requestNotificationPermission} 
+            title="Activar Notificaciones Push" 
+            style={{ 
+              width: '32px', 
+              height: '32px', 
+              borderRadius: '50%', 
+              background: notificationsEnabled ? 'rgba(6, 182, 212, 0.12)' : 'rgba(255, 255, 255, 0.03)', 
+              border: notificationsEnabled ? '1px solid rgba(6, 182, 212, 0.3)' : '1px solid rgba(255, 255, 255, 0.08)', 
+              display: 'flex', 
+              alignItems: 'center', 
+              justifyContent: 'center', 
+              cursor: 'pointer', 
+              padding: 0,
+              color: notificationsEnabled ? 'var(--secondary-color)' : 'var(--text-muted)',
+              transition: 'all 0.2s ease'
+            }}
+          >
+            {notificationsEnabled ? <Bell size={14} /> : <BellOff size={14} />}
           </button>
 
           {/* Cerrar Sesión */}
-          <button className="btn btn-danger" onClick={logoutDJ} style={{ padding: '10px 18px', fontSize: userProfile?.headerExitTextSize ? `${userProfile.headerExitTextSize}px` : '0.85rem' }}>
-            <LogOut size={16} /><span>{userProfile?.headerExitText || 'Salir'}</span>
+          <button 
+            onClick={logoutDJ} 
+            style={{ 
+              background: 'rgba(239, 68, 68, 0.1)', 
+              border: '1px solid rgba(239, 68, 68, 0.3)', 
+              color: '#f87171', 
+              borderRadius: '20px', 
+              padding: '6px 16px', 
+              fontSize: '0.8rem', 
+              fontWeight: '600', 
+              display: 'flex', 
+              alignItems: 'center', 
+              gap: '6px', 
+              cursor: 'pointer', 
+              height: '32px',
+              transition: 'all 0.2s ease' 
+            }}
+          >
+            <LogOut size={13} />
+            <span>{userProfile?.headerExitText || 'Salir'}</span>
           </button>
         </div>
       </header>
@@ -4631,140 +4755,6 @@ export default function DjDashboard() {
                   </div>
                 </div>
 
-                {/* 6. Virtual DJ */}
-                <div 
-                  className="glass-panel" 
-                  style={{ 
-                    padding: '20px', 
-                    borderRadius: 'var(--radius-md)', 
-                    border: '1px solid rgba(255,255,255,0.04)',
-                    background: 'rgba(255,255,255,0.01)',
-                    transition: 'transform 0.2s',
-                    cursor: 'default',
-                    display: 'flex',
-                    flexDirection: 'column'
-                  }}
-                  onMouseEnter={(e) => e.currentTarget.style.transform = 'translateY(-3px)'}
-                  onMouseLeave={(e) => e.currentTarget.style.transform = 'translateY(0)'}
-                >
-                  <div style={{ width: '40px', height: '40px', borderRadius: '50%', background: 'rgba(59, 130, 246, 0.15)', display: 'flex', alignItems: 'center', marginBottom: '14px', color: '#3b82f6', alignSelf: 'start', justifyContent: 'center' }}>
-                    <Sliders size={20} />
-                  </div>
-                  <h3 style={{ fontSize: '1rem', fontWeight: '700', marginBottom: '8px', color: 'var(--text-primary)' }}>
-                    Sincronización con Virtual DJ
-                  </h3>
-                  <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', lineHeight: '1.5', marginBottom: '14px' }}>
-                    Exporta la cola directamente a una carpeta o playlist M3U en tu computadora. Virtual DJ leerá y actualizará el listado de temas solicitados de forma dinámica mientras mezclas.
-                  </p>
-                  
-                  {window.electronAPI && window.electronAPI.isDesktop ? (
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: '12px', marginTop: 'auto' }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                        <input 
-                          type="checkbox" 
-                          id="vdj-enabled"
-                          checked={virtualDJEnabled} 
-                          onChange={(e) => {
-                            const val = e.target.checked;
-                            setVirtualDJEnabled(val);
-                            localStorage.setItem('vdj_sync_enabled', val ? 'true' : 'false');
-                            if (val && !virtualDJPath) {
-                              window.electronAPI.detectVirtualDJPath().then(path => {
-                                if (path) {
-                                  setVirtualDJPath(path);
-                                  localStorage.setItem('vdj_path', path);
-                                  showToast("💿 Ruta de Virtual DJ detectada!");
-                                } else {
-                                  showToast("⚠️ No se pudo auto-detectar. Introduce la ruta manualmente.");
-                                }
-                              });
-                            }
-                          }}
-                          style={{ width: '16px', height: '16px', cursor: 'pointer' }}
-                        />
-                        <label htmlFor="vdj-enabled" style={{ fontSize: '0.8rem', fontWeight: '600', cursor: 'pointer' }}>
-                          Activar Sincronización
-                        </label>
-                      </div>
-
-                      {virtualDJEnabled && (
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                          <div className="form-group" style={{ marginBottom: 0 }}>
-                            <label className="form-label" style={{ fontSize: '0.7rem' }}>Carpeta Virtual DJ</label>
-                            <div style={{ display: 'flex', gap: '6px' }}>
-                              <input 
-                                type="text" 
-                                className="input-field" 
-                                placeholder="/Users/.../VirtualDJ" 
-                                value={virtualDJPath} 
-                                onChange={(e) => {
-                                  setVirtualDJPath(e.target.value);
-                                  localStorage.setItem('vdj_path', e.target.value);
-                                }}
-                                style={{ fontSize: '0.75rem', padding: '4px 8px', height: '30px' }}
-                              />
-                              <button 
-                                type="button" 
-                                className="btn btn-secondary" 
-                                onClick={async () => {
-                                  const path = await window.electronAPI.detectVirtualDJPath();
-                                  if (path) {
-                                    setVirtualDJPath(path);
-                                    localStorage.setItem('vdj_path', path);
-                                    showToast("💿 Ruta de Virtual DJ detectada!");
-                                  } else {
-                                    showToast("❌ No se encontró carpeta.");
-                                  }
-                                }}
-                                style={{ fontSize: '0.7rem', padding: '4px 8px', height: '30px', whiteSpace: 'nowrap' }}
-                              >
-                                Auto
-                              </button>
-                            </div>
-                          </div>
-
-                          <div className="form-group" style={{ marginBottom: 0 }}>
-                            <label className="form-label" style={{ fontSize: '0.7rem' }}>Formato</label>
-                            <select 
-                              className="input-field" 
-                              value={virtualDJFormat} 
-                              onChange={(e) => {
-                                setVirtualDJFormat(e.target.value);
-                                localStorage.setItem('vdj_format', e.target.value);
-                              }}
-                              style={{ fontSize: '0.75rem', padding: '4px 8px', height: '30px', cursor: 'pointer' }}
-                            >
-                              <option value="m3u">M3U Playlist (Playlists/)</option>
-                              <option value="vdjfolder">Virtual Folder XML (My Lists/)</option>
-                            </select>
-                          </div>
-
-                          <div className="form-group" style={{ marginBottom: 0 }}>
-                            <label className="form-label" style={{ fontSize: '0.7rem' }}>Sincronizar</label>
-                            <select 
-                              className="input-field" 
-                              value={virtualDJSyncMode} 
-                              onChange={(e) => {
-                                setVirtualDJSyncMode(e.target.value);
-                                localStorage.setItem('vdj_sync_mode', e.target.value);
-                              }}
-                              style={{ fontSize: '0.75rem', padding: '4px 8px', height: '30px', cursor: 'pointer' }}
-                            >
-                              <option value="accepted">Solo Aceptadas</option>
-                              <option value="all">Todas las Recibidas</option>
-                            </select>
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  ) : (
-                    <div style={{ marginTop: 'auto', borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: '12px' }}>
-                      <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', fontStyle: 'italic' }}>
-                        🖥️ Sincronización con Virtual DJ disponible en la versión de escritorio Mac/Windows.
-                      </span>
-                    </div>
-                  )}
-                </div>
 
                 {/* 7. Publicidad o Contacto para Contrataciones */}
                 <div 
@@ -4865,6 +4855,160 @@ export default function DjDashboard() {
                 </div>
               </div>
             </>
+          )}
+
+          {/* Virtual DJ: Siempre accesible en la App de Escritorio, independientemente del plan */}
+          {window.electronAPI && window.electronAPI.isDesktop && (
+            <div 
+              className="glass-panel" 
+              style={{ 
+                marginTop: '24px',
+                padding: '24px', 
+                borderRadius: 'var(--radius-lg)', 
+                border: '1px solid rgba(6, 182, 212, 0.25)', 
+                background: 'rgba(6, 182, 212, 0.03)',
+                display: 'flex',
+                flexDirection: 'column'
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '12px' }}>
+                <div style={{ width: '40px', height: '40px', borderRadius: '50%', background: 'rgba(6, 182, 212, 0.15)', display: 'flex', alignItems: 'center', color: 'var(--secondary-color)', justifyContent: 'center' }}>
+                  <Sliders size={20} />
+                </div>
+                <div>
+                  <h3 style={{ fontSize: '1.1rem', fontWeight: '700', margin: 0, color: 'var(--text-primary)' }}>
+                    Sincronización con Virtual DJ
+                  </h3>
+                  <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', margin: '2px 0 0 0' }}>
+                    Conecta tus peticiones directamente con tu cabina Virtual DJ local.
+                  </p>
+                </div>
+              </div>
+              
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: '16px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <input 
+                    type="checkbox" 
+                    id="vdj-enabled"
+                    checked={virtualDJEnabled} 
+                    onChange={(e) => {
+                      const val = e.target.checked;
+                      setVirtualDJEnabled(val);
+                      localStorage.setItem('vdj_sync_enabled', val ? 'true' : 'false');
+                      if (val && !virtualDJPath) {
+                        window.electronAPI.detectVirtualDJPath().then(path => {
+                          if (path) {
+                            setVirtualDJPath(path);
+                            localStorage.setItem('vdj_path', path);
+                            showToast("💿 Ruta de Virtual DJ detectada!");
+                          } else {
+                            showToast("⚠️ No se pudo auto-detectar. Introduce la ruta manualmente.");
+                          }
+                        });
+                      }
+                    }}
+                    style={{ width: '16px', height: '16px', cursor: 'pointer' }}
+                  />
+                  <label htmlFor="vdj-enabled" style={{ fontSize: '0.85rem', fontWeight: '600', cursor: 'pointer' }}>
+                    Activar Sincronización Automática
+                  </label>
+                </div>
+
+                {virtualDJEnabled && (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', background: 'rgba(255,255,255,0.01)', padding: '12px', borderRadius: 'var(--radius-sm)', border: '1px solid rgba(255,255,255,0.03)' }}>
+                    <div className="form-group" style={{ marginBottom: 0 }}>
+                      <label className="form-label" style={{ fontSize: '0.75rem', fontWeight: '600' }}>Carpeta del Sistema de Virtual DJ</label>
+                      <div style={{ display: 'flex', gap: '6px' }}>
+                        <input 
+                          type="text" 
+                          className="input-field" 
+                          placeholder="/Users/.../VirtualDJ" 
+                          value={virtualDJPath} 
+                          onChange={(e) => {
+                            setVirtualDJPath(e.target.value);
+                            localStorage.setItem('vdj_path', e.target.value);
+                          }}
+                          style={{ fontSize: '0.8rem', padding: '6px 10px', height: '32px' }}
+                        />
+                        <button 
+                          type="button" 
+                          className="btn btn-secondary" 
+                          onClick={async () => {
+                            const path = await window.electronAPI.detectVirtualDJPath();
+                            if (path) {
+                              setVirtualDJPath(path);
+                              localStorage.setItem('vdj_path', path);
+                              showToast("💿 Ruta de Virtual DJ detectada!");
+                            } else {
+                              showToast("❌ No se encontró carpeta.");
+                            }
+                          }}
+                          style={{ fontSize: '0.75rem', padding: '6px 10px', height: '32px', whiteSpace: 'nowrap' }}
+                        >
+                          Auto
+                        </button>
+                      </div>
+                    </div>
+
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                      <div className="form-group" style={{ marginBottom: 0 }}>
+                        <label className="form-label" style={{ fontSize: '0.75rem', fontWeight: '600' }}>Formato de Playlist</label>
+                        <select 
+                          className="input-field" 
+                          value={virtualDJFormat} 
+                          onChange={(e) => {
+                            setVirtualDJFormat(e.target.value);
+                            localStorage.setItem('vdj_format', e.target.value);
+                          }}
+                          style={{ fontSize: '0.8rem', padding: '0 10px', height: '32px', cursor: 'pointer', background: 'var(--surface-color)', border: '1px solid var(--surface-border)' }}
+                        >
+                          <option value="m3u">M3U Playlist (Playlists/)</option>
+                          <option value="vdjfolder">Virtual Folder XML (My Lists/)</option>
+                        </select>
+                      </div>
+
+                      <div className="form-group" style={{ marginBottom: 0 }}>
+                        <label className="form-label" style={{ fontSize: '0.75rem', fontWeight: '600' }}>Filtrado de Sincronización</label>
+                        <select 
+                          className="input-field" 
+                          value={virtualDJSyncMode} 
+                          onChange={(e) => {
+                            setVirtualDJSyncMode(e.target.value);
+                            localStorage.setItem('vdj_sync_mode', e.target.value);
+                          }}
+                          style={{ fontSize: '0.8rem', padding: '0 10px', height: '32px', cursor: 'pointer', background: 'var(--surface-color)', border: '1px solid var(--surface-border)' }}
+                        >
+                          <option value="accepted">Solo Aceptadas</option>
+                          <option value="all">Todas las Recibidas</option>
+                        </select>
+                      </div>
+                    </div>
+
+                    <button 
+                      type="button" 
+                      className="btn btn-secondary" 
+                      onClick={handleTestSync}
+                      style={{ 
+                        fontSize: '0.8rem', 
+                        padding: '8px 16px', 
+                        marginTop: '8px',
+                        alignSelf: 'start',
+                        background: 'rgba(6, 182, 212, 0.15)',
+                        borderColor: 'rgba(6, 182, 212, 0.45)',
+                        color: 'var(--secondary-color)',
+                        fontWeight: '600',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        gap: '6px'
+                      }}
+                    >
+                      🧪 Probar Sincronización
+                    </button>
+                  </div>
+                )}
+              </div>
+            </div>
           )}
 
           {/* Sección de Retroalimentación / Sugerencias (Accesible para todos los planes) */}

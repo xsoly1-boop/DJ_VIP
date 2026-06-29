@@ -217,34 +217,41 @@ ipcMain.handle('write-playlist', async (event, { vdjPath, filename, content }) =
   try {
     if (!vdjPath) return { success: false, error: 'Ruta de VirtualDJ no especificada.' };
     
-    // Asegurar que la carpeta raíz de Virtual DJ existe
-    if (!fs.existsSync(vdjPath)) {
-      return { success: false, error: 'La ruta de Virtual DJ no existe.' };
+    // Expandir tilde (~) si existe en la ruta
+    let resolvedPath = vdjPath;
+    if (vdjPath.startsWith('~')) {
+      resolvedPath = path.join(os.homedir(), vdjPath.slice(1));
     }
     
-    // Determinar la subcarpeta (MyLists para moderno, My Lists para clásico, Playlists para M3U)
-    let subfolderName = '';
+    // Asegurar que la carpeta raíz de Virtual DJ existe
+    if (!fs.existsSync(resolvedPath)) {
+      return { success: false, error: `La ruta de Virtual DJ no existe: ${resolvedPath}` };
+    }
+    
     if (filename.endsWith('.vdjfolder')) {
-      const modernLists = path.join(vdjPath, 'MyLists');
-      const classicLists = path.join(vdjPath, 'My Lists');
-      if (fs.existsSync(modernLists) || !fs.existsSync(classicLists)) {
-        subfolderName = 'MyLists';
-      } else {
-        subfolderName = 'My Lists';
+      const subdirs = ['Folders', 'MyLists', 'My Lists'];
+      let written = false;
+      for (const sub of subdirs) {
+        const p = path.join(resolvedPath, sub);
+        if (fs.existsSync(p)) {
+          fs.writeFileSync(path.join(p, filename), content, 'utf8');
+          written = true;
+        }
+      }
+      // Fallback: Si ninguno existe, crear Folders (estándar moderno)
+      if (!written) {
+        const defaultPath = path.join(resolvedPath, 'Folders');
+        fs.mkdirSync(defaultPath, { recursive: true });
+        fs.writeFileSync(path.join(defaultPath, filename), content, 'utf8');
       }
     } else {
-      subfolderName = 'Playlists';
+      const playlistFolder = path.join(resolvedPath, 'Playlists');
+      if (!fs.existsSync(playlistFolder)) {
+        fs.mkdirSync(playlistFolder, { recursive: true });
+      }
+      fs.writeFileSync(path.join(playlistFolder, filename), content, 'utf8');
     }
-    
-    const targetFolder = path.join(vdjPath, subfolderName);
-    
-    if (!fs.existsSync(targetFolder)) {
-      fs.mkdirSync(targetFolder, { recursive: true });
-    }
-    
-    const targetFile = path.join(targetFolder, filename);
-    fs.writeFileSync(targetFile, content, 'utf8');
-    return { success: true, path: targetFile };
+    return { success: true };
   } catch (error) {
     console.error('Error writing playlist:', error);
     return { success: false, error: error.message };
