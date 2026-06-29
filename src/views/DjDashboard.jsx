@@ -259,6 +259,7 @@ export default function DjDashboard() {
   // Personalización de Plataforma (Admin Master)
   const [statsCardHeightInput, setStatsCardHeightInput] = useState('');
   const [statsCardWidthInput, setStatsCardWidthInput] = useState('');
+  const [queueContainerWidthInput, setQueueContainerWidthInput] = useState('');
   const [statsCardTitlesInput, setStatsCardTitlesInput] = useState({
     total: '', pending: '', playing: '', votes: '', db: '', rating: '', plan: '', djs: ''
   });
@@ -272,6 +273,7 @@ export default function DjDashboard() {
     if (userProfile) {
       setStatsCardHeightInput(userProfile.statsCardHeight || '');
       setStatsCardWidthInput(userProfile.statsCardWidth || '');
+      setQueueContainerWidthInput(userProfile.queueContainerWidth || '');
       setStatsCardTitlesInput({
         total: userProfile.statsCardTitles?.total || '',
         pending: userProfile.statsCardTitles?.pending || '',
@@ -538,6 +540,7 @@ export default function DjDashboard() {
       await updateDjOwnProfile({
         statsCardHeight: statsCardHeightInput,
         statsCardWidth: statsCardWidthInput,
+        queueContainerWidth: queueContainerWidthInput,
         statsCardTitles: statsCardTitlesInput,
         sidebarTitles: sidebarTitlesInput
       });
@@ -2782,7 +2785,11 @@ export default function DjDashboard() {
 
           {/* 1. LISTA DE PETICIONES */}
           {activeTab === 'requests' && (
-            <div className="glass-panel" style={{ padding: '24px' }}>
+            <div className="glass-panel" style={{ 
+              padding: '24px',
+              width: userProfile?.queueContainerWidth ? (isNaN(userProfile.queueContainerWidth) ? userProfile.queueContainerWidth : `${userProfile.queueContainerWidth}px`) : 'auto',
+              maxWidth: '100%'
+            }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '15px', marginBottom: '20px', borderBottom: '1px solid var(--surface-border)', paddingBottom: '16px' }}>
                 <h2 style={{ fontSize: '1.25rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
                   <Sliders size={20} color="var(--primary-color)" />
@@ -4784,6 +4791,17 @@ export default function DjDashboard() {
                     value={statsCardWidthInput}
                     onChange={(e) => setStatsCardWidthInput(e.target.value.trim())}
                     style={{ padding: '8px 12px', fontSize: '0.85rem', width: '120px' }}
+                  />
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                  <label style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', fontWeight: '600' }}>Ancho de "Peticiones en Cola" (px o %):</label>
+                  <input
+                    type="text"
+                    className="input-field"
+                    placeholder="ej. 100% o 800"
+                    value={queueContainerWidthInput}
+                    onChange={(e) => setQueueContainerWidthInput(e.target.value.trim())}
+                    style={{ padding: '8px 12px', fontSize: '0.85rem', width: '160px' }}
                   />
                 </div>
               </div>
