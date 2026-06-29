@@ -4799,7 +4799,7 @@ export default function DjDashboard() {
 
             <div style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid var(--surface-border)', borderRadius: 'var(--radius-md)', padding: '20px', marginTop: '16px' }}>
               <span style={{ fontSize: '0.9rem', fontWeight: '700', display: 'block', marginBottom: '14px', color: 'var(--secondary-color)' }}>
-                📋 Dimensión de la Cola de Peticiones
+                📋 Dimensión y Título de la Cola de Peticiones
               </span>
               <div style={{ display: 'flex', gap: '20px', alignItems: 'center', flexWrap: 'wrap' }}>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
@@ -4811,6 +4811,17 @@ export default function DjDashboard() {
                     value={queueContainerWidthInput || '100%'}
                     onChange={(e) => setQueueContainerWidthInput(e.target.value)}
                     style={{ padding: '8px 12px', fontSize: '0.85rem', width: '200px' }}
+                  />
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                  <label style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', fontWeight: '600' }}>Título de la Cola Grande:</label>
+                  <input
+                    type="text"
+                    className="input-field"
+                    placeholder="Peticiones en Cola"
+                    value={statsCardTitlesInput.queue}
+                    onChange={(e) => setStatsCardTitlesInput({ ...statsCardTitlesInput, queue: e.target.value })}
+                    style={{ padding: '8px 12px', fontSize: '0.85rem', width: '240px' }}
                   />
                 </div>
               </div>
@@ -4911,17 +4922,6 @@ export default function DjDashboard() {
                     />
                   </div>
                 )}
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                  <label style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', fontWeight: '600' }}>Contenedor Grande (Peticiones en Cola):</label>
-                  <input
-                    type="text"
-                    className="input-field"
-                    placeholder="Peticiones en Cola"
-                    value={statsCardTitlesInput.queue}
-                    onChange={(e) => setStatsCardTitlesInput({ ...statsCardTitlesInput, queue: e.target.value })}
-                    style={{ padding: '8px 12px', fontSize: '0.85rem' }}
-                  />
-                </div>
               </div>
             </div>
 
