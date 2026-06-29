@@ -2719,15 +2719,24 @@ export default function DjDashboard() {
       </header>
 
       {/* MÉTRICAS RÁPIDAS (Opción B2: Split Layout con Icono Neón Circular a la Izquierda ~54px) */}
-      <section style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(135px, 1fr))', gap: '2px', marginBottom: userProfile?.statsSectionMarginBottom !== undefined && userProfile.statsSectionMarginBottom !== '' ? `${userProfile.statsSectionMarginBottom}px` : '16px' }}>
+      <section style={{ 
+        display: 'grid', 
+        gridTemplateColumns: isAdminMaster ? 'repeat(8, minmax(0, 120px))' : 'repeat(7, minmax(0, 120px))', 
+        gap: '0px', 
+        width: '100%',
+        boxSizing: 'border-box',
+        marginBottom: userProfile?.statsSectionMarginBottom !== undefined && userProfile.statsSectionMarginBottom !== '' ? `${userProfile.statsSectionMarginBottom}px` : '16px' 
+      }}>
         
         {/* Total Peticiones */}
         <div className="glass-panel metric-card-total" style={{ 
-          padding: '8px 12px', 
-          height: userProfile?.statsCardHeight ? (isNaN(userProfile.statsCardHeight) ? userProfile.statsCardHeight : `${userProfile.statsCardHeight}px`) : '54px',
-          width: userProfile?.statsCardWidth ? (isNaN(userProfile.statsCardWidth) ? userProfile.statsCardWidth : `${userProfile.statsCardWidth}px`) : 'auto',
-          minHeight: userProfile?.statsCardHeight ? (isNaN(userProfile.statsCardHeight) ? userProfile.statsCardHeight : `${userProfile.statsCardHeight}px`) : '54px',
-          display: 'flex', alignItems: 'center', gap: '10px', boxSizing: 'border-box' 
+          padding: '4px 6px', 
+          height: '50px',
+          minHeight: '50px',
+          maxHeight: '50px',
+          width: '100%',
+          maxWidth: '120px',
+          display: 'flex', alignItems: 'center', gap: '6px', boxSizing: 'border-box' 
         }}>
           <div style={{ width: userProfile?.statsCardIconSize ? `${userProfile.statsCardIconSize}px` : '24px', height: userProfile?.statsCardIconSize ? `${userProfile.statsCardIconSize}px` : '24px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(168, 85, 247, 0.1)', border: '1.5px solid var(--primary-color)', boxShadow: '0 0 8px rgba(168, 85, 247, 0.3)', flexShrink: 0 }}>
             <Layers size={userProfile?.statsCardIconSize ? Math.round(Number(userProfile.statsCardIconSize) * 0.46) : 11} color="var(--primary-color)" />
@@ -2736,17 +2745,19 @@ export default function DjDashboard() {
             <span style={{ fontSize: '0.58rem', color: 'var(--text-secondary)', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.3px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
               {userProfile?.statsCardTitles?.total || 'Total Peticiones'}
             </span>
-            <h3 style={{ fontSize: userProfile?.statsCardValueSize ? `${userProfile.statsCardValueSize}px` : '1.25rem', fontWeight: '700', margin: '2px 0 0 0', lineHeight: 1 }}>{stats.total}</h3>
+            <h3 style={{ fontSize: userProfile?.statsCardValueSize ? `${userProfile.statsCardValueSize}px` : '1.15rem', fontWeight: '700', margin: '1px 0 0 0', lineHeight: 1 }}>{stats.total}</h3>
           </div>
         </div>
         
         {/* Por Aceptar */}
         <div className="glass-panel metric-card-pending" style={{ 
-          padding: '8px 12px', 
-          height: userProfile?.statsCardHeight ? (isNaN(userProfile.statsCardHeight) ? userProfile.statsCardHeight : `${userProfile.statsCardHeight}px`) : '54px',
-          width: userProfile?.statsCardWidth ? (isNaN(userProfile.statsCardWidth) ? userProfile.statsCardWidth : `${userProfile.statsCardWidth}px`) : 'auto',
-          minHeight: userProfile?.statsCardHeight ? (isNaN(userProfile.statsCardHeight) ? userProfile.statsCardHeight : `${userProfile.statsCardHeight}px`) : '54px',
-          display: 'flex', alignItems: 'center', gap: '10px', boxSizing: 'border-box' 
+          padding: '4px 6px', 
+          height: '50px',
+          minHeight: '50px',
+          maxHeight: '50px',
+          width: '100%',
+          maxWidth: '120px',
+          display: 'flex', alignItems: 'center', gap: '6px', boxSizing: 'border-box' 
         }}>
           <div style={{ width: userProfile?.statsCardIconSize ? `${userProfile.statsCardIconSize}px` : '24px', height: userProfile?.statsCardIconSize ? `${userProfile.statsCardIconSize}px` : '24px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(234, 179, 8, 0.1)', border: '1.5px solid var(--warning-color)', boxShadow: '0 0 8px rgba(234, 179, 8, 0.3)', flexShrink: 0 }}>
             <RefreshCw size={userProfile?.statsCardIconSize ? Math.round(Number(userProfile.statsCardIconSize) * 0.46) : 11} color="var(--warning-color)" className={stats.pending > 0 ? 'animate-spin' : ''} />
@@ -2755,17 +2766,19 @@ export default function DjDashboard() {
             <span style={{ fontSize: userProfile?.statsCardLabelSize ? `${userProfile.statsCardLabelSize}px` : '0.58rem', color: 'var(--text-secondary)', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.3px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
               {userProfile?.statsCardTitles?.pending || 'Por Aceptar'}
             </span>
-            <h3 style={{ fontSize: '1.25rem', fontWeight: '700', margin: '2px 0 0 0', color: 'var(--warning-color)', lineHeight: 1 }}>{stats.pending}</h3>
+            <h3 style={{ fontSize: '1.15rem', fontWeight: '700', margin: '1px 0 0 0', color: 'var(--warning-color)', lineHeight: 1 }}>{stats.pending}</h3>
           </div>
         </div>
         
         {/* Sonando Ahora */}
         <div className="glass-panel metric-card-playing" style={{ 
-          padding: '8px 12px', 
-          height: userProfile?.statsCardHeight ? (isNaN(userProfile.statsCardHeight) ? userProfile.statsCardHeight : `${userProfile.statsCardHeight}px`) : '54px',
-          width: userProfile?.statsCardWidth ? (isNaN(userProfile.statsCardWidth) ? userProfile.statsCardWidth : `${userProfile.statsCardWidth}px`) : 'auto',
-          minHeight: userProfile?.statsCardHeight ? (isNaN(userProfile.statsCardHeight) ? userProfile.statsCardHeight : `${userProfile.statsCardHeight}px`) : '54px',
-          display: 'flex', alignItems: 'center', gap: '10px', boxSizing: 'border-box' 
+          padding: '4px 6px', 
+          height: '50px',
+          minHeight: '50px',
+          maxHeight: '50px',
+          width: '100%',
+          maxWidth: '120px',
+          display: 'flex', alignItems: 'center', gap: '6px', boxSizing: 'border-box' 
         }}>
           <div style={{ width: userProfile?.statsCardIconSize ? `${userProfile.statsCardIconSize}px` : '24px', height: userProfile?.statsCardIconSize ? `${userProfile.statsCardIconSize}px` : '24px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(6, 182, 212, 0.1)', border: '1.5px solid var(--secondary-color)', boxShadow: '0 0 8px rgba(6, 182, 212, 0.3)', flexShrink: 0 }}>
             <Play size={userProfile?.statsCardIconSize ? Math.round(Number(userProfile.statsCardIconSize) * 0.46) : 11} color="var(--secondary-color)" />
@@ -2774,17 +2787,19 @@ export default function DjDashboard() {
             <span style={{ fontSize: userProfile?.statsCardLabelSize ? `${userProfile.statsCardLabelSize}px` : '0.58rem', color: 'var(--text-secondary)', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.3px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
               {userProfile?.statsCardTitles?.playing || 'Sonando Ahora'}
             </span>
-            <h3 style={{ fontSize: '1.25rem', fontWeight: '700', margin: '2px 0 0 0', color: 'var(--secondary-color)', lineHeight: 1 }}>{stats.playing}</h3>
+            <h3 style={{ fontSize: '1.15rem', fontWeight: '700', margin: '1px 0 0 0', color: 'var(--secondary-color)', lineHeight: 1 }}>{stats.playing}</h3>
           </div>
         </div>
         
         {/* Votos Audiencia */}
         <div className="glass-panel metric-card-votes" style={{ 
-          padding: '8px 12px', 
-          height: userProfile?.statsCardHeight ? (isNaN(userProfile.statsCardHeight) ? userProfile.statsCardHeight : `${userProfile.statsCardHeight}px`) : '54px',
-          width: userProfile?.statsCardWidth ? (isNaN(userProfile.statsCardWidth) ? userProfile.statsCardWidth : `${userProfile.statsCardWidth}px`) : 'auto',
-          minHeight: userProfile?.statsCardHeight ? (isNaN(userProfile.statsCardHeight) ? userProfile.statsCardHeight : `${userProfile.statsCardHeight}px`) : '54px',
-          display: 'flex', alignItems: 'center', gap: '10px', boxSizing: 'border-box' 
+          padding: '4px 6px', 
+          height: '50px',
+          minHeight: '50px',
+          maxHeight: '50px',
+          width: '100%',
+          maxWidth: '120px',
+          display: 'flex', alignItems: 'center', gap: '6px', boxSizing: 'border-box' 
         }}>
           <div style={{ width: userProfile?.statsCardIconSize ? `${userProfile.statsCardIconSize}px` : '24px', height: userProfile?.statsCardIconSize ? `${userProfile.statsCardIconSize}px` : '24px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(16, 185, 129, 0.1)', border: '1.5px solid var(--success-color)', boxShadow: '0 0 8px rgba(16, 185, 129, 0.3)', flexShrink: 0 }}>
             <Users size={userProfile?.statsCardIconSize ? Math.round(Number(userProfile.statsCardIconSize) * 0.46) : 11} color="var(--success-color)" />
@@ -2793,17 +2808,19 @@ export default function DjDashboard() {
             <span style={{ fontSize: userProfile?.statsCardLabelSize ? `${userProfile.statsCardLabelSize}px` : '0.58rem', color: 'var(--text-secondary)', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.3px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
               {userProfile?.statsCardTitles?.votes || 'Votos Audiencia'}
             </span>
-            <h3 style={{ fontSize: '1.25rem', fontWeight: '700', margin: '2px 0 0 0', color: 'var(--success-color)', lineHeight: 1 }}>{stats.votes}</h3>
+            <h3 style={{ fontSize: '1.15rem', fontWeight: '700', margin: '1px 0 0 0', color: 'var(--success-color)', lineHeight: 1 }}>{stats.votes}</h3>
           </div>
         </div>
         
         {/* Canciones BD */}
         <div className="glass-panel metric-card-db" style={{ 
-          padding: '8px 12px', 
-          height: userProfile?.statsCardHeight ? (isNaN(userProfile.statsCardHeight) ? userProfile.statsCardHeight : `${userProfile.statsCardHeight}px`) : '54px',
-          width: userProfile?.statsCardWidth ? (isNaN(userProfile.statsCardWidth) ? userProfile.statsCardWidth : `${userProfile.statsCardWidth}px`) : 'auto',
-          minHeight: userProfile?.statsCardHeight ? (isNaN(userProfile.statsCardHeight) ? userProfile.statsCardHeight : `${userProfile.statsCardHeight}px`) : '54px',
-          display: 'flex', alignItems: 'center', gap: '10px', boxSizing: 'border-box' 
+          padding: '4px 6px', 
+          height: '50px',
+          minHeight: '50px',
+          maxHeight: '50px',
+          width: '100%',
+          maxWidth: '120px',
+          display: 'flex', alignItems: 'center', gap: '6px', boxSizing: 'border-box' 
         }}>
           <div style={{ width: userProfile?.statsCardIconSize ? `${userProfile.statsCardIconSize}px` : '24px', height: userProfile?.statsCardIconSize ? `${userProfile.statsCardIconSize}px` : '24px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(99, 102, 241, 0.1)', border: '1.5px solid #6366f1', boxShadow: '0 0 8px rgba(99, 102, 241, 0.3)', flexShrink: 0 }}>
             <Database size={userProfile?.statsCardIconSize ? Math.round(Number(userProfile.statsCardIconSize) * 0.46) : 11} color="#6366f1" />
@@ -2812,17 +2829,19 @@ export default function DjDashboard() {
             <span style={{ fontSize: userProfile?.statsCardLabelSize ? `${userProfile.statsCardLabelSize}px` : '0.58rem', color: 'var(--text-secondary)', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.3px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
               {userProfile?.statsCardTitles?.db || 'Canciones BD'}
             </span>
-            <h3 style={{ fontSize: '1.25rem', fontWeight: '700', margin: '2px 0 0 0', color: '#6366f1', lineHeight: 1 }}>{(autocompleteSongs || []).length}</h3>
+            <h3 style={{ fontSize: '1.15rem', fontWeight: '700', margin: '1px 0 0 0', color: '#6366f1', lineHeight: 1 }}>{(autocompleteSongs || []).length}</h3>
           </div>
         </div>
         
         {/* Calificación */}
         <div className="glass-panel metric-card-rating" style={{ 
-          padding: '8px 12px', 
-          height: userProfile?.statsCardHeight ? (isNaN(userProfile.statsCardHeight) ? userProfile.statsCardHeight : `${userProfile.statsCardHeight}px`) : '54px',
-          width: userProfile?.statsCardWidth ? (isNaN(userProfile.statsCardWidth) ? userProfile.statsCardWidth : `${userProfile.statsCardWidth}px`) : 'auto',
-          minHeight: userProfile?.statsCardHeight ? (isNaN(userProfile.statsCardHeight) ? userProfile.statsCardHeight : `${userProfile.statsCardHeight}px`) : '54px',
-          display: 'flex', alignItems: 'center', gap: '10px', boxSizing: 'border-box' 
+          padding: '4px 6px', 
+          height: '50px',
+          minHeight: '50px',
+          maxHeight: '50px',
+          width: '100%',
+          maxWidth: '120px',
+          display: 'flex', alignItems: 'center', gap: '6px', boxSizing: 'border-box' 
         }}>
           <div style={{ width: userProfile?.statsCardIconSize ? `${userProfile.statsCardIconSize}px` : '24px', height: userProfile?.statsCardIconSize ? `${userProfile.statsCardIconSize}px` : '24px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(245, 158, 11, 0.1)', border: '1.5px solid #f59e0b', boxShadow: '0 0 8px rgba(245, 158, 11, 0.3)', flexShrink: 0 }}>
             <Star size={userProfile?.statsCardIconSize ? Math.round(Number(userProfile.statsCardIconSize) * 0.46) : 11} color="#f59e0b" />
@@ -2831,8 +2850,8 @@ export default function DjDashboard() {
             <span style={{ fontSize: userProfile?.statsCardLabelSize ? `${userProfile.statsCardLabelSize}px` : '0.58rem', color: 'var(--text-secondary)', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.3px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
               {userProfile?.statsCardTitles?.rating || 'Calificación'}
             </span>
-            <div style={{ display: 'flex', alignItems: 'baseline', gap: '3px', margin: '2px 0 0 0' }}>
-              <h3 style={{ fontSize: '1.25rem', fontWeight: '700', color: '#f59e0b', lineHeight: 1 }}>{ratingsStats?.avg || 0}</h3>
+            <div style={{ display: 'flex', alignItems: 'baseline', gap: '3px', margin: '1px 0 0 0' }}>
+              <h3 style={{ fontSize: '1.15rem', fontWeight: '700', color: '#f59e0b', lineHeight: 1 }}>{ratingsStats?.avg || 0}</h3>
               <span style={{ fontSize: '0.6rem', color: 'var(--text-muted)' }}>({ratingsStats?.total || 0})</span>
             </div>
           </div>
@@ -2840,11 +2859,13 @@ export default function DjDashboard() {
         
         {/* Plan */}
         <div className="glass-panel metric-card-plan" style={{ 
-          padding: '8px 12px', 
-          height: userProfile?.statsCardHeight ? (isNaN(userProfile.statsCardHeight) ? userProfile.statsCardHeight : `${userProfile.statsCardHeight}px`) : '54px',
-          width: userProfile?.statsCardWidth ? (isNaN(userProfile.statsCardWidth) ? userProfile.statsCardWidth : `${userProfile.statsCardWidth}px`) : 'auto',
-          minHeight: userProfile?.statsCardHeight ? (isNaN(userProfile.statsCardHeight) ? userProfile.statsCardHeight : `${userProfile.statsCardHeight}px`) : '54px',
-          display: 'flex', alignItems: 'center', gap: '10px', boxSizing: 'border-box' 
+          padding: '4px 6px', 
+          height: '50px',
+          minHeight: '50px',
+          maxHeight: '50px',
+          width: '100%',
+          maxWidth: '120px',
+          display: 'flex', alignItems: 'center', gap: '6px', boxSizing: 'border-box' 
         }}>
           <div style={{ width: userProfile?.statsCardIconSize ? `${userProfile.statsCardIconSize}px` : '24px', height: userProfile?.statsCardIconSize ? `${userProfile.statsCardIconSize}px` : '24px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(168, 85, 247, 0.1)', border: '1.5px solid #a855f7', boxShadow: '0 0 8px rgba(168, 85, 247, 0.3)', flexShrink: 0 }}>
             <Clock size={userProfile?.statsCardIconSize ? Math.round(Number(userProfile.statsCardIconSize) * 0.46) : 11} color="#a855f7" />
@@ -2854,7 +2875,7 @@ export default function DjDashboard() {
               {userProfile?.statsCardTitles?.plan || 'Plan'}
             </span>
             <div style={{ display: 'flex', flexDirection: 'column', margin: 0, lineHeight: 1.1 }}>
-              <h3 style={{ fontSize: '0.9rem', color: '#a855f7', fontWeight: '700' }}>{(userProfile?.activePlan || 'free').toUpperCase()}</h3>
+              <h3 style={{ fontSize: '0.85rem', color: '#a855f7', fontWeight: '700' }}>{(userProfile?.activePlan || 'free').toUpperCase()}</h3>
               <PlanValidityDisplay activePlan={userProfile?.activePlan || 'free'} expiresAt={userProfile?.expiresAt} />
             </div>
           </div>
@@ -2863,11 +2884,13 @@ export default function DjDashboard() {
         {/* DJs Registrados */}
         {isAdminMaster && (
           <div className="glass-panel metric-card-djs" style={{ 
-            padding: '8px 12px', 
-            height: userProfile?.statsCardHeight ? (isNaN(userProfile.statsCardHeight) ? userProfile.statsCardHeight : `${userProfile.statsCardHeight}px`) : '54px',
-            width: userProfile?.statsCardWidth ? (isNaN(userProfile.statsCardWidth) ? userProfile.statsCardWidth : `${userProfile.statsCardWidth}px`) : 'auto',
-            minHeight: userProfile?.statsCardHeight ? (isNaN(userProfile.statsCardHeight) ? userProfile.statsCardHeight : `${userProfile.statsCardHeight}px`) : '54px',
-            display: 'flex', alignItems: 'center', gap: '10px', boxSizing: 'border-box' 
+            padding: '4px 6px', 
+            height: '50px',
+            minHeight: '50px',
+            maxHeight: '50px',
+            width: '100%',
+            maxWidth: '120px',
+            display: 'flex', alignItems: 'center', gap: '6px', boxSizing: 'border-box' 
           }}>
             <div style={{ width: userProfile?.statsCardIconSize ? `${userProfile.statsCardIconSize}px` : '24px', height: userProfile?.statsCardIconSize ? `${userProfile.statsCardIconSize}px` : '24px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(6, 182, 212, 0.1)', border: '1.5px solid #06b6d4', boxShadow: '0 0 8px rgba(6, 182, 212, 0.3)', flexShrink: 0 }}>
               <Users size={userProfile?.statsCardIconSize ? Math.round(Number(userProfile.statsCardIconSize) * 0.46) : 11} color="#06b6d4" />
@@ -2876,7 +2899,7 @@ export default function DjDashboard() {
               <span style={{ fontSize: userProfile?.statsCardLabelSize ? `${userProfile.statsCardLabelSize}px` : '0.58rem', color: 'var(--text-secondary)', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.3px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                 {userProfile?.statsCardTitles?.djs || 'DJs Registrados'}
               </span>
-              <h3 style={{ fontSize: '1.25rem', fontWeight: '700', margin: '2px 0 0 0', color: '#06b6d4', lineHeight: 1 }}>
+              <h3 style={{ fontSize: '1.15rem', fontWeight: '700', margin: '1px 0 0 0', color: '#06b6d4', lineHeight: 1 }}>
                 {Object.keys(allUsersData || {}).filter(uid => uid !== 'uid-admin-master' && allUsersData[uid]?.profile?.email !== 'dj@admin.com').length}
               </h3>
             </div>
