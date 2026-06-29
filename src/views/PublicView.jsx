@@ -23,7 +23,8 @@ export default function PublicView() {
     addRequest, 
     voteRequest,
     submitRating,
-    eventOwnerUid
+    eventOwnerUid,
+    ownerProfile
   } = useFirebase();
 
   const defaults = {
@@ -46,6 +47,10 @@ export default function PublicView() {
   };
 
   const eventSettings = rawEventSettings ? { ...defaults, ...rawEventSettings } : defaults;
+
+  // Personalización de branding (Solo disponible para planes PRO, VIP y Eventual)
+  const isBrandingAllowed = ['pro', 'vip', 'pro_1d', 'eventual'].includes(ownerProfile?.activePlan || 'free');
+  const logoToDisplay = isBrandingAllowed ? (eventSettings.logoUrl || ownerProfile?.logoUrl || '') : '';
 
   const sessionId = getSessionId();
 
@@ -506,9 +511,9 @@ export default function PublicView() {
         gap: '12px'
       }}>
         {/* Logo o ícono */}
-        {eventSettings.logoUrl ? (
+        {logoToDisplay ? (
           <img 
-            src={eventSettings.logoUrl} 
+            src={logoToDisplay} 
             alt="Logo Evento" 
             style={{ 
               height: eventSettings.logoSize === 'small' ? '50px' :

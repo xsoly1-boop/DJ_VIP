@@ -440,6 +440,7 @@ export const FirebaseProvider = ({ children }) => {
   const [allSuggestions, setAllSuggestions] = useState({});
   const [plansConfig, setPlansConfig] = useState(DEFAULT_PLANS_CONFIG);
   const [revenueResetTimestamp, setRevenueResetTimestamp] = useState(0);
+  const [ownerProfile, setOwnerProfile] = useState(null);
   const [publicPaymentInfo, setPublicPaymentInfo] = useState({
     paypalClientId: '',
     mercadopagoPublicKey: '',
@@ -922,6 +923,23 @@ export const FirebaseProvider = ({ children }) => {
     });
     return () => unsubscribe();
   }, [currentEventId, effectiveReadPath, userBasePath]);
+
+  // 2b_alt. Escuchar perfil del dueño del evento en tiempo real (para obtener plan y branding global)
+  useEffect(() => {
+    if (!eventOwnerUid) {
+      setOwnerProfile(null);
+      return;
+    }
+    const profileRef = ref(database, `users/${eventOwnerUid}/profile`);
+    const unsubscribe = onValue(profileRef, (snapshot) => {
+      if (snapshot.exists()) {
+        setOwnerProfile(snapshot.val());
+      } else {
+        setOwnerProfile(null);
+      }
+    });
+    return () => unsubscribe();
+  }, [eventOwnerUid]);
 
   // 3b. Escuchar peticiones ya reproducidas en tiempo real
   useEffect(() => {
@@ -2989,6 +3007,7 @@ export const FirebaseProvider = ({ children }) => {
     <FirebaseContext.Provider value={{
       plansConfig,
       revenueResetTimestamp,
+      ownerProfile,
       updatePlansConfig,
       refreshAdminData,
       sendSupportMessage,
