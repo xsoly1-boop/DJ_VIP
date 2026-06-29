@@ -2342,85 +2342,8 @@ export default function DjDashboard() {
             <img src="./logo_vinyl.png" alt="DJ Panel Logo" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
           </div>
           <div>
-            <h1 style={{ fontSize: userProfile?.headerTitleTextSize ? `${userProfile.headerTitleTextSize}px` : '1.5rem', display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+            <h1 style={{ fontSize: userProfile?.headerTitleTextSize ? `${userProfile.headerTitleTextSize}px` : '1.5rem', display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap', margin: 0 }}>
               {userProfile?.headerTitleText || 'DJ Panel'}
-              <span className="badge badge-playing" style={{ fontSize: userProfile?.headerPwaTextSize ? `${userProfile.headerPwaTextSize}px` : '0.65rem' }}>
-                {userProfile?.headerPwaText || 'PWA Activo 💻'}
-              </span>
-              {/* Botón de Estado DJ */}
-              <button
-                onClick={() => {
-                  const next = !djOnline;
-                  setDjOnline(next);
-                  updateEventSettings({ djOnline: next });
-                  showToast(next ? '🎧 Estado: EN CABINA' : '⏸ Estado: FUERA DE CABINA');
-                }}
-                title={djOnline ? 'Haz clic para marcar como Fuera de Cabina' : 'Haz clic para marcar como En Cabina'}
-                style={{
-                  fontSize: userProfile?.headerStatusTextSize ? `${userProfile.headerStatusTextSize}px` : '0.65rem',
-                  padding: '3px 10px',
-                  borderRadius: '8px',
-                  fontWeight: '700',
-                  border: djOnline ? '1px solid rgba(34,195,93,0.45)' : '1px solid rgba(232,48,91,0.45)',
-                  background: djOnline ? 'rgba(34,195,93,0.15)' : 'rgba(232,48,91,0.12)',
-                  color: djOnline ? 'var(--success-color)' : 'var(--danger-color)',
-                  cursor: 'pointer',
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  gap: '4px',
-                  transition: 'all 0.25s ease',
-                  whiteSpace: 'nowrap',
-                }}
-              >
-                {(() => {
-                  const djName = eventSettings.djName || user?.displayName || (user?.email ? user.email.split('@')[0] : 'DJ');
-                  return djOnline
-                    ? <>🎧 <strong style={{ fontWeight: '800' }}>{djName}</strong>&nbsp;· {userProfile?.headerStatusOnlineText || 'EN CABINA'}</>
-                    : <>⏸ <strong style={{ fontWeight: '800' }}>{djName}</strong>&nbsp;· {userProfile?.headerStatusOfflineText || 'FUERA'}</>;
-                })()}
-              </button>
- 
-              {/* Indicador Modo */}
-              <span style={{ 
-                fontSize: userProfile?.headerConnTextSize ? `${userProfile.headerConnTextSize}px` : '0.65rem',
-                padding: '3px 10px', borderRadius: '8px', 
-                fontWeight: '700', border: isMock ? '1px solid rgba(245, 158, 11, 0.3)' : '1px solid rgba(34, 195, 93, 0.3)',
-                background: isMock ? 'rgba(245, 158, 11, 0.12)' : 'rgba(34, 195, 93, 0.12)',
-                color: isMock ? 'var(--warning-color)' : 'var(--success-color)',
-                display: 'inline-flex', alignItems: 'center', gap: '6px', whiteSpace: 'nowrap'
-              }}>
-                <span style={{
-                  width: '6px', height: '6px', borderRadius: '50%',
-                  background: isMock ? 'var(--warning-color)' : 'var(--success-color)',
-                  boxShadow: isMock ? '0 0 6px var(--warning-color)' : '0 0 6px var(--success-color)'
-                }} />
-                {isMock ? 'Modo Local' : (userProfile?.headerConnText || 'Firebase Conectado')}
-              </span>
- 
-              {/* Indicador Token FCM (Solo en Android) */}
-              {window.AndroidApp && (
-                <span style={{ 
-                  fontSize: userProfile?.headerConnTextSize ? `${userProfile.headerConnTextSize}px` : '0.65rem',
-                  padding: '3px 10px', borderRadius: '8px', 
-                  fontWeight: '700', border: nativeFcmToken ? '1px solid rgba(34, 195, 93, 0.3)' : '1px solid rgba(232, 48, 91, 0.3)',
-                  background: nativeFcmToken ? 'rgba(34, 195, 93, 0.12)' : 'rgba(232, 48, 91, 0.12)',
-                  color: nativeFcmToken ? 'var(--success-color)' : 'var(--danger-color)',
-                  display: 'inline-flex', alignItems: 'center', gap: '6px', whiteSpace: 'nowrap'
-                }}>
-                  <span style={{
-                    width: '6px', height: '6px', borderRadius: '50%',
-                    background: nativeFcmToken ? 'var(--success-color)' : 'var(--danger-color)',
-                    boxShadow: nativeFcmToken ? '0 0 6px var(--success-color)' : '0 0 6px var(--danger-color)'
-                  }} />
-                  FCM: {nativeFcmToken ? 'Listo' : 'Obteniendo...'}
-                </span>
-              )}
- 
-              {isAdminMaster && !impersonatingUid && (
-                <span style={{ fontSize: '0.65rem', padding: '3px 8px', borderRadius: '8px', background: 'rgba(245,158,11,0.15)', color: 'var(--warning-color)', fontWeight: '700', border: '1px solid rgba(245,158,11,0.3)' }}>
-                  👑 ADMIN MASTER
-                </span>
-              )}
             </h1>
             <p style={{ fontSize: userProfile?.headerEventTextSize ? `${userProfile.headerEventTextSize}px` : '0.85rem', color: 'var(--text-secondary)' }}>
               {impersonatingUid
@@ -2525,6 +2448,88 @@ export default function DjDashboard() {
                 return <span>📋 Plan activo: <strong>{planName}</strong> ✨ Peticiones ilimitadas</span>;
               })()}
             </p>
+
+            {/* Fila de Badges / Estados */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '8px', flexWrap: 'wrap' }}>
+              <span className="badge badge-playing" style={{ fontSize: userProfile?.headerPwaTextSize ? `${userProfile.headerPwaTextSize}px` : '0.65rem', margin: 0 }}>
+                {userProfile?.headerPwaText || 'PWA Activo 💻'}
+              </span>
+              
+              {/* Botón de Estado DJ */}
+              <button
+                onClick={() => {
+                  const next = !djOnline;
+                  setDjOnline(next);
+                  updateEventSettings({ djOnline: next });
+                  showToast(next ? '🎧 Estado: EN CABINA' : '⏸ Estado: FUERA DE CABINA');
+                }}
+                title={djOnline ? 'Haz clic para marcar como Fuera de Cabina' : 'Haz clic para marcar como En Cabina'}
+                style={{
+                  fontSize: userProfile?.headerStatusTextSize ? `${userProfile.headerStatusTextSize}px` : '0.65rem',
+                  padding: '3px 10px',
+                  borderRadius: '8px',
+                  fontWeight: '700',
+                  border: djOnline ? '1px solid rgba(34,195,93,0.45)' : '1px solid rgba(232,48,91,0.45)',
+                  background: djOnline ? 'rgba(34,195,93,0.15)' : 'rgba(232,48,91,0.12)',
+                  color: djOnline ? 'var(--success-color)' : 'var(--danger-color)',
+                  cursor: 'pointer',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '4px',
+                  transition: 'all 0.25s ease',
+                  whiteSpace: 'nowrap',
+                }}
+              >
+                {(() => {
+                  const djName = eventSettings.djName || user?.displayName || (user?.email ? user.email.split('@')[0] : 'DJ');
+                  return djOnline
+                    ? <>🎧 <strong style={{ fontWeight: '800' }}>{djName}</strong>&nbsp;· {userProfile?.headerStatusOnlineText || 'EN CABINA'}</>
+                    : <>⏸ <strong style={{ fontWeight: '800' }}>{djName}</strong>&nbsp;· {userProfile?.headerStatusOfflineText || 'FUERA'}</>;
+                })()}
+              </button>
+
+              {/* Indicador Modo */}
+              <span style={{ 
+                fontSize: userProfile?.headerConnTextSize ? `${userProfile.headerConnTextSize}px` : '0.65rem',
+                padding: '3px 10px', borderRadius: '8px', 
+                fontWeight: '700', border: isMock ? '1px solid rgba(245, 158, 11, 0.3)' : '1px solid rgba(34, 195, 93, 0.3)',
+                background: isMock ? 'rgba(245, 158, 11, 0.12)' : 'rgba(34, 195, 93, 0.12)',
+                color: isMock ? 'var(--warning-color)' : 'var(--success-color)',
+                display: 'inline-flex', alignItems: 'center', gap: '6px', whiteSpace: 'nowrap'
+              }}>
+                <span style={{
+                  width: '6px', height: '6px', borderRadius: '50%',
+                  background: isMock ? 'var(--warning-color)' : 'var(--success-color)',
+                  boxShadow: isMock ? '0 0 6px var(--warning-color)' : '0 0 6px var(--success-color)'
+                }} />
+                {isMock ? 'Modo Local' : (userProfile?.headerConnText || 'Firebase Conectado')}
+              </span>
+
+              {/* Indicador Token FCM (Solo en Android) */}
+              {window.AndroidApp && (
+                <span style={{ 
+                  fontSize: userProfile?.headerConnTextSize ? `${userProfile.headerConnTextSize}px` : '0.65rem',
+                  padding: '3px 10px', borderRadius: '8px', 
+                  fontWeight: '700', border: nativeFcmToken ? '1px solid rgba(34, 195, 93, 0.3)' : '1px solid rgba(232, 48, 91, 0.3)',
+                  background: nativeFcmToken ? 'rgba(34, 195, 93, 0.12)' : 'rgba(232, 48, 91, 0.12)',
+                  color: nativeFcmToken ? 'var(--success-color)' : 'var(--danger-color)',
+                  display: 'inline-flex', alignItems: 'center', gap: '6px', whiteSpace: 'nowrap'
+                }}>
+                  <span style={{
+                    width: '6px', height: '6px', borderRadius: '50%',
+                    background: nativeFcmToken ? 'var(--success-color)' : 'var(--danger-color)',
+                    boxShadow: nativeFcmToken ? '0 0 6px var(--success-color)' : '0 0 6px var(--danger-color)'
+                  }} />
+                  FCM: {nativeFcmToken ? 'Listo' : 'Obteniendo...'}
+                </span>
+              )}
+
+              {isAdminMaster && !impersonatingUid && (
+                <span style={{ fontSize: '0.65rem', padding: '3px 8px', borderRadius: '8px', background: 'rgba(245,158,11,0.15)', color: 'var(--warning-color)', fontWeight: '700', border: '1px solid rgba(245,158,11,0.3)' }}>
+                  👑 ADMIN MASTER
+                </span>
+              )}
+            </div>
 
           </div>
         </div>
