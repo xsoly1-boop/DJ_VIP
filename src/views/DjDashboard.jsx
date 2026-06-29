@@ -2601,16 +2601,16 @@ export default function DjDashboard() {
           <nav className="glass-panel sidebar-nav" style={{ padding: '8px', display: 'flex', flexDirection: 'column', gap: '4px' }}>
             <button className={`btn ${activeTab === 'requests' ? 'btn-primary' : 'btn-secondary'}`}
               onClick={() => setActiveTab('requests')} style={{ justifyContent: 'flex-start', width: '100%' }}>
-              <Music size={16} /><span>Lista de Peticiones</span>
+              <Music size={16} /><span>{userProfile?.sidebarTitles?.requests || 'Lista de Peticiones'}</span>
             </button>
             <button className={`btn ${activeTab === 'settings' ? 'btn-primary' : 'btn-secondary'}`}
               onClick={() => setActiveTab('settings')} style={{ justifyContent: 'flex-start', width: '100%' }}>
-              <Settings size={16} /><span>Personalizar mi Panel</span>
+              <Settings size={16} /><span>{userProfile?.sidebarTitles?.settings || 'Personalizar mi Panel'}</span>
               {(!currentPlan || currentPlan === 'free') && <Lock size={14} style={{ marginLeft: 'auto', opacity: 0.6 }} />}
             </button>
             <button className={`btn ${activeTab === 'calendar' ? 'btn-primary' : 'btn-secondary'}`}
               onClick={() => setActiveTab('calendar')} style={{ justifyContent: 'flex-start', width: '100%' }}>
-              <Calendar size={16} /><span>Mis Eventos</span>
+              <Calendar size={16} /><span>{userProfile?.sidebarTitles?.calendar || 'Mis Eventos'}</span>
               {eventsList.length > 0 && (
                 <span style={{ marginLeft: 'auto', fontSize: '0.65rem', background: 'rgba(124,58,237,0.15)', color: 'var(--primary-color)', padding: '2px 6px', borderRadius: '8px', fontWeight: '700' }}>
                   {eventsList.length}
@@ -2619,18 +2619,18 @@ export default function DjDashboard() {
             </button>
             <button className={`btn ${activeTab === 'optimization' ? 'btn-primary' : 'btn-secondary'}`}
               onClick={() => setActiveTab('optimization')} style={{ justifyContent: 'flex-start', width: '100%' }}>
-              <Sliders size={16} /><span>Ajustes de Optimización</span>
+              <Sliders size={16} /><span>{userProfile?.sidebarTitles?.optimization || 'Ajustes de Optimización'}</span>
               {(!currentPlan || currentPlan === 'free' || currentPlan === 'premium') && <Lock size={14} style={{ marginLeft: 'auto', opacity: 0.6 }} />}
             </button>
             <button className={`btn ${activeTab === 'benefits' ? 'btn-primary' : 'btn-secondary'}`}
               onClick={() => setActiveTab('benefits')} style={{ justifyContent: 'flex-start', width: '100%' }}>
-              <Sparkles size={16} /><span>Beneficios para el DJ</span>
+              <Sparkles size={16} /><span>{userProfile?.sidebarTitles?.benefits || 'Beneficios para el DJ'}</span>
               {(!currentPlan || currentPlan === 'free' || currentPlan === 'premium') && <Lock size={14} style={{ marginLeft: 'auto', opacity: 0.6 }} />}
             </button>
             {isAdminMaster && (
               <button className={`btn ${activeTab === 'platform_customization' ? 'btn-primary' : 'btn-secondary'}`}
                 onClick={() => setActiveTab('platform_customization')} style={{ justifyContent: 'flex-start', width: '100%', borderColor: activeTab === 'platform_customization' ? undefined : 'rgba(6,182,212,0.2)' }}>
-                <Sliders size={16} /><span>Personalizacion de plataforma</span>
+                <Sliders size={16} /><span>{userProfile?.sidebarTitles?.platform_customization || 'Personalizacion de plataforma'}</span>
                 <span style={{ marginLeft: 'auto', fontSize: '0.65rem', background: 'rgba(6,182,212,0.15)', color: 'var(--secondary-color)', padding: '2px 6px', borderRadius: '8px', fontWeight: '700' }}>MASTER</span>
               </button>
             )}
@@ -2639,12 +2639,12 @@ export default function DjDashboard() {
               <>
                 <button className={`btn ${activeTab === 'admin' ? 'btn-primary' : 'btn-secondary'}`}
                   onClick={() => setActiveTab('admin')} style={{ justifyContent: 'flex-start', width: '100%', borderColor: activeTab === 'admin' ? undefined : 'rgba(245,158,11,0.2)' }}>
-                  <UserCog size={16} /><span>Panel Admin</span>
+                  <UserCog size={16} /><span>{userProfile?.sidebarTitles?.admin || 'Panel Admin'}</span>
                   <span style={{ marginLeft: 'auto', fontSize: '0.65rem', background: 'rgba(245,158,11,0.15)', color: 'var(--warning-color)', padding: '2px 6px', borderRadius: '8px', fontWeight: '700' }}>MASTER</span>
                 </button>
                 <button className={`btn ${activeTab === 'support' ? 'btn-primary' : 'btn-secondary'}`}
                   onClick={() => setActiveTab('support')} style={{ justifyContent: 'flex-start', width: '100%', borderColor: activeTab === 'support' ? undefined : 'rgba(124,58,237,0.2)' }}>
-                  <MessageSquare size={16} /><span>Soporte PRO</span>
+                  <MessageSquare size={16} /><span>{userProfile?.sidebarTitles?.support || 'Soporte PRO'}</span>
                   {Object.values(adminChats || {}).reduce((acc, chat) => acc + (chat.metadata?.unreadCountByAdmin || 0), 0) > 0 && (
                     <span style={{
                       marginLeft: 'auto',
@@ -2661,11 +2661,11 @@ export default function DjDashboard() {
                 </button>
                 <button className={`btn ${activeTab === 'admin_profile' ? 'btn-primary' : 'btn-secondary'}`}
                   onClick={() => setActiveTab('admin_profile')} style={{ justifyContent: 'flex-start', width: '100%', borderColor: activeTab === 'admin_profile' ? undefined : 'rgba(124,58,237,0.2)' }}>
-                  <User size={16} /><span>Mi Perfil Admin</span>
+                  <User size={16} /><span>{userProfile?.sidebarTitles?.admin_profile || 'Mi Perfil Admin'}</span>
                 </button>
                 <button className={`btn ${activeTab === 'revenue' ? 'btn-primary' : 'btn-secondary'}`}
                   onClick={() => setActiveTab('revenue')} style={{ justifyContent: 'flex-start', width: '100%', borderColor: activeTab === 'revenue' ? undefined : 'rgba(16,185,129,0.2)' }}>
-                  <TrendingUp size={16} /><span>Finanzas</span>
+                  <TrendingUp size={16} /><span>{userProfile?.sidebarTitles?.revenue || 'Finanzas'}</span>
                   <span style={{ marginLeft: 'auto', fontSize: '0.65rem', background: 'rgba(16,185,129,0.15)', color: 'var(--success-color)', padding: '2px 6px', borderRadius: '8px', fontWeight: '700' }}>INGRESOS</span>
                 </button>
               </>
@@ -4860,6 +4860,174 @@ export default function DjDashboard() {
                         const val = e.target.value;
                         const currentTitles = userProfile?.statsCardTitles || {};
                         updateDjOwnProfile({ statsCardTitles: { ...currentTitles, djs: val } });
+                      }}
+                      style={{ padding: '8px 12px', fontSize: '0.85rem' }}
+                    />
+                  </div>
+                )}
+              </div>
+            </div>
+
+            <div style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid var(--surface-border)', borderRadius: 'var(--radius-md)', padding: '20px', marginTop: '16px' }}>
+              <span style={{ fontSize: '0.9rem', fontWeight: '700', display: 'block', marginBottom: '14px', color: 'var(--secondary-color)' }}>
+                🗂️ Título de Botones de Navegación
+              </span>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                  <label style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', fontWeight: '600' }}>Botón 1 (Lista de Peticiones):</label>
+                  <input
+                    type="text"
+                    className="input-field"
+                    placeholder="Lista de Peticiones"
+                    value={userProfile?.sidebarTitles?.requests || ''}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      const currentTitles = userProfile?.sidebarTitles || {};
+                      updateDjOwnProfile({ sidebarTitles: { ...currentTitles, requests: val } });
+                    }}
+                    style={{ padding: '8px 12px', fontSize: '0.85rem' }}
+                  />
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                  <label style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', fontWeight: '600' }}>Botón 2 (Personalizar mi Panel):</label>
+                  <input
+                    type="text"
+                    className="input-field"
+                    placeholder="Personalizar mi Panel"
+                    value={userProfile?.sidebarTitles?.settings || ''}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      const currentTitles = userProfile?.sidebarTitles || {};
+                      updateDjOwnProfile({ sidebarTitles: { ...currentTitles, settings: val } });
+                    }}
+                    style={{ padding: '8px 12px', fontSize: '0.85rem' }}
+                  />
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                  <label style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', fontWeight: '600' }}>Botón 3 (Mis Eventos):</label>
+                  <input
+                    type="text"
+                    className="input-field"
+                    placeholder="Mis Eventos"
+                    value={userProfile?.sidebarTitles?.calendar || ''}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      const currentTitles = userProfile?.sidebarTitles || {};
+                      updateDjOwnProfile({ sidebarTitles: { ...currentTitles, calendar: val } });
+                    }}
+                    style={{ padding: '8px 12px', fontSize: '0.85rem' }}
+                  />
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                  <label style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', fontWeight: '600' }}>Botón 4 (Ajustes de Optimización):</label>
+                  <input
+                    type="text"
+                    className="input-field"
+                    placeholder="Ajustes de Optimización"
+                    value={userProfile?.sidebarTitles?.optimization || ''}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      const currentTitles = userProfile?.sidebarTitles || {};
+                      updateDjOwnProfile({ sidebarTitles: { ...currentTitles, optimization: val } });
+                    }}
+                    style={{ padding: '8px 12px', fontSize: '0.85rem' }}
+                  />
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                  <label style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', fontWeight: '600' }}>Botón 5 (Beneficios para el DJ):</label>
+                  <input
+                    type="text"
+                    className="input-field"
+                    placeholder="Beneficios para el DJ"
+                    value={userProfile?.sidebarTitles?.benefits || ''}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      const currentTitles = userProfile?.sidebarTitles || {};
+                      updateDjOwnProfile({ sidebarTitles: { ...currentTitles, benefits: val } });
+                    }}
+                    style={{ padding: '8px 12px', fontSize: '0.85rem' }}
+                  />
+                </div>
+                {isAdminMaster && (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                    <label style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', fontWeight: '600' }}>Botón 6 (Personalizacion de plataforma):</label>
+                    <input
+                      type="text"
+                      className="input-field"
+                      placeholder="Personalizacion de plataforma"
+                      value={userProfile?.sidebarTitles?.platform_customization || ''}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        const currentTitles = userProfile?.sidebarTitles || {};
+                        updateDjOwnProfile({ sidebarTitles: { ...currentTitles, platform_customization: val } });
+                      }}
+                      style={{ padding: '8px 12px', fontSize: '0.85rem' }}
+                    />
+                  </div>
+                )}
+                {isAdminMaster && (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                    <label style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', fontWeight: '600' }}>Botón 7 (Panel Admin):</label>
+                    <input
+                      type="text"
+                      className="input-field"
+                      placeholder="Panel Admin"
+                      value={userProfile?.sidebarTitles?.admin || ''}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        const currentTitles = userProfile?.sidebarTitles || {};
+                        updateDjOwnProfile({ sidebarTitles: { ...currentTitles, admin: val } });
+                      }}
+                      style={{ padding: '8px 12px', fontSize: '0.85rem' }}
+                    />
+                  </div>
+                )}
+                {isAdminMaster && (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                    <label style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', fontWeight: '600' }}>Botón 8 (Soporte PRO):</label>
+                    <input
+                      type="text"
+                      className="input-field"
+                      placeholder="Soporte PRO"
+                      value={userProfile?.sidebarTitles?.support || ''}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        const currentTitles = userProfile?.sidebarTitles || {};
+                        updateDjOwnProfile({ sidebarTitles: { ...currentTitles, support: val } });
+                      }}
+                      style={{ padding: '8px 12px', fontSize: '0.85rem' }}
+                    />
+                  </div>
+                )}
+                {isAdminMaster && (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                    <label style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', fontWeight: '600' }}>Botón 9 (Mi Perfil Admin):</label>
+                    <input
+                      type="text"
+                      className="input-field"
+                      placeholder="Mi Perfil Admin"
+                      value={userProfile?.sidebarTitles?.admin_profile || ''}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        const currentTitles = userProfile?.sidebarTitles || {};
+                        updateDjOwnProfile({ sidebarTitles: { ...currentTitles, admin_profile: val } });
+                      }}
+                      style={{ padding: '8px 12px', fontSize: '0.85rem' }}
+                    />
+                  </div>
+                )}
+                {isAdminMaster && (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                    <label style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', fontWeight: '600' }}>Botón 10 (Finanzas):</label>
+                    <input
+                      type="text"
+                      className="input-field"
+                      placeholder="Finanzas"
+                      value={userProfile?.sidebarTitles?.revenue || ''}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        const currentTitles = userProfile?.sidebarTitles || {};
+                        updateDjOwnProfile({ sidebarTitles: { ...currentTitles, revenue: val } });
                       }}
                       style={{ padding: '8px 12px', fontSize: '0.85rem' }}
                     />
