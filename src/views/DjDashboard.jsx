@@ -2688,7 +2688,7 @@ export default function DjDashboard() {
               <Sparkles size={16} /><span>{userProfile?.sidebarTitles?.benefits || 'Beneficios para el DJ'}</span>
               {(!currentPlan || currentPlan === 'free' || currentPlan === 'premium') && <Lock size={14} style={{ marginLeft: 'auto', opacity: 0.6 }} />}
             </button>
-            {isAdminMaster && (
+             {isAdminMaster && (
               <button className={`btn ${activeTab === 'platform_customization' ? 'btn-primary' : 'btn-secondary'}`}
                 onClick={() => setActiveTab('platform_customization')} style={{ justifyContent: 'flex-start', width: '100%', borderColor: activeTab === 'platform_customization' ? undefined : 'rgba(6,182,212,0.2)' }}>
                 <Sliders size={16} /><span>{userProfile?.sidebarTitles?.platform_customization || 'Personalizacion de plataforma'}</span>
@@ -2706,7 +2706,7 @@ export default function DjDashboard() {
                 <button className={`btn ${activeTab === 'support' ? 'btn-primary' : 'btn-secondary'}`}
                   onClick={() => setActiveTab('support')} style={{ justifyContent: 'flex-start', width: '100%', borderColor: activeTab === 'support' ? undefined : 'rgba(124,58,237,0.2)' }}>
                   <MessageSquare size={16} /><span>{userProfile?.sidebarTitles?.support || 'Soporte PRO'}</span>
-                  {Object.values(adminChats || {}).reduce((acc, chat) => acc + (chat.metadata?.unreadCountByAdmin || 0), 0) > 0 && (
+                  {Object.values(adminChats || {}).reduce((acc, chat) => acc + (chat.metadata?.unreadCountByAdmin || 0), 0) > 0 ? (
                     <span style={{
                       marginLeft: 'auto',
                       fontSize: '0.65rem',
@@ -2718,11 +2718,14 @@ export default function DjDashboard() {
                     }}>
                       {Object.values(adminChats || {}).reduce((acc, chat) => acc + (chat.metadata?.unreadCountByAdmin || 0), 0)}
                     </span>
+                  ) : (
+                    <span style={{ marginLeft: 'auto', fontSize: '0.65rem', background: 'rgba(124,58,237,0.15)', color: 'var(--primary-color)', padding: '2px 6px', borderRadius: '8px', fontWeight: '700' }}>MASTER</span>
                   )}
                 </button>
                 <button className={`btn ${activeTab === 'admin_profile' ? 'btn-primary' : 'btn-secondary'}`}
                   onClick={() => setActiveTab('admin_profile')} style={{ justifyContent: 'flex-start', width: '100%', borderColor: activeTab === 'admin_profile' ? undefined : 'rgba(124,58,237,0.2)' }}>
                   <User size={16} /><span>{userProfile?.sidebarTitles?.admin_profile || 'Mi Perfil Admin'}</span>
+                  <span style={{ marginLeft: 'auto', fontSize: '0.65rem', background: 'rgba(124,58,237,0.15)', color: 'var(--primary-color)', padding: '2px 6px', borderRadius: '8px', fontWeight: '700' }}>MASTER</span>
                 </button>
                 <button className={`btn ${activeTab === 'revenue' ? 'btn-primary' : 'btn-secondary'}`}
                   onClick={() => setActiveTab('revenue')} style={{ justifyContent: 'flex-start', width: '100%', borderColor: activeTab === 'revenue' ? undefined : 'rgba(16,185,129,0.2)' }}>
