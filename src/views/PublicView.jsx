@@ -48,9 +48,19 @@ export default function PublicView() {
 
   const eventSettings = rawEventSettings ? { ...defaults, ...rawEventSettings } : defaults;
 
-  // Personalización de branding (Exclusiva de planes PRO y VIP, sin fallback a logo global)
-  const isBrandingAllowed = ['pro', 'vip', 'pro_1d'].includes(ownerProfile?.activePlan || 'free') || eventOwnerUid === 'uid-admin-master';
-  const logoToDisplay = isBrandingAllowed ? (eventSettings.logoUrl || '') : '';
+  // Determinar logo a mostrar en la pantalla de peticiones según el plan del DJ dueño
+  const djActivePlan = ownerProfile?.activePlan || 'free';
+  const isPremiumDj = djActivePlan === 'premium';
+  const isProOrVipDj = ['pro', 'vip', 'pro_1d'].includes(djActivePlan) || eventOwnerUid === 'uid-admin-master';
+
+  let logoToDisplay = '';
+  if (isPremiumDj) {
+    // Premium maneja su branding (Logotipo URL) de forma global desde el perfil
+    logoToDisplay = ownerProfile?.logoUrl || '';
+  } else if (isProOrVipDj) {
+    // PRO y VIP manejan su branding individual y personalizado por cada evento activo
+    logoToDisplay = eventSettings.logoUrl || '';
+  }
 
   const sessionId = getSessionId();
 
