@@ -62,12 +62,18 @@ function saveConfig(config) {
 
 function createWindow() {
   mainWindow = new BrowserWindow({
-    width: 1280,
-    height: 850,
-    minWidth: 800,
-    minHeight: 600,
-    title: "DJ Panel Pro",
-    titleBarStyle: 'default',
+    width: 1440,
+    height: 900,
+    minWidth: 900,
+    minHeight: 650,
+    title: 'DJ Panel Pro',
+    // macOS: hide title bar but keep native traffic light buttons
+    titleBarStyle: 'hiddenInset',
+    trafficLightPosition: { x: 14, y: 16 },
+    // Rounded corners + native material on macOS
+    vibrancy: 'under-window',
+    visualEffectState: 'active',
+    backgroundColor: '#00000000',
     webPreferences: {
       nodeIntegration: false,
       contextIsolation: true,
@@ -81,13 +87,35 @@ function createWindow() {
 
   if (isDev) {
     mainWindow.loadURL('http://localhost:5173');
-    mainWindow.webContents.openDevTools();
+    // DevTools solo si se necesita debug explícito (Cmd+Opt+I)
   } else {
-    // app.getAppPath() resuelve correctamente dentro del .app empaquetado
-    // independientemente de la arquitectura (universal, arm64 o x64)
     const indexPath = path.join(app.getAppPath(), 'dist', 'index.html');
     mainWindow.loadFile(indexPath);
   }
+
+  // Inyectar CSS para zona de drag en el header (permite mover la ventana sin barra de título)
+  mainWindow.webContents.on('did-finish-load', () => {
+    mainWindow.webContents.insertCSS(`
+      /* Zona de arrastre de ventana en el header */
+      .dj-panel-header-drag {
+        -webkit-app-region: drag;
+      }
+      /* Los botones y elementos interactivos dentro del header NO deben ser arrastrables */
+      .dj-panel-header-drag button,
+      .dj-panel-header-drag a,
+      .dj-panel-header-drag input,
+      .dj-panel-header-drag select,
+      .dj-panel-header-drag [role="button"] {
+        -webkit-app-region: no-drag;
+      }
+      /* Espacio para los semáforos en el header */
+      .dj-traffic-lights-spacer {
+        display: inline-block;
+        width: 72px;
+        flex-shrink: 0;
+      }
+    `);
+  });
 
   // Configurar menú básico para macOS
   const template = [

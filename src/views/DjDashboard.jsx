@@ -2326,12 +2326,14 @@ export default function DjDashboard() {
       )}
 
       {/* HEADER DE CABINA */}
-      <header className={`glass-panel ${isProUser ? 'pro-gold-frame' : ''}`} style={{
-        padding: '20px 30px', borderRadius: 'var(--radius-lg)',
+      <header className={`glass-panel ${isProUser ? 'pro-gold-frame' : ''} dj-panel-header-drag`} style={{
+        padding: '14px 24px 14px 24px', borderRadius: 'var(--radius-lg)',
         display: 'flex', justifyContent: 'space-between', alignItems: 'center',
         flexWrap: 'wrap', gap: '20px', marginBottom: userProfile?.headerMarginBottom !== undefined && userProfile.headerMarginBottom !== '' ? `${userProfile.headerMarginBottom}px` : '2px'
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
+          {/* Espaciador para botones de semáforo en macOS Electron */}
+          {window.electronAPI && <span className="dj-traffic-lights-spacer" />}
           <div className="flex-center animate-pulse-glow" style={{
             width: userProfile?.headerLogoSize ? `${userProfile.headerLogoSize}px` : '48px',
             height: userProfile?.headerLogoSize ? `${userProfile.headerLogoSize}px` : '48px',
