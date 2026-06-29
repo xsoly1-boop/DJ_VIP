@@ -4769,11 +4769,11 @@ export default function DjDashboard() {
 
             <div style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid var(--surface-border)', borderRadius: 'var(--radius-md)', padding: '20px' }}>
               <span style={{ fontSize: '0.9rem', fontWeight: '700', display: 'block', marginBottom: '14px', color: 'var(--secondary-color)' }}>
-                📏 Dimensión de Contenedores
+                📏 Dimensión de Tarjetas de Estadísticas
               </span>
               <div style={{ display: 'flex', gap: '20px', alignItems: 'center', flexWrap: 'wrap' }}>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                  <label style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', fontWeight: '600' }}>Altura de contenedores (px):</label>
+                  <label style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', fontWeight: '600' }}>Altura de tarjetas (px):</label>
                   <input
                     type="number"
                     className="input-field"
@@ -4784,7 +4784,7 @@ export default function DjDashboard() {
                   />
                 </div>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                  <label style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', fontWeight: '600' }}>Ancho de contenedores (px):</label>
+                  <label style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', fontWeight: '600' }}>Ancho de tarjetas (px):</label>
                   <input
                     type="number"
                     className="input-field"
@@ -4794,15 +4794,23 @@ export default function DjDashboard() {
                     style={{ padding: '8px 12px', fontSize: '0.85rem', width: '120px' }}
                   />
                 </div>
+              </div>
+            </div>
+
+            <div style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid var(--surface-border)', borderRadius: 'var(--radius-md)', padding: '20px', marginTop: '16px' }}>
+              <span style={{ fontSize: '0.9rem', fontWeight: '700', display: 'block', marginBottom: '14px', color: 'var(--secondary-color)' }}>
+                📋 Dimensión de la Cola de Peticiones
+              </span>
+              <div style={{ display: 'flex', gap: '20px', alignItems: 'center', flexWrap: 'wrap' }}>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                  <label style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', fontWeight: '600' }}>Ancho de "Peticiones en Cola" (px o %):</label>
+                  <label style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', fontWeight: '600' }}>Ancho de la Cola Grande (px o %):</label>
                   <input
                     type="text"
                     className="input-field"
-                    placeholder="ej. 100% o 800"
-                    value={queueContainerWidthInput}
-                    onChange={(e) => setQueueContainerWidthInput(e.target.value.trim())}
-                    style={{ padding: '8px 12px', fontSize: '0.85rem', width: '160px' }}
+                    placeholder="ej. 100% o 1000"
+                    value={queueContainerWidthInput || '100%'}
+                    onChange={(e) => setQueueContainerWidthInput(e.target.value)}
+                    style={{ padding: '8px 12px', fontSize: '0.85rem', width: '200px' }}
                   />
                 </div>
               </div>
