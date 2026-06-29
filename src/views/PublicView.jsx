@@ -528,7 +528,9 @@ export default function PublicView() {
             style={{ 
               height: eventSettings.logoSize === 'small' ? '80px' :
                       eventSettings.logoSize === 'medium' ? '100px' :
-                      eventSettings.logoSize === 'large' ? '130px' : '100px', 
+                      eventSettings.logoSize === 'large' ? '130px' :
+                      (eventSettings.logoSize && !isNaN(eventSettings.logoSize)) ? `${eventSettings.logoSize}px` :
+                      (eventSettings.logoSize && eventSettings.logoSize.endsWith('px')) ? eventSettings.logoSize : '100px', 
               objectFit: 'contain',
               borderRadius: 'var(--radius-md)',
               border: '1px solid var(--surface-border)'
