@@ -8,7 +8,7 @@ android {
         applicationId "dj.vip.P_1_2"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 72
+        versionCode 73
         versionName "10.0.0.56"
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         aaptOptions {

@@ -1,2 +1,3 @@
 [2026-06-25T04:37:48.652Z] SMS para ADMIN -> 💬 Soporte PRO: El DJ "Test DJ" escribió:
 "¡Hola! Necesito ayuda con el plan VIP."
+[2026-07-02T09:19:17.928Z] SMS para ADMIN -> 📊 DJVIP: Resumen Semanal de Suscripciones. Total DJs: 5. Activos de Pago: 3. Desglose: Prem: 0, VIP: 0, PRO: 1, Eventual: 1, Bonus: 1. Recaudado Estimado: $550 MXN.
