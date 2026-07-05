@@ -8244,24 +8244,90 @@ export default function DjDashboard() {
 
       {/* SECCIÓN DE IMPRESIÓN (OCULTA EN PANTALLA) */}
       <div id="print-section">
-        {[1, 2, 3, 4].map((i) => (
-          <div key={i} className="print-quadrant">
-            <div className="print-card">
-              <img 
-                src="/template_card.png" 
-                alt="Tarjeta QR" 
-                style={{ 
-                  width: '100%', 
-                  height: '100%', 
-                  display: 'block',
-                  position: 'absolute',
-                  left: 0,
-                  top: 0,
-                  zIndex: 1
-                }} 
-              />
-              <div className="print-qr-overlay" style={{ zIndex: 2 }}>
-                <QRCodeSVG value={publicEventUrl} size={150} level={"H"} includeMargin={false} />
+        {[1, 2].map((i) => (
+          <div key={i} className="print-tent-column">
+            {/* Cara B (Superior - 9.4cm): QR code + Event Logo (inverted 180 deg) */}
+            <div className="print-section-top">
+              <div className="print-qr-container">
+                <QRCodeSVG value={publicEventUrl} size={135} level={"H"} includeMargin={false} />
+              </div>
+              <div className="print-logo-container">
+                {eventSettings.logoUrl ? (
+                  <img 
+                    src={eventSettings.logoUrl} 
+                    alt="Logo Evento" 
+                    className="print-event-logo"
+                    onError={(e) => { e.target.style.display = 'none'; }}
+                  />
+                ) : (
+                  <div className="print-event-logo-placeholder">
+                    {eventSettings.title || 'DJ VIP'}
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Cara A (Media - 9.4cm): Icons + Call to Action */}
+            <div className="print-section-middle">
+              <div className="print-icons-row">
+                {/* SVG Microphone */}
+                <svg viewBox="0 0 64 64" className="print-icon-svg">
+                  <path d="M26 38 L14 50 C12.5 51.5 10 51.5 8.5 50 C7 48.5 7 46 8.5 44.5 L20.5 32.5" stroke="#000000" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" fill="none" />
+                  <rect x="25" y="11" width="16" height="26" rx="8" transform="rotate(-45 33 24)" fill="#ffffff" stroke="#000000" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+                  <path d="M21 27 L37 43" stroke="#000000" strokeWidth="2.5" strokeLinecap="round" />
+                  <path d="M28 20 A 8 8 0 0 1 40 32" stroke="#000000" strokeWidth="1.5" strokeLinecap="round" fill="none" />
+                  <path d="M10 48 C8 52 12 56 10 60" stroke="#000000" strokeWidth="2" strokeLinecap="round" fill="none" />
+                </svg>
+
+                {/* SVG Disco Ball */}
+                <svg viewBox="0 0 64 64" className="print-icon-svg">
+                  <line x1="32" y1="2" x2="32" y2="12" stroke="#000000" strokeWidth="2.5" strokeLinecap="round" />
+                  <circle cx="32" cy="32" r="18" fill="#ffffff" stroke="#000000" strokeWidth="2.5" />
+                  <path d="M32 14 C25 18 25 46 32 50" stroke="#000000" strokeWidth="1.5" fill="none" />
+                  <path d="M32 14 C39 18 39 46 32 50" stroke="#000000" strokeWidth="1.5" fill="none" />
+                  <line x1="32" y1="14" x2="32" y2="50" stroke="#000000" strokeWidth="1.5" />
+                  <path d="M14 32 C18 25 46 25 50 32" stroke="#000000" strokeWidth="1.5" fill="none" />
+                  <path d="M14 32 C18 39 46 39 50 32" stroke="#000000" strokeWidth="1.5" fill="none" />
+                  <line x1="14" y1="32" x2="50" y2="32" stroke="#000000" strokeWidth="1.5" />
+                  
+                  {/* Plus signs */}
+                  <line x1="20" y1="18" x2="24" y2="18" stroke="#000000" strokeWidth="1.5" />
+                  <line x1="22" y1="16" x2="22" y2="20" stroke="#000000" strokeWidth="1.5" />
+                  <line x1="42" y1="46" x2="46" y2="46" stroke="#000000" strokeWidth="1.5" />
+                  <line x1="44" y1="44" x2="44" y2="48" stroke="#000000" strokeWidth="1.5" />
+                  
+                  {/* Sparkles */}
+                  <path d="M 14 44 Q 14 47 17 47 Q 14 47 14 50 Q 14 47 11 47 Q 14 47 14 44 Z" fill="#000000" />
+                  <path d="M 48 14 Q 48 17 51 17 Q 48 17 48 20 Q 48 17 45 17 Q 48 17 48 14 Z" fill="#000000" />
+                </svg>
+
+                {/* SVG Music Notes */}
+                <svg viewBox="0 0 64 64" className="print-icon-svg">
+                  <circle cx="16" cy="44" r="5" fill="#000000" />
+                  <circle cx="36" cy="40" r="5" fill="#000000" />
+                  <line x1="21" y1="44" x2="21" y2="18" stroke="#000000" strokeWidth="3" />
+                  <line x1="41" y1="40" x2="41" y2="14" stroke="#000000" strokeWidth="3" />
+                  <polygon points="21,18 41,14 41,20 21,24" fill="#000000" />
+                  
+                  <circle cx="50" cy="46" r="4" fill="#000000" />
+                  <line x1="54" y1="46" x2="54" y2="24" stroke="#000000" strokeWidth="2.5" />
+                  <path d="M54 24 C54 30 59 31 59 31" stroke="#000000" strokeWidth="2.5" fill="none" />
+                </svg>
+              </div>
+
+              <div className="print-text-container">
+                <h3>¡Pide tu canción favorita<br />al DJ!</h3>
+                <p>Escanea el código QR y<br />envíanos tu petición<br />musical al instante.</p>
+              </div>
+            </div>
+
+            {/* Cara C (Inferior - 9.14cm): Base and 4.7cm glue tab */}
+            <div className="print-section-bottom">
+              {/* Se oculta la leyenda "Cara C" completamente */}
+              <div className="print-glue-tab">
+                <div className="print-glue-triangle-left"></div>
+                <span>Pega aquí / Pegamento / Base</span>
+                <div className="print-glue-triangle-right"></div>
               </div>
             </div>
           </div>
@@ -8276,7 +8342,7 @@ export default function DjDashboard() {
         }
         @media print {
           @page {
-            size: A4 portrait !important;
+            size: letter portrait !important;
             margin: 0 !important;
           }
           
@@ -8287,6 +8353,8 @@ export default function DjDashboard() {
             -webkit-print-color-adjust: exact !important;
             print-color-adjust: exact !important;
             color-adjust: exact !important;
+            width: 21.59cm !important;
+            height: 27.94cm !important;
           }
           
           .no-print,
@@ -8295,11 +8363,10 @@ export default function DjDashboard() {
           }
           
           #print-section {
-            display: grid !important;
-            grid-template-columns: 50% 50% !important;
-            grid-template-rows: 50% 50% !important;
-            width: 100% !important;
-            height: 100% !important;
+            display: flex !important;
+            flex-direction: row !important;
+            width: 21.59cm !important;
+            height: 27.94cm !important;
             position: absolute !important;
             left: 0 !important;
             top: 0 !important;
@@ -8310,53 +8377,170 @@ export default function DjDashboard() {
             visibility: visible !important;
           }
 
-          .print-quadrant {
-            width: 100% !important;
-            height: 100% !important;
+          .print-tent-column {
+            width: 10.795cm !important;
+            height: 27.94cm !important;
             display: flex !important;
-            align-items: center !important;
-            justify-content: center !important;
-            position: relative !important;
+            flex-direction: column !important;
             box-sizing: border-box !important;
-            border-right: 1px dashed rgba(0, 0, 0, 0.15) !important;
-            border-bottom: 1px dashed rgba(0, 0, 0, 0.15) !important;
-            visibility: visible !important;
-          }
-
-          /* Quitar bordes para los límites exteriores de la hoja A4 */
-          .print-quadrant:nth-child(2n) {
-            border-right: none !important;
-          }
-          .print-quadrant:nth-child(n+3) {
-            border-bottom: none !important;
-          }
-
-          .print-card {
-            height: 92% !important;
-            aspect-ratio: 571 / 1024 !important;
             position: relative !important;
-            box-sizing: border-box !important;
-            visibility: visible !important;
-          }
-
-          .print-qr-overlay {
-            position: absolute !important;
-            left: 31.35% !important;
-            top: 33.01% !important;
-            width: 37.30% !important;
-            height: 20.80% !important;
-            display: flex !important;
-            align-items: center !important;
-            justify-content: center !important;
             background: #ffffff !important;
-            visibility: visible !important;
           }
 
-          .print-qr-overlay svg {
+          /* Línea de corte vertical */
+          .print-tent-column:first-child {
+            border-right: 1px dashed #333333 !important;
+          }
+
+          .print-section-top {
+            height: 9.4cm !important;
             width: 100% !important;
-            height: 100% !important;
-            display: block !important;
-            visibility: visible !important;
+            display: flex !important;
+            flex-direction: column !important;
+            align-items: center !important;
+            justify-content: center !important;
+            box-sizing: border-box !important;
+            border-bottom: 1px dotted #666666 !important; /* Línea de doblez */
+            padding: 0.5cm 0 !important;
+          }
+
+          .print-section-middle {
+            height: 9.4cm !important;
+            width: 100% !important;
+            display: flex !important;
+            flex-direction: column !important;
+            align-items: center !important;
+            justify-content: center !important;
+            box-sizing: border-box !important;
+            border-bottom: 1px dotted #666666 !important; /* Línea de doblez */
+            padding: 0.5cm 0 !important;
+          }
+
+          .print-section-bottom {
+            height: 9.14cm !important;
+            width: 100% !important;
+            display: flex !important;
+            flex-direction: column !important;
+            align-items: center !important;
+            justify-content: flex-end !important; /* Empuja la solapa al fondo */
+            box-sizing: border-box !important;
+            position: relative !important;
+          }
+
+          .print-qr-container {
+            display: flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            margin-bottom: 0.5cm !important;
+            transform: rotate(180deg) !important; /* Rotación de 180 grados del QR */
+          }
+
+          .print-logo-container {
+            display: flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            height: 2.2cm !important;
+            width: 100% !important;
+          }
+
+          .print-event-logo {
+            transform: rotate(180deg) !important; /* Rotación de 180 grados del Logo */
+            max-width: 80% !important;
+            max-height: 2.0cm !important;
+            object-fit: contain !important;
+            filter: brightness(0) !important; /* Convierte trazos blancos (u otros colores) a negro, manteniendo la transparencia */
+          }
+
+          .print-event-logo-placeholder {
+            transform: rotate(180deg) !important;
+            font-family: 'Outfit', sans-serif !important;
+            font-size: 16px !important;
+            font-weight: 800 !important;
+            color: #333333 !important;
+            text-transform: uppercase !important;
+            letter-spacing: 1px !important;
+            border: 2px dashed #cccccc !important;
+            padding: 8px 16px !important;
+            border-radius: 6px !important;
+            max-width: 80% !important;
+            text-align: center !important;
+          }
+
+          .print-icons-row {
+            display: flex !important;
+            justify-content: center !important;
+            align-items: center !important;
+            gap: 20px !important;
+            margin-bottom: 0.6cm !important;
+          }
+
+          .print-icon-svg {
+            width: 50px !important;
+            height: 50px !important;
+          }
+
+          .print-text-container {
+            text-align: center !important;
+            color: #000000 !important;
+            font-family: 'Outfit', 'Helvetica Neue', Arial, sans-serif !important;
+          }
+
+          .print-text-container h3 {
+            font-size: 20px !important;
+            font-weight: 800 !important;
+            margin: 0 0 8px 0 !important;
+            line-height: 1.25 !important;
+            letter-spacing: -0.5px !important;
+          }
+
+          .print-text-container p {
+            font-size: 13.5px !important;
+            font-weight: 600 !important;
+            margin: 0 !important;
+            line-height: 1.4 !important;
+            color: #222222 !important;
+          }
+
+          .print-glue-tab {
+            width: 100% !important;
+            height: 4.7cm !important; /* Altura de la solapa de pegado (mitad de 9.4cm) */
+            background-color: #f3f4f6 !important;
+            border-top: 1px dashed #666666 !important; /* Línea de doblez */
+            display: flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            position: relative !important;
+          }
+
+          .print-glue-tab span {
+            font-family: 'Outfit', sans-serif !important;
+            font-size: 11px !important;
+            font-weight: 700 !important;
+            color: #4b5563 !important;
+            text-transform: uppercase !important;
+            letter-spacing: 1px !important;
+          }
+
+          .print-glue-triangle-left {
+            position: absolute !important;
+            top: -6px !important;
+            left: 20% !important;
+            width: 0 !important;
+            height: 0 !important;
+            border-left: 6px solid transparent !important;
+            border-right: 6px solid transparent !important;
+            border-bottom: 6px solid #f3f4f6 !important;
+          }
+
+          .print-glue-triangle-right {
+            position: absolute !important;
+            top: -6px !important;
+            right: 20% !important;
+            width: 0 !important;
+            height: 0 !important;
+            border-left: 6px solid transparent !important;
+            border-right: 6px solid transparent !important;
+            border-bottom: 6px solid #f3f4f6 !important;
           }
         }
       `}</style>
