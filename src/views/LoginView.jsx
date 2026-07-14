@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { useFirebase } from '../context/FirebaseContext';
+import { useState, useEffect, useRef } from 'react';
+import { useFirebase, isBannedEmailDomain } from '../context/FirebaseContext';
 import { Lock, Mail, ArrowRight, ShieldAlert, Phone, User, RefreshCw } from 'lucide-react';
 import { CURRENT_APP_VERSION } from '../utils/AppVersionConfig';
 
@@ -31,6 +31,59 @@ export default function LoginView() {
 
   const [forgotBtnHovered, setForgotBtnHovered] = useState(false);
 
+  const [recaptchaToken, setRecaptchaToken] = useState(null);
+  const recaptchaWidgetRef = useRef(null);
+
+  // Carga dinámica del script de Google reCAPTCHA
+  useEffect(() => {
+    if (isRegister && !isMock) {
+      if (!window.grecaptcha) {
+        setRecaptchaToken(null);
+        recaptchaWidgetRef.current = null;
+        
+        const script = document.createElement('script');
+        script.src = 'https://www.google.com/recaptcha/api.js?render=explicit';
+        script.async = true;
+        script.defer = true;
+        document.body.appendChild(script);
+        script.onload = () => {
+          renderRecaptcha();
+        };
+      } else {
+        renderRecaptcha();
+      }
+    } else {
+      setRecaptchaToken(null);
+      recaptchaWidgetRef.current = null;
+    }
+  }, [isRegister, isMock]);
+
+  const renderRecaptcha = () => {
+    // Pequeño timeout por si el DOM no ha terminado de pintarse
+    setTimeout(() => {
+      if (window.grecaptcha && window.grecaptcha.render) {
+        try {
+          const container = document.getElementById('recaptcha-container');
+          if (container && container.innerHTML === '') {
+            const widgetId = window.grecaptcha.render('recaptcha-container', {
+              sitekey: import.meta.env.VITE_RECAPTCHA_SITE_KEY || '6LeIxAcTAAAAAJcZVRqySaR7M31h1G3GAfgBZbUG',
+              theme: 'dark',
+              callback: (token) => {
+                setRecaptchaToken(token);
+              },
+              'expired-callback': () => {
+                setRecaptchaToken(null);
+              }
+            });
+            recaptchaWidgetRef.current = widgetId;
+          }
+        } catch (err) {
+          console.warn("reCAPTCHA rendering error:", err);
+        }
+      }
+    }, 100);
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError(null);
@@ -42,6 +95,12 @@ export default function LoginView() {
         setSuccessMessage('¡Enlace de recuperación enviado con éxito! Revisa tu bandeja de entrada.');
         setEmail('');
       } else if (isRegister) {
+        if (isBannedEmailDomain(email)) {
+          throw new Error('El dominio de correo electrónico ingresado no es válido o parece sospechoso. Por favor verifica tu dirección.');
+        }
+        if (!isMock && !recaptchaToken) {
+          throw new Error('Por favor, completa la verificación de seguridad (reCAPTCHA) para continuar.');
+        }
         if (password !== confirmPassword) throw new Error('Las contraseñas no coinciden.');
         await registerDJ(email, password, phone, displayName);
       } else {
@@ -385,6 +444,18 @@ export default function LoginView() {
                 />
               </div>
             </div>
+          )}
+
+          {isRegister && !isMock && (
+            <div 
+              id="recaptcha-container" 
+              style={{ 
+                margin: '10px auto 5px', 
+                display: 'flex', 
+                justifyContent: 'center',
+                minHeight: '78px'
+              }}
+            ></div>
           )}
 
           <button

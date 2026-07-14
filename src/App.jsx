@@ -6,6 +6,7 @@ import DjDashboard from './views/DjDashboard';
 import AdminSubscriptions from './views/AdminSubscriptions';
 import PlanSelection from './views/PlanSelection';
 import PaymentView from './views/PaymentView';
+import EmailVerificationView from './views/EmailVerificationView';
 
 import { database, ref, onValue } from './firebase';
 import { CURRENT_APP_VERSION } from './utils/AppVersionConfig';
@@ -35,7 +36,7 @@ function detectPlatform() {
 // ─────────────────────────────────────────────────────────────────────────────
 
 function AppContent() {
-  const { user, userProfile, authLoading, changeEvent, isAdminMaster } = useFirebase();
+  const { user, userProfile, authLoading, changeEvent, isAdminMaster, isMock } = useFirebase();
   const [bypassPaymentLock, setBypassPaymentLock] = React.useState(() => {
     return sessionStorage.getItem('bypass_payment_lock') === 'true';
   });
@@ -162,6 +163,10 @@ function AppContent() {
           return <AdminSubscriptions />;
         }
         if (user) {
+          if (!isMock && !user.emailVerified && user.email?.toLowerCase() !== 'dj@admin.com') {
+            return <EmailVerificationView />;
+          }
+
           if (isAdminMaster) {
             return <DjDashboard />;
           }

@@ -13,6 +13,7 @@ import {
   createUserWithEmailAndPassword,
   reauthenticateUser,
   sendPasswordResetEmail,
+  sendEmailVerification,
   ref,
   onValue,
   set,
@@ -32,6 +33,19 @@ import { getDeviceId } from '../utils/deviceFingerprint';
 const API_BASE = ((window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') && window.location.port !== '')
   ? 'http://localhost:4000'
   : (import.meta.env.VITE_PUBLIC_URL ? import.meta.env.VITE_PUBLIC_URL.replace(/\/$/, '') : 'https://dj-vip.vercel.app');
+
+const BANNED_DOMAINS = [
+  'gamail.com', 'gamil.com', 'gmal.com', 'gamil.co', 'gmaill.com',
+  'yaho.com', 'yahu.com', 'yaho.co',
+  'hotmial.com', 'hotmai.com', 'hotmial.co', 'outlok.com',
+  'test.com', 'fake.com', 'tempmail.com', 'mailinator.com'
+];
+
+export const isBannedEmailDomain = (email) => {
+  if (!email || !email.includes('@')) return false;
+  const domain = email.split('@').pop().toLowerCase().trim();
+  return BANNED_DOMAINS.includes(domain);
+};
 
 const triggerNotificationAPI = (endpoint, body) => {
   const baseUrl = import.meta.env.VITE_PUBLIC_URL 
@@ -1070,6 +1084,11 @@ export const FirebaseProvider = ({ children }) => {
   };
 
   const registerDJ = async (email, password, phone, displayName) => {
+    // 0. Validar dominio de correo
+    if (isBannedEmailDomain(email)) {
+      throw new Error('El dominio de correo electrónico ingresado no es válido o parece sospechoso. Por favor verifica tu dirección.');
+    }
+
     // 1. Crear el usuario
     const userCredential = await createUserWithEmailAndPassword(auth, email, password);
     const registeredUser = userCredential.user;
@@ -1259,6 +1278,14 @@ export const FirebaseProvider = ({ children }) => {
         username: initialProfile.displayName || initialProfile.email,
         email: initialProfile.email
       });
+    }
+    // 5. Enviar correo de verificación si no estamos en modo mock
+    try {
+      if (!isMockMode) {
+        await sendEmailVerification(registeredUser);
+      }
+    } catch (verifErr) {
+      console.warn('No se pudo enviar el correo de verificación inicial:', verifErr.message);
     }
 
     return registeredUser;
@@ -1480,6 +1507,13 @@ export const FirebaseProvider = ({ children }) => {
   const logoutDJ = async () => {
     setImpersonatingUid(null);
     return signOut(auth);
+  };
+
+  const refreshUser = async () => {
+    if (!isMockMode && auth.currentUser) {
+      await auth.currentUser.reload();
+      setUser({ ...auth.currentUser });
+    }
   };
 
   // Admin: impersonar un DJ (ver su panel)
@@ -3076,6 +3110,7 @@ export const FirebaseProvider = ({ children }) => {
       submitFeedback,
       submitPaymentProof,
       logoutDJ,
+      refreshUser,
       impersonateUser,
       stopImpersonating,
       addRequest,

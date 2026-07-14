@@ -9,7 +9,8 @@ import {
   reauthenticateWithCredential,
   EmailAuthProvider,
   createUserWithEmailAndPassword as realCreateUser,
-  sendPasswordResetEmail as realSendPasswordResetEmail
+  sendPasswordResetEmail as realSendPasswordResetEmail,
+  sendEmailVerification as realSendEmailVerification
 } from 'firebase/auth';
 import { Capacitor } from '@capacitor/core';
 import { 
@@ -1423,6 +1424,14 @@ export const sendPasswordResetEmail = async (authInstance, email) => {
     throw new Error('auth/user-not-found: El correo electrónico no está registrado.');
   }
   console.log(`[MOCK] Enlace de recuperación de contraseña enviado a ${email}`);
+  return true;
+};
+
+export const sendEmailVerification = async (userInstance) => {
+  if (!isMockMode) {
+    return realSendEmailVerification(userInstance);
+  }
+  console.log(`[MOCK] Correo de verificación enviado a ${userInstance?.email}`);
   return true;
 };
 
