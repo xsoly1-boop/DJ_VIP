@@ -309,8 +309,10 @@ echo -e "  ${YELLOW}ℹ️  Cross-compile desde macOS → Windows. Puede tardar 
 
 rm -rf dist-desktop
 set +e
-CSC_IDENTITY_AUTO_DISCOVERY=false \
-CSC_LINK="" \
+unset WIN_CSC_LINK 2>/dev/null || true
+unset WIN_CSC_KEY_PASSWORD 2>/dev/null || true
+unset CSC_LINK 2>/dev/null || true
+export CSC_IDENTITY_AUTO_DISCOVERY=false
 npx electron-builder --win --x64 --publish never 2>&1 | tail -15
 WIN_EXIT=$?
 set -e
