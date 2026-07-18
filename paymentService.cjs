@@ -3,6 +3,13 @@ const paypal = require('@paypal/checkout-server-sdk');
 const { MercadoPagoConfig, Preference } = require('mercadopago');
 const admin = require('firebase-admin');
 
+const { createClient } = require('@supabase/supabase-js');
+const supabaseUrl = process.env.VITE_SUPABASE_URL || '';
+const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
+
+const USE_SUPABASE = !!supabaseUrl && !!supabaseServiceKey;
+const supabase = USE_SUPABASE ? createClient(supabaseUrl, supabaseServiceKey) : null;
+
 const DEFAULT_PLANS = {
   free: { name: 'Plan Demo', price: 0, currency: 'MXN' },
   premium: { name: 'Plan Premium', price: 100, currency: 'MXN' },
@@ -12,6 +19,83 @@ const DEFAULT_PLANS = {
   bonus: { name: 'Plan Bonus (Extra)', price: 50, currency: 'MXN' },
   eventual: { name: 'Eventual', price: 50, currency: 'MXN' }
 };
+
+// Helper to fetch DJ profile details from Supabase or Firebase
+async function fetchUserProfile(uid) {
+  if (USE_SUPABASE) {
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', uid)
+        .single();
+      if (error) {
+        console.error(`[Supabase] Error fetching profile for user ${uid}:`, error);
+        return null;
+      }
+      return {
+        activePlan: data.active_plan,
+        subscriptionStatus: data.subscription_status,
+        extraRequests: data.extra_requests,
+        extraRequestsExpiresAt: data.extra_requests_expires_at,
+        demoLimit: data.demo_limit,
+        premiumLimit: data.premium_limit,
+        strictLimitEnabled: data.strict_limit_enabled
+      };
+    } catch (e) {
+      console.error(`[Supabase] Exception in fetchUserProfile for ${uid}:`, e);
+      return null;
+    }
+  } else {
+    if (admin.apps.length > 0) {
+      try {
+        const snapshot = await admin.database().ref(`users/${uid}/profile`).once('value');
+        return snapshot.exists() ? snapshot.val() : null;
+      } catch (e) {
+        console.error('Error fetching active plan from Firebase:', e);
+        return null;
+      }
+    }
+  }
+  return null;
+}
+
+// Helper to save profile updates to Supabase or Firebase
+async function saveProfileUpdates(uid, updates) {
+  if (USE_SUPABASE) {
+    try {
+      const supabaseUpdates = {};
+      if (updates.subscriptionStatus !== undefined) supabaseUpdates.subscription_status = updates.subscriptionStatus;
+      if (updates.activePlan !== undefined) supabaseUpdates.active_plan = updates.activePlan;
+      if (updates.expiresAt !== undefined) supabaseUpdates.expires_at = updates.expiresAt ? new Date(updates.expiresAt).toISOString() : null;
+      if (updates.extraRequests !== undefined) supabaseUpdates.extra_requests = updates.extraRequests;
+      if (updates.extraRequestsExpiresAt !== undefined) supabaseUpdates.extra_requests_expires_at = updates.extraRequestsExpiresAt;
+      if (updates.strictLimitEnabled !== undefined) supabaseUpdates.strict_limit_enabled = updates.strictLimitEnabled;
+      if (updates.revenue !== undefined) supabaseUpdates.revenue = updates.revenue;
+      if (updates.logoUrl !== undefined) supabaseUpdates.logo_url = updates.logoUrl;
+      
+      const { error } = await supabase
+        .from('profiles')
+        .update(supabaseUpdates)
+        .eq('id', uid);
+      
+      if (error) {
+        console.error(`[Supabase] Error saving profile updates for ${uid}:`, error);
+        throw error;
+      }
+      console.log(`[Supabase] Successfully updated profile for user ${uid}`);
+    } catch (e) {
+      console.error(`[Supabase] Exception in saveProfileUpdates for ${uid}:`, e);
+      throw e;
+    }
+  } else {
+    if (admin.apps.length > 0) {
+      const db = admin.firestore();
+      await db.collection('users').doc(uid).update({ subscriptionStatus: updates.subscriptionStatus || updates.activePlan });
+      await admin.database().ref(`users/${uid}/profile`).update(updates);
+    }
+  }
+}
 
 // Helper to fetch dynamic plan details
 async function getPlanDetails(planId) {
@@ -68,25 +152,9 @@ async function createSubscription({ userId, planId, paymentMethod, uid }) {
   // Resolve user active plan dynamically to customize the bonus addon
   let activePlan = 'free';
   if (uid) {
-    if (admin.apps.length === 0) {
-      try {
-        const fs = require('fs');
-        const path = require('path');
-        const mockDbPath = path.join(__dirname, 'scratch/mock_backend_db.json');
-        if (fs.existsSync(mockDbPath)) {
-          const db = JSON.parse(fs.readFileSync(mockDbPath, 'utf8'));
-          activePlan = db.users?.[uid]?.profile?.activePlan || db.users?.[uid]?.profile?.subscriptionStatus || 'free';
-        }
-      } catch (e) {}
-    } else {
-      try {
-        const snapshot = await admin.database().ref(`users/${uid}/profile`).once('value');
-        if (snapshot.exists()) {
-          activePlan = snapshot.val().activePlan || snapshot.val().subscriptionStatus || 'free';
-        }
-      } catch (e) {
-        console.error('Error fetching active plan in createSubscription:', e);
-      }
+    const profile = await fetchUserProfile(uid);
+    if (profile) {
+      activePlan = profile.activePlan || profile.subscriptionStatus || 'free';
     }
   }
 
@@ -397,11 +465,10 @@ async function handleNotification(payload, query) {
   if (status === 'approved') {
     // Process successful payment / activation
     if (planId === 'bonus') {
-      const profileSnap = await getDbRef(`users/${uid}/profile`).once('value');
-      if (!profileSnap.exists()) {
+      const profile = await fetchUserProfile(uid);
+      if (!profile) {
         return { success: false, error: 'User profile not found' };
       }
-      const profile = profileSnap.val();
       const currentActivePlan = profile.activePlan || 'free';
       const addedRequests = currentActivePlan === 'free' ? 15 : (currentActivePlan === 'premium' ? 20 : 0);
       const currentExtra = profile.extraRequests ? parseInt(profile.extraRequests, 10) : 0;
@@ -409,44 +476,27 @@ async function handleNotification(payload, query) {
       const newExtra = currentExtra + addedRequests;
       const extraExpiresAt = Date.now() + 30 * 24 * 60 * 60 * 1000;
 
-      await db.collection('users').doc(uid).update({ subscriptionStatus: currentActivePlan });
-      await getDbRef(`users/${uid}/profile`).update({
+      await saveProfileUpdates(uid, {
         subscriptionStatus: currentActivePlan,
         activePlan: currentActivePlan,
-        selectedPlan: currentActivePlan,
         extraRequests: newExtra,
-        extraRequestsExpiresAt: extraExpiresAt,
-        paymentRejectedReason: null,
-        transactionId: paymentId,
-        gateway: 'mercadopago',
-        submittedAt: Date.now()
+        extraRequestsExpiresAt: extraExpiresAt
       });
-      console.log(`[Webhook/IPN] Successfully added bonus requests to user ${uid}`);
+      console.log(`[Webhook/IPN] Successfully added ${addedRequests} bonus requests to user ${uid}`);
       return { success: true, status: 'approved', planId };
     }
 
-    // Normal plan activation
-    await db.collection('users').doc(uid).update({ subscriptionStatus: planId });
-
-    // Calculate duration
+    // Normal plan activation — calculate duration
     let duration = 30;
     let durationUnit = 'days';
     if (planId === 'pro_1d') {
       duration = 24;
       durationUnit = 'hours';
     } else {
-      try {
-        const plansSnap = await getDbRef('config/plans').once('value');
-        if (plansSnap.exists()) {
-          const plans = plansSnap.val();
-          const planDetails = plans[planId];
-          if (planDetails) {
-            duration = parseInt(planDetails.duration, 10) || 30;
-            durationUnit = planDetails.durationUnit || 'days';
-          }
-        }
-      } catch (e) {
-        console.warn("Could not load plan duration from DB:", e);
+      const planDetails = await getPlanDetails(planId);
+      if (planDetails) {
+        duration = parseInt(planDetails.duration, 10) || 30;
+        durationUnit = planDetails.durationUnit || 'days';
       }
     }
 
@@ -464,47 +514,33 @@ async function handleNotification(payload, query) {
     const activatedAt = Date.now();
     const expiresAt = activatedAt + msToAdd;
 
-    const rtdbUpdates = {
+    const profileUpdates = {
       subscriptionStatus: planId,
       activePlan: planId,
-      selectedPlan: planId,
-      activatedAt,
-      expiresAt,
-      transactionId: paymentId,
-      gateway: 'mercadopago',
-      submittedAt: activatedAt,
-      paymentRejectedReason: null
+      expiresAt
     };
 
-    const profileSnap = await getDbRef(`users/${uid}/profile`).once('value');
-    const profile = profileSnap.exists() ? profileSnap.val() : {};
-
     if (planId === 'pro_1d') {
-      rtdbUpdates.previousActivePlan = profile.activePlan || 'free';
-      rtdbUpdates.pro1dUsed = true;
+      const existingProfile = await fetchUserProfile(uid);
+      profileUpdates.previousActivePlan = existingProfile?.activePlan || 'free';
     }
 
-    await getDbRef(`users/${uid}/profile`).update(rtdbUpdates);
+    await saveProfileUpdates(uid, profileUpdates);
     console.log(`[Webhook/IPN] Successfully activated plan ${planId} for user ${uid}`);
     return { success: true, status: 'approved', planId };
 
   } else if (status === 'rejected' || status === 'cancelled') {
     // Process rejection / cancellation
-    await getDbRef(`users/${uid}/profile`).update({
-      subscriptionStatus: 'pending_payment',
-      paymentRejectedReason: status_detail || 'Payment was rejected or cancelled.',
-      transactionId: paymentId,
-      gateway: 'mercadopago'
+    await saveProfileUpdates(uid, {
+      subscriptionStatus: 'pending_payment'
     });
     console.log(`[Webhook/IPN] Payment rejected/cancelled for user ${uid}. Updated status.`);
     return { success: true, status, planId };
 
   } else {
     // Payment is pending/in process/etc.
-    await getDbRef(`users/${uid}/profile`).update({
-      subscriptionStatus: 'pending_validation',
-      transactionId: paymentId,
-      gateway: 'mercadopago'
+    await saveProfileUpdates(uid, {
+      subscriptionStatus: 'pending_validation'
     });
     console.log(`[Webhook/IPN] Payment status is ${status} for user ${uid}. Set status to pending_validation.`);
     return { success: true, status, planId };
