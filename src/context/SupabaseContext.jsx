@@ -1085,12 +1085,13 @@ export const SupabaseProvider = ({ children }) => {
       return;
     }
 
-    if (currentEventId === 'default-event' && !activeUid) {
+    const resolvedOwnerUid = activeUid || eventOwnerUid;
+    if (currentEventId === 'default-event' && !resolvedOwnerUid) {
       setEventSettings(DEFAULT_EVENT_SETTINGS);
       return;
     }
 
-    const targetEventDbId = currentEventId === 'default-event' ? `default-event-${activeUid}` : currentEventId;
+    const targetEventDbId = currentEventId === 'default-event' ? `default-event-${resolvedOwnerUid}` : currentEventId;
 
     const fetchEventSettings = async () => {
       const { data: eventRow, error } = await supabase
@@ -1184,7 +1185,7 @@ export const SupabaseProvider = ({ children }) => {
     return () => {
       supabase.removeChannel(settingsChannel);
     };
-  }, [activeUid, currentEventId, isMockMode]);
+  }, [activeUid, eventOwnerUid, currentEventId, isMockMode]);
 
   // Cargar todos los perfiles si el usuario es Admin Master
   useEffect(() => {
@@ -1350,10 +1351,13 @@ export const SupabaseProvider = ({ children }) => {
 
   // Suscribirse a las peticiones del evento actual en tiempo real
   useEffect(() => {
-    if (isMockMode || !currentEventId || !activeUid) return;
+    if (isMockMode || !currentEventId) return;
+
+    const resolvedOwnerUid = activeUid || eventOwnerUid;
+    if (currentEventId === 'default-event' && !resolvedOwnerUid) return;
 
     // Resolver el ID real de la BD (default-event → default-event-{uid})
-    const targetEventDbId = currentEventId === 'default-event' ? `default-event-${activeUid}` : currentEventId;
+    const targetEventDbId = currentEventId === 'default-event' ? `default-event-${resolvedOwnerUid}` : currentEventId;
 
     // 1. Cargar peticiones iniciales
     const loadRequests = async () => {
@@ -1412,7 +1416,7 @@ export const SupabaseProvider = ({ children }) => {
     return () => {
       supabase.removeChannel(requestsChannel);
     };
-  }, [currentEventId, activeUid, isMockMode]);
+  }, [currentEventId, activeUid, eventOwnerUid, isMockMode]);
 
   // Acciones de Autenticación
   const loginDJ = async (email, password) => {
