@@ -1196,14 +1196,17 @@ export const SupabaseProvider = ({ children }) => {
 
   // Suscribirse a las peticiones del evento actual en tiempo real
   useEffect(() => {
-    if (isMockMode || !currentEventId) return;
+    if (isMockMode || !currentEventId || !activeUid) return;
+
+    // Resolver el ID real de la BD (default-event → default-event-{uid})
+    const targetEventDbId = currentEventId === 'default-event' ? `default-event-${activeUid}` : currentEventId;
 
     // 1. Cargar peticiones iniciales
     const loadRequests = async () => {
       const { data: activeReqs } = await supabase
         .from('requests')
         .select('*')
-        .eq('event_id', currentEventId);
+        .eq('event_id', targetEventDbId);
       
       const reqObj = {};
       (activeReqs || []).forEach(r => {
@@ -1214,7 +1217,7 @@ export const SupabaseProvider = ({ children }) => {
       const { data: playedReqs } = await supabase
         .from('played_requests')
         .select('*')
-        .eq('event_id', currentEventId);
+        .eq('event_id', targetEventDbId);
       
       const playedObj = {};
       (playedReqs || []).forEach(r => {
@@ -1225,10 +1228,10 @@ export const SupabaseProvider = ({ children }) => {
 
     loadRequests();
 
-    // 2. Escuchar cambios en tiempo real
+    // 2. Escuchar cambios en tiempo real con el ID real de la BD
     const requestsChannel = supabase
-      .channel(`realtime-requests-${currentEventId}`)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'requests', filter: `event_id=eq.${currentEventId}` }, payload => {
+      .channel(`realtime-requests-${targetEventDbId}`)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'requests', filter: `event_id=eq.${targetEventDbId}` }, payload => {
         setRequests(prev => {
           const updated = { ...prev };
           if (payload.eventType === 'DELETE') {
@@ -1239,7 +1242,7 @@ export const SupabaseProvider = ({ children }) => {
           return updated;
         });
       })
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'played_requests', filter: `event_id=eq.${currentEventId}` }, payload => {
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'played_requests', filter: `event_id=eq.${targetEventDbId}` }, payload => {
         setPlayedRequests(prev => {
           const updated = { ...prev };
           if (payload.eventType === 'DELETE') {
@@ -1255,7 +1258,7 @@ export const SupabaseProvider = ({ children }) => {
     return () => {
       supabase.removeChannel(requestsChannel);
     };
-  }, [currentEventId, isMockMode]);
+  }, [currentEventId, activeUid, isMockMode]);
 
   // Acciones de Autenticación
   const loginDJ = async (email, password) => {
