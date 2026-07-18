@@ -87,7 +87,7 @@ export { auth, database, storage, isMockMode, firebaseConfig, syncChannel };
 // Cuentas de prueba disponibles en modo mock (cargadas dinámicamente)
 const DEFAULT_MOCK_ACCOUNTS = [
   { email: 'dj@admin.com', password: 'admin123', uid: 'uid-admin-master', displayName: 'DJ Administrador Master', isAdmin: true },
-  { email: 'dj1@dj.com',   password: 'dj123',    uid: 'uid-dj1',          displayName: 'DJ MasterMix', isAdmin: false },
+  { email: 'dj1@dj.com',   password: 'dj123',    uid: 'uid-dj1',          displayName: 'No registrado', isAdmin: false },
   { email: 'dj2@dj.com',   password: 'dj456',    uid: 'uid-dj2',          displayName: 'DJ Neon Vibes', isAdmin: false },
   { email: 'demo@dj.com',  password: 'demo123',  uid: 'uid-demo',         displayName: 'DJ Demo', isAdmin: false }
 ];
@@ -1096,7 +1096,7 @@ const buildInitialUserData = (uid) => {
     logoUrl: '',
     themeColor: '#7c3aed',
     themeColorSecondary: '#06b6d4',
-    djName: 'DJ MasterMix',
+    djName: 'No registrado',
     dedicationsEnabled: false
   };
 
@@ -1300,7 +1300,7 @@ const initFreshMockDB = () => {
   db.events_registry['default-event'] = {
     ownerUid: MOCK_ACCOUNTS[1]?.uid || MOCK_ACCOUNTS[0].uid,
     title: 'Mi Gran Evento VIP',
-    djName: 'DJ MasterMix'
+    djName: 'No registrado'
   };
   db.autocomplete_songs = INITIAL_AUTOCOMPLETE.reduce((acc, s) => { acc[s.id] = s; return acc; }, {});
   localStorage.setItem('mock_rtdb_v2', JSON.stringify(db));

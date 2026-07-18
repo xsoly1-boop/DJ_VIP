@@ -92,7 +92,7 @@ export default function PublicView() {
 
   const defaults = {
     title: 'Mi Gran Evento VIP',
-    djName: 'DJ MasterMix',
+    djName: 'No registrado',
     logoUrl: '',
     themeColor: '#7c3aed',
     themeColorSecondary: '#06b6d4',

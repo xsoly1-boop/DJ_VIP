@@ -93,7 +93,7 @@ function createWindow() {
   }
 
   // Abrir DevTools por defecto para diagnosticar errores
-  // mainWindow.webContents.openDevTools();
+  mainWindow.webContents.openDevTools();
 
   // Inyectar CSS para zona de drag en el header (permite mover la ventana sin barra de título)
   mainWindow.webContents.on('did-finish-load', () => {

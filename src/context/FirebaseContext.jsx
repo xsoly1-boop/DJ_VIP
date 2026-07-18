@@ -474,7 +474,7 @@ export const FirebaseProvider = ({ children }) => {
     logoUrl: '',
     themeColor: '#7c3aed',
     themeColorSecondary: '#06b6d4',
-    djName: 'DJ MasterMix',
+    djName: 'No registrado',
     webName: 'DJ a la Carta',
     eventType: 'Otro',
     fontFamily: 'Outfit',
@@ -701,7 +701,7 @@ export const FirebaseProvider = ({ children }) => {
         // crear perfil por defecto
         const defaultProfile = {
           email: user?.email || '',
-          displayName: user?.displayName || user?.email?.split('@')[0] || 'DJ MasterMix',
+          displayName: user?.displayName || user?.email?.split('@')[0] || 'No registrado',
           phone: '',
           selectedPlan: isCurrentAdminMaster ? 'pro' : 'free',
           activePlan: isCurrentAdminMaster ? 'pro' : 'free',
@@ -734,7 +734,7 @@ export const FirebaseProvider = ({ children }) => {
             logoUrl: '',
             themeColor: '#7c3aed',
             themeColorSecondary: '#06b6d4',
-            djName: user?.displayName || 'DJ MasterMix',
+            djName: user?.displayName || 'No registrado',
             webName: 'DJ a la Carta',
             eventType: 'Otro',
             logoSize: 'medium',
@@ -751,7 +751,7 @@ export const FirebaseProvider = ({ children }) => {
           set(registryRef, {
             ownerUid: activeUid,
             title: currentSettings.title || 'Mi Gran Evento VIP',
-            djName: currentSettings.djName || 'DJ MasterMix',
+            djName: currentSettings.djName || 'No registrado',
             eventType: currentSettings.eventType || 'Otro'
           });
 
@@ -760,7 +760,7 @@ export const FirebaseProvider = ({ children }) => {
               set(indexRef, {
                 id: 'default-event',
                 title: currentSettings.title || 'Mi Gran Evento VIP',
-                djName: currentSettings.djName || 'DJ MasterMix',
+                djName: currentSettings.djName || 'No registrado',
                 date: new Date().toISOString().split('T')[0],
                 archived: false,
                 createdAt: Date.now(),
@@ -963,7 +963,7 @@ export const FirebaseProvider = ({ children }) => {
           themeColor: '#7c3aed',
           themeColorSecondary: '#06b6d4',
           bgSkin: 'default',
-          djName: 'DJ MasterMix',
+          djName: 'No registrado',
           webName: 'DJ a la Carta',
           eventType: 'Otro',
           fontFamily: 'Outfit',
@@ -1980,7 +1980,7 @@ export const FirebaseProvider = ({ children }) => {
         logoUrl: '',
         themeColor: '#7c3aed',
         themeColorSecondary: '#06b6d4',
-        djName: djName || 'DJ MasterMix',
+        djName: djName || 'No registrado',
         date: date || new Date().toISOString().split('T')[0],
         archived: false,
         eventType: eventType || 'Otro',
@@ -2000,7 +2000,7 @@ export const FirebaseProvider = ({ children }) => {
     await set(indexRef, {
       id: eventId,
       title,
-      djName: djName || 'DJ MasterMix',
+      djName: djName || 'No registrado',
       date: date || new Date().toISOString().split('T')[0],
       archived: false,
       createdAt: Date.now(),
@@ -2009,7 +2009,7 @@ export const FirebaseProvider = ({ children }) => {
 
     // Registro público: permite que la vista pública encuentre al propietario del evento
     const registryRef = ref(database, `events_registry/${eventId}`);
-    await set(registryRef, { ownerUid: activeUid, title, djName: djName || 'DJ MasterMix', eventType: eventType || 'Otro' });
+    await set(registryRef, { ownerUid: activeUid, title, djName: djName || 'No registrado', eventType: eventType || 'Otro' });
 
     setCurrentEventId(eventId);
   };
@@ -2153,7 +2153,7 @@ export const FirebaseProvider = ({ children }) => {
     const indexRef = ref(database, `${userBasePath}/events_index/${eventId}`);
     const indexUpdates = {
       title,
-      djName: djName || 'DJ MasterMix',
+      djName: djName || 'No registrado',
       date,
       eventType: eventType || 'Otro'
     };
@@ -2165,7 +2165,7 @@ export const FirebaseProvider = ({ children }) => {
     const settingsRef = ref(database, `${userBasePath}/events/${eventId}/settings`);
     const settingsUpdates = {
       title,
-      djName: djName || 'DJ MasterMix',
+      djName: djName || 'No registrado',
       date,
       eventType: eventType || 'Otro',
       djNameSaved: true
@@ -2179,7 +2179,7 @@ export const FirebaseProvider = ({ children }) => {
     const registryRef = ref(database, `events_registry/${targetRegistryId}`);
     const registryUpdates = {
       title,
-      djName: djName || 'DJ MasterMix',
+      djName: djName || 'No registrado',
       eventType: eventType || 'Otro'
     };
     if (logoUrl !== null) registryUpdates.logoUrl = logoUrl;
@@ -2298,7 +2298,7 @@ export const FirebaseProvider = ({ children }) => {
             logoUrl: '',
             themeColor: '#7c3aed',
             themeColorSecondary: '#06b6d4',
-            djName: user?.displayName || 'DJ MasterMix',
+            djName: user?.displayName || 'No registrado',
             date: new Date().toISOString().split('T')[0],
             archived: false,
             logoSize: 'medium',
@@ -2311,7 +2311,7 @@ export const FirebaseProvider = ({ children }) => {
         await set(defaultIndexRef, {
           id: 'default-event',
           title: 'Mi Gran Evento VIP',
-          djName: user?.displayName || 'DJ MasterMix',
+          djName: user?.displayName || 'No registrado',
           date: new Date().toISOString().split('T')[0],
           archived: false,
           createdAt: Date.now()
@@ -2321,7 +2321,7 @@ export const FirebaseProvider = ({ children }) => {
         setEventsList([{
           id: 'default-event',
           title: 'Mi Gran Evento VIP',
-          djName: user?.displayName || 'DJ MasterMix',
+          djName: user?.displayName || 'No registrado',
           date: new Date().toISOString().split('T')[0],
           archived: false
         }]);

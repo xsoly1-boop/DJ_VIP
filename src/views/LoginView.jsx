@@ -276,7 +276,7 @@ export default function LoginView() {
                 <input
                   type="text"
                   required
-                  placeholder="ej. DJ MasterMix"
+                  placeholder="ej. No registrado"
                   value={displayName}
                   onChange={(e) => setDisplayName(e.target.value)}
                   onFocus={() => setDisplayNameFocused(true)}

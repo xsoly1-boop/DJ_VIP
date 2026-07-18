@@ -5755,7 +5755,7 @@ export default function DjDashboard() {
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
                     <div className="form-group">
                       <label className="form-label">DJ en Cabina (opcional)</label>
-                      <input type="text" className="input-field" placeholder={djNameInput || 'DJ MasterMix'} value={newEventDjName} onChange={(e) => setNewEventDjName(e.target.value)} />
+                      <input type="text" className="input-field" placeholder={djNameInput || 'No registrado'} value={newEventDjName} onChange={(e) => setNewEventDjName(e.target.value)} />
                     </div>
                     <div className="form-group">
                       <label className="form-label">Fecha del Evento</label>
