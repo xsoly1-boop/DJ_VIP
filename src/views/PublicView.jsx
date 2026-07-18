@@ -154,6 +154,10 @@ export default function PublicView() {
   const [showIncoherentTextModal, setShowIncoherentTextModal] = useState(false);
   const [pendingValidationRequest, setPendingValidationRequest] = useState(null);
 
+  // Estados de validación de ortografía y sugerencias
+  const [showSpellingModal, setShowSpellingModal] = useState(false);
+  const [spellingVerifyMatch, setSpellingVerifyMatch] = useState(null);
+
   // Géneros aprendidos dinámicamente del historial de peticiones y autocompletado
   const dynamicGenres = React.useMemo(() => {
     const customGenresString = eventSettings?.customGenres || '';
@@ -424,6 +428,11 @@ export default function PublicView() {
         isRepeat
       );
 
+      if (result && result.alreadyVoted) {
+        showToast('⚠️ Ya has pedido o votado por esta canción en este evento.');
+        return;
+      }
+
       // Guardar marca de tiempo para el cooldown
       localStorage.setItem('dj_platform_last_req', Date.now().toString());
       setCooldownTimeLeft(COOLDOWN_TIME_MS);
@@ -510,6 +519,91 @@ export default function PublicView() {
     await executeSubmit(cleanTitle, cleanArtist, finalGenre, cleanDedication);
   };
 
+  const handleAcceptCorrection = async () => {
+    if (!spellingVerifyMatch) return;
+    const match = spellingVerifyMatch;
+    setShowSpellingModal(false);
+    setSpellingVerifyMatch(null);
+    await checkDuplicateAndSubmit(match.title, match.artist, match.genre, match.dedication);
+  };
+
+  const handleDeclineCorrection = async () => {
+    if (!spellingVerifyMatch) return;
+    const match = spellingVerifyMatch;
+    setShowSpellingModal(false);
+    setSpellingVerifyMatch(null);
+    await checkDuplicateAndSubmit(match.originalTitle, match.originalArtist, match.genre, match.dedication);
+  };
+
+  const checkSpellingAndSubmit = async (cleanTitle, cleanArtist, finalGenre, cleanDedication) => {
+    if (!cleanTitle) {
+      await checkDuplicateAndSubmit(cleanTitle, cleanArtist, finalGenre, cleanDedication);
+      return;
+    }
+
+    const normalize = (str) => {
+      if (!str) return '';
+      return str
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .replace(/[^a-z0-9]/gi, "")
+        .toLowerCase()
+        .trim();
+    };
+
+    const userTitleNorm = normalize(cleanTitle);
+    const userArtistNorm = normalize(cleanArtist);
+
+    let bestMatch = null;
+    let maxSimilarity = 0;
+
+    (autocompleteSongs || []).forEach(song => {
+      if (!song || !song.title) return;
+      const songTitleNorm = normalize(song.title);
+      const songArtistNorm = normalize(song.artist);
+
+      const titleSim = getStringSimilarity(songTitleNorm, userTitleNorm);
+      
+      let artistSim = 1.0;
+      if (cleanArtist && songArtistNorm) {
+        artistSim = getStringSimilarity(songArtistNorm, userArtistNorm);
+      }
+
+      // 70% peso al título, 30% al artista si se especificó
+      const overallSim = cleanArtist ? (titleSim * 0.7 + artistSim * 0.3) : titleSim;
+
+      if (overallSim > maxSimilarity) {
+        maxSimilarity = overallSim;
+        bestMatch = song;
+      }
+    });
+
+    // 1. Similitud >= 90%: Autocompletar / corregir automáticamente
+    if (bestMatch && maxSimilarity >= 0.90) {
+      console.log(`Auto-corrigiendo: "${cleanTitle}" -> "${bestMatch.title}"`);
+      showToast(`📝 Autocorregido a: ${bestMatch.title} - ${bestMatch.artist}`);
+      await checkDuplicateAndSubmit(bestMatch.title, bestMatch.artist, finalGenre, cleanDedication);
+      return;
+    }
+
+    // 2. Similitud entre 75% y 89%: Preguntar al usuario si está bien escrito o si se parece a la sugerencia
+    if (bestMatch && maxSimilarity >= 0.75) {
+      setSpellingVerifyMatch({
+        title: bestMatch.title,
+        artist: bestMatch.artist,
+        originalTitle: cleanTitle,
+        originalArtist: cleanArtist,
+        genre: finalGenre,
+        dedication: cleanDedication
+      });
+      setShowSpellingModal(true);
+      return;
+    }
+
+    // 3. Menor a 75% de similitud: Proceder directamente con la versión del usuario
+    await checkDuplicateAndSubmit(cleanTitle, cleanArtist, finalGenre, cleanDedication);
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
 
@@ -556,8 +650,8 @@ export default function PublicView() {
       return;
     }
 
-    // 3. Comprobar duplicado y enviar
-    await checkDuplicateAndSubmit(cleanTitle, cleanArtist, finalGenre, cleanDedication);
+    // 3. Comprobar ortografía, duplicado y enviar
+    await checkSpellingAndSubmit(cleanTitle, cleanArtist, finalGenre, cleanDedication);
   };
 
   // Convertir peticiones en array y ordenar por popularidad (votos) o fecha
@@ -1667,6 +1761,89 @@ export default function PublicView() {
                 style={{ width: '100%', padding: '12px', background: 'var(--danger-color)', border: 'none' }}
               >
                 Entendido
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal de Verificación de Ortografía */}
+      {showSpellingModal && spellingVerifyMatch && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          zIndex: 1100,
+          background: 'rgba(5, 5, 10, 0.85)',
+          backdropFilter: 'blur(8px)',
+          display: 'flex',
+          justifyContent: 'center',
+          alignItems: 'center',
+          padding: '20px'
+        }}>
+          <div className="glass-panel animate-slide-in" style={{
+            maxWidth: '420px',
+            width: '100%',
+            padding: '28px',
+            borderRadius: 'var(--radius-lg)',
+            border: '1px solid var(--primary-color)',
+            boxShadow: '0 0 25px var(--primary-glow)',
+            textAlign: 'center',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '16px'
+          }}>
+            <h3 style={{ fontSize: '1.4rem', color: 'var(--primary-light)', margin: 0, fontWeight: 700 }}>
+              ¿Quisiste decir esta canción?
+            </h3>
+            
+            <p style={{ color: 'var(--text-secondary)', fontSize: '0.95rem', margin: 0 }}>
+              Encontramos una canción muy similar en la base de datos:
+            </p>
+
+            <div style={{
+              background: 'rgba(255,255,255,0.03)',
+              border: '1px solid rgba(255,255,255,0.08)',
+              borderRadius: 'var(--radius-md)',
+              padding: '16px',
+              margin: '8px 0',
+              textAlign: 'left'
+            }}>
+              <div style={{ fontWeight: 600, color: '#fff', fontSize: '1.1rem' }}>
+                {spellingVerifyMatch.title}
+              </div>
+              <div style={{ color: 'var(--primary-light)', fontSize: '0.9rem', marginTop: '4px' }}>
+                de {spellingVerifyMatch.artist}
+              </div>
+            </div>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+              <button
+                className="btn btn-primary"
+                onClick={handleAcceptCorrection}
+                style={{ width: '100%', padding: '12px', background: 'var(--primary-color)', border: 'none', fontWeight: 600 }}
+              >
+                Sí, esa es (Corregir y enviar)
+              </button>
+              
+              <button
+                className="btn btn-secondary"
+                onClick={handleDeclineCorrection}
+                style={{ width: '100%', padding: '12px', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: '#fff', fontWeight: 500 }}
+              >
+                No, está bien como la escribí
+              </button>
+              
+              <button
+                onClick={() => {
+                  setShowSpellingModal(false);
+                  setSpellingVerifyMatch(null);
+                }}
+                style={{ background: 'none', border: 'none', color: 'var(--text-muted)', fontSize: '0.85rem', textDecoration: 'underline', cursor: 'pointer', marginTop: '4px' }}
+              >
+                Cancelar y editar
               </button>
             </div>
           </div>
