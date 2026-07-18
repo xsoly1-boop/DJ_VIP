@@ -262,6 +262,8 @@ export const SupabaseProvider = ({ children }) => {
   const [ratingsStats, setRatingsStats] = useState({});
   const [revenueResetTimestamp, setRevenueResetTimestamp] = useState(null);
   const [impersonatingUid, setImpersonatingUid] = useState(null);
+  const [eventOwnerUid, setEventOwnerUid] = useState(null);
+  const [ownerProfile, setOwnerProfile] = useState(null);
 
   const activeUid = impersonatingUid || user?.id;
 
@@ -949,10 +951,100 @@ export const SupabaseProvider = ({ children }) => {
     };
   }, [activeUid, isMockMode]);
 
-  // Cargar configuración del evento activo (admite impersonación)
+  const isPublicView = window.location.search.includes('event=');
+
+  // Resolver el ownerUid del evento actual
   useEffect(() => {
     if (isMockMode) return;
-    if (!activeUid || !currentEventId) {
+
+    if (activeUid && !isPublicView) {
+      setEventOwnerUid(activeUid);
+      return;
+    }
+
+    if (!currentEventId) {
+      setEventOwnerUid(null);
+      return;
+    }
+
+    if (currentEventId.startsWith('default-event-')) {
+      const extractedUid = currentEventId.replace('default-event-', '');
+      setEventOwnerUid(extractedUid);
+      return;
+    }
+
+    if (currentEventId === 'default-event') {
+      if (activeUid) {
+        setEventOwnerUid(activeUid);
+      } else {
+        setEventOwnerUid(null);
+      }
+      return;
+    }
+
+    const resolveOwner = async () => {
+      const { data: ev, error } = await supabase
+        .from('events')
+        .select('owner_id')
+        .eq('id', currentEventId)
+        .maybeSingle();
+      
+      if (!error && ev) {
+        setEventOwnerUid(ev.owner_id);
+      } else {
+        setEventOwnerUid(null);
+      }
+    };
+
+    resolveOwner();
+  }, [currentEventId, activeUid, isPublicView, isMockMode]);
+
+  // Cargar perfil del dueño del evento en tiempo real
+  useEffect(() => {
+    if (isMockMode || !eventOwnerUid) {
+      setOwnerProfile(null);
+      return;
+    }
+
+    const fetchOwnerProfile = async () => {
+      const { data: profile, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', eventOwnerUid)
+        .maybeSingle();
+
+      if (!error && profile) {
+        setOwnerProfile(mapSupabaseProfileToFirebase(profile));
+      } else {
+        setOwnerProfile(null);
+      }
+    };
+
+    fetchOwnerProfile();
+
+    const ownerChannel = supabase
+      .channel(`realtime-owner-profile-${eventOwnerUid}`)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'profiles', filter: `id=eq.${eventOwnerUid}` }, payload => {
+        if (payload.new) {
+          setOwnerProfile(mapSupabaseProfileToFirebase(payload.new));
+        }
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(ownerChannel);
+    };
+  }, [eventOwnerUid, isMockMode]);
+
+  // Cargar configuración del evento activo (admite impersonación y vista pública)
+  useEffect(() => {
+    if (isMockMode) return;
+    if (!currentEventId) {
+      setEventSettings(DEFAULT_EVENT_SETTINGS);
+      return;
+    }
+
+    if (currentEventId === 'default-event' && !activeUid) {
       setEventSettings(DEFAULT_EVENT_SETTINGS);
       return;
     }
@@ -1641,6 +1733,8 @@ export const SupabaseProvider = ({ children }) => {
       requests,
       playedRequests,
       impersonatingUid,
+      eventOwnerUid,
+      ownerProfile,
       impersonateUser,
       stopImpersonating,
       updateActiveRequest,
