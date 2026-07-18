@@ -188,12 +188,15 @@ const mapFirebaseEventToSupabase = (settings) => {
   if (settings.title !== undefined) mapped.title = settings.title;
   if (settings.djName !== undefined) mapped.dj_name = settings.djName;
   if (settings.webName !== undefined) mapped.web_name = settings.webName;
+  if (settings.webNameFontSize !== undefined) mapped.web_name_font_size = settings.webNameFontSize;
   if (settings.date !== undefined) mapped.event_date = settings.date;
   if (settings.themeColor !== undefined) mapped.theme_color = settings.themeColor;
   if (settings.themeColorSecondary !== undefined) mapped.theme_color_secondary = settings.themeColorSecondary;
   if (settings.productionUrl !== undefined) mapped.production_url = settings.productionUrl;
   if (settings.fontFamily !== undefined) mapped.font_family = settings.fontFamily;
+  if (settings.fontSize !== undefined) mapped.font_size = settings.fontSize;
   if (settings.logoSize !== undefined) mapped.logo_size = settings.logoSize;
+  if (settings.bgSkin !== undefined) mapped.bg_skin = settings.bgSkin;
   if (settings.tipsEnabled !== undefined) mapped.tips_enabled = settings.tipsEnabled;
   if (settings.paypalUsername !== undefined) mapped.paypal_username = settings.paypalUsername;
   if (settings.mercadopagoLink !== undefined) mapped.mercadopago_link = settings.mercadopagoLink;
@@ -207,6 +210,7 @@ const mapFirebaseEventToSupabase = (settings) => {
   if (settings.promoWebsite !== undefined) mapped.promo_website = settings.promoWebsite;
   if (settings.promoInstagram !== undefined) mapped.promo_instagram = settings.promoInstagram;
   if (settings.promoTiktok !== undefined) mapped.promo_tiktok = settings.promoTiktok;
+  if (settings.djOnline !== undefined) mapped.dj_online = settings.djOnline;
   return mapped;
 };
 
@@ -231,7 +235,14 @@ export const SupabaseProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [userProfile, setUserProfile] = useState(null);
   const [authLoading, setAuthLoading] = useState(true);
-  const [currentEventId, setCurrentEventId] = useState('default-event');
+  const [currentEventId, setCurrentEventId] = useState(() => {
+    // Restaurar el evento activo desde localStorage al iniciar
+    try {
+      const stored = Object.entries(localStorage)
+        .find(([k]) => k.startsWith('djvip_active_event_id_'));
+      return stored ? stored[1] : 'default-event';
+    } catch { return 'default-event'; }
+  });
   const [eventSettings, setEventSettings] = useState(DEFAULT_EVENT_SETTINGS);
   const [requests, setRequests] = useState({});
   const [playedRequests, setPlayedRequests] = useState({});
@@ -1165,8 +1176,14 @@ export const SupabaseProvider = ({ children }) => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
       if (session && session.user) {
         setUser({ ...session.user, uid: session.user.id });
+        // Restaurar el evento activo guardado para este usuario
+        const savedEventId = localStorage.getItem(`djvip_active_event_id_${session.user.id}`);
+        if (savedEventId) {
+          setCurrentEventId(savedEventId);
+        }
       } else {
         setUser(null);
+        setCurrentEventId('default-event');
       }
       setAuthLoading(false);
     });
@@ -1595,8 +1612,21 @@ export const SupabaseProvider = ({ children }) => {
     if (error) throw error;
   };
 
-  const changeEvent = (eventId) => {
+  const changeEvent = async (eventId) => {
     setCurrentEventId(eventId);
+    if (activeUid) {
+      // Persistir selección en localStorage
+      localStorage.setItem(`djvip_active_event_id_${activeUid}`, eventId);
+
+      if (!isMockMode) {
+        // Marcar el evento como activo en Supabase y desactivar el anterior
+        const targetEventDbId = eventId === 'default-event' ? `default-event-${activeUid}` : eventId;
+        // Desactivar todos los eventos del DJ
+        await supabase.from('events').update({ active: false }).eq('owner_id', activeUid);
+        // Activar el seleccionado
+        await supabase.from('events').update({ active: true }).eq('id', targetEventDbId);
+      }
+    }
   };
 
   return (
