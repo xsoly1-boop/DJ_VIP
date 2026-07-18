@@ -14,6 +14,69 @@ const getSessionId = () => {
 
 const COOLDOWN_TIME_MS = 10000; // 10 segundos de cooldown para anti-spam
 
+const checkCoherence = (text) => {
+  if (!text) return true;
+  const clean = text.toLowerCase().trim();
+  if (clean.length < 3) return true; // Muy corto para juzgar coherencia
+  
+  // 1. Repetición de un mismo caracter 4 o más veces (ej: aaaa, zzzz)
+  if (/(.)\1{3,}/.test(clean)) return false;
+  
+  // 2. Patrones comunes de mashing de teclado
+  const mashingPatterns = [
+    'asdf', 'sdfg', 'dfgh', 'fghj', 'ghjk', 'hjkl', 
+    'qwer', 'wert', 'erty', 'rtyu', 'tyui', 'yuio', 'uiop', 
+    'zxcv', 'xcvb', 'cvbn', 'vbnm',
+    'asdfgh', 'qwerty', 'zxcvbn'
+  ];
+  for (const pattern of mashingPatterns) {
+    if (clean.includes(pattern)) return false;
+  }
+  
+  // 3. Evaluar palabras individuales sin vocales
+  const words = clean.replace(/[^a-zñ\s]/g, '').split(/\s+/).filter(w => w.length >= 4);
+  for (const word of words) {
+    const vowels = word.match(/[aeiouáéíóúü]/g);
+    if (!vowels) return false;
+    if (vowels.length / word.length < 0.15) return false;
+  }
+  
+  return true;
+};
+
+const getLevenshteinDistance = (a, b) => {
+  const matrix = [];
+  for (let i = 0; i <= b.length; i++) {
+    matrix[i] = [i];
+  }
+  for (let j = 0; j <= a.length; j++) {
+    matrix[0][j] = j;
+  }
+  for (let i = 1; i <= b.length; i++) {
+    for (let j = 1; j <= a.length; j++) {
+      if (b.charAt(i - 1) === a.charAt(j - 1)) {
+        matrix[i][j] = matrix[i - 1][j - 1];
+      } else {
+        matrix[i][j] = Math.min(
+          matrix[i - 1][j - 1] + 1, // substitution
+          matrix[i][j - 1] + 1,     // insertion
+          matrix[i - 1][j] + 1      // deletion
+        );
+      }
+    }
+  }
+  return matrix[b.length][a.length];
+};
+
+const getStringSimilarity = (str1, str2) => {
+  const len1 = str1.length;
+  const len2 = str2.length;
+  const maxLen = Math.max(len1, len2);
+  if (maxLen === 0) return 1.0;
+  const dist = getLevenshteinDistance(str1, str2);
+  return 1.0 - dist / maxLen;
+};
+
 export default function PublicView() {
   const { 
     eventSettings: rawEventSettings, 
@@ -85,6 +148,11 @@ export default function PublicView() {
   const [showLimitModal, setShowLimitModal] = useState(false);
   const [limitModalMessage, setLimitModalMessage] = useState('');
   const [pendingDuplicateRequest, setPendingDuplicateRequest] = useState(null);
+
+  // Estados para modales de validación avanzada de canción vacía y coherencia
+  const [showEmptySongModal, setShowEmptySongModal] = useState(false);
+  const [showIncoherentTextModal, setShowIncoherentTextModal] = useState(false);
+  const [pendingValidationRequest, setPendingValidationRequest] = useState(null);
 
   // Géneros aprendidos dinámicamente del historial de peticiones y autocompletado
   const dynamicGenres = React.useMemo(() => {
@@ -390,6 +458,58 @@ export default function PublicView() {
     }
   };
 
+  const checkDuplicateAndSubmit = async (cleanTitle, cleanArtist, finalGenre, cleanDedication) => {
+    const normalizeString = (str) => {
+      if (!str) return '';
+      return str
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .replace(/[^a-z0-9]/gi, "") // Quitar puntuación y símbolos
+        .toLowerCase()
+        .trim();
+    };
+
+    // Verificar si ya existe en playedRequests (historial de reproducidas)
+    const existsInPlayed = Object.values(playedRequests || {}).some(
+      req => {
+        if (!req || !req.title) return false;
+        
+        const reqTitleNormalized = normalizeString(req.title);
+        const userTitleNormalized = normalizeString(cleanTitle);
+        
+        // Usar Levenshtein de 90% para considerar duplicado en historial de reproducidas
+        const similarity = getStringSimilarity(reqTitleNormalized, userTitleNormalized);
+        const matchTitle = similarity >= 0.9;
+        if (!matchTitle) return false;
+        
+        const reqArtistNormalized = normalizeString(req.artist);
+        const userArtistNormalized = normalizeString(cleanArtist);
+        
+        const isReqArtistEmpty = reqArtistNormalized === '' || reqArtistNormalized === 'artista no especificado';
+        const isUserArtistEmpty = userArtistNormalized === '' || userArtistNormalized === 'artista no especificado';
+        
+        // Coincidencia de artista por similitud de 85%
+        const matchArtist = isUserArtistEmpty || isReqArtistEmpty || 
+                            (reqArtistNormalized === userArtistNormalized) ||
+                            (getStringSimilarity(reqArtistNormalized, userArtistNormalized) >= 0.85);
+        return matchArtist;
+      }
+    );
+
+    if (existsInPlayed) {
+      setPendingDuplicateRequest({
+        title: cleanTitle,
+        artist: cleanArtist,
+        genre: finalGenre,
+        dedication: cleanDedication
+      });
+      setShowConfirmDuplicateModal(true);
+      return;
+    }
+
+    await executeSubmit(cleanTitle, cleanArtist, finalGenre, cleanDedication);
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
 
@@ -409,51 +529,35 @@ export default function PublicView() {
       return;
     }
 
-    const normalizeString = (str) => {
-      if (!str) return '';
-      return str
-        .normalize("NFD")
-        .replace(/[\u0300-\u036f]/g, "")
-        .replace(/[^a-z0-9]/gi, "") // Quitar puntuación y símbolos
-        .toLowerCase()
-        .trim();
-    };
-
-    // Verificar si ya existe en playedRequests (historial de reproducidas)
-    const existsInPlayed = Object.values(playedRequests || {}).some(
-      req => {
-        if (!req || !req.title) return false;
-        
-        const reqTitleNormalized = normalizeString(req.title);
-        const userTitleNormalized = normalizeString(cleanTitle);
-        
-        const matchTitle = reqTitleNormalized === userTitleNormalized;
-        if (!matchTitle) return false;
-        
-        const reqArtistNormalized = normalizeString(req.artist);
-        const userArtistNormalized = normalizeString(cleanArtist);
-        
-        const isReqArtistEmpty = reqArtistNormalized === '' || reqArtistNormalized === 'artista no especificado';
-        const isUserArtistEmpty = userArtistNormalized === '' || userArtistNormalized === 'artista no especificado';
-        
-        // Si el usuario no especificó artista, o si el tema registrado no tiene artista,
-        // o si los artistas coinciden exactamente, se considera duplicado.
-        return isUserArtistEmpty || isReqArtistEmpty || (reqArtistNormalized === userArtistNormalized);
-      }
-    );
-
-    if (existsInPlayed) {
-      setPendingDuplicateRequest({
-        title: cleanTitle,
+    // Pipeline de validaciones:
+    // 1. Canción vacía por elección
+    if (!cleanTitle && cleanArtist) {
+      setPendingValidationRequest({
+        title: 'Cualquiera', // El DJ elegirá la canción
         artist: cleanArtist,
         genre: finalGenre,
         dedication: cleanDedication
       });
-      setShowConfirmDuplicateModal(true);
+      setShowEmptySongModal(true);
       return;
     }
 
-    await executeSubmit(cleanTitle, cleanArtist, finalGenre, cleanDedication);
+    // 2. Validación de coherencia
+    const isTitleCoherent = !cleanTitle || checkCoherence(cleanTitle);
+    const isArtistCoherent = !cleanArtist || checkCoherence(cleanArtist);
+    if (!isTitleCoherent || !isArtistCoherent) {
+      setPendingValidationRequest({
+        title: cleanTitle || 'Tema no especificado',
+        artist: cleanArtist || 'Artista no especificado',
+        genre: finalGenre,
+        dedication: cleanDedication
+      });
+      setShowIncoherentTextModal(true);
+      return;
+    }
+
+    // 3. Comprobar duplicado y enviar
+    await checkDuplicateAndSubmit(cleanTitle, cleanArtist, finalGenre, cleanDedication);
   };
 
   // Convertir peticiones en array y ordenar por popularidad (votos) o fecha
@@ -1563,6 +1667,186 @@ export default function PublicView() {
                 style={{ width: '100%', padding: '12px', background: 'var(--danger-color)', border: 'none' }}
               >
                 Entendido
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal de Advertencia de Canción Vacía */}
+      {showEmptySongModal && pendingValidationRequest && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          zIndex: 1100,
+          background: 'rgba(5, 5, 10, 0.85)',
+          backdropFilter: 'blur(8px)',
+          display: 'flex',
+          justifyContent: 'center',
+          alignItems: 'center',
+          padding: '20px'
+        }}>
+          <div className="glass-panel animate-slide-in" style={{
+            maxWidth: '400px',
+            width: '100%',
+            padding: '24px',
+            borderRadius: 'var(--radius-lg)',
+            border: '1px solid var(--primary-color)',
+            boxShadow: '0 0 25px var(--primary-glow)',
+            textAlign: 'center',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '16px'
+          }}>
+            <div className="flex-center" style={{
+              width: '50px',
+              height: '50px',
+              borderRadius: 'var(--radius-full)',
+              background: 'rgba(124, 58, 237, 0.15)',
+              margin: '0 auto',
+              color: 'var(--primary-color)'
+            }}>
+              <Music size={24} />
+            </div>
+            
+            <div>
+              <h3 style={{ fontSize: '1.2rem', fontWeight: '700', color: 'var(--text-primary)', marginBottom: '8px' }}>
+                ¿Enviar sin especificar canción?
+              </h3>
+              <p style={{ fontSize: '0.95rem', color: 'var(--text-secondary)', lineHeight: '1.5' }}>
+                Has dejado el campo de canción vacío. Solo se tomará en cuenta el artista/grupo <strong style={{ color: 'var(--primary-color)' }}>"{pendingValidationRequest.artist}"</strong>. Cualquier canción de ellos será elegida por el DJ. ¿Deseas continuar?
+              </p>
+            </div>
+
+            <div style={{ display: 'flex', gap: '12px', marginTop: '8px' }}>
+              <button
+                type="button"
+                className="btn btn-primary"
+                onClick={async () => {
+                  setShowEmptySongModal(false);
+                  
+                  // Proceder a la siguiente validación (Coherencia del artista)
+                  const isArtistCoherent = checkCoherence(pendingValidationRequest.artist);
+                  if (!isArtistCoherent) {
+                    setShowIncoherentTextModal(true);
+                  } else {
+                    const { title, artist, genre, dedication } = pendingValidationRequest;
+                    await checkDuplicateAndSubmit(title, artist, genre, dedication);
+                    setPendingValidationRequest(null);
+                  }
+                }}
+                style={{ flex: 1, padding: '12px' }}
+              >
+                Sí, enviar
+              </button>
+              <button
+                type="button"
+                className="btn"
+                onClick={() => {
+                  setShowEmptySongModal(false);
+                  setPendingValidationRequest(null);
+                }}
+                style={{ 
+                  flex: 1, 
+                  padding: '12px',
+                  background: 'rgba(255, 255, 255, 0.05)',
+                  border: '1px solid rgba(255, 255, 255, 0.1)',
+                  color: 'var(--text-secondary)'
+                }}
+              >
+                No, corregir
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal de Advertencia de Texto Incoherente */}
+      {showIncoherentTextModal && pendingValidationRequest && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          zIndex: 1100,
+          background: 'rgba(5, 5, 10, 0.85)',
+          backdropFilter: 'blur(8px)',
+          display: 'flex',
+          justifyContent: 'center',
+          alignItems: 'center',
+          padding: '20px'
+        }}>
+          <div className="glass-panel animate-slide-in" style={{
+            maxWidth: '400px',
+            width: '100%',
+            padding: '24px',
+            borderRadius: 'var(--radius-lg)',
+            border: '1px solid var(--danger-color)',
+            boxShadow: '0 0 25px rgba(239, 68, 68, 0.3)',
+            textAlign: 'center',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '16px'
+          }}>
+            <div className="flex-center" style={{
+              width: '50px',
+              height: '50px',
+              borderRadius: 'var(--radius-full)',
+              background: 'rgba(239, 68, 68, 0.15)',
+              margin: '0 auto',
+              color: 'var(--danger-color)'
+            }}>
+              <ShieldAlert size={24} />
+            </div>
+            
+            <div>
+              <h3 style={{ fontSize: '1.2rem', fontWeight: '700', color: 'var(--text-primary)', marginBottom: '8px' }}>
+                ¿Está bien escrito?
+              </h3>
+              <p style={{ fontSize: '0.9rem', color: 'var(--text-secondary)', lineHeight: '1.5' }}>
+                El texto ingresado en tu petición parece tener un error tipográfico o no tiene coherencia:<br />
+                {pendingValidationRequest.title !== 'Cualquiera' && (
+                  <>Canción: <strong style={{ color: 'var(--text-primary)' }}>"{pendingValidationRequest.title}"</strong><br /></>
+                )}
+                Artista: <strong style={{ color: 'var(--text-primary)' }}>"{pendingValidationRequest.artist}"</strong><br /><br />
+                ¿Deseas enviar la petición de todas formas?
+              </p>
+            </div>
+
+            <div style={{ display: 'flex', gap: '12px', marginTop: '8px' }}>
+              <button
+                type="button"
+                className="btn btn-primary"
+                onClick={async () => {
+                  setShowIncoherentTextModal(false);
+                  const { title, artist, genre, dedication } = pendingValidationRequest;
+                  await checkDuplicateAndSubmit(title, artist, genre, dedication);
+                  setPendingValidationRequest(null);
+                }}
+                style={{ flex: 1, padding: '12px', background: 'var(--primary-color)', border: 'none' }}
+              >
+                Sí, enviar
+              </button>
+              <button
+                type="button"
+                className="btn"
+                onClick={() => {
+                  setShowIncoherentTextModal(false);
+                  setPendingValidationRequest(null);
+                }}
+                style={{ 
+                  flex: 1, 
+                  padding: '12px',
+                  background: 'rgba(255, 255, 255, 0.05)',
+                  border: '1px solid rgba(255, 255, 255, 0.1)',
+                  color: 'var(--text-secondary)'
+                }}
+              >
+                No, corregir
               </button>
             </div>
           </div>

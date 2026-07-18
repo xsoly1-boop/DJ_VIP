@@ -422,6 +422,39 @@ const DEMO_INDEX = {
   title: "Mega Show en Vivo de DJ Demo"
 };
 
+const getLevenshteinDistance = (a, b) => {
+  const matrix = [];
+  for (let i = 0; i <= b.length; i++) {
+    matrix[i] = [i];
+  }
+  for (let j = 0; j <= a.length; j++) {
+    matrix[0][j] = j;
+  }
+  for (let i = 1; i <= b.length; i++) {
+    for (let j = 1; j <= a.length; j++) {
+      if (b.charAt(i - 1) === a.charAt(j - 1)) {
+        matrix[i][j] = matrix[i - 1][j - 1];
+      } else {
+        matrix[i][j] = Math.min(
+          matrix[i - 1][j - 1] + 1, // substitution
+          matrix[i][j - 1] + 1,     // insertion
+          matrix[i - 1][j] + 1      // deletion
+        );
+      }
+    }
+  }
+  return matrix[b.length][a.length];
+};
+
+const getStringSimilarity = (str1, str2) => {
+  const len1 = str1.length;
+  const len2 = str2.length;
+  const maxLen = Math.max(len1, len2);
+  if (maxLen === 0) return 1.0;
+  const dist = getLevenshteinDistance(str1, str2);
+  return 1.0 - dist / maxLen;
+};
+
 export const FirebaseProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [authLoading, setAuthLoading] = useState(true);
@@ -1559,7 +1592,9 @@ export const FirebaseProvider = ({ children }) => {
       const reqTitleNormalized = normalizeString(req.title);
       const userTitleNormalized = normalizeString(cleanTitle);
       
-      const matchTitle = reqTitleNormalized === userTitleNormalized;
+      // Cambiado de comparación exacta a Levenshtein de 90% (0.9)
+      const similarity = getStringSimilarity(reqTitleNormalized, userTitleNormalized);
+      const matchTitle = similarity >= 0.9;
       if (!matchTitle) return false;
       
       const reqArtistNormalized = normalizeString(req.artist);
@@ -1568,8 +1603,12 @@ export const FirebaseProvider = ({ children }) => {
       const isReqArtistEmpty = reqArtistNormalized === '' || reqArtistNormalized === 'artista no especificado';
       const isUserArtistEmpty = userArtistNormalized === '' || userArtistNormalized === 'artista no especificado';
       
-      // Si el artista no se especifica o coincide, consideramos que es la misma canción
-      return isUserArtistEmpty || isReqArtistEmpty || (reqArtistNormalized === userArtistNormalized);
+      // Si el artista no se especifica, está vacío o coincide por similitud de al menos 85%
+      const matchArtist = isUserArtistEmpty || isReqArtistEmpty || 
+                          (reqArtistNormalized === userArtistNormalized) ||
+                          (getStringSimilarity(reqArtistNormalized, userArtistNormalized) >= 0.85);
+      
+      return matchArtist;
     });
 
     if (existingEntry) {

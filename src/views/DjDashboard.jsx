@@ -2192,9 +2192,14 @@ export default function DjDashboard() {
     .map(key => ({ id: key, ...requests[key] }))
     .filter(req => filterStatus === 'all' ? true : req.status === filterStatus)
     .sort((a, b) => {
-      if (filterSort === 'popularity') {
-        if (b.votes !== a.votes) return b.votes - a.votes;
-      }
+      // 1. Si hay alguna canción en reproducción, va arriba del todo
+      if (a.status === 'playing' && b.status !== 'playing') return -1;
+      if (b.status === 'playing' && a.status !== 'playing') return 1;
+
+      // 2. Siempre priorizar por número de votos descendente
+      if (b.votes !== a.votes) return b.votes - a.votes;
+
+      // 3. Empate de votos: la petición más reciente primero
       return b.timestamp - a.timestamp;
     });
 
