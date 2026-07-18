@@ -7,7 +7,7 @@ import { QRCodeSVG, QRCodeCanvas } from 'qrcode.react';
 import { 
   Music, LogOut, Settings, Calendar, Download, RefreshCw, 
   Trash2, Plus, Play, Check, X, Bell, BellOff, Volume2, 
-  Sparkles, Sliders, Users, Layers, ShieldCheck, Database,
+  Sparkles, Sliders, Users, Layers, ShieldCheck, Database, Cloud,
   Link, AlertTriangle, ShieldAlert, ArrowLeft, UserCog, Edit, UserPlus, Mail, Lock, User, CreditCard,
   LayoutGrid, ExternalLink, Image, Search, Megaphone, Star, MessageSquare, Send, Printer,
   TrendingUp, DollarSign, BarChart2, ArrowUpCircle, Download as DownloadIcon, Clock, CreditCard as CardIcon, Save
@@ -2546,7 +2546,8 @@ export default function DjDashboard() {
                   background: isMock ? 'var(--warning-color)' : 'var(--success-color)',
                   boxShadow: isMock ? '0 0 6px var(--warning-color)' : '0 0 6px var(--success-color)'
                 }} />
-                {isMock ? 'Modo Local' : (userProfile?.headerConnText || 'Supabase Conectado')}
+                {!isMock && <Cloud size={11} />}
+                {isMock ? 'Modo Local' : (userProfile?.headerConnText || 'Nube')}
               </span>
 
               {/* Indicador Token FCM (Solo en Android) */}
