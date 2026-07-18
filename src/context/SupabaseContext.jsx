@@ -550,8 +550,7 @@ export const SupabaseProvider = ({ children }) => {
     }
     if (!supabaseAdmin) throw new Error("Supabase Service Role Key no configurada.");
 
-    const [{ data: profiles }, { data: events }, { data: requests: reqData },
-           { data: played }, { data: songs }] = await Promise.all([
+    const [r1, r2, r3, r4, r5] = await Promise.all([
       supabaseAdmin.from('profiles').select('*'),
       supabaseAdmin.from('events').select('*'),
       supabaseAdmin.from('requests').select('*'),
@@ -561,11 +560,11 @@ export const SupabaseProvider = ({ children }) => {
 
     return {
       timestamp: new Date().toISOString(),
-      profiles: profiles || [],
-      events: events || [],
-      requests: reqData || [],
-      played_requests: played || [],
-      autocomplete_songs: songs || []
+      profiles: r1.data || [],
+      events: r2.data || [],
+      requests: r3.data || [],
+      played_requests: r4.data || [],
+      autocomplete_songs: r5.data || []
     };
   };
 
