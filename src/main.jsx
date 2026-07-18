@@ -3,8 +3,8 @@ import { createRoot } from 'react-dom/client'
 import './index.css'
 import App from './App.jsx'
 
-// Registrar Service Worker para PWA
-if ('serviceWorker' in navigator && import.meta.env.PROD) {
+// Registrar Service Worker para PWA (solo en producción web, no en Electron/file://)
+if ('serviceWorker' in navigator && import.meta.env.PROD && window.location.protocol !== 'file:') {
   window.addEventListener('load', () => {
     navigator.serviceWorker.register('/sw.js')
       .then(reg => {
