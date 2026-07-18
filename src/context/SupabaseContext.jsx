@@ -194,14 +194,34 @@ export const SupabaseProvider = ({ children }) => {
   const [revenueResetTimestamp, setRevenueResetTimestamp] = useState(null);
   const [impersonatingUid, setImpersonatingUid] = useState(null);
 
-  const impersonateUser = async () => {};
-  const stopImpersonating = async () => {};
+  const activeUid = impersonatingUid || user?.id;
+
+  const impersonateUser = (uid) => {
+    setImpersonatingUid(uid);
+    setCurrentEventId('default-event');
+  };
+  const stopImpersonating = () => {
+    setImpersonatingUid(null);
+    setCurrentEventId('default-event');
+  };
+
   const updateActiveRequest = async () => {};
   const updateAutocompleteSong = async () => {};
   const deleteAutocompleteSong = async () => {};
-  const deleteEvent = async () => {};
-  const archiveEvent = async () => {};
-  const updateEventMetadata = async () => {};
+
+  const deleteEvent = async (eventId) => {
+    if (isMockMode) return;
+    await supabase.from('events').delete().eq('id', eventId);
+  };
+  const archiveEvent = async (eventId, archived = true) => {
+    if (isMockMode) return;
+    await supabase.from('events').update({ archived }).eq('id', eventId);
+  };
+  const updateEventMetadata = async (eventId, metadata) => {
+    if (isMockMode) return;
+    await supabase.from('events').update(metadata).eq('id', eventId);
+  };
+
   const clearHistoryWithOptions = async () => {};
   const createDjAccount = async () => {};
   const updateDjAccount = async () => {};
@@ -217,6 +237,166 @@ export const SupabaseProvider = ({ children }) => {
   const subscribeToAllSupportChats = () => {};
   const submitFeedback = async () => {};
   const refreshAdminData = async () => {};
+
+  // Sincronizar userProfile con el activeUid (admite impersonación)
+  useEffect(() => {
+    if (isMockMode) return;
+    if (!activeUid) {
+      setUserProfile(null);
+      return;
+    }
+
+    const fetchActiveProfile = async () => {
+      const { data: profile, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', activeUid)
+        .single();
+      
+      if (!error && profile) {
+        setUserProfile(mapSupabaseProfileToFirebase(profile));
+      }
+    };
+
+    fetchActiveProfile();
+
+    // Escuchar en tiempo real cambios del perfil activo
+    const profileChannel = supabase
+      .channel(`realtime-active-profile-${activeUid}`)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'profiles', filter: `id=eq.${activeUid}` }, (payload) => {
+        if (payload.new) {
+          setUserProfile(mapSupabaseProfileToFirebase(payload.new));
+        }
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(profileChannel);
+    };
+  }, [activeUid, isMockMode]);
+
+  // Cargar lista de eventos del DJ activo (admite impersonación)
+  useEffect(() => {
+    if (isMockMode) return;
+    if (!activeUid) {
+      setEventsList([]);
+      return;
+    }
+
+    const fetchEvents = async () => {
+      const { data, error } = await supabase
+        .from('events')
+        .select('*')
+        .eq('owner_id', activeUid);
+      
+      if (!error && data) {
+        setEventsList(data);
+      }
+    };
+
+    fetchEvents();
+
+    const eventsChannel = supabase
+      .channel(`realtime-events-list-${activeUid}`)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'events', filter: `owner_id=eq.${activeUid}` }, () => {
+        fetchEvents();
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(eventsChannel);
+    };
+  }, [activeUid, isMockMode]);
+
+  // Cargar configuración del evento activo (admite impersonación)
+  useEffect(() => {
+    if (isMockMode) return;
+    if (!activeUid || !currentEventId) {
+      setEventSettings(DEFAULT_EVENT_SETTINGS);
+      return;
+    }
+
+    const targetEventDbId = currentEventId === 'default-event' ? `default-event-${activeUid}` : currentEventId;
+
+    const fetchEventSettings = async () => {
+      const { data: eventRow, error } = await supabase
+        .from('events')
+        .select('*')
+        .eq('id', targetEventDbId)
+        .single();
+      
+      if (!error && eventRow) {
+        setEventSettings({
+          title: eventRow.title || 'Mi Gran Evento VIP',
+          logoUrl: eventRow.logo_url || '',
+          themeColor: eventRow.theme_color || '#7c3aed',
+          themeColorSecondary: eventRow.theme_color_secondary || '#06b6d4',
+          djName: eventRow.dj_name || 'DJ MasterMix',
+          webName: eventRow.web_name || 'DJ a la Carta',
+          eventType: eventRow.event_type || 'Otro',
+          tipsEnabled: eventRow.tips_enabled || false,
+          paypalUsername: eventRow.paypal_username || '',
+          mercadopagoLink: eventRow.mercadopago_link || '',
+          promoEnabled: eventRow.promo_enabled || false,
+          promoWhatsapp: eventRow.promo_whatsapp || '',
+          promoWebsite: eventRow.promo_website || '',
+          promoInstagram: eventRow.promo_instagram || '',
+          promoTiktok: eventRow.promo_tiktok || '',
+          productionUrl: eventRow.production_url || '',
+          customGenres: eventRow.custom_genres || ''
+        });
+      } else if (error && error.code === 'PGRST116') {
+        const defaultEventRow = {
+          id: targetEventDbId,
+          owner_id: activeUid,
+          title: 'Mi Gran Evento VIP',
+          dj_name: 'DJ MasterMix',
+          active: true,
+          theme_color: '#7c3aed',
+          theme_color_secondary: '#06b6d4',
+          web_name: 'DJ a la Carta',
+          event_type: 'Otro',
+          tips_enabled: false
+        };
+        await supabase.from('events').insert(defaultEventRow);
+        setEventSettings(defaultEventRow);
+      }
+    };
+
+    fetchEventSettings();
+
+    const settingsChannel = supabase
+      .channel(`realtime-event-settings-${targetEventDbId}`)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'events', filter: `id=eq.${targetEventDbId}` }, (payload) => {
+        if (payload.new) {
+          const newRow = payload.new;
+          setEventSettings({
+            title: newRow.title || 'Mi Gran Evento VIP',
+            logoUrl: newRow.logo_url || '',
+            themeColor: newRow.theme_color || '#7c3aed',
+            themeColorSecondary: newRow.theme_color_secondary || '#06b6d4',
+            djName: newRow.dj_name || 'DJ MasterMix',
+            webName: newRow.web_name || 'DJ a la Carta',
+            eventType: newRow.event_type || 'Otro',
+            tipsEnabled: newRow.tips_enabled || false,
+            paypalUsername: newRow.paypal_username || '',
+            mercadopagoLink: newRow.mercadopago_link || '',
+            promoEnabled: newRow.promo_enabled || false,
+            promoWhatsapp: newRow.promo_whatsapp || '',
+            promoWebsite: newRow.promo_website || '',
+            promoInstagram: newRow.promo_instagram || '',
+            promoTiktok: newRow.promo_tiktok || '',
+            productionUrl: newRow.production_url || '',
+            customGenres: newRow.custom_genres || ''
+          });
+        }
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(settingsChannel);
+    };
+  }, [activeUid, currentEventId, isMockMode]);
 
   // Cargar todos los perfiles si el usuario es Admin Master
   useEffect(() => {
@@ -261,7 +441,6 @@ export const SupabaseProvider = ({ children }) => {
   useEffect(() => {
     if (isMockMode) {
       setAuthLoading(false);
-      // Cargar datos simulados iniciales del localStorage
       const mockDb = JSON.parse(localStorage.getItem('mock_rtdb_v2') || '{}');
       setRequests(mockDb.requests || {});
       setPlayedRequests(mockDb.played_requests || {});
@@ -272,17 +451,8 @@ export const SupabaseProvider = ({ children }) => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
       if (session) {
         setUser(session.user);
-        // Cargar perfil del usuario
-        const { data: profile } = await supabase
-          .from('profiles')
-          .select('*')
-          .eq('id', session.user.id)
-          .single();
-        
-        setUserProfile(mapSupabaseProfileToFirebase(profile));
       } else {
         setUser(null);
-        setUserProfile(null);
       }
       setAuthLoading(false);
     });
