@@ -1,4 +1,8 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import { SupabaseProvider, useFirebase as useSupabase } from './SupabaseContext';
+
+const USE_SUPABASE = true;
+
 import { initializeApp, getApps, deleteApp } from 'firebase/app';
 import { getAuth } from 'firebase/auth';
 import { 
@@ -64,6 +68,9 @@ const triggerNotificationAPI = (endpoint, body) => {
 const FirebaseContext = createContext(null);
 
 export const useFirebase = () => {
+  if (USE_SUPABASE) {
+    return useSupabase();
+  }
   const context = useContext(FirebaseContext);
   if (!context) {
     throw new Error('useFirebase debe usarse dentro de un FirebaseProvider');
@@ -456,6 +463,9 @@ const getStringSimilarity = (str1, str2) => {
 };
 
 export const FirebaseProvider = ({ children }) => {
+  if (USE_SUPABASE) {
+    return <SupabaseProvider>{children}</SupabaseProvider>;
+  }
   const [user, setUser] = useState(null);
   const [authLoading, setAuthLoading] = useState(true);
   const [currentEventId, setCurrentEventId] = useState('default-event');
