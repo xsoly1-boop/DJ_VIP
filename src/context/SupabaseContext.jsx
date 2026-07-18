@@ -1609,6 +1609,31 @@ export const SupabaseProvider = ({ children }) => {
     if (error) throw error;
   };
 
+  const checkAndAddToAutocomplete = async (title, artist, genre) => {
+    if (isMockMode) return;
+    const cleanTitle = (title || '').trim();
+    const cleanArtist = (artist || '').trim();
+    if (!cleanTitle) return;
+
+    const songIndex = (autocompleteSongs || []).findIndex(
+      song => song && song.title && song.artist &&
+              song.title.toLowerCase() === cleanTitle.toLowerCase() && 
+              song.artist.toLowerCase() === cleanArtist.toLowerCase()
+    );
+
+    if (songIndex === -1) {
+      const songId = 'song-' + Date.now() + '-' + Math.random().toString(36).substr(2, 5);
+      await supabase
+        .from('autocomplete_songs')
+        .insert({
+          id: songId,
+          title: cleanTitle,
+          artist: cleanArtist || 'Artista no especificado',
+          genre: genre || 'Personalizado'
+        });
+    }
+  };
+
   // Crear petición (Público / DJ)
   const addRequest = async (title, artist, genre, dedication, sessionId, eventOwnerUid, isRepeat = false) => {
     const cleanTitle = (title || '').trim();
@@ -1688,10 +1713,79 @@ export const SupabaseProvider = ({ children }) => {
 
       // Si no había votado, sumarle el voto atómicamente
       await supabase.rpc('increment_votes', { row_id: existingReq.id });
+      
+      // Auto-alimentar de forma segura en segundo plano
+      try {
+        await checkAndAddToAutocomplete(cleanTitle, cleanArtist, genre);
+      } catch (e) {
+        console.warn("No se pudo agregar a autocompletado:", e);
+      }
+
       return { key: existingReq.id, isDuplicateMerge: true };
     }
 
-    // 2. Si no es duplicado, insertar nueva petición y registrar voto inicial
+    // 2. Si no es duplicado, comprobar límites del plan contratado por el DJ
+    const ownerUid = eventOwnerUid || activeUid;
+    if (!ownerUid) {
+      throw new Error('No se pudo identificar al propietario del evento.');
+    }
+
+    let maxRequests = 35; // Límite por defecto (Demo)
+    let strictLimitEnabled = true;
+
+    try {
+      const { data: ownerProfile } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', ownerUid)
+        .maybeSingle();
+
+      if (ownerProfile) {
+        const planKey = ownerProfile.subscription_status || 'free';
+        strictLimitEnabled = ownerProfile.strict_limit_enabled !== false;
+
+        let extraRequests = ownerProfile.extra_requests || 0;
+        let extraRequestsExpiresAt = ownerProfile.extra_requests_expires_at ? parseInt(ownerProfile.extra_requests_expires_at, 10) : 0;
+
+        const isExtraValid = extraRequests > 0 && (!extraRequestsExpiresAt || Date.now() <= extraRequestsExpiresAt);
+        const activeExtra = isExtraValid ? extraRequests : 0;
+
+        if (planKey === 'free') {
+          maxRequests = (ownerProfile.demo_limit || 35) + activeExtra;
+        } else if (planKey === 'premium') {
+          maxRequests = (ownerProfile.premium_limit || 80) + activeExtra;
+        } else if (planKey === 'vip' || planKey === 'pro' || planKey === 'pro_1d') {
+          maxRequests = 0; // Ilimitado
+        } else {
+          // Plan personalizado fallback
+          const planDetails = plansConfig?.[planKey] || DEFAULT_PLANS_CONFIG[planKey] || DEFAULT_PLANS_CONFIG.free;
+          maxRequests = planDetails && planDetails.maxRequests !== undefined
+            ? parseInt(planDetails.maxRequests, 10)
+            : 35;
+        }
+      }
+    } catch (e) {
+      console.warn('Fallo al validar límites de suscripción:', e);
+    }
+
+    if (strictLimitEnabled && maxRequests > 0) {
+      const { count: activeCount } = await supabase
+        .from('requests')
+        .select('*', { count: 'exact', head: true })
+        .eq('event_id', targetEventDbId);
+
+      const { count: playedCount } = await supabase
+        .from('played_requests')
+        .select('*', { count: 'exact', head: true })
+        .eq('event_id', targetEventDbId);
+
+      const totalRequests = (activeCount || 0) + (playedCount || 0);
+      if (totalRequests >= maxRequests) {
+        throw new Error('El plan contratado por el DJ ha alcanzado su límite de peticiones.');
+      }
+    }
+
+    // 3. Insertar nueva petición y registrar voto inicial
     const { error } = await supabase
       .from('requests')
       .insert({
@@ -1715,6 +1809,13 @@ export const SupabaseProvider = ({ children }) => {
         request_id: reqId,
         session_id: sessionId
       });
+
+    // Auto-alimentar base de datos de autocompletado
+    try {
+      await checkAndAddToAutocomplete(cleanTitle, cleanArtist, genre);
+    } catch (e) {
+      console.warn("No se pudo agregar a autocompletado:", e);
+    }
 
     return { key: reqId };
   };
