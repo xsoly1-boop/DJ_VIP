@@ -206,8 +206,14 @@ export const SupabaseProvider = ({ children }) => {
   };
 
   const updateActiveRequest = async () => {};
-  const updateAutocompleteSong = async () => {};
-  const deleteAutocompleteSong = async () => {};
+  const updateAutocompleteSong = async (songId, songData) => {
+    if (isMockMode) return;
+    await supabase.from('autocomplete_songs').upsert({ id: songId, ...songData });
+  };
+  const deleteAutocompleteSong = async (songId) => {
+    if (isMockMode) return;
+    await supabase.from('autocomplete_songs').delete().eq('id', songId);
+  };
 
   const deleteEvent = async (eventId) => {
     if (isMockMode) return;
@@ -437,6 +443,34 @@ export const SupabaseProvider = ({ children }) => {
       supabase.removeChannel(profilesChannel);
     };
   }, [isAdminMaster, isMockMode]);
+
+  // Cargar canciones de autocompletado en tiempo real
+  useEffect(() => {
+    if (isMockMode) return;
+
+    const fetchAutocompleteSongs = async () => {
+      const { data, error } = await supabase
+        .from('autocomplete_songs')
+        .select('*');
+      
+      if (!error && data) {
+        setAutocompleteSongs(data);
+      }
+    };
+
+    fetchAutocompleteSongs();
+
+    const autocompleteChannel = supabase
+      .channel('realtime-autocomplete-songs')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'autocomplete_songs' }, () => {
+        fetchAutocompleteSongs();
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(autocompleteChannel);
+    };
+  }, [isMockMode]);
 
   useEffect(() => {
     if (isMockMode) {
