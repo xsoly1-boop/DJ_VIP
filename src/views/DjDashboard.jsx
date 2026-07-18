@@ -2546,7 +2546,7 @@ export default function DjDashboard() {
                   background: isMock ? 'var(--warning-color)' : 'var(--success-color)',
                   boxShadow: isMock ? '0 0 6px var(--warning-color)' : '0 0 6px var(--success-color)'
                 }} />
-                {isMock ? 'Modo Local' : (userProfile?.headerConnText || 'Firebase Conectado')}
+                {isMock ? 'Modo Local' : (userProfile?.headerConnText || 'Supabase Conectado')}
               </span>
 
               {/* Indicador Token FCM (Solo en Android) */}
@@ -5265,7 +5265,7 @@ export default function DjDashboard() {
                 {/* Conexión */}
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
                   <label style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', fontWeight: '600' }}>Etiqueta Conexión (Texto):</label>
-                  <input type="text" className="input-field" placeholder="Firebase Conectado" value={headerConnTextInput} onChange={(e) => setHeaderConnTextInput(e.target.value)} style={{ padding: '8px 12px', fontSize: '0.85rem' }} />
+                  <input type="text" className="input-field" placeholder="Supabase Conectado" value={headerConnTextInput} onChange={(e) => setHeaderConnTextInput(e.target.value)} style={{ padding: '8px 12px', fontSize: '0.85rem' }} />
                 </div>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
                   <label style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', fontWeight: '600' }}>Tamaño de fuente Conexión (px):</label>
