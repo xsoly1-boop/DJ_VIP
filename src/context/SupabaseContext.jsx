@@ -240,8 +240,8 @@ export const SupabaseProvider = ({ children }) => {
   const updatePlansConfig = async () => {};
   const sendSupportMessage = async () => {};
   const markSupportChatAsRead = async () => {};
-  const subscribeToSupportChat = () => {};
-  const subscribeToAllSupportChats = () => {};
+  const subscribeToSupportChat = () => { return () => {}; };
+  const subscribeToAllSupportChats = () => { return () => {}; };
   const submitFeedback = async () => {};
   const refreshAdminData = async () => {};
 
@@ -473,12 +473,31 @@ export const SupabaseProvider = ({ children }) => {
     if (isMockMode) return;
 
     const fetchAutocompleteSongs = async () => {
-      const { data, error } = await supabase
-        .from('autocomplete_songs')
-        .select('*');
-      
-      if (!error && data) {
-        setAutocompleteSongs(data);
+      let allSongs = [];
+      let page = 0;
+      const pageSize = 1000;
+      let hasMore = true;
+
+      while (hasMore) {
+        const { data, error } = await supabase
+          .from('autocomplete_songs')
+          .select('*')
+          .range(page * pageSize, (page + 1) * pageSize - 1);
+        
+        if (error || !data || data.length === 0) {
+          hasMore = false;
+        } else {
+          allSongs = allSongs.concat(data);
+          if (data.length < pageSize) {
+            hasMore = false;
+          } else {
+            page++;
+          }
+        }
+      }
+
+      if (allSongs.length > 0) {
+        setAutocompleteSongs(allSongs);
       }
     };
 
@@ -507,8 +526,8 @@ export const SupabaseProvider = ({ children }) => {
 
     // Escuchar cambios de sesión de Supabase Auth
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-      if (session) {
-        setUser(session.user);
+      if (session && session.user) {
+        setUser({ ...session.user, uid: session.user.id });
       } else {
         setUser(null);
       }
@@ -604,7 +623,7 @@ export const SupabaseProvider = ({ children }) => {
   // Acciones de Autenticación
   const loginDJ = async (email, password) => {
     if (isMockMode) {
-      setUser({ id: 'mock-dj-uid', email });
+      setUser({ id: 'mock-dj-uid', uid: 'mock-dj-uid', email });
       setUserProfile({ display_name: 'DJ Mock Pro', active_plan: 'premium' });
       return;
     }
@@ -615,7 +634,7 @@ export const SupabaseProvider = ({ children }) => {
 
   const registerDJ = async (email, password, displayName, phone) => {
     if (isMockMode) {
-      setUser({ id: 'mock-dj-uid', email });
+      setUser({ id: 'mock-dj-uid', uid: 'mock-dj-uid', email });
       return;
     }
     const { data, error } = await supabase.auth.signUp({
