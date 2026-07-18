@@ -153,6 +153,29 @@ const mapSupabaseProfileToFirebase = (profile) => {
   };
 };
 
+// Mapper: convierte fila snake_case de Supabase → camelCase que usa el dashboard
+const mapSupabaseEvent = (ev) => ({
+  ...ev,
+  djName: ev.dj_name || '',
+  eventType: ev.event_type || 'Otro',
+  date: ev.event_date || '',
+  logoUrl: ev.logo_url || '',
+  themeColor: ev.theme_color || '#7c3aed',
+  themeColorSecondary: ev.theme_color_secondary || '#06b6d4',
+  webName: ev.web_name || 'DJ a la Carta',
+  tipsEnabled: ev.tips_enabled || false,
+  paypalUsername: ev.paypal_username || '',
+  mercadopagoLink: ev.mercadopago_link || '',
+  promoEnabled: ev.promo_enabled || false,
+  promoWhatsapp: ev.promo_whatsapp || '',
+  promoWebsite: ev.promo_website || '',
+  promoInstagram: ev.promo_instagram || '',
+  promoTiktok: ev.promo_tiktok || '',
+  productionUrl: ev.production_url || '',
+  customGenres: ev.custom_genres || '',
+  createdAt: ev.created_at ? new Date(ev.created_at).getTime() : 0,
+});
+
 const DEFAULT_EVENT_SETTINGS = {
   title: 'Mi Gran Evento VIP',
   logoUrl: '',
@@ -224,9 +247,18 @@ export const SupabaseProvider = ({ children }) => {
     if (isMockMode) return;
     await supabase.from('events').update({ archived }).eq('id', eventId);
   };
-  const updateEventMetadata = async (eventId, metadata) => {
+  const updateEventMetadata = async (eventId, title, djName, date, eventType, logoUrl = null, logoSize = null) => {
     if (isMockMode) return;
-    await supabase.from('events').update(metadata).eq('id', eventId);
+    const updates = {
+      title: title || 'Mi Gran Evento VIP',
+      dj_name: djName || 'DJ MasterMix',
+      event_date: date || null,
+      event_type: eventType || 'Otro',
+    };
+    if (logoUrl !== null) updates.logo_url = logoUrl;
+    // logoSize is stored in event settings, not in the events table - skip for now
+    const targetId = currentEventId === 'default-event' ? `default-event-${activeUid}` : eventId;
+    await supabase.from('events').update(updates).eq('id', targetId);
   };
 
   const clearHistoryWithOptions = async () => {};
@@ -297,7 +329,7 @@ export const SupabaseProvider = ({ children }) => {
         .eq('owner_id', activeUid);
       
       if (!error && data) {
-        setEventsList(data);
+        setEventsList(data.map(mapSupabaseEvent));
       }
     };
 
