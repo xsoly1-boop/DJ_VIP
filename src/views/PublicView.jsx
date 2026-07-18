@@ -87,7 +87,8 @@ export default function PublicView() {
     voteRequest,
     submitRating,
     eventOwnerUid,
-    ownerProfile
+    ownerProfile,
+    searchAutocompleteSongs
   } = useFirebase();
 
   const defaults = {
@@ -554,10 +555,27 @@ export default function PublicView() {
     const userTitleNorm = normalize(cleanTitle);
     const userArtistNorm = normalize(cleanArtist);
 
+    // Obtener los primeros 3 caracteres del título para buscar prefijos similares
+    const titlePrefix = userTitleNorm.substring(0, 3);
+    
+    let candidateSongs = [];
+    try {
+      if (searchAutocompleteSongs) {
+        candidateSongs = await searchAutocompleteSongs(titlePrefix);
+      }
+    } catch (e) {
+      console.warn("Fallo al buscar sugerencias de ortografía en la BD:", e);
+    }
+
+    // Si falló o no devolvió resultados, usar lista en memoria como fallback
+    if (!candidateSongs || candidateSongs.length === 0) {
+      candidateSongs = autocompleteSongs || [];
+    }
+
     let bestMatch = null;
     let maxSimilarity = 0;
 
-    (autocompleteSongs || []).forEach(song => {
+    candidateSongs.forEach(song => {
       if (!song || !song.title) return;
       const songTitleNorm = normalize(song.title);
       const songArtistNorm = normalize(song.artist);

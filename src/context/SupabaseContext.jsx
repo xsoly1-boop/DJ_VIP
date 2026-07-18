@@ -1250,36 +1250,19 @@ export const SupabaseProvider = ({ children }) => {
     };
   }, [isAdminMaster, isMockMode]);
 
-  // Cargar canciones de autocompletado en tiempo real
+  // Cargar canciones de autocompletado en tiempo real (Límite de 1000 para optimización)
   useEffect(() => {
     if (isMockMode) return;
 
     const fetchAutocompleteSongs = async () => {
-      let allSongs = [];
-      let page = 0;
-      const pageSize = 1000;
-      let hasMore = true;
+      const { data, error } = await supabase
+        .from('autocomplete_songs')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .limit(1000);
 
-      while (hasMore) {
-        const { data, error } = await supabase
-          .from('autocomplete_songs')
-          .select('*')
-          .range(page * pageSize, (page + 1) * pageSize - 1);
-        
-        if (error || !data || data.length === 0) {
-          hasMore = false;
-        } else {
-          allSongs = allSongs.concat(data);
-          if (data.length < pageSize) {
-            hasMore = false;
-          } else {
-            page++;
-          }
-        }
-      }
-
-      if (allSongs.length > 0) {
-        setAutocompleteSongs(allSongs);
+      if (!error && data) {
+        setAutocompleteSongs(data);
       }
     };
 
@@ -1632,6 +1615,17 @@ export const SupabaseProvider = ({ children }) => {
           genre: genre || 'Personalizado'
         });
     }
+  };
+
+  const searchAutocompleteSongs = async (prefix) => {
+    if (isMockMode) return [];
+    const { data, error } = await supabase
+      .from('autocomplete_songs')
+      .select('*')
+      .ilike('title', `${prefix}%`)
+      .limit(150);
+    if (error) throw error;
+    return data || [];
   };
 
   // Crear petición (Público / DJ)
@@ -2134,7 +2128,8 @@ export const SupabaseProvider = ({ children }) => {
       resetRevenue,
       listSubscriptions,
       updateSubscription,
-      deleteSubscription
+      deleteSubscription,
+      searchAutocompleteSongs
     }}>
       {children}
     </SupabaseContext.Provider>
