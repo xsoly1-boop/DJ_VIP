@@ -62,7 +62,7 @@ function PlanValidityDisplay({ activePlan, expiresAt }) {
 export default function DjDashboard() {
   const API_BASE = ((window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') && window.location.port !== '')
     ? 'http://localhost:4000'
-    : (import.meta.env.VITE_PUBLIC_URL ? import.meta.env.VITE_PUBLIC_URL.replace(/\/$/, '') : 'https://dj-vip.vercel.app');
+    : (import.meta.env.VITE_PUBLIC_URL ? import.meta.env.VITE_PUBLIC_URL.replace(/\/$/, '') : 'https://dj-vip.onrender.com');
 
   const { 
     user, 
@@ -129,7 +129,7 @@ export default function DjDashboard() {
   const [dateInput, setDateInput] = useState(eventSettings.date || new Date().toISOString().split('T')[0]);
   const [primaryColor, setPrimaryColor] = useState(eventSettings.themeColor || '#7c3aed');
   const [secondaryColor, setSecondaryColor] = useState(eventSettings.themeColorSecondary || '#06b6d4');
-  const [productionUrl, setProductionUrl] = useState(eventSettings.productionUrl || 'https://dj-vip.vercel.app/');
+  const [productionUrl, setProductionUrl] = useState(eventSettings.productionUrl || 'https://dj-vip.onrender.com/');
   // Logo solo por URL externa
   const [logoUrlInput, setLogoUrlInput] = useState(eventSettings.logoUrl || '');
   const [fontFamily, setFontFamily] = useState(eventSettings.fontFamily || 'Outfit');
@@ -1326,7 +1326,7 @@ export default function DjDashboard() {
     setDateInput(eventSettings.date || new Date().toISOString().split('T')[0]);
     setPrimaryColor(eventSettings.themeColor || '#7c3aed');
     setSecondaryColor(eventSettings.themeColorSecondary || '#06b6d4');
-    setProductionUrl(eventSettings.productionUrl || 'https://dj-vip.vercel.app/');
+    setProductionUrl(eventSettings.productionUrl || 'https://dj-vip.onrender.com/');
     setLogoUrlInput(eventSettings.logoUrl || '');
     setFontFamily(eventSettings.fontFamily || 'Outfit');
     setFontSize(eventSettings.fontSize || 'medium');
@@ -3680,10 +3680,10 @@ export default function DjDashboard() {
                 {isAdminMaster && (
                 <div className="form-group" style={{ borderBottom: '1px solid rgba(255,255,255,0.05)', paddingBottom: '20px' }}>
                   <label className="form-label" style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                    🔗 URL de Producción (Vercel)
+                    🔗 URL de Producción
                     <span style={{ fontSize: '0.7rem', color: 'var(--warning-color)', background: 'rgba(245,158,11,0.1)', padding: '2px 6px', borderRadius: '4px', fontWeight: '700' }}>REQUERIDA PARA QR</span>
                   </label>
-                  <input type="url" className="input-field" placeholder="https://mi-app.vercel.app" value={productionUrl} onChange={(e) => setProductionUrl(e.target.value)} />
+                  <input type="url" className="input-field" placeholder="https://mi-app.onrender.com" value={productionUrl} onChange={(e) => setProductionUrl(e.target.value)} />
                   <p style={{ fontSize: '0.75rem', color: productionUrl ? 'var(--success-color)' : 'var(--warning-color)', marginTop: '6px' }}>
                     {productionUrl ? `✅ QR generará: ${productionUrl}/?event=${currentEventId}` : '⚠️ Sin URL configurada el QR no funcionará en la app de escritorio.'}
                   </p>
