@@ -138,6 +138,7 @@ const mapSupabaseProfileToFirebase = (profile) => {
   if (!profile) return null;
   return {
     ...profile,
+    ...(profile.custom_settings || {}),
     activePlan: profile.active_plan || 'free',
     subscriptionStatus: profile.subscription_status || 'inactive',
     createdAt: profile.created_at ? new Date(profile.created_at).getTime() : null,
@@ -413,16 +414,36 @@ export const SupabaseProvider = ({ children }) => {
     }
 
     const fetchAllProfiles = async () => {
-      const { data: profiles, error } = await supabase
+      const { data: profiles, error: profError } = await supabase
         .from('profiles')
         .select('*');
       
-      if (!error && profiles) {
+      const { data: allEvents, error: eventsError } = await supabase
+        .from('events')
+        .select('*');
+      
+      if (!profError && profiles) {
+        const eventsByOwner = {};
+        if (!eventsError && allEvents) {
+          allEvents.forEach(e => {
+            if (!eventsByOwner[e.owner_id]) {
+              eventsByOwner[e.owner_id] = {};
+            }
+            eventsByOwner[e.owner_id][e.id] = {
+              id: e.id,
+              title: e.title || 'Evento',
+              active: e.active || false,
+              djName: e.dj_name || 'DJ'
+            };
+          });
+        }
+
         const usersObj = {};
         profiles.forEach(p => {
           usersObj[p.id] = {
             profile: mapSupabaseProfileToFirebase(p),
-            events: {} // default
+            events: {}, // default
+            events_index: eventsByOwner[p.id] || {}
           };
         });
         setAllUsersData(usersObj);
@@ -431,10 +452,13 @@ export const SupabaseProvider = ({ children }) => {
 
     fetchAllProfiles();
 
-    // Suscribirse a cambios en la tabla profiles para refrescar en tiempo real
+    // Suscribirse a cambios en las tablas profiles y events para refrescar en tiempo real
     const profilesChannel = supabase
-      .channel('realtime-all-profiles')
+      .channel('realtime-all-profiles-and-events')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'profiles' }, () => {
+        fetchAllProfiles();
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'events' }, () => {
         fetchAllProfiles();
       })
       .subscribe();
