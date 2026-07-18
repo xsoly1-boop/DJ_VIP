@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { useFirebase, isBannedEmailDomain } from '../context/FirebaseContext';
+import { useFirebase, isBannedEmailDomain } from '../context/SupabaseContext';
 import { Lock, Mail, ArrowRight, ShieldAlert, Phone, User, RefreshCw } from 'lucide-react';
 import { CURRENT_APP_VERSION } from '../utils/AppVersionConfig';
 

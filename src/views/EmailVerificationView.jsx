@@ -1,10 +1,9 @@
-import { useState, useEffect } from 'react';
-import { useFirebase } from '../context/FirebaseContext';
+import React, { useState, useEffect } from 'react';
+import { useFirebase } from '../context/SupabaseContext';
 import { Mail, RefreshCw, LogOut, CheckCircle, Send } from 'lucide-react';
-import { sendEmailVerification } from '../firebase';
 
 export default function EmailVerificationView() {
-  const { user, logoutDJ, refreshUser } = useFirebase();
+  const { user, logoutDJ, refreshUser, sendEmailVerification } = useFirebase();
   const [loading, setLoading] = useState(false);
   const [resending, setResending] = useState(false);
   const [cooldown, setCooldown] = useState(0);

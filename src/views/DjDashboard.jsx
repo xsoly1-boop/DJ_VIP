@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
-import { useFirebase } from '../context/FirebaseContext';
-import { MOCK_ACCOUNTS, MASTER_ADMIN_EMAIL, database, ref, set, get } from '../firebase';
+import { useFirebase, MOCK_ACCOUNTS, MASTER_ADMIN_EMAIL } from '../context/SupabaseContext';
 import { CURRENT_APP_VERSION } from '../utils/AppVersionConfig';
 import AdminSubscriptions from './AdminSubscriptions';
 import { QRCodeSVG, QRCodeCanvas } from 'qrcode.react';
@@ -113,7 +112,14 @@ export default function DjDashboard() {
     subscribeToSupportChat,
     subscribeToAllSupportChats,
     submitFeedback,
-    refreshAdminData
+    refreshAdminData,
+    listPendingSubscriptions,
+    approveSubscription,
+    rejectSubscription,
+    deleteUser,
+    getPaymentConfig,
+    savePaymentConfig,
+    resetRevenue
   } = useFirebase();
 
   // Estados Locales
@@ -243,7 +249,7 @@ export default function DjDashboard() {
 
   // Admin Master: Estados para Gestor de Actualizaciones
   const [adminUpdateVersion, setAdminUpdateVersion] = useState('');
-  const [adminUpdateApkUrl, setAdminUpdateApkUrl] = useState('https://dj-vip.vercel.app/DJ.a.la.carta.apk');
+  const [adminUpdateApkUrl, setAdminUpdateApkUrl] = useState('https://dj-vip.onrender.com/DJ.a.la.carta.apk');
   const [adminReleaseNotesRaw, setAdminReleaseNotesRaw] = useState('');
   const [isGeneratingNotes, setIsGeneratingNotes] = useState(false);
   const [isPublishingNotes, setIsPublishingNotes] = useState(false);
@@ -383,17 +389,25 @@ export default function DjDashboard() {
   // Cargar configuración de actualización al activar la pestaña de soporte
   useEffect(() => {
     if (activeTab === 'support' && isAdminMaster && !impersonatingUid) {
-      const updatesRef = ref(database, 'config/updates');
-      get(updatesRef).then((snapshot) => {
-        if (snapshot.exists()) {
-          const data = snapshot.val();
-          setAdminUpdateVersion(data.latestVersion || '');
-          setAdminUpdateApkUrl(data.apkUrl || 'https://dj-vip.vercel.app/DJ.a.la.carta.apk');
-          if (data.releaseNotes) {
-            setAdminReleaseNotesRaw(data.releaseNotes.join('\n'));
+      const fetchVersion = async () => {
+        try {
+          const baseUrl = import.meta.env.VITE_PUBLIC_URL 
+            ? import.meta.env.VITE_PUBLIC_URL.replace(/\/$/, '') 
+            : 'https://dj-vip.onrender.com';
+          const response = await fetch(`${baseUrl}/version.json?t=${Date.now()}`);
+          if (response.ok) {
+            const data = await response.json();
+            setAdminUpdateVersion(data.latestVersion || '');
+            setAdminUpdateApkUrl(data.apkUrl || 'https://dj-vip.onrender.com/DJ.a.la.carta.apk');
+            if (data.releaseNotes) {
+              setAdminReleaseNotesRaw(Array.isArray(data.releaseNotes) ? data.releaseNotes.join('\n') : data.releaseNotes);
+            }
           }
+        } catch (err) {
+          console.error('[Admin Update Load] Error loading version.json:', err);
         }
-      }).catch(err => console.error(err));
+      };
+      fetchVersion();
     }
   }, [activeTab, isAdminMaster, impersonatingUid]);
 
@@ -1985,22 +1999,17 @@ export default function DjDashboard() {
 
   // Delete a DJ user account (admin only)
   const handleDeleteDjAccount = async (uid) => {
+    if (!window.confirm("¿Estás seguro de que deseas eliminar permanentemente esta cuenta de DJ?")) return;
     try {
-      const res = await fetch(`${API_BASE}/api/admin/deleteUser`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ uid, secret: import.meta.env.VITE_ADMIN_MASTER_SECRET }),
-      });
-      const data = await res.json();
-      if (data.success) {
-        showToast(`✅ Usuario ${uid} eliminado`);
-        // Reload to refresh list
-        window.location.reload();
-      } else {
-        showToast(`❌ Error al eliminar: ${data.error || "unknown"}`);
+      if (isMock) {
+        showToast(`✅ [Mock] Usuario ${uid} eliminado`);
+        return;
       }
+      await deleteUser(uid);
+      showToast(`✅ Usuario ${uid} eliminado`);
+      await refreshAdminData();
     } catch (e) {
-      showToast(`❌ Error de red: ${e.message}`);
+      showToast(`❌ Error al eliminar: ${e.message}`);
     }
   };
 
@@ -2024,42 +2033,37 @@ export default function DjDashboard() {
 
   const fetchPaymentConfig = async () => {
     try {
-      const secret = import.meta.env.VITE_ADMIN_MASTER_SECRET;
-      const res = await fetch(`${API_BASE}/api/admin/getPaymentConfig`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ secret }),
+      if (isMock) return;
+      const config = await getPaymentConfig();
+      setPaymentConfig({
+        paypalClientId: config.paypalClientId || '',
+        paypalClientSecret: config.paypalClientSecret || '',
+        paypalMode: config.paypalMode || 'sandbox',
+        mercadopagoPublicKey: config.mercadopagoPublicKey || '',
+        mercadopagoAccessToken: config.mercadopagoAccessToken || '',
+        adminClabe: config.adminClabe || '',
+        paypalEnabled: config.paypalEnabled !== false,
+        mercadopagoEnabled: config.mercadopagoEnabled !== false,
+        transferEnabled: config.transferEnabled !== false
       });
-      const data = await res.json();
-      if (data.success && data.config) {
-        setPaymentConfig(data.config);
-      } else {
-        showToast(`❌ Configuración: ${data.error || "Error al obtener pasarelas"}`);
-      }
     } catch (e) {
-      console.error('Error fetching payment config', e);
-      showToast(`❌ Error de red (pasarelas): ${e.message}`);
+      console.error('Error fetching payment config:', e);
+      showToast(`❌ Error al cargar configuración: ${e.message}`);
     }
   };
 
   const fetchPendingSubscriptions = async () => {
     setPendingSubsLoading(true);
     try {
-      const secret = import.meta.env.VITE_ADMIN_MASTER_SECRET;
-      const res = await fetch(`${API_BASE}/api/admin/listPendingSubscriptions`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ secret }),
-      });
-      const data = await res.json();
-      if (data.success) {
-        setPendingSubs(data.pendingSubscriptions || []);
-      } else {
-        showToast(`❌ Suscripciones: ${data.error || "No se pudo cargar la lista"}`);
+      if (isMock) {
+        setPendingSubs([]);
+        return;
       }
+      const list = await listPendingSubscriptions();
+      setPendingSubs(list);
     } catch (e) {
-      console.error('Error fetching pending subscriptions', e);
-      showToast(`❌ Error de red (suscripciones): ${e.message}`);
+      console.error('Error fetching pending subscriptions:', e);
+      showToast(`❌ Error al cargar suscripciones: ${e.message}`);
     } finally {
       setPendingSubsLoading(false);
     }
@@ -2080,18 +2084,12 @@ export default function DjDashboard() {
     e.preventDefault();
     setSaveConfigLoading(true);
     try {
-      const secret = import.meta.env.VITE_ADMIN_MASTER_SECRET;
-      const res = await fetch(`${API_BASE}/api/admin/savePaymentConfig`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ secret, config: paymentConfig }),
-      });
-      const data = await res.json();
-      if (data.success) {
-        alert('Configuración de pasarelas de pago guardada con éxito.');
-      } else {
-        throw new Error(data.error);
+      if (isMock) {
+        alert('Configuración guardada en modo Mock.');
+        return;
       }
+      await savePaymentConfig(paymentConfig);
+      alert('Configuración de pasarelas de pago guardada con éxito.');
     } catch (e) {
       console.error(e);
       alert('Error al guardar configuración: ' + e.message);
@@ -2102,29 +2100,31 @@ export default function DjDashboard() {
 
   const handleResetRevenue = async (e) => {
     e.preventDefault();
-    if (!adminPasswordInput.trim()) {
+    const typedSecret = adminPasswordInput.trim();
+    if (!typedSecret) {
       showToast('⚠️ Ingresa la contraseña de administrador.');
+      return;
+    }
+    const adminSecret = import.meta.env.VITE_ADMIN_MASTER_SECRET || 'najera2401';
+    if (typedSecret !== adminSecret) {
+      showToast('❌ Contraseña de administrador incorrecta.');
       return;
     }
     setResetRevenueLoading(true);
     try {
-      const secret = adminPasswordInput.trim();
-      const res = await fetch(`${API_BASE}/api/admin/resetRevenue`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ secret }),
-      });
-      const data = await res.json();
-      if (data.success) {
-        showToast('✅ Finanzas y suscripciones restablecidas a cero.');
+      if (isMock) {
+        showToast('✅ [Mock] Finanzas y suscripciones restablecidas a cero.');
         setShowResetRevenueModal(false);
         setAdminPasswordInput('');
-        await refreshAdminData();
-      } else {
-        showToast(`❌ Error: ${data.error || 'unknown'}`);
+        return;
       }
+      await resetRevenue();
+      showToast('✅ Finanzas y suscripciones restablecidas a cero.');
+      setShowResetRevenueModal(false);
+      setAdminPasswordInput('');
+      await refreshAdminData();
     } catch (err) {
-      showToast(`❌ Error de red: ${err.message}`);
+      showToast(`❌ Error: ${err.message}`);
     } finally {
       setResetRevenueLoading(false);
     }
@@ -2133,20 +2133,14 @@ export default function DjDashboard() {
   const handleApproveSub = async (uid, plan) => {
     if (!window.confirm(`¿Aprobar el plan ${plan.toUpperCase()} para este usuario?`)) return;
     try {
-      const secret = import.meta.env.VITE_ADMIN_MASTER_SECRET;
-      const res = await fetch(`${API_BASE}/api/admin/approveSubscription`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ secret, uid, plan }),
-      });
-      const data = await res.json();
-      if (data.success) {
-        alert('Suscripción aprobada con éxito.');
-        fetchPendingSubscriptions();
-        await refreshAdminData();
-      } else {
-        throw new Error(data.error);
+      if (isMock) {
+        alert('Suscripción aprobada [Mock].');
+        return;
       }
+      await approveSubscription(uid, plan);
+      alert('Suscripción aprobada con éxito.');
+      fetchPendingSubscriptions();
+      await refreshAdminData();
     } catch (e) {
       console.error(e);
       alert('Error al aprobar: ' + e.message);
@@ -2156,20 +2150,14 @@ export default function DjDashboard() {
   const handleRejectSub = async (uid) => {
     if (!window.confirm('¿Rechazar el comprobante de este usuario? Su estado volverá a Pago Pendiente.')) return;
     try {
-      const secret = import.meta.env.VITE_ADMIN_MASTER_SECRET;
-      const res = await fetch(`${API_BASE}/api/admin/rejectSubscription`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ secret, uid }),
-      });
-      const data = await res.json();
-      if (data.success) {
-        alert('Suscripción rechazada.');
-        fetchPendingSubscriptions();
-        await refreshAdminData();
-      } else {
-        throw new Error(data.error);
+      if (isMock) {
+        alert('Suscripción rechazada [Mock].');
+        return;
       }
+      await rejectSubscription(uid, 'Comprobante rechazado por el administrador');
+      alert('Suscripción rechazada.');
+      fetchPendingSubscriptions();
+      await refreshAdminData();
     } catch (e) {
       console.error(e);
       alert('Error al rechazar: ' + e.message);

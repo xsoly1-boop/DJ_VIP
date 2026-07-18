@@ -1,5 +1,5 @@
 import React from 'react';
-import { FirebaseProvider, useFirebase } from './context/FirebaseContext';
+import { SupabaseProvider, useFirebase } from './context/SupabaseContext';
 import PublicView from './views/PublicView';
 import LoginView from './views/LoginView';
 import DjDashboard from './views/DjDashboard';
@@ -8,7 +8,6 @@ import PlanSelection from './views/PlanSelection';
 import PaymentView from './views/PaymentView';
 import EmailVerificationView from './views/EmailVerificationView';
 
-import { database, ref, onValue } from './firebase';
 import { CURRENT_APP_VERSION } from './utils/AppVersionConfig';
 
 // ─── Detección de plataforma ──────────────────────────────────────────────────
@@ -47,33 +46,19 @@ function AppContent() {
   const downloadGuardRef = React.useRef(false);
 
   React.useEffect(() => {
-    if (!database || !database.app) {
-      console.log('Firebase Database not initialized. Skipping update check.');
-      return;
-    }
-    let alreadyChecked = false;
-    const updatesRef = ref(database, 'config/updates');
-    const unsubscribe = onValue(updatesRef, async (snapshot) => {
-      // Solo procesar la PRIMERA entrega del listener; ignorar disparos posteriores
-      if (alreadyChecked) return;
-      alreadyChecked = true;
-      // Desuscribirse inmediatamente para que cambios futuros en el nodo no
-      // vuelvan a mostrar el modal a usuarios que ya lo descartaron.
-      unsubscribe();
-
+    let active = true;
+    const checkUpdates = async () => {
       try {
-        let data = snapshot.val();
-        if (!data) {
-          const baseUrl = import.meta.env.VITE_PUBLIC_URL 
-            ? import.meta.env.VITE_PUBLIC_URL.replace(/\/$/, '') 
-            : 'https://dj-vip.vercel.app';
-          const response = await fetch(`${baseUrl}/version.json?t=${Date.now()}`);
-          if (!response.ok) return;
-          data = await response.json();
-        }
+        const baseUrl = import.meta.env.VITE_PUBLIC_URL 
+          ? import.meta.env.VITE_PUBLIC_URL.replace(/\/$/, '') 
+          : 'https://dj-vip.onrender.com';
+        const response = await fetch(`${baseUrl}/version.json?t=${Date.now()}`);
+        if (!response.ok) return;
+        const data = await response.json();
         
+        if (!active) return;
+
         if (data && data.latestVersion) {
-          
           const isNewer = (latest, current) => {
             const lParts = latest.split('.').map(Number);
             const cParts = current.split('.').map(Number);
@@ -102,9 +87,11 @@ function AppContent() {
       } catch (err) {
         console.warn('[Update Check] Error comprobando actualizaciones:', err);
       }
-    });
-    // Limpiar solo si el listener aún está activo (en caso de desmontaje antes del primer disparo)
-    return () => unsubscribe();
+    };
+    checkUpdates();
+    return () => {
+      active = false;
+    };
   }, []);
 
   // Escuchar evento personalizado para alternar el bypass del bloqueo de pago
@@ -583,7 +570,7 @@ function AppContent() {
                 <div className="update-modal-actions" style={{ flexDirection: 'column', gap: '10px' }}>
                   <button
                     disabled={isDownloading}
-                    onClick={(e) => handleDownload(e, updateInfo.ipaUrl || 'https://dj-vip.vercel.app/DJ-Panel-Pro.ipa')}
+                    onClick={(e) => handleDownload(e, updateInfo.ipaUrl || 'https://dj-vip.onrender.com/DJ-Panel-Pro.ipa')}
                     className="update-modal-btn-now"
                     style={{
                       background: 'linear-gradient(135deg, #0ea5e9 0%, #0284c7 100%)',
@@ -604,7 +591,7 @@ function AppContent() {
                 <div className="update-modal-actions" style={{ flexDirection: 'column', gap: '10px' }}>
                   <button
                     disabled={isDownloading}
-                    onClick={(e) => handleDownload(e, updateInfo.exeUrl || 'https://dj-vip.vercel.app/DJ-Panel-Pro-Setup.exe', true)}
+                    onClick={(e) => handleDownload(e, updateInfo.exeUrl || 'https://dj-vip.onrender.com/DJ-Panel-Pro-Setup.exe', true)}
                     className="update-modal-btn-now"
                     style={{
                       background: 'linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%)',
@@ -632,8 +619,8 @@ function AppContent() {
 
 export default function App() {
   return (
-    <FirebaseProvider>
+    <SupabaseProvider>
       <AppContent />
-    </FirebaseProvider>
+    </SupabaseProvider>
   );
 }

@@ -1,11 +1,11 @@
 import React, { useState } from 'react';
-import { useFirebase } from '../context/FirebaseContext';
+import { useFirebase } from '../context/SupabaseContext';
 import { CreditCard, CheckCircle, ArrowLeft, LogOut, Check, RefreshCw } from 'lucide-react';
 
 export default function PaymentView() {
   const API_BASE = ((window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') && window.location.port !== '')
     ? 'http://localhost:4000'
-    : (import.meta.env.VITE_PUBLIC_URL ? import.meta.env.VITE_PUBLIC_URL.replace(/\/$/, '') : 'https://dj-vip.vercel.app');
+    : (import.meta.env.VITE_PUBLIC_URL ? import.meta.env.VITE_PUBLIC_URL.replace(/\/$/, '') : 'https://dj-vip.onrender.com');
   const { userProfile, selectPlan, submitPaymentProof, logoutDJ, plansConfig, publicPaymentInfo, user } = useFirebase();
   const [gateway, setGateway] = useState('');
   const [transactionId, setTransactionId] = useState('');

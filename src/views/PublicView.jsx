@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { useFirebase } from '../context/FirebaseContext';
+import { useFirebase } from '../context/SupabaseContext';
 import { Music, Heart, Sparkles, Send, Clock, Volume2, ShieldAlert, CheckCircle } from 'lucide-react';
 
 // Generar o recuperar ID de sesión único para controlar anti-spam y votos

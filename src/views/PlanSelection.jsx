@@ -1,5 +1,5 @@
 import React from 'react';
-import { useFirebase } from '../context/FirebaseContext';
+import { useFirebase } from '../context/SupabaseContext';
 import { Music, Check, Star, Sparkles, LogOut, X, ArrowLeft } from 'lucide-react';
 
 export default function PlanSelection() {

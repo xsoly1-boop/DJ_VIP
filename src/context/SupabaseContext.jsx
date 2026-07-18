@@ -7,6 +7,47 @@ export const useFirebase = () => {
   return useContext(SupabaseContext);
 };
 
+const BANNED_DOMAINS = [
+  'gamail.com', 'gamil.com', 'gmal.com', 'gamil.co', 'gmaill.com',
+  'yaho.com', 'yahu.com', 'yaho.co',
+  'hotmial.com', 'hotmai.com', 'hotmial.co', 'outlok.com',
+  'test.com', 'fake.com', 'tempmail.com', 'mailinator.com'
+];
+
+export const isBannedEmailDomain = (email) => {
+  if (!email || !email.includes('@')) return false;
+  const domain = email.split('@').pop().toLowerCase().trim();
+  return BANNED_DOMAINS.includes(domain);
+};
+
+export const DEFAULT_MOCK_ACCOUNTS = [
+  { email: 'dj@admin.com', password: 'admin',      uid: 'uid-admin-master', displayName: 'Administrador Master', isAdmin: true },
+  { email: 'dj1@dj.com',   password: 'dj123',    uid: 'uid-dj1',          displayName: 'No registrado', isAdmin: false },
+  { email: 'dj2@dj.com',   password: 'dj456',    uid: 'uid-dj2',          displayName: 'DJ Neon Vibes', isAdmin: false },
+  { email: 'demo@dj.com',  password: 'demo123',  uid: 'uid-demo',         displayName: 'DJ Demo', isAdmin: false }
+];
+
+const savedAccounts = localStorage.getItem('mock_accounts');
+let finalMockAccounts = DEFAULT_MOCK_ACCOUNTS;
+if (savedAccounts) {
+  try {
+    const parsed = JSON.parse(savedAccounts);
+    const hasDemo = parsed.some(a => a.email === 'demo@dj.com');
+    if (!hasDemo) {
+      parsed.push({ email: 'demo@dj.com', password: 'demo123', uid: 'uid-demo', displayName: 'DJ Demo', isAdmin: false });
+      localStorage.setItem('mock_accounts', JSON.stringify(parsed));
+    }
+    finalMockAccounts = parsed;
+  } catch (e) {
+    localStorage.setItem('mock_accounts', JSON.stringify(DEFAULT_MOCK_ACCOUNTS));
+  }
+} else {
+  localStorage.setItem('mock_accounts', JSON.stringify(DEFAULT_MOCK_ACCOUNTS));
+}
+
+export const MOCK_ACCOUNTS = finalMockAccounts;
+export const MASTER_ADMIN_EMAIL = 'dj@admin.com';
+
 const DEFAULT_PLANS_CONFIG = {
   free: {
     name: "Plan Demo",
@@ -1267,7 +1308,11 @@ export const SupabaseProvider = ({ children }) => {
     // Escuchar cambios de sesión de Supabase Auth
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
       if (session && session.user) {
-        setUser({ ...session.user, uid: session.user.id });
+        setUser({ 
+          ...session.user, 
+          uid: session.user.id,
+          emailVerified: !!session.user.email_confirmed_at
+        });
         // Restaurar el evento activo guardado para este usuario
         const savedEventId = localStorage.getItem(`djvip_active_event_id_${session.user.id}`);
         if (savedEventId) {
@@ -1412,6 +1457,151 @@ export const SupabaseProvider = ({ children }) => {
   const recoverPassword = async (email) => {
     if (isMockMode) return;
     const { error } = await supabase.auth.resetPasswordForEmail(email);
+    if (error) throw error;
+  };
+
+  const refreshUser = async () => {
+    if (isMockMode) return;
+    const { data: { user: updatedUser }, error } = await supabase.auth.getUser();
+    if (error) throw error;
+    if (updatedUser) {
+      setUser({ 
+        ...updatedUser, 
+        uid: updatedUser.id,
+        emailVerified: !!updatedUser.email_confirmed_at
+      });
+      return { 
+        ...updatedUser, 
+        uid: updatedUser.id,
+        emailVerified: !!updatedUser.email_confirmed_at
+      };
+    }
+    return null;
+  };
+
+  const sendEmailVerification = async () => {
+    if (isMockMode) return;
+    if (!user?.email) return;
+    const { error } = await supabase.auth.resend({
+      type: 'signup',
+      email: user.email
+    });
+    if (error) throw error;
+  };
+
+  const listPendingSubscriptions = async () => {
+    if (isMockMode) return [];
+    const { data, error } = await supabase
+      .from('profiles')
+      .select('*')
+      .in('subscription_status', ['pending_validation', 'pending_payment']);
+    if (error) throw error;
+    return (data || []).map(mapSupabaseProfileToFirebase);
+  };
+
+  const approveSubscription = async (uid, plan) => {
+    if (isMockMode) return;
+    const { error } = await supabase
+      .from('profiles')
+      .update({
+        subscription_status: plan,
+        active_plan: plan,
+        payment_rejected_reason: null,
+        transaction_id: null,
+        gateway: null
+      })
+      .eq('id', uid);
+    if (error) throw error;
+  };
+
+  const rejectSubscription = async (uid, reason) => {
+    if (isMockMode) return;
+    const { error } = await supabase
+      .from('profiles')
+      .update({
+        subscription_status: 'pending_plan',
+        active_plan: 'free',
+        payment_rejected_reason: reason
+      })
+      .eq('id', uid);
+    if (error) throw error;
+  };
+
+  const deleteUser = async (uid) => {
+    if (isMockMode) return;
+    if (!supabaseAdmin) throw new Error("Client admin no inicializado.");
+    const { error } = await supabaseAdmin.auth.admin.deleteUser(uid);
+    if (error) throw error;
+  };
+
+  const getPaymentConfig = async () => {
+    if (isMockMode) return {};
+    const { data, error } = await supabase
+      .from('profiles')
+      .select('custom_settings')
+      .eq('email', 'dj@admin.com')
+      .maybeSingle();
+    if (error) throw error;
+    return data?.custom_settings?.payment_config || {};
+  };
+
+  const savePaymentConfig = async (config) => {
+    if (isMockMode) return;
+    const { data: adminProfile } = await supabase
+      .from('profiles')
+      .select('custom_settings')
+      .eq('email', 'dj@admin.com')
+      .maybeSingle();
+    
+    const custom = adminProfile?.custom_settings || {};
+    custom.payment_config = config;
+
+    const { error } = await supabase
+      .from('profiles')
+      .update({ custom_settings: custom })
+      .eq('email', 'dj@admin.com');
+    if (error) throw error;
+  };
+
+  const resetRevenue = async () => {
+    if (isMockMode) return;
+    const { error } = await supabase
+      .from('profiles')
+      .update({ revenue: 0 });
+    if (error) throw error;
+    setRevenueResetTimestamp(Date.now());
+  };
+
+  const listSubscriptions = async () => {
+    if (isMockMode) return [];
+    const { data, error } = await supabase
+      .from('profiles')
+      .select('*');
+    if (error) throw error;
+    return (data || []).map(mapSupabaseProfileToFirebase);
+  };
+
+  const updateSubscription = async (uid, plan) => {
+    if (isMockMode) return;
+    const { error } = await supabase
+      .from('profiles')
+      .update({
+        subscription_status: plan,
+        active_plan: plan
+      })
+      .eq('id', uid);
+    if (error) throw error;
+  };
+
+  const deleteSubscription = async (uid) => {
+    if (isMockMode) return;
+    const { error } = await supabase
+      .from('profiles')
+      .update({
+        subscription_status: 'pending_plan',
+        active_plan: 'free'
+      })
+      .eq('id', uid);
     if (error) throw error;
   };
 
@@ -1772,6 +1962,8 @@ export const SupabaseProvider = ({ children }) => {
       registerDJ,
       logoutDJ,
       recoverPassword,
+      refreshUser,
+      sendEmailVerification,
       addRequest,
       voteRequest,
       updateRequestStatus,
@@ -1779,7 +1971,17 @@ export const SupabaseProvider = ({ children }) => {
       updateEventSettings,
       selectPlan,
       cancelPlanSelection,
-      changeEvent
+      changeEvent,
+      listPendingSubscriptions,
+      approveSubscription,
+      rejectSubscription,
+      deleteUser,
+      getPaymentConfig,
+      savePaymentConfig,
+      resetRevenue,
+      listSubscriptions,
+      updateSubscription,
+      deleteSubscription
     }}>
       {children}
     </SupabaseContext.Provider>
