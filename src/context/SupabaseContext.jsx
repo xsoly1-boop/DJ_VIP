@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
-import { supabase } from '../supabase';
+import { supabase, supabaseAdmin } from '../supabase';
 
 const SupabaseContext = createContext(null);
 
@@ -174,7 +174,41 @@ const mapSupabaseEvent = (ev) => ({
   productionUrl: ev.production_url || '',
   customGenres: ev.custom_genres || '',
   createdAt: ev.created_at ? new Date(ev.created_at).getTime() : 0,
+  fontFamily: ev.font_family || 'Outfit',
+  logoSize: ev.logo_size || 'medium',
+  dedicationsEnabled: ev.dedications_enabled || false,
+  bankClabe: ev.bank_clabe || '',
+  tipCurrency: ev.tip_currency || 'MXN',
+  strictModeEnabled: ev.strict_mode_enabled !== false
 });
+
+// Helper: mapea configuración camelCase de Firebase → columnas snake_case de Supabase
+const mapFirebaseEventToSupabase = (settings) => {
+  const mapped = {};
+  if (settings.title !== undefined) mapped.title = settings.title;
+  if (settings.djName !== undefined) mapped.dj_name = settings.djName;
+  if (settings.webName !== undefined) mapped.web_name = settings.webName;
+  if (settings.date !== undefined) mapped.event_date = settings.date;
+  if (settings.themeColor !== undefined) mapped.theme_color = settings.themeColor;
+  if (settings.themeColorSecondary !== undefined) mapped.theme_color_secondary = settings.themeColorSecondary;
+  if (settings.productionUrl !== undefined) mapped.production_url = settings.productionUrl;
+  if (settings.fontFamily !== undefined) mapped.font_family = settings.fontFamily;
+  if (settings.logoSize !== undefined) mapped.logo_size = settings.logoSize;
+  if (settings.tipsEnabled !== undefined) mapped.tips_enabled = settings.tipsEnabled;
+  if (settings.paypalUsername !== undefined) mapped.paypal_username = settings.paypalUsername;
+  if (settings.mercadopagoLink !== undefined) mapped.mercadopago_link = settings.mercadopagoLink;
+  if (settings.bankClabe !== undefined) mapped.bank_clabe = settings.bankClabe;
+  if (settings.tipCurrency !== undefined) mapped.tip_currency = settings.tipCurrency;
+  if (settings.dedicationsEnabled !== undefined) mapped.dedications_enabled = settings.dedicationsEnabled;
+  if (settings.customGenres !== undefined) mapped.custom_genres = settings.customGenres;
+  if (settings.logoUrl !== undefined) mapped.logo_url = settings.logoUrl;
+  if (settings.promoEnabled !== undefined) mapped.promo_enabled = settings.promoEnabled;
+  if (settings.promoWhatsapp !== undefined) mapped.promo_whatsapp = settings.promoWhatsapp;
+  if (settings.promoWebsite !== undefined) mapped.promo_website = settings.promoWebsite;
+  if (settings.promoInstagram !== undefined) mapped.promo_instagram = settings.promoInstagram;
+  if (settings.promoTiktok !== undefined) mapped.promo_tiktok = settings.promoTiktok;
+  return mapped;
+};
 
 const DEFAULT_EVENT_SETTINGS = {
   title: 'Mi Gran Evento VIP',
@@ -256,26 +290,584 @@ export const SupabaseProvider = ({ children }) => {
       event_type: eventType || 'Otro',
     };
     if (logoUrl !== null) updates.logo_url = logoUrl;
-    // logoSize is stored in event settings, not in the events table - skip for now
-    const targetId = currentEventId === 'default-event' ? `default-event-${activeUid}` : eventId;
+    if (logoSize !== null) updates.logo_size = logoSize;
+    const targetId = eventId === 'default-event' ? `default-event-${activeUid}` : eventId;
     await supabase.from('events').update(updates).eq('id', targetId);
   };
 
-  const clearHistoryWithOptions = async () => {};
-  const createDjAccount = async () => {};
-  const updateDjAccount = async () => {};
-  const updateAdminProfile = async () => {};
-  const updateTwilioConfig = async () => {};
-  const uploadLogo = async () => {};
-  const getDatabaseBackup = async () => {};
-  const deleteSuggestion = async () => {};
-  const updatePlansConfig = async () => {};
-  const sendSupportMessage = async () => {};
-  const markSupportChatAsRead = async () => {};
-  const subscribeToSupportChat = () => { return () => {}; };
-  const subscribeToAllSupportChats = () => { return () => {}; };
-  const submitFeedback = async () => {};
-  const refreshAdminData = async () => {};
+  const clearHistoryWithOptions = async (options) => {
+    if (isMockMode) {
+      if (options.songs) {
+        setRequests({});
+        setPlayedRequests({});
+      }
+      return;
+    }
+
+    const targetEventDbId = currentEventId === 'default-event' ? `default-event-${activeUid}` : currentEventId;
+
+    if (options.songs) {
+      await supabase.from('requests').delete().eq('event_id', targetEventDbId);
+      await supabase.from('played_requests').delete().eq('event_id', targetEventDbId);
+    }
+
+    if (options.genres) {
+      // Resetear géneros a 'Personalizado' en peticiones activas
+      const { data: activeReqs } = await supabase
+        .from('requests')
+        .select('id')
+        .eq('event_id', targetEventDbId);
+      if (activeReqs && activeReqs.length > 0) {
+        const ids = activeReqs.map(r => r.id);
+        await supabase.from('requests').update({ genre: 'Personalizado' }).in('id', ids);
+      }
+      // Resetear géneros en autocompletado del usuario activo
+      const { data: userSongs } = await supabase
+        .from('autocomplete_songs')
+        .select('id')
+        .eq('owner_id', activeUid);
+      if (userSongs && userSongs.length > 0) {
+        const ids = userSongs.map(s => s.id);
+        await supabase.from('autocomplete_songs').update({ genre: 'Personalizado' }).in('id', ids);
+      }
+    }
+
+    if (options.artists) {
+      const { data: activeReqs } = await supabase
+        .from('requests')
+        .select('id')
+        .eq('event_id', targetEventDbId);
+      if (activeReqs && activeReqs.length > 0) {
+        const ids = activeReqs.map(r => r.id);
+        await supabase.from('requests').update({ artist: 'Artista no especificado' }).in('id', ids);
+      }
+    }
+
+    if (options.dedications) {
+      const { data: activeReqs } = await supabase
+        .from('requests')
+        .select('id')
+        .eq('event_id', targetEventDbId);
+      if (activeReqs && activeReqs.length > 0) {
+        const ids = activeReqs.map(r => r.id);
+        await supabase.from('requests').update({ dedication: '' }).in('id', ids);
+      }
+    }
+  };
+  const createDjAccount = async (email, password, displayName) => {
+    if (!isAdminMaster) {
+      throw new Error('Solo el Administrador Master puede crear cuentas.');
+    }
+    if (!supabaseAdmin) {
+      throw new Error('Supabase Service Role Key no configurada.');
+    }
+
+    // 1. Crear el usuario en Supabase Auth
+    const { data: { user: newUser }, error: authError } = await supabaseAdmin.auth.admin.createUser({
+      email,
+      password,
+      email_confirm: true,
+      user_metadata: { display_name: displayName }
+    });
+
+    if (authError) throw authError;
+
+    // 2. Insertar perfil en profiles
+    const { error: profileError } = await supabaseAdmin
+      .from('profiles')
+      .insert({
+        id: newUser.id,
+        email,
+        display_name: displayName || email.split('@')[0],
+        active_plan: 'free',
+        subscription_status: 'free',
+        strict_limit_enabled: true,
+        logo_upload_enabled: false
+      });
+
+    if (profileError) {
+      // Intentar limpiar el auth user si falla
+      await supabaseAdmin.auth.admin.deleteUser(newUser.id);
+      throw profileError;
+    }
+
+    // 3. Crear el evento por defecto en events
+    const defaultEventId = `default-event-${newUser.id}`;
+    const { error: eventError } = await supabaseAdmin
+      .from('events')
+      .insert({
+        id: defaultEventId,
+        owner_id: newUser.id,
+        title: 'Mi Gran Evento VIP',
+        dj_name: displayName || email.split('@')[0],
+        active: true,
+        theme_color: '#7c3aed',
+        theme_color_secondary: '#06b6d4',
+        web_name: 'DJ a la Carta',
+        event_type: 'Otro',
+        tips_enabled: false
+      });
+
+    if (eventError) {
+      console.error("Error creating default event for new DJ:", eventError.message);
+    }
+
+    return { uid: newUser.id, email, displayName: displayName || email.split('@')[0] };
+  };
+
+  const updateDjAccount = async (uid, newEmail, newDisplayName, newPassword, newPlan, demoLimit, strictLimitEnabled, premiumLimit, logoUploadEnabled) => {
+    if (!isAdminMaster) {
+      throw new Error('Solo el Administrador Master puede editar cuentas.');
+    }
+    if (!supabaseAdmin) {
+      throw new Error('Supabase Service Role Key no configurada.');
+    }
+
+    // 1. Actualizar credenciales en Supabase Auth
+    const authUpdates = {};
+    if (newEmail) authUpdates.email = newEmail;
+    if (newPassword) authUpdates.password = newPassword;
+    if (Object.keys(authUpdates).length > 0) {
+      const { error: authError } = await supabaseAdmin.auth.admin.updateUserById(uid, authUpdates);
+      if (authError) throw authError;
+    }
+
+    // 2. Actualizar campos en el perfil
+    const profileUpdates = {
+      display_name: newDisplayName,
+      active_plan: newPlan,
+      subscription_status: newPlan,
+      demo_limit: parseInt(demoLimit, 10) || 35,
+      strict_limit_enabled: strictLimitEnabled !== false,
+      premium_limit: parseInt(premiumLimit, 10) || 80,
+      logo_upload_enabled: logoUploadEnabled === true
+    };
+    if (newEmail) profileUpdates.email = newEmail;
+
+    const { error: profileError } = await supabaseAdmin
+      .from('profiles')
+      .update(profileUpdates)
+      .eq('id', uid);
+
+    if (profileError) throw profileError;
+  };
+  const updateDjOwnProfile = async (updates) => {
+    if (!activeUid) return;
+    if (isMockMode) return;
+
+    // Obtener perfil actual para mezclar custom_settings
+    const { data: currentProfile } = await supabase
+      .from('profiles')
+      .select('custom_settings')
+      .eq('id', activeUid)
+      .maybeSingle();
+
+    const existingCustom = currentProfile?.custom_settings || {};
+    const dbUpdates = {};
+    const newCustom = { ...existingCustom };
+
+    // Mapear cada campo a columna o a custom_settings
+    Object.keys(updates).forEach(key => {
+      const val = updates[key];
+      if (key === 'displayName') {
+        dbUpdates.display_name = val;
+      } else if (key === 'email') {
+        dbUpdates.email = val;
+      } else if (key === 'strictLimitEnabled') {
+        dbUpdates.strict_limit_enabled = val;
+      } else if (key === 'logoUploadEnabled') {
+        dbUpdates.logo_upload_enabled = val;
+      } else {
+        newCustom[key] = val;
+      }
+    });
+
+    dbUpdates.custom_settings = newCustom;
+
+    await supabase
+      .from('profiles')
+      .update(dbUpdates)
+      .eq('id', activeUid);
+  };
+
+  const updateAdminProfile = async (alias, whatsapp, callmebotApiKey) => {
+    if (!user) throw new Error("Debes iniciar sesión.");
+    if (!isAdminMaster) throw new Error("Acceso denegado: Solo el administrador master puede realizar esta acción.");
+    
+    await updateDjOwnProfile({
+      displayName: alias,
+      whatsapp: whatsapp || '',
+      callmebotApiKey: callmebotApiKey || ''
+    });
+  };
+
+  const updateTwilioConfig = async (config) => {
+    if (!isAdminMaster) throw new Error("Acceso denegado: Solo el administrador master puede realizar esta acción.");
+    if (isMockMode) {
+      setTwilioConfig(config);
+      return;
+    }
+    
+    // Obtener perfil de admin actual
+    const { data: adminProfile } = await supabase
+      .from('profiles')
+      .select('custom_settings')
+      .eq('email', 'dj@admin.com')
+      .maybeSingle();
+
+    const custom = adminProfile?.custom_settings || {};
+    custom.twilio = config;
+
+    await supabase
+      .from('profiles')
+      .update({ custom_settings: custom })
+      .eq('email', 'dj@admin.com');
+
+    setTwilioConfig(config);
+  };
+
+  const uploadLogo = async (file) => {
+    if (isMockMode) return "";
+    const fileExt = file.name.split('.').pop();
+    const filePath = `logos/${activeUid}_${currentEventId}_logo_${Date.now()}.${fileExt}`;
+    
+    const { error: uploadError } = await supabase.storage
+      .from('logos')
+      .upload(filePath, file);
+
+    if (uploadError) throw uploadError;
+
+    const { data: { publicUrl } } = supabase.storage
+      .from('logos')
+      .getPublicUrl(filePath);
+
+    await updateEventSettings({ logoUrl: publicUrl });
+    return publicUrl;
+  };
+  const getDatabaseBackup = async () => {
+    if (!isAdminMaster || impersonatingUid) {
+      throw new Error("No autorizado: solo el administrador master puede realizar respaldos.");
+    }
+    if (!supabaseAdmin) throw new Error("Supabase Service Role Key no configurada.");
+
+    const [{ data: profiles }, { data: events }, { data: requests: reqData },
+           { data: played }, { data: songs }] = await Promise.all([
+      supabaseAdmin.from('profiles').select('*'),
+      supabaseAdmin.from('events').select('*'),
+      supabaseAdmin.from('requests').select('*'),
+      supabaseAdmin.from('played_requests').select('*'),
+      supabaseAdmin.from('autocomplete_songs').select('*')
+    ]);
+
+    return {
+      timestamp: new Date().toISOString(),
+      profiles: profiles || [],
+      events: events || [],
+      requests: reqData || [],
+      played_requests: played || [],
+      autocomplete_songs: songs || []
+    };
+  };
+
+  const deleteSuggestion = async (suggestionId) => {
+    if (!isAdminMaster || impersonatingUid) {
+      throw new Error("Acceso denegado: Solo el administrador master puede realizar esta acción.");
+    }
+    if (isMockMode) return;
+    await supabase.from('suggestions').delete().eq('id', suggestionId);
+  };
+
+  const updatePlansConfig = async (newPlansConfig) => {
+    if (!isAdminMaster) throw new Error("Acceso denegado: Solo el administrador master puede realizar esta acción.");
+    if (isMockMode) {
+      setPlansConfig(newPlansConfig);
+      return;
+    }
+    // Guardar la configuración de planes en custom_settings del admin
+    const { data: adminProfile } = await supabase
+      .from('profiles')
+      .select('custom_settings')
+      .eq('email', 'dj@admin.com')
+      .maybeSingle();
+
+    const custom = adminProfile?.custom_settings || {};
+    custom.plans_config = newPlansConfig;
+
+    const { error } = await supabase
+      .from('profiles')
+      .update({ custom_settings: custom })
+      .eq('email', 'dj@admin.com');
+
+    if (error) throw error;
+    setPlansConfig(newPlansConfig);
+  };
+  const sendSupportMessage = async (userUid, text) => {
+    if (!user) throw new Error("Debes iniciar sesión para chatear.");
+    const senderId = impersonatingUid || user.id;
+    const isSenderAdmin = senderId === 'uid-admin-master' || user.email === 'dj@admin.com';
+    const finalSenderId = isSenderAdmin ? 'uid-admin-master' : senderId;
+    
+    let senderName = "DJ";
+    if (isSenderAdmin) {
+      senderName = "Soporte (Admin)";
+    } else {
+      senderName = userProfile?.displayName || user.email?.split('@')[0] || "DJ PRO";
+    }
+
+    const messageTimestamp = Date.now();
+
+    // 1. Obtener o crear cabecera del chat de soporte
+    let { data: chat } = await supabase
+      .from('support_chats')
+      .select('id, unread_count_by_admin, unread_count_by_user')
+      .eq('user_id', userUid)
+      .maybeSingle();
+
+    if (!chat) {
+      const { data: newChat, error: chatError } = await supabase
+        .from('support_chats')
+        .insert({
+          user_id: userUid,
+          unread_count_by_admin: isSenderAdmin ? 0 : 1,
+          unread_count_by_user: isSenderAdmin ? 1 : 0,
+          last_message: text,
+          last_timestamp: messageTimestamp
+        })
+        .select()
+        .single();
+      if (chatError) throw chatError;
+      chat = newChat;
+    } else {
+      const unread_count_by_admin = isSenderAdmin ? 0 : (chat.unread_count_by_admin || 0) + 1;
+      const unread_count_by_user = isSenderAdmin ? (chat.unread_count_by_user || 0) + 1 : 0;
+      
+      const { error: updateError } = await supabase
+        .from('support_chats')
+        .update({
+          unread_count_by_admin,
+          unread_count_by_user,
+          last_message: text,
+          last_timestamp: messageTimestamp
+        })
+        .eq('id', chat.id);
+      if (updateError) throw updateError;
+    }
+
+    // 2. Insertar el mensaje
+    const { error: msgError } = await supabase
+      .from('support_messages')
+      .insert({
+        chat_id: chat.id,
+        sender_id: finalSenderId,
+        sender_name: senderName,
+        text,
+        timestamp: messageTimestamp
+      });
+    if (msgError) throw msgError;
+
+    // 3. Notificación de CallMeBot Whatsapp (opcional si el remitente no es admin)
+    if (!isSenderAdmin) {
+      try {
+        const { data: adminProfile } = await supabase
+          .from('profiles')
+          .select('custom_settings')
+          .eq('email', 'dj@admin.com')
+          .maybeSingle();
+        
+        const adminSettings = adminProfile?.custom_settings || {};
+        if (adminSettings.whatsapp && adminSettings.callmebotApiKey) {
+          const msg = `💬 Soporte PRO: El DJ "${senderName}" escribió:\n"${text}"`;
+          const url = `https://api.callmebot.com/whatsapp.php?phone=${adminSettings.whatsapp.trim()}&text=${encodeURIComponent(msg)}&apikey=${adminSettings.callmebotApiKey.trim()}`;
+          fetch(url).catch(e => console.error("Error en CallMeBot real:", e));
+        }
+      } catch (err) {
+        console.error("Error al enviar notificación de WhatsApp:", err);
+      }
+    }
+  };
+
+  const markSupportChatAsRead = async (userUid, readerType) => {
+    if (isMockMode) return;
+    const updates = {};
+    if (readerType === 'admin') {
+      updates.unread_count_by_admin = 0;
+    } else {
+      updates.unread_count_by_user = 0;
+    }
+    await supabase
+      .from('support_chats')
+      .update(updates)
+      .eq('user_id', userUid);
+  };
+
+  const subscribeToSupportChat = (userUid, callback) => {
+    if (isMockMode) {
+      return () => {};
+    }
+
+    let activeChannel = null;
+
+    const loadChatData = async () => {
+      const { data: chatHeader } = await supabase
+        .from('support_chats')
+        .select('*')
+        .eq('user_id', userUid)
+        .maybeSingle();
+
+      if (!chatHeader) {
+        callback({ metadata: {}, messages: [] });
+        return;
+      }
+
+      const { data: dbMsgs } = await supabase
+        .from('support_messages')
+        .select('*')
+        .eq('chat_id', chatHeader.id)
+        .order('timestamp', { ascending: true });
+
+      const mappedMetadata = {
+        djName: chatHeader.dj_name || "DJ PRO",
+        lastMessage: chatHeader.last_message || "",
+        lastTimestamp: Number(chatHeader.last_timestamp || 0),
+        unreadCountByAdmin: chatHeader.unread_count_by_admin || 0,
+        unreadCountByUser: chatHeader.unread_count_by_user || 0
+      };
+
+      const mappedMessages = (dbMsgs || []).map(m => ({
+        id: m.id,
+        senderId: m.sender_id,
+        senderName: m.sender_name,
+        text: m.text,
+        timestamp: Number(m.timestamp)
+      }));
+
+      callback({ metadata: mappedMetadata, messages: mappedMessages });
+
+      if (!activeChannel) {
+        activeChannel = supabase
+          .channel(`support-messages-${chatHeader.id}`)
+          .on('postgres_changes', { event: '*', schema: 'public', table: 'support_messages', filter: `chat_id=eq.${chatHeader.id}` }, () => {
+            loadChatData();
+          })
+          .on('postgres_changes', { event: '*', schema: 'public', table: 'support_chats', filter: `id=eq.${chatHeader.id}` }, () => {
+            loadChatData();
+          })
+          .subscribe();
+      }
+    };
+
+    loadChatData();
+
+    return () => {
+      if (activeChannel) {
+        supabase.removeChannel(activeChannel);
+      }
+    };
+  };
+
+  const subscribeToAllSupportChats = (callback) => {
+    if (isMockMode) {
+      return () => {};
+    }
+
+    let activeChannel = null;
+
+    const loadAllChats = async () => {
+      const { data: chats } = await supabase
+        .from('support_chats')
+        .select('*');
+
+      // Buscar nombres reales de DJs desde profiles para los chats
+      const { data: profiles } = await supabase
+        .from('profiles')
+        .select('id, display_name');
+
+      const namesMap = {};
+      (profiles || []).forEach(p => {
+        namesMap[p.id] = p.display_name;
+      });
+
+      const allChatsMap = {};
+      (chats || []).forEach(c => {
+        allChatsMap[c.user_id] = {
+          metadata: {
+            djName: namesMap[c.user_id] || c.dj_name || "DJ PRO",
+            lastMessage: c.last_message || "",
+            lastTimestamp: Number(c.last_timestamp || 0),
+            unreadCountByAdmin: c.unread_count_by_admin || 0,
+            unreadCountByUser: c.unread_count_by_user || 0
+          },
+          messages: []
+        };
+      });
+
+      callback(allChatsMap);
+
+      if (!activeChannel) {
+        activeChannel = supabase
+          .channel('support-all-chats')
+          .on('postgres_changes', { event: '*', schema: 'public', table: 'support_chats' }, () => {
+            loadAllChats();
+          })
+          .subscribe();
+      }
+    };
+
+    loadAllChats();
+
+    return () => {
+      if (activeChannel) {
+        supabase.removeChannel(activeChannel);
+      }
+    };
+  };
+  const submitFeedback = async (text, rating, sessionId) => {
+    if (isMockMode) return;
+    if (!activeUid) return;
+    const targetEventDbId = currentEventId === 'default-event' ? `default-event-${activeUid}` : currentEventId;
+    await supabase.from('ratings').upsert({
+      event_id: targetEventDbId,
+      session_id: sessionId || 'anon',
+      text: text || '',
+      rating: rating || 5,
+      timestamp: Date.now()
+    }, { onConflict: 'event_id,session_id' });
+  };
+
+  const refreshAdminData = async () => {
+    if (!isAdminMaster) return;
+    const { data: profiles, error: profError } = await supabase
+      .from('profiles')
+      .select('*');
+
+    const { data: allEvents, error: eventsError } = await supabase
+      .from('events')
+      .select('*');
+
+    if (!profError && profiles) {
+      const eventsByOwner = {};
+      if (!eventsError && allEvents) {
+        allEvents.forEach(e => {
+          if (!eventsByOwner[e.owner_id]) eventsByOwner[e.owner_id] = {};
+          eventsByOwner[e.owner_id][e.id] = {
+            id: e.id,
+            title: e.title || 'Evento',
+            active: e.active || false,
+            djName: e.dj_name || 'DJ'
+          };
+        });
+      }
+      const usersObj = {};
+      profiles.forEach(p => {
+        usersObj[p.id] = {
+          profile: mapSupabaseProfileToFirebase(p),
+          events: {},
+          events_index: eventsByOwner[p.id] || {}
+        };
+      });
+      setAllUsersData(usersObj);
+    }
+  };
 
   // Sincronizar userProfile con el activeUid (admite impersonación)
   useEffect(() => {
@@ -373,16 +965,23 @@ export const SupabaseProvider = ({ children }) => {
           djName: eventRow.dj_name || 'No registrado',
           webName: eventRow.web_name || 'DJ a la Carta',
           eventType: eventRow.event_type || 'Otro',
+          date: eventRow.event_date || '',
           tipsEnabled: eventRow.tips_enabled || false,
           paypalUsername: eventRow.paypal_username || '',
           mercadopagoLink: eventRow.mercadopago_link || '',
+          bankClabe: eventRow.bank_clabe || '',
+          tipCurrency: eventRow.tip_currency || 'MXN',
           promoEnabled: eventRow.promo_enabled || false,
           promoWhatsapp: eventRow.promo_whatsapp || '',
           promoWebsite: eventRow.promo_website || '',
           promoInstagram: eventRow.promo_instagram || '',
           promoTiktok: eventRow.promo_tiktok || '',
           productionUrl: eventRow.production_url || '',
-          customGenres: eventRow.custom_genres || ''
+          customGenres: eventRow.custom_genres || '',
+          fontFamily: eventRow.font_family || 'Outfit',
+          logoSize: eventRow.logo_size || 'medium',
+          dedicationsEnabled: eventRow.dedications_enabled || false,
+          strictModeEnabled: eventRow.strict_mode_enabled !== false
         });
       } else if (error && error.code === 'PGRST116') {
         const defaultEventRow = {
@@ -417,16 +1016,23 @@ export const SupabaseProvider = ({ children }) => {
             djName: newRow.dj_name || 'No registrado',
             webName: newRow.web_name || 'DJ a la Carta',
             eventType: newRow.event_type || 'Otro',
+            date: newRow.event_date || '',
             tipsEnabled: newRow.tips_enabled || false,
             paypalUsername: newRow.paypal_username || '',
             mercadopagoLink: newRow.mercadopago_link || '',
+            bankClabe: newRow.bank_clabe || '',
+            tipCurrency: newRow.tip_currency || 'MXN',
             promoEnabled: newRow.promo_enabled || false,
             promoWhatsapp: newRow.promo_whatsapp || '',
             promoWebsite: newRow.promo_website || '',
             promoInstagram: newRow.promo_instagram || '',
             promoTiktok: newRow.promo_tiktok || '',
             productionUrl: newRow.production_url || '',
-            customGenres: newRow.custom_genres || ''
+            customGenres: newRow.custom_genres || '',
+            fontFamily: newRow.font_family || 'Outfit',
+            logoSize: newRow.logo_size || 'medium',
+            dedicationsEnabled: newRow.dedications_enabled || false,
+            strictModeEnabled: newRow.strict_mode_enabled !== false
           });
         }
       })
@@ -727,12 +1333,14 @@ export const SupabaseProvider = ({ children }) => {
       return { key: reqId };
     }
 
+    const targetEventDbId = currentEventId === 'default-event' ? `default-event-${eventOwnerUid || activeUid}` : currentEventId;
+
     // Insertar petición y registrar el voto
     const { data, error } = await supabase
       .from('requests')
       .insert({
         id: reqId,
-        event_id: currentEventId,
+        event_id: targetEventDbId,
         title: cleanTitle || 'Tema no especificado',
         artist: cleanArtist || 'Artista no especificado',
         genre: genre || 'Personalizado',
@@ -856,10 +1464,12 @@ export const SupabaseProvider = ({ children }) => {
       setEventSettings(prev => ({ ...prev, ...settings }));
       return;
     }
+    const targetEventDbId = currentEventId === 'default-event' ? `default-event-${activeUid}` : currentEventId;
+    const dbSettings = mapFirebaseEventToSupabase(settings);
     await supabase
       .from('events')
-      .update(settings)
-      .eq('id', currentEventId);
+      .update(dbSettings)
+      .eq('id', targetEventDbId);
   };
 
   const selectPlan = async (planName) => {
@@ -1010,6 +1620,7 @@ export const SupabaseProvider = ({ children }) => {
       deleteEvent,
       archiveEvent,
       updateEventMetadata,
+      updateDjOwnProfile,
       clearHistoryWithOptions,
       autocompleteSongs,
       allEventsData,
