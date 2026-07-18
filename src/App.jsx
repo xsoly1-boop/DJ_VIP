@@ -46,9 +46,11 @@ function AppContent() {
   // Ref permanente para bloquear doble-tap / doble ejecución de la descarga
   const downloadGuardRef = React.useRef(false);
 
-  // Comprobar actualizaciones UNA SOLA VEZ al iniciar (get, no onValue)
-  // Usamos onValue pero con un flag para ignorar actualizaciones posteriores
   React.useEffect(() => {
+    if (!database || !database.app) {
+      console.log('Firebase Database not initialized. Skipping update check.');
+      return;
+    }
     let alreadyChecked = false;
     const updatesRef = ref(database, 'config/updates');
     const unsubscribe = onValue(updatesRef, async (snapshot) => {

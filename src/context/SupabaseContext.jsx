@@ -152,20 +152,111 @@ const mapSupabaseProfileToFirebase = (profile) => {
   };
 };
 
+const DEFAULT_EVENT_SETTINGS = {
+  title: 'Mi Gran Evento VIP',
+  logoUrl: '',
+  themeColor: '#7c3aed',
+  themeColorSecondary: '#06b6d4',
+  djName: 'DJ MasterMix',
+  webName: 'DJ a la Carta',
+  eventType: 'Otro',
+  fontFamily: 'Outfit',
+  fontSize: 'medium',
+  logoSize: 'medium',
+  tipsEnabled: false,
+  paypalUsername: '',
+  mercadopagoLink: '',
+  dedicationsEnabled: false
+};
+
 export const SupabaseProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [userProfile, setUserProfile] = useState(null);
   const [authLoading, setAuthLoading] = useState(true);
   const [currentEventId, setCurrentEventId] = useState('default-event');
-  const [eventSettings, setEventSettings] = useState(null);
+  const [eventSettings, setEventSettings] = useState(DEFAULT_EVENT_SETTINGS);
   const [requests, setRequests] = useState({});
   const [playedRequests, setPlayedRequests] = useState({});
   const [autocompleteSongs, setAutocompleteSongs] = useState([]);
   const [eventsList, setEventsList] = useState([]);
   const [plansConfig, setPlansConfig] = useState(DEFAULT_PLANS_CONFIG);
-  
   // Soporte de Modo Mock (desconectado)
   const [isMockMode, setIsMockMode] = useState(!import.meta.env.VITE_SUPABASE_URL);
+  
+  const isAdminMaster = user?.email === 'dj@admin.com';
+
+  // ── ESTADOS Y STUBS DE ADMIN PARA DJDASHBOARD ──
+  const [allUsersData, setAllUsersData] = useState({});
+  const [allSuggestions, setAllSuggestions] = useState({});
+  const [allEventsData, setAllEventsData] = useState({});
+  const [twilioConfig, setTwilioConfig] = useState({});
+  const [ratingsStats, setRatingsStats] = useState({});
+  const [revenueResetTimestamp, setRevenueResetTimestamp] = useState(null);
+  const [impersonatingUid, setImpersonatingUid] = useState(null);
+
+  const impersonateUser = async () => {};
+  const stopImpersonating = async () => {};
+  const updateActiveRequest = async () => {};
+  const updateAutocompleteSong = async () => {};
+  const deleteAutocompleteSong = async () => {};
+  const deleteEvent = async () => {};
+  const archiveEvent = async () => {};
+  const updateEventMetadata = async () => {};
+  const clearHistoryWithOptions = async () => {};
+  const createDjAccount = async () => {};
+  const updateDjAccount = async () => {};
+  const updateAdminProfile = async () => {};
+  const updateTwilioConfig = async () => {};
+  const uploadLogo = async () => {};
+  const getDatabaseBackup = async () => {};
+  const deleteSuggestion = async () => {};
+  const updatePlansConfig = async () => {};
+  const sendSupportMessage = async () => {};
+  const markSupportChatAsRead = async () => {};
+  const subscribeToSupportChat = () => {};
+  const subscribeToAllSupportChats = () => {};
+  const submitFeedback = async () => {};
+  const refreshAdminData = async () => {};
+
+  // Cargar todos los perfiles si el usuario es Admin Master
+  useEffect(() => {
+    if (isMockMode) return;
+    if (!isAdminMaster) {
+      setAllUsersData({});
+      return;
+    }
+
+    const fetchAllProfiles = async () => {
+      const { data: profiles, error } = await supabase
+        .from('profiles')
+        .select('*');
+      
+      if (!error && profiles) {
+        const usersObj = {};
+        profiles.forEach(p => {
+          usersObj[p.id] = {
+            profile: mapSupabaseProfileToFirebase(p),
+            events: {} // default
+          };
+        });
+        setAllUsersData(usersObj);
+      }
+    };
+
+    fetchAllProfiles();
+
+    // Suscribirse a cambios en la tabla profiles para refrescar en tiempo real
+    const profilesChannel = supabase
+      .channel('realtime-all-profiles')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'profiles' }, () => {
+        fetchAllProfiles();
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(profilesChannel);
+    };
+  }, [isAdminMaster, isMockMode]);
 
   useEffect(() => {
     if (isMockMode) {
@@ -623,13 +714,44 @@ export const SupabaseProvider = ({ children }) => {
       userProfile,
       authLoading,
       isMock: isMockMode,
+      isAdminMaster,
       currentEventId,
       eventSettings,
       requests,
       playedRequests,
-      autocompleteSongs,
+      impersonatingUid,
+      impersonateUser,
+      stopImpersonating,
+      updateActiveRequest,
+      updateAutocompleteSong,
+      deleteAutocompleteSong,
+      allUsersData,
+      allSuggestions,
       eventsList,
+      deleteEvent,
+      archiveEvent,
+      updateEventMetadata,
+      clearHistoryWithOptions,
+      autocompleteSongs,
+      allEventsData,
+      createDjAccount,
+      updateDjAccount,
+      updateAdminProfile,
+      twilioConfig,
+      updateTwilioConfig,
+      uploadLogo,
+      getDatabaseBackup,
+      deleteSuggestion,
+      ratingsStats,
       plansConfig,
+      revenueResetTimestamp,
+      updatePlansConfig,
+      sendSupportMessage,
+      markSupportChatAsRead,
+      subscribeToSupportChat,
+      subscribeToAllSupportChats,
+      submitFeedback,
+      refreshAdminData,
       loginDJ,
       registerDJ,
       logoutDJ,

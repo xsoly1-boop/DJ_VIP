@@ -6501,7 +6501,7 @@ export default function DjDashboard() {
                                     onChange={(e) => setEditDjPlan(e.target.value)}
                                     style={{ padding: '4px 8px', fontSize: '0.8rem', height: '28px', background: 'var(--surface-color)', color: '#fff', border: '1px solid rgba(255,255,255,0.15)' }}
                                   >
-                                    {Object.keys(plansConfig || DEFAULT_PLANS_CONFIG).map(planKey => (
+                                    {Object.keys(plansConfig || {}).map(planKey => (
                                       <option key={planKey} value={planKey}>
                                         {plansConfig?.[planKey]?.name || planKey}
                                       </option>

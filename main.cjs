@@ -87,11 +87,13 @@ function createWindow() {
 
   if (isDev) {
     mainWindow.loadURL('http://localhost:5173');
-    // DevTools solo si se necesita debug explícito (Cmd+Opt+I)
   } else {
     const indexPath = path.join(app.getAppPath(), 'dist', 'index.html');
     mainWindow.loadFile(indexPath);
   }
+
+  // Abrir DevTools por defecto para diagnosticar errores
+  // mainWindow.webContents.openDevTools();
 
   // Inyectar CSS para zona de drag en el header (permite mover la ventana sin barra de título)
   mainWindow.webContents.on('did-finish-load', () => {
