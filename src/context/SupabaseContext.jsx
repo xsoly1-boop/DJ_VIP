@@ -1640,8 +1640,59 @@ export const SupabaseProvider = ({ children }) => {
 
     const targetEventDbId = currentEventId === 'default-event' ? `default-event-${eventOwnerUid || activeUid}` : currentEventId;
 
-    // Insertar petición y registrar el voto
-    const { data, error } = await supabase
+    // 1. Obtener peticiones activas de la BD para buscar duplicados
+    const { data: activeReqs } = await supabase
+      .from('requests')
+      .select('*')
+      .eq('event_id', targetEventDbId);
+
+    const normalize = (str) => {
+      if (!str) return '';
+      return str
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .replace(/[^a-z0-9]/gi, "")
+        .toLowerCase()
+        .trim();
+    };
+
+    const cleanTitleNorm = normalize(cleanTitle);
+    const cleanArtistNorm = normalize(cleanArtist);
+
+    const existingReq = (activeReqs || []).find(r => {
+      const rTitleNorm = normalize(r.title);
+      const rArtistNorm = normalize(r.artist);
+      
+      const isReqArtistEmpty = rArtistNorm === '' || rArtistNorm === 'artista no especificado';
+      const isUserArtistEmpty = cleanArtistNorm === '' || cleanArtistNorm === 'artista no especificado';
+
+      const matchTitle = rTitleNorm === cleanTitleNorm;
+      const matchArtist = isUserArtistEmpty || isReqArtistEmpty || (rArtistNorm === cleanArtistNorm);
+
+      return matchTitle && matchArtist;
+    });
+
+    if (existingReq) {
+      // Registrar el voto para el usuario en la petición existente
+      const { error: voteError } = await supabase
+        .from('request_voters')
+        .insert({
+          request_id: existingReq.id,
+          session_id: sessionId
+        });
+
+      if (voteError) {
+        // Ya votó para esta misma petición, retornar duplicado sin sumar de nuevo
+        return { key: existingReq.id, isDuplicateMerge: true, alreadyVoted: true };
+      }
+
+      // Si no había votado, sumarle el voto atómicamente
+      await supabase.rpc('increment_votes', { row_id: existingReq.id });
+      return { key: existingReq.id, isDuplicateMerge: true };
+    }
+
+    // 2. Si no es duplicado, insertar nueva petición y registrar voto inicial
+    const { error } = await supabase
       .from('requests')
       .insert({
         id: reqId,
@@ -1654,13 +1705,10 @@ export const SupabaseProvider = ({ children }) => {
         votes: 1,
         timestamp: Date.now(),
         is_repeat: isRepeat
-      })
-      .select()
-      .single();
+      });
 
     if (error) throw error;
 
-    // Registrar voto inicial del cliente
     await supabase
       .from('request_voters')
       .insert({
