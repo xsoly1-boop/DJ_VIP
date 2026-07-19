@@ -1,139 +1,143 @@
 {
-  "name": "djvip_plataform",
-  "private": true,
-  "version": "1.0.0",
-  "type": "module",
-  "main": "main.cjs",
-  "scripts": {
-    "dev": "vite",
-    "build": "vite build",
-    "lint": "eslint .",
-    "preview": "vite preview",
-    "electron:dev": "concurrently -k \"npm run dev\" \"cross-env ELECTRON_DEV=true electron .\"",
-    "electron:build": "npm run build && electron-builder",
-    "test": "node scratch/test_admin.js && node scratch/test_autocomplete.js && node scratch/test_queue_deduplication.js && node scratch/test_admin_subscriptions.cjs && node scratch/test_reset_revenue.cjs && node scratch/test_demo_expiration.cjs",
-    "verify-gateways": "node verify_gateways.cjs",
-    "start-backend": "node server.cjs",
-    "reset-db": "node scripts/reset_db.cjs",
-    "test-fcm-exhaustive": "node scripts/exhaustive_notification_test.cjs",
-    "test-fcm-admin": "node scripts/test_admin_notifications_only.cjs"
-  },
-  "dependencies": {
-    "@capacitor/android": "^8.4.1",
-    "@capacitor/ios": "^8.4.1",
-    "@paypal/checkout-server-sdk": "^1.0.3",
-    "@supabase/supabase-js": "^2.110.7",
-    "body-parser": "^2.3.0",
-    "cors": "^2.8.6",
-    "dotenv": "^17.4.2",
-    "express": "^5.2.1",
-    "firebase-admin": "^11.11.0",
-    "lucide-react": "^1.21.0",
-    "mercadopago": "^3.1.0",
-    "node-fetch": "^2.7.0",
-    "pg": "^8.22.0",
-    "qrcode.react": "^4.2.0",
-    "react": "^19.2.6",
-    "react-dom": "^19.2.6"
-  },
-  "devDependencies": {
-    "@capacitor/cli": "^8.4.1",
-    "@capacitor/core": "^8.4.1",
-    "@eslint/js": "^10.0.1",
-    "@types/react": "^19.2.14",
-    "@types/react-dom": "^19.2.3",
-    "@vitejs/plugin-react": "^6.0.1",
-    "concurrently": "^9.1.2",
-    "cross-env": "^7.0.3",
-    "electron": "^33.4.11",
-    "electron-builder": "^24.13.3",
-    "eslint": "^10.3.0",
-    "eslint-plugin-react-hooks": "^7.1.1",
-    "eslint-plugin-react-refresh": "^0.5.2",
-    "globals": "^17.6.0",
-    "vite": "^8.0.12"
-  },
-  "build": {
-    "extraMetadata": {
-      "dependencies": {}
+  "author" : "",
+  "build" : {
+    "appId" : "com.dj.interactive.platform",
+    "copyright" : "Copyright © 2026 DJ a la Carta",
+    "directories" : {
+      "buildResources" : "build-resources",
+      "output" : "dist-desktop"
     },
-    "appId": "com.dj.interactive.platform",
-    "productName": "DJ Panel Pro",
-    "copyright": "Copyright © 2026 DJ a la Carta",
-    "directories": {
-      "output": "dist-desktop",
-      "buildResources": "build-resources"
+    "dmg" : {
+      "contents" : [
+        {
+          "path" : "\/Applications",
+          "type" : "link",
+          "x" : 380,
+          "y" : 280
+        },
+        {
+          "type" : "file",
+          "x" : 120,
+          "y" : 280
+        }
+      ],
+      "iconSize" : 100,
+      "title" : "DJ Control Panel ${version}",
+      "window" : {
+        "height" : 400,
+        "width" : 500
+      }
     },
-    "files": [
-      "dist/**/*",
+    "extraMetadata" : {
+      "dependencies" : {
+
+      }
+    },
+    "files" : [
+      "dist\/**\/*",
       "main.cjs",
       "preload.cjs",
       "package.json",
-      "!node_modules/**/*"
+      "!node_modules\/**\/*"
     ],
-    "mac": {
-      "category": "public.app-category.entertainment",
-      "minimumSystemVersion": "10.14",
-      "icon": "build-resources/icon.png",
-      "target": [
+    "linux" : {
+      "category" : "Audio",
+      "icon" : "build-resources\/icon.png",
+      "target" : [
+        "AppImage"
+      ]
+    },
+    "mac" : {
+      "category" : "public.app-category.entertainment",
+      "gatekeeperAssess" : false,
+      "hardenedRuntime" : false,
+      "icon" : "build-resources\/icon.png",
+      "identity" : null,
+      "mergeASARs" : false,
+      "minimumSystemVersion" : "10.14",
+      "target" : [
         "dmg"
       ],
-      "hardenedRuntime": false,
-      "gatekeeperAssess": false,
-      "identity": null,
-      "type": "distribution",
-      "mergeASARs": false
+      "type" : "distribution"
     },
-    "dmg": {
-      "title": "DJ Control Panel ${version}",
-      "iconSize": 100,
-      "contents": [
-        {
-          "x": 380,
-          "y": 280,
-          "type": "link",
-          "path": "/Applications"
-        },
-        {
-          "x": 120,
-          "y": 280,
-          "type": "file"
-        }
-      ],
-      "window": {
-        "width": 500,
-        "height": 400
-      }
+    "nsis" : {
+      "allowToChangeInstallationDirectory" : true,
+      "createDesktopShortcut" : true,
+      "createStartMenuShortcut" : true,
+      "oneClick" : false,
+      "shortcutName" : "DJ Panel Pro"
     },
-    "win": {
-      "target": [
+    "productName" : "DJ Panel Pro",
+    "win" : {
+      "icon" : "build-resources\/icon.png",
+      "publisherName" : "DJ a la Carta",
+      "target" : [
         {
-          "target": "nsis",
-          "arch": [
+          "arch" : [
             "x64"
-          ]
+          ],
+          "target" : "nsis"
         }
-      ],
-      "icon": "build-resources/icon.png",
-      "publisherName": "DJ a la Carta"
-    },
-    "nsis": {
-      "oneClick": false,
-      "allowToChangeInstallationDirectory": true,
-      "createDesktopShortcut": true,
-      "createStartMenuShortcut": true,
-      "shortcutName": "DJ Panel Pro"
-    },
-    "linux": {
-      "target": [
-        "AppImage"
-      ],
-      "category": "Audio",
-      "icon": "build-resources/icon.png"
+      ]
     }
   },
-  "description": "Esta plataforma conecta al público de un evento musical con el DJ en tiempo real, permitiendo enviar peticiones de canciones, votar por temas populares de la audiencia, aprender de forma dinámica de los gustos musicales (autocompletado evolutivo) y personalizar visualmente la cabina con marca blanca.",
-  "keywords": [],
-  "author": "",
-  "license": "ISC"
+  "dependencies" : {
+    "@capacitor\/android" : "^8.4.1",
+    "@capacitor\/ios" : "^8.4.1",
+    "@paypal\/checkout-server-sdk" : "^1.0.3",
+    "@supabase\/supabase-js" : "^2.110.7",
+    "body-parser" : "^2.3.0",
+    "cors" : "^2.8.6",
+    "dotenv" : "^17.4.2",
+    "express" : "^5.2.1",
+    "firebase-admin" : "^11.11.0",
+    "lucide-react" : "^1.21.0",
+    "mercadopago" : "^3.1.0",
+    "node-fetch" : "^2.7.0",
+    "pg" : "^8.22.0",
+    "qrcode.react" : "^4.2.0",
+    "react" : "^19.2.6",
+    "react-dom" : "^19.2.6"
+  },
+  "description" : "Esta plataforma conecta al público de un evento musical con el DJ en tiempo real, permitiendo enviar peticiones de canciones, votar por temas populares de la audiencia, aprender de forma dinámica de los gustos musicales (autocompletado evolutivo) y personalizar visualmente la cabina con marca blanca.",
+  "devDependencies" : {
+    "@capacitor\/cli" : "^8.4.1",
+    "@capacitor\/core" : "^8.4.1",
+    "@eslint\/js" : "^10.0.1",
+    "@types\/react" : "^19.2.14",
+    "@types\/react-dom" : "^19.2.3",
+    "@vitejs\/plugin-react" : "^6.0.1",
+    "concurrently" : "^9.1.2",
+    "cross-env" : "^7.0.3",
+    "electron" : "^33.4.11",
+    "electron-builder" : "^24.13.3",
+    "eslint" : "^10.3.0",
+    "eslint-plugin-react-hooks" : "^7.1.1",
+    "eslint-plugin-react-refresh" : "^0.5.2",
+    "globals" : "^17.6.0",
+    "vite" : "^8.0.12"
+  },
+  "keywords" : [
+
+  ],
+  "license" : "ISC",
+  "main" : "main.cjs",
+  "name" : "djvip_plataform",
+  "private" : true,
+  "scripts" : {
+    "build" : "vite build",
+    "dev" : "vite",
+    "electron:build" : "npm run build && electron-builder",
+    "electron:dev" : "concurrently -k \"npm run dev\" \"cross-env ELECTRON_DEV=true electron .\"",
+    "lint" : "eslint .",
+    "preview" : "vite preview",
+    "reset-db" : "node scripts\/reset_db.cjs",
+    "start-backend" : "node server.cjs",
+    "test" : "node scratch\/test_admin.js && node scratch\/test_autocomplete.js && node scratch\/test_queue_deduplication.js && node scratch\/test_admin_subscriptions.cjs && node scratch\/test_reset_revenue.cjs && node scratch\/test_demo_expiration.cjs",
+    "test-fcm-admin" : "node scripts\/test_admin_notifications_only.cjs",
+    "test-fcm-exhaustive" : "node scripts\/exhaustive_notification_test.cjs",
+    "verify-gateways" : "node verify_gateways.cjs"
+  },
+  "type" : "module",
+  "version" : "1.0.0.62"
 }

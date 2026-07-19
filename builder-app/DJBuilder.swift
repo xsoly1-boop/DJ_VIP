@@ -591,16 +591,17 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             if let data = try? Data(contentsOf: URL(fileURLWithPath: pkgPath)),
                var json = try? JSONSerialization.jsonObject(with: data) as? [String: Any] {
                 let oldVersion = json["version"] as? String ?? "?"
-                if oldVersion != newVersion {
-                    json["version"] = newVersion
+                let coerced = coerceSemVer(newVersion)
+                if oldVersion != coerced {
+                    json["version"] = coerced
                     if let newData = try? JSONSerialization.data(withJSONObject: json, options: [.prettyPrinted, .sortedKeys]),
                        var text = String(data: newData, encoding: .utf8) {
                         // JSONSerialization uses 2-space indent, keep it clean
                         try? text.write(toFile: pkgPath, atomically: true, encoding: .utf8)
-                        log("  ✅  Versión actualizada: \(oldVersion) → \(newVersion) en package.json\n", color: C.green)
+                        log("  ✅  Versión actualizada: \(oldVersion) → \(coerced) en package.json (coercionada a SemVer)\n", color: C.green)
                     }
                 } else {
-                    log("  ✅  Versión: \(newVersion) (sin cambios)\n")
+                    log("  ✅  Versión SemVer en package.json: \(coerced) (sin cambios)\n")
                 }
             }
         }
@@ -1093,6 +1094,16 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     @objc func copyExeUrl() {
         copyToClipboard(exeUrlField.stringValue)
         log("📋  URL de Windows EXE copiado al portapapeles\n", color: C.green)
+    }
+
+    func coerceSemVer(_ version: String) -> String {
+        let parts = version.components(separatedBy: ".")
+        if parts.count >= 4 {
+            let main = parts[0...2].joined(separator: ".")
+            let build = parts[3...].joined(separator: "-")
+            return "\(main)-\(build)"
+        }
+        return version
     }
 
     func loadVersionJson() -> [String: Any]? {
