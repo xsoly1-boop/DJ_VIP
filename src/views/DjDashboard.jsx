@@ -554,12 +554,19 @@ export default function DjDashboard() {
 
       const response = await fetch(`${API_BASE}/version.json?t=${Date.now()}`);
       if (response.ok) {
-        const currentData = await response.json();
-        const parts = (currentData.latestVersion || '1.0.0.0').split('.');
-        const lastPart = parseInt(parts[parts.length - 1], 10);
-        if (!isNaN(lastPart)) {
-          parts[parts.length - 1] = (lastPart + 1).toString();
-          setAdminUpdateVersion(parts.join('.'));
+        const text = await response.text();
+        if (text && text.trim()) {
+          try {
+            const currentData = JSON.parse(text);
+            const parts = (currentData.latestVersion || '1.0.0.0').split('.');
+            const lastPart = parseInt(parts[parts.length - 1], 10);
+            if (!isNaN(lastPart)) {
+              parts[parts.length - 1] = (lastPart + 1).toString();
+              setAdminUpdateVersion(parts.join('.'));
+            }
+          } catch (e) {
+            console.warn('[AutoFill] version.json text is not JSON:', text);
+          }
         }
       }
 
@@ -572,7 +579,7 @@ export default function DjDashboard() {
     }
   };
 
-  // Guardar/Publicar notas en Firebase RTDB
+  // Guardar/Publicar notas en Supabase y notificar
   const handlePublishReleaseNotes = async () => {
     if (!adminUpdateVersion) {
       showToast("⚠️ Debes especificar la última versión.");
@@ -595,22 +602,32 @@ export default function DjDashboard() {
       }
 
       if (notifyUsersOnPublish) {
-        const backendUrl = `${API_BASE}/api/admin/notify-update`;
-        const response = await fetch(backendUrl, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({
-            versionName: adminUpdateVersion,
-            releaseNotes: parsedNotes.join('\n')
-          })
-        });
-        const data = await response.json();
-        if (!response.ok || !data.success) {
-          throw new Error(data.error || "No se pudo despachar la notificación push masiva.");
+        try {
+          const backendUrl = `${API_BASE}/api/admin/notify-update`;
+          const response = await fetch(backendUrl, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+              versionName: adminUpdateVersion,
+              releaseNotes: parsedNotes.join('\n')
+            })
+          });
+          let data = {};
+          const text = await response.text();
+          if (text && text.trim()) {
+            try { data = JSON.parse(text); } catch (e) { /* ignore parse error */ }
+          }
+          if (response.ok && data.success !== false) {
+            showToast("🚀 ¡Actualización publicada y notificación masiva enviada con éxito!");
+          } else {
+            showToast(`🚀 Actualización publicada en Supabase con éxito.`);
+          }
+        } catch (pushErr) {
+          console.warn('[Push Notif Warning]', pushErr);
+          showToast("🚀 ¡Actualización publicada en el modal de inicio con éxito!");
         }
-        showToast("🚀 ¡Actualización publicada y notificación masiva enviada con éxito!");
       } else {
         showToast("🚀 ¡Actualización publicada en el modal de inicio con éxito!");
       }
