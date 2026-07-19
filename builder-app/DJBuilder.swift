@@ -87,6 +87,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         buildWindow()
         setupMenu()
         window.makeKeyAndOrderFront(nil)
+        window.zoom(nil) // Maximizar ventana por defecto en pantallas de cualquier tamaño
         NSApp.activate(ignoringOtherApps: true)
         detectEnvironment()
     }
@@ -94,22 +95,23 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
     // MARK: - Build Window ─────────────────────────────────────────────────
     func buildWindow() {
-        let W: CGFloat = 900, H: CGFloat = 900
+        let W: CGFloat = 1200, H: CGFloat = 800
         window = NSWindow(
             contentRect: NSRect(x: 0, y: 0, width: W, height: H),
-            styleMask: [.titled, .closable, .miniaturizable],
+            styleMask: [.titled, .closable, .miniaturizable, .resizable],
             backing: .buffered, defer: false)
         window.title = "DJ Panel Pro — Compilador macOS"
+        window.minSize = NSSize(width: 1150, height: 750)
         window.center()
         window.isReleasedWhenClosed = false
         window.appearance = NSAppearance(named: .darkAqua)
 
         let root = cview(C.bg, frame: NSRect(x: 0, y: 0, width: W, height: H))
-        var y = H
+        root.autoresizingMask = [.width, .height]
 
         // ── HEADER
-        y -= 78
-        let hdr = cview(C.panel, frame: NSRect(x: 0, y: y, width: W, height: 78))
+        let hdr = cview(C.panel, frame: NSRect(x: 0, y: H - 78, width: W, height: 78))
+        hdr.autoresizingMask = [.width, .minYMargin]
         hline(hdr, w: W, color: C.border)
         lbl("💿", size: 34, frame: NSRect(x: 18, y: 16, width: 50, height: 46), in: hdr)
         lbl("DJ Panel Pro — Compilador macOS", size: 20, bold: true, color: C.text,
@@ -118,76 +120,76 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             frame: NSRect(x: 74, y: 26, width: 600, height: 16), in: hdr)
         root.addSubview(hdr)
 
-        // ── ROW 1: Architecture + Environment ─────────────────────────────
-        y -= 12
-        let row1H: CGFloat = 196
-        y -= row1H
-
-        // Left: Architecture
-        let archP = panel(frame: NSRect(x: 16, y: y, width: 420, height: row1H))
-        sectionTitle("🎯  ARQUITECTURA DE COMPILACIÓN", in: archP, yTop: row1H - 8)
-
-        func addRadio(_ title: String, sub: String, ry: CGFloat, tag: Int) -> NSButton {
+        // ── COLUMN 1 (x: 16, width: 360) - Architecture & Options
+        let col1 = NSView(frame: NSRect(x: 16, y: 16, width: 360, height: H - 78 - 32))
+        col1.autoresizingMask = [.height, .maxXMargin]
+        
+        // archP
+        let archP = panel(frame: NSRect(x: 0, y: col1.frame.height - 310, width: 360, height: 310))
+        sectionTitle("🎯  ARQUITECTURA DE COMPILACIÓN", in: archP, yTop: 310 - 8)
+        
+        func addRadio(_ title: String, sub: String, ry: CGFloat, tag: Int, parent: NSView) -> NSButton {
             let r = NSButton(radioButtonWithTitle: "  " + title, target: self, action: #selector(radioChanged(_:)))
-            r.frame = NSRect(x: 14, y: ry, width: 390, height: 22)
+            r.frame = NSRect(x: 14, y: ry, width: 330, height: 22)
             r.tag = tag; r.state = tag == 0 ? .on : .off
             r.font = .systemFont(ofSize: 13, weight: .medium)
             r.contentTintColor = C.text
-            archP.addSubview(r)
-            lbl(sub, size: 11, color: C.dim, frame: NSRect(x: 36, y: ry - 14, width: 375, height: 14), in: archP)
+            parent.addSubview(r)
+            lbl(sub, size: 11, color: C.dim, frame: NSRect(x: 36, y: ry - 14, width: 310, height: 14), in: parent)
             return r
         }
-        radioArm64     = addRadio("🍎  Apple Silicon  (arm64) — M1/M2/M3/M4",     sub: "Nativo en Mac moderno. Máximo rendimiento.",         ry: row1H - 60,  tag: 0)
-        radioX64       = addRadio("🖥️   Intel x64  (macOS 10.14+)",                sub: "Compatible con Mac Intel. Recomendado para distribución.", ry: row1H - 110, tag: 1)
-        radioUniversal = addRadio("🌐  Universal  (arm64 + x64 en un .dmg)",       sub: "Un solo instalador para cualquier Mac. Más pesado.", ry: row1H - 160, tag: 2)
-        radioCurrent   = addRadio("⚡  Automático  (chip actual del Mac)",          sub: "Detecta el chip nativo y compila sólo para él.",     ry: row1H - 210, tag: 3)
-        root.addSubview(archP)
+        
+        radioArm64     = addRadio("🍎  Apple Silicon (arm64)", sub: "Nativo en Mac M1/M2/M3/M4. Máximo rendimiento.", ry: 310 - 60, tag: 0, parent: archP)
+        radioX64       = addRadio("🖥️   Intel x64 (macOS 10.14+)", sub: "Compatible con Mac Intel.", ry: 310 - 110, tag: 1, parent: archP)
+        radioUniversal = addRadio("🌐  Universal (arm64 + x64)", sub: "Un solo instalador para cualquier Mac. Más pesado.", ry: 310 - 160, tag: 2, parent: archP)
+        radioCurrent   = addRadio("⚡  Automático (chip actual)", sub: "Detecta el chip nativo y compila para él.", ry: 310 - 210, tag: 3, parent: archP)
+        col1.addSubview(archP)
 
-        // Right: Environment status
-        let envP = panel(frame: NSRect(x: 448, y: y, width: W - 464, height: row1H))
-        sectionTitle("🔍  ENTORNO DETECTADO", in: envP, yTop: row1H - 8)
-
-        let eW = W - 464 - 28
-        nodeVerLabel  = lbl("Node.js: detectando…", size: 12, color: C.dim, frame: NSRect(x: 14, y: row1H - 56, width: eW, height: 16), in: envP)
-        chipLabel     = lbl("Chip: detectando…",    size: 12, color: C.dim, frame: NSRect(x: 14, y: row1H - 76, width: eW, height: 16), in: envP)
-        rosettaLabel  = lbl("Rosetta 2: —",         size: 12, color: C.dim, frame: NSRect(x: 14, y: row1H - 96, width: eW, height: 16), in: envP)
-        supabaseLabel = lbl("Supabase URL: —",       size: 12, color: C.dim, frame: NSRect(x: 14, y: row1H - 116, width: eW, height: 16), in: envP)
-        envStatusLabel = lbl(".env: detectando…",   size: 12, color: C.dim, frame: NSRect(x: 14, y: row1H - 136, width: eW, height: 16), in: envP)
-        root.addSubview(envP)
-
-        // ── ROW 2: Build Options + URL field ──────────────────────────────
-        y -= 12
-        let row2H: CGFloat = 196
-        y -= row2H
-
-        let optP = panel(frame: NSRect(x: 16, y: y, width: 420, height: row2H))
-        sectionTitle("⚙️  OPCIONES DE COMPILACIÓN", in: optP, yTop: row2H - 8)
-
-        func addCheck(_ title: String, sub: String, oy: CGFloat, def: NSControl.StateValue = .on) -> NSButton {
+        // optP
+        let optP = panel(frame: NSRect(x: 0, y: col1.frame.height - 310 - 16 - 310, width: 360, height: 310))
+        sectionTitle("⚙️  OPCIONES DE COMPILACIÓN", in: optP, yTop: 310 - 8)
+        
+        func addCheck(_ title: String, sub: String, oy: CGFloat, def: NSControl.StateValue = .on, parent: NSView) -> NSButton {
             let c = NSButton(checkboxWithTitle: "  " + title, target: nil, action: nil)
-            c.frame = NSRect(x: 14, y: oy, width: 390, height: 22)
+            c.frame = NSRect(x: 14, y: oy, width: 330, height: 22)
             c.state = def
             c.font = .systemFont(ofSize: 13, weight: .medium)
             c.contentTintColor = C.text
-            optP.addSubview(c)
-            lbl(sub, size: 11, color: C.dim, frame: NSRect(x: 36, y: oy - 14, width: 375, height: 14), in: optP)
+            parent.addSubview(c)
+            lbl(sub, size: 11, color: C.dim, frame: NSRect(x: 36, y: oy - 14, width: 310, height: 14), in: parent)
             return c
         }
-        chkClean           = addCheck("🧹  Limpiar  dist/ y dist-desktop/",         sub: "Borra builds anteriores antes de compilar.",               oy: row2H - 58)
-        chkInstallDeps     = addCheck("📦  Instalar dependencias  (npm ci)",         sub: "Reinstala node_modules desde package-lock.json.",           oy: row2H - 108)
-        chkCodesign        = addCheck("🔏  Firma ad-hoc  (codesign --sign -)",       sub: "Firma la .app y el .dmg sin Developer ID (Gatekeeper).",    oy: row2H - 158)
-        chkInstallRosetta  = addCheck("⚙️  Instalar Rosetta 2 si es necesario",      sub: "Requerido para compilar x64/universal en Mac Silicon.",      oy: row2H - 208, def: .off)
-        root.addSubview(optP)
+        
+        chkClean           = addCheck("🧹  Limpiar dist/ y dist-desktop/", sub: "Borra builds anteriores antes de compilar.", oy: 310 - 60, parent: optP)
+        chkInstallDeps     = addCheck("📦  Instalar dependencias (npm ci)", sub: "Reinstala node_modules desde package-lock.json.", oy: 310 - 110, parent: optP)
+        chkCodesign        = addCheck("🔏  Firma ad-hoc (codesign)", sub: "Firma la app y el DMG sin Developer ID.", oy: 310 - 160, parent: optP)
+        chkInstallRosetta  = addCheck("⚙️  Instalar Rosetta 2", sub: "Requerido para compilar Intel en Mac Silicon.", oy: 310 - 210, def: .off, parent: optP)
+        col1.addSubview(optP)
+        root.addSubview(col1)
 
-        // Right: URL + Post-build
-        let cfgP = panel(frame: NSRect(x: 448, y: y, width: W - 464, height: row2H))
-        sectionTitle("🌐  CONFIGURACIÓN  Y  POST-BUILD", in: cfgP, yTop: row2H - 8)
+        // ── COLUMN 2 (x: 392, width: 360) - Environment & Config
+        let col2 = NSView(frame: NSRect(x: 392, y: 16, width: 360, height: H - 78 - 32))
+        col2.autoresizingMask = [.height, .maxXMargin]
 
-        // ── Version field
-        lbl("Versión de compilación  (actualiza package.json):", size: 11, bold: true, color: C.dim,
-            frame: NSRect(x: 14, y: row2H - 46, width: eW, height: 16), in: cfgP)
+        // envP
+        let envP = panel(frame: NSRect(x: 0, y: col2.frame.height - 200, width: 360, height: 200))
+        sectionTitle("🔍  ENTORNO DETECTADO", in: envP, yTop: 200 - 8)
+        
+        nodeVerLabel  = lbl("Node.js: detectando…", size: 12, color: C.dim, frame: NSRect(x: 14, y: 200 - 56, width: 332, height: 16), in: envP)
+        chipLabel     = lbl("Chip: detectando…",    size: 12, color: C.dim, frame: NSRect(x: 14, y: 200 - 76, width: 332, height: 16), in: envP)
+        rosettaLabel  = lbl("Rosetta 2: —",         size: 12, color: C.dim, frame: NSRect(x: 14, y: 200 - 96, width: 332, height: 16), in: envP)
+        supabaseLabel = lbl("Supabase URL: —",       size: 12, color: C.dim, frame: NSRect(x: 14, y: 200 - 116, width: 332, height: 16), in: envP)
+        envStatusLabel = lbl(".env: detectando…",   size: 12, color: C.dim, frame: NSRect(x: 14, y: 200 - 136, width: 332, height: 16), in: envP)
+        col2.addSubview(envP)
 
-        versionField = NSTextField(frame: NSRect(x: 14, y: row2H - 72, width: 140, height: 24))
+        // cfgP
+        let cfgP = panel(frame: NSRect(x: 0, y: col2.frame.height - 200 - 16 - 420, width: 360, height: 420))
+        sectionTitle("🌐  CONFIGURACIÓN Y POST-BUILD", in: cfgP, yTop: 420 - 8)
+        
+        lbl("Versión de compilación (actualiza package.json):", size: 11, bold: true, color: C.dim,
+            frame: NSRect(x: 14, y: 420 - 46, width: 332, height: 16), in: cfgP)
+        
+        versionField = NSTextField(frame: NSRect(x: 14, y: 420 - 72, width: 140, height: 24))
         versionField.placeholderString = "1.0.0"
         versionField.font = .monospacedSystemFont(ofSize: 13, weight: .bold)
         versionField.backgroundColor = C.bg
@@ -195,15 +197,14 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         versionField.bezelStyle = .roundedBezel
         versionField.isBezeled = true
         cfgP.addSubview(versionField)
+        
+        lbl("Ej: 1.0.0 · 2.0.1-beta", size: 10, color: C.dim,
+            frame: NSRect(x: 162, y: 420 - 66, width: 180, height: 14), in: cfgP)
 
-        lbl("Ej: 1.0.0 · 1.1.0 · 2.0.1-beta", size: 10, color: C.dim,
-            frame: NSRect(x: 162, y: row2H - 66, width: eW - 150, height: 14), in: cfgP)
-
-        // ── URL field
-        lbl("URL de producción (VITE_PUBLIC_URL — embebida en el QR):", size: 11, bold: true, color: C.dim,
-            frame: NSRect(x: 14, y: row2H - 96, width: eW, height: 16), in: cfgP)
-
-        urlField = NSTextField(frame: NSRect(x: 14, y: row2H - 122, width: eW, height: 24))
+        lbl("URL de producción (VITE_PUBLIC_URL):", size: 11, bold: true, color: C.dim,
+            frame: NSRect(x: 14, y: 420 - 102, width: 332, height: 16), in: cfgP)
+            
+        urlField = NSTextField(frame: NSRect(x: 14, y: 420 - 128, width: 332, height: 24))
         urlField.placeholderString = "https://dj-vip.onrender.com"
         urlField.font = .monospacedSystemFont(ofSize: 12, weight: .regular)
         urlField.backgroundColor = C.bg
@@ -211,123 +212,137 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         urlField.bezelStyle = .roundedBezel
         urlField.isBezeled = true
         cfgP.addSubview(urlField)
-
+        
         lbl("Se guarda en .env automáticamente al compilar.", size: 10, color: C.dim,
-            frame: NSRect(x: 14, y: row2H - 138, width: eW, height: 14), in: cfgP)
-
-        // Separator
-        let sep2 = cview(C.border, frame: NSRect(x: 14, y: row2H - 152, width: eW, height: 1))
+            frame: NSRect(x: 14, y: 420 - 144, width: 332, height: 14), in: cfgP)
+            
+        let sep2 = cview(C.border, frame: NSRect(x: 14, y: 420 - 158, width: 332, height: 1))
         cfgP.addSubview(sep2)
-
+        
         lbl("Post-build:", size: 11, bold: true, color: C.dim,
-            frame: NSRect(x: 14, y: row2H - 170, width: eW, height: 16), in: cfgP)
-
+            frame: NSRect(x: 14, y: 420 - 176, width: 332, height: 16), in: cfgP)
+            
         chkOpenFinder = NSButton(checkboxWithTitle: "  📂  Abrir Finder al terminar", target: nil, action: nil)
-        chkOpenFinder.frame = NSRect(x: 14, y: row2H - 194, width: eW, height: 22)
+        chkOpenFinder.frame = NSRect(x: 14, y: 420 - 200, width: 332, height: 22)
         chkOpenFinder.state = .on
         chkOpenFinder.font = .systemFont(ofSize: 13, weight: .medium)
         chkOpenFinder.contentTintColor = C.text
         cfgP.addSubview(chkOpenFinder)
+        
+        let sep3 = cview(C.border, frame: NSRect(x: 14, y: 420 - 215, width: 332, height: 1))
+        cfgP.addSubview(sep3)
+        
+        copyBtn = NSButton(title: "  📋  Copiar Rutas DMG", target: self, action: #selector(copyDMGPaths))
+        copyBtn.frame = NSRect(x: 14, y: 420 - 265, width: 332, height: 34)
+        copyBtn.bezelStyle = .rounded; copyBtn.font = .boldSystemFont(ofSize: 13)
+        copyBtn.bezelColor = NSColor(red: 0.08, green: 0.18, blue: 0.10, alpha: 1)
+        copyBtn.contentTintColor = C.green
+        cfgP.addSubview(copyBtn)
+        
+        let openFolderBtn = NSButton(title: "  📂  Abrir dist-desktop", target: self, action: #selector(openFolder))
+        openFolderBtn.frame = NSRect(x: 14, y: 420 - 315, width: 332, height: 34)
+        openFolderBtn.bezelStyle = .rounded; openFolderBtn.font = .systemFont(ofSize: 13)
+        openFolderBtn.bezelColor = C.panel2; openFolderBtn.contentTintColor = C.text
+        cfgP.addSubview(openFolderBtn)
+        
+        col2.addSubview(cfgP)
+        root.addSubview(col2)
 
-        root.addSubview(cfgP)
-
-        // ── PROGRESS BARS ─────────────────────────────────────────────────
-        y -= 12
-        let progH: CGFloat = 182
-        y -= progH
-        let progP = panel(frame: NSRect(x: 16, y: y, width: W - 32, height: progH))
+        // ── COLUMN 3 (x: 768, width: W - 768 - 16) - Progress, Buttons, Terminal
+        let col3 = NSView(frame: NSRect(x: 768, y: 16, width: W - 768 - 16, height: H - 78 - 32))
+        col3.autoresizingMask = [.width, .height, .minXMargin]
+        
+        // progP
+        let progH: CGFloat = 220
+        let progP = panel(frame: NSRect(x: 0, y: col3.frame.height - progH, width: col3.frame.width, height: progH))
+        progP.autoresizingMask = [.width, .minYMargin]
         sectionTitle("📊  PROGRESO DE COMPILACIÓN", in: progP, yTop: progH - 8)
-
+        
         stages = []
-        let barW = W - 32 - 28 - 80
-        let barYs: [CGFloat] = [progH - 54, progH - 86, progH - 118, progH - 150, progH - 182 + 4]
+        let barYs: [CGFloat] = [progH - 52, progH - 84, progH - 116, progH - 148, progH - 180]
         for (i, by) in barYs.enumerated() {
             let nl = lbl(stageNames[i], size: 11, bold: true, color: C.dim,
-                         frame: NSRect(x: 14, y: by + 18, width: 400, height: 14), in: progP)
-
+                         frame: NSRect(x: 14, y: by + 18, width: 300, height: 14), in: progP)
+            
             let sl = lbl("Esperando…", size: 11, color: C.dim,
-                         frame: NSRect(x: 410, y: by + 18, width: W - 32 - 28 - 420, height: 14), in: progP)
+                         frame: NSRect(x: col3.frame.width - 320 - 80, y: by + 18, width: 300, height: 14), in: progP)
             sl.alignment = .right
-
+            sl.autoresizingMask = .minXMargin
+            
             let bar = NSProgressIndicator()
-            bar.frame = NSRect(x: 14, y: by + 2, width: barW, height: 12)
+            bar.frame = NSRect(x: 14, y: by + 2, width: col3.frame.width - 110, height: 12)
             bar.style = .bar; bar.minValue = 0; bar.maxValue = 100; bar.doubleValue = 0
             bar.isIndeterminate = false
             bar.wantsLayer = true; bar.layer?.cornerRadius = 5
+            bar.autoresizingMask = .width
             progP.addSubview(bar)
-
+            
             let pl = lbl("0 %", size: 11, bold: true, color: C.accent,
-                         frame: NSRect(x: barW + 18, y: by + 2, width: 56, height: 14), in: progP)
+                         frame: NSRect(x: col3.frame.width - 86, y: by + 2, width: 72, height: 14), in: progP)
             pl.alignment = .right
-
+            pl.autoresizingMask = .minXMargin
+            
             stages.append((bar: bar, pct: pl, status: sl))
             let _ = nl
         }
-        root.addSubview(progP)
+        col3.addSubview(progP)
 
-        // ── ACTION BAR ────────────────────────────────────────────────────
-        y -= 12
-        let abH: CGFloat = 56
-        y -= abH
-        let abP = panel(frame: NSRect(x: 16, y: y, width: W - 32, height: abH))
-
+        // abP (Action Buttons)
+        let abH: CGFloat = 60
+        let abP = panel(frame: NSRect(x: 0, y: col3.frame.height - progH - 16 - abH, width: col3.frame.width, height: abH))
+        abP.autoresizingMask = [.width, .minYMargin]
+        
         startBtn = NSButton(title: "  ▶   S T A R T", target: self, action: #selector(startBuild))
-        startBtn.frame = NSRect(x: 14, y: 12, width: 200, height: 34)
+        startBtn.frame = NSRect(x: 14, y: 13, width: 180, height: 34)
         startBtn.bezelStyle = .rounded; startBtn.font = .boldSystemFont(ofSize: 15)
         startBtn.bezelColor = C.accent; startBtn.contentTintColor = .white
         startBtn.keyEquivalent = "\r"
+        startBtn.autoresizingMask = .maxXMargin
         abP.addSubview(startBtn)
-
+        
         cancelBtn = NSButton(title: "  ✕   CANCELAR", target: self, action: #selector(cancelBuild))
-        cancelBtn.frame = NSRect(x: 226, y: 12, width: 176, height: 34)
+        cancelBtn.frame = NSRect(x: 210, y: 13, width: 180, height: 34)
         cancelBtn.bezelStyle = .rounded; cancelBtn.font = .boldSystemFont(ofSize: 15)
         cancelBtn.bezelColor = NSColor(red: 0.22, green: 0.06, blue: 0.08, alpha: 1)
         cancelBtn.contentTintColor = C.red; cancelBtn.isEnabled = false
+        cancelBtn.autoresizingMask = .maxXMargin
         abP.addSubview(cancelBtn)
+        col3.addSubview(abP)
 
-        copyBtn = NSButton(title: "  📋  Copiar Rutas DMG", target: self, action: #selector(copyDMGPaths))
-        copyBtn.frame = NSRect(x: 414, y: 12, width: 210, height: 34)
-        copyBtn.bezelStyle = .rounded; copyBtn.font = .systemFont(ofSize: 13)
-        copyBtn.bezelColor = NSColor(red: 0.08, green: 0.18, blue: 0.10, alpha: 1)
-        copyBtn.contentTintColor = C.green
-        abP.addSubview(copyBtn)
-
-        let openFolderBtn = NSButton(title: "  📂  Abrir dist-desktop", target: self, action: #selector(openFolder))
-        openFolderBtn.frame = NSRect(x: 636, y: 12, width: 196, height: 34)
-        openFolderBtn.bezelStyle = .rounded; openFolderBtn.font = .systemFont(ofSize: 13)
-        openFolderBtn.bezelColor = C.panel2; openFolderBtn.contentTintColor = C.text
-        abP.addSubview(openFolderBtn)
-
-        root.addSubview(abP)
-
-        // ── TERMINAL ─────────────────────────────────────────────────────
-        y -= 12
-        let termH = y - 16
-        y -= termH
-
-        let thdr = cview(C.termBg, frame: NSRect(x: 16, y: y + termH, width: W - 32, height: 26))
+        // termP (Console Terminal view)
+        let termY = col3.frame.height - progH - 16 - abH - 16
+        let termP = NSView(frame: NSRect(x: 0, y: 0, width: col3.frame.width, height: termY))
+        termP.autoresizingMask = [.width, .height]
+        
+        let thdr = cview(C.termBg, frame: NSRect(x: 0, y: termY - 26, width: col3.frame.width, height: 26))
         thdr.wantsLayer = true
         thdr.layer?.cornerRadius = 10
         thdr.layer?.maskedCorners = [.layerMinXMaxYCorner, .layerMaxXMaxYCorner]
+        thdr.autoresizingMask = [.width, .minYMargin]
         lbl("● ● ●  CONSOLA DE COMPILACIÓN", size: 11, bold: true, color: C.termFg,
             frame: NSRect(x: 12, y: 6, width: 280, height: 14), in: thdr)
-        root.addSubview(thdr)
-
-        let sv = NSScrollView(frame: NSRect(x: 16, y: y, width: W - 32, height: termH))
+        termP.addSubview(thdr)
+        
+        let sv = NSScrollView(frame: NSRect(x: 0, y: 0, width: col3.frame.width, height: termY - 26))
         sv.hasVerticalScroller = true; sv.borderType = .noBorder
         sv.wantsLayer = true; sv.layer?.backgroundColor = C.termBg.cgColor
         sv.layer?.cornerRadius = 10
         sv.layer?.maskedCorners = [.layerMinXMinYCorner, .layerMaxXMinYCorner]
-
-        outputView = NSTextView(frame: NSRect(x: 0, y: 0, width: W - 32, height: max(termH, 800)))
+        sv.autoresizingMask = [.width, .height]
+        
+        outputView = NSTextView(frame: NSRect(x: 0, y: 0, width: col3.frame.width, height: max(termY - 26, 800)))
         outputView.isEditable = false; outputView.isSelectable = true
         outputView.backgroundColor = .clear; outputView.textColor = C.termFg
         outputView.font = .monospacedSystemFont(ofSize: 11, weight: .regular)
         outputView.textContainerInset = NSSize(width: 12, height: 10)
         outputView.drawsBackground = false
+        outputView.autoresizingMask = [.width, .height]
+        
         sv.documentView = outputView
-        root.addSubview(sv)
-
+        termP.addSubview(sv)
+        col3.addSubview(termP)
+        
+        root.addSubview(col3)
         window.contentView = root
     }
 
