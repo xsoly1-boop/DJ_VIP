@@ -77,6 +77,23 @@ const getStringSimilarity = (str1, str2) => {
   return 1.0 - dist / maxLen;
 };
 
+const highlightMatch = (text, query) => {
+  if (!query || !text) return <span>{text}</span>;
+  const cleanQuery = query.toLowerCase();
+  const parts = text.split(new RegExp(`(${cleanQuery.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&')})`, 'gi'));
+  return (
+    <span>
+      {parts.map((part, i) => 
+        part.toLowerCase() === cleanQuery ? (
+          <strong key={i} style={{ color: 'var(--primary-color)', fontWeight: '700' }}>{part}</strong>
+        ) : (
+          <span key={i}>{part}</span>
+        )
+      )}
+    </span>
+  );
+};
+
 export default function PublicView() {
   const { 
     eventSettings: rawEventSettings, 
@@ -158,6 +175,11 @@ export default function PublicView() {
   // Estados de validación de ortografía y sugerencias
   const [showSpellingModal, setShowSpellingModal] = useState(false);
   const [spellingVerifyMatch, setSpellingVerifyMatch] = useState(null);
+  
+  // Soporte de navegación por teclado y caché de búsquedas recientes
+  const [focusedSuggestionIndex, setFocusedSuggestionIndex] = useState(-1);
+  const [recentSearches, setRecentSearches] = useState([]);
+  const [inlineSpellingSuggestion, setInlineSpellingSuggestion] = useState(null);
 
   // Géneros aprendidos dinámicamente del historial de peticiones y autocompletado
   const dynamicGenres = React.useMemo(() => {
@@ -258,6 +280,54 @@ export default function PublicView() {
     return () => clearInterval(timer);
   }, []);
 
+  // Cargar búsquedas recientes del cache local al montar
+  useEffect(() => {
+    try {
+      const cached = localStorage.getItem('dj_platform_recent_searches');
+      if (cached) {
+        setRecentSearches(JSON.parse(cached));
+      }
+    } catch (e) {
+      console.error("Fallo al cargar búsquedas recientes:", e);
+    }
+  }, []);
+
+  // Resetear el índice enfocado al cambiar el texto de búsqueda o los resultados
+  useEffect(() => {
+    setFocusedSuggestionIndex(-1);
+  }, [title, artist, filteredSongs]);
+
+  // Calcular sugerencia de ortografía en tiempo real para atajo rápido
+  useEffect(() => {
+    if (!title.trim() || filteredSongs.length === 0) {
+      setInlineSpellingSuggestion(null);
+      return;
+    }
+
+    const normalize = (str) => {
+      if (!str) return '';
+      return str
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .replace(/[^a-z0-9]/gi, "")
+        .toLowerCase()
+        .trim();
+    };
+
+    const userTitleNorm = normalize(title);
+    const firstSong = filteredSongs[0];
+    if (firstSong && firstSong.title) {
+      const songTitleNorm = normalize(firstSong.title);
+      const titleSim = getStringSimilarity(songTitleNorm, userTitleNorm);
+      
+      if (titleSim >= 0.70 && titleSim < 0.90) {
+        setInlineSpellingSuggestion(firstSong);
+        return;
+      }
+    }
+    setInlineSpellingSuggestion(null);
+  }, [title, filteredSongs]);
+
   // Actualizar el título del navegador con el nombre de la plataforma y el evento
   useEffect(() => {
     const webName = eventSettings.webName || 'DJ a la Carta';
@@ -322,6 +392,47 @@ export default function PublicView() {
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
+  const handleTitleKeyDown = (e) => {
+    if (!showSuggestions || filteredSongs.length === 0) return;
+
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      setFocusedSuggestionIndex(prev => (prev + 1) % filteredSongs.length);
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      setFocusedSuggestionIndex(prev => (prev - 1 + filteredSongs.length) % filteredSongs.length);
+    } else if (e.key === 'Enter') {
+      if (focusedSuggestionIndex >= 0 && focusedSuggestionIndex < filteredSongs.length) {
+        e.preventDefault();
+        handleSelectSuggestion(filteredSongs[focusedSuggestionIndex]);
+      }
+    } else if (e.key === 'Escape') {
+      setShowSuggestions(false);
+      setFocusedSuggestionIndex(-1);
+    }
+  };
+
+  const addRecentSearch = (title, artist, genre) => {
+    if (!title) return;
+    try {
+      const cached = localStorage.getItem('dj_platform_recent_searches');
+      let searches = cached ? JSON.parse(cached) : [];
+      
+      // Quitar duplicados previos
+      searches = searches.filter(s => !(s.title.toLowerCase() === title.toLowerCase() && (s.artist || '').toLowerCase() === (artist || '').toLowerCase()));
+      
+      // Añadir al inicio
+      searches.unshift({ title, artist, genre, id: 'recent-' + Date.now() + '-' + Math.random().toString(36).substr(2, 5) });
+      
+      // Limitar a 10
+      searches = searches.slice(0, 10);
+      
+      localStorage.setItem('dj_platform_recent_searches', JSON.stringify(searches));
+      setRecentSearches(searches);
+    } catch (e) {
+      console.error("Fallo al guardar búsqueda reciente:", e);
+    }
+  };
 
   const handleSelectSuggestion = (song) => {
     setTitle(song.title);
@@ -447,6 +558,11 @@ export default function PublicView() {
       // Guardar marca de tiempo para el cooldown
       localStorage.setItem('dj_platform_last_req', Date.now().toString());
       setCooldownTimeLeft(COOLDOWN_TIME_MS);
+
+      // Guardar en caché local de búsquedas recientes
+      if (cleanTitle) {
+        addRecentSearch(cleanTitle, cleanArtist, finalGenre);
+      }
 
       // Limpiar formulario
       setTitle('');
@@ -1070,6 +1186,7 @@ export default function PublicView() {
                       setShowSuggestions(true);
                     }}
                     onFocus={() => setShowSuggestions(true)}
+                    onKeyDown={handleTitleKeyDown}
                   />
                 </div>
 
@@ -1089,27 +1206,112 @@ export default function PublicView() {
                     boxShadow: 'var(--shadow-lg)',
                     border: '1px solid rgba(255, 255, 255, 0.12)'
                   }}>
-                    {filteredSongs.map((song) => (
+                    {filteredSongs.map((song, index) => {
+                      const isFocused = index === focusedSuggestionIndex;
+                      return (
+                        <div
+                          key={song.id}
+                          onClick={() => handleSelectSuggestion(song)}
+                          style={{
+                            padding: '12px 16px',
+                            borderBottom: '1px solid rgba(255, 255, 255, 0.05)',
+                            cursor: 'pointer',
+                            transition: 'background 0.2s',
+                            display: 'flex',
+                            flexDirection: 'column',
+                            gap: '2px',
+                            background: isFocused ? 'rgba(255, 255, 255, 0.12)' : 'transparent'
+                          }}
+                          className={`suggestion-item ${isFocused ? 'focused' : ''}`}
+                          onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.12)'}
+                          onMouseLeave={(e) => e.currentTarget.style.background = isFocused ? 'rgba(255, 255, 255, 0.12)' : 'transparent'}
+                        >
+                          <span style={{ fontWeight: '600', fontSize: '0.95rem', color: 'var(--text-primary)' }}>
+                            {highlightMatch(song.title, title)}
+                          </span>
+                          <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
+                            {highlightMatch(song.artist, artist)} • <span style={{ color: 'var(--secondary-color)' }}>{song.genre}</span>
+                          </span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+
+                {/* Menú desplegable de búsquedas recientes si el input está vacío */}
+                {showSuggestions && !title && !artist && recentSearches.length > 0 && (
+                  <div className="glass-panel" style={{
+                    position: 'absolute',
+                    top: '100%',
+                    left: 0,
+                    right: 0,
+                    zIndex: 200,
+                    marginTop: '6px',
+                    borderRadius: 'var(--radius-md)',
+                    background: 'rgba(12, 12, 18, 0.95)',
+                    boxShadow: 'var(--shadow-lg)',
+                    border: '1px solid rgba(255, 255, 255, 0.12)',
+                    padding: '8px 0',
+                    maxHeight: '220px',
+                    overflowY: 'auto'
+                  }}>
+                    <div style={{ padding: '6px 16px', fontSize: '0.75rem', color: 'var(--text-muted)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                      Peticiones Recientes
+                    </div>
+                    {recentSearches.map((s) => (
                       <div
-                        key={song.id}
-                        onClick={() => handleSelectSuggestion(song)}
+                        key={s.id}
+                        onClick={() => handleSelectSuggestion(s)}
                         style={{
-                          padding: '12px 16px',
-                          borderBottom: '1px solid rgba(255, 255, 255, 0.05)',
+                          padding: '10px 16px',
                           cursor: 'pointer',
                           transition: 'background 0.2s',
                           display: 'flex',
-                          flexDirection: 'column',
-                          gap: '2px'
+                          justifyContent: 'space-between',
+                          alignItems: 'center'
                         }}
-                        className="suggestion-item"
-                        onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.08)'}
+                        className="recent-item"
+                        onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.06)'}
                         onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
                       >
-                        <span style={{ fontWeight: '600', fontSize: '0.95rem', color: 'var(--text-primary)' }}>{song.title}</span>
-                        <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>{song.artist} • <span style={{ color: 'var(--secondary-color)' }}>{song.genre}</span></span>
+                        <div>
+                          <div style={{ fontWeight: '500', fontSize: '0.9rem', color: 'var(--text-primary)' }}>{s.title}</div>
+                          <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>{s.artist}</div>
+                        </div>
+                        <span style={{ fontSize: '0.7rem', color: 'var(--primary-light)', background: 'rgba(124, 58, 237, 0.15)', padding: '2px 8px', borderRadius: '10px' }}>{s.genre}</span>
                       </div>
                     ))}
+                  </div>
+                )}
+
+                {inlineSpellingSuggestion && (
+                  <div 
+                    onClick={() => handleSelectSuggestion(inlineSpellingSuggestion)}
+                    style={{
+                      fontSize: '0.82rem',
+                      color: 'var(--text-secondary)',
+                      marginTop: '8px',
+                      cursor: 'pointer',
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '4px',
+                      background: 'rgba(255, 255, 255, 0.04)',
+                      padding: '6px 12px',
+                      borderRadius: 'var(--radius-sm)',
+                      border: '1px dashed rgba(255, 255, 255, 0.15)',
+                      transition: 'all 0.2s',
+                      width: '100%'
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.borderColor = 'var(--primary-color)';
+                      e.currentTarget.style.background = 'rgba(124, 58, 237, 0.08)';
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.15)';
+                      e.currentTarget.style.background = 'rgba(255, 255, 255, 0.04)';
+                    }}
+                  >
+                    <span>💡 ¿Quisiste decir: <strong>{inlineSpellingSuggestion.title}</strong> de <em>{inlineSpellingSuggestion.artist}</em>? <span style={{ color: 'var(--primary-light)', textDecoration: 'underline', marginLeft: '4px' }}>Corregir</span></span>
                   </div>
                 )}
               </div>
