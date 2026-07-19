@@ -683,14 +683,24 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
         if doAndroid {
             log("\n🤖  Compilando APK de Android...\n", color: C.accent)
+            
+            var javaPrefix = ""
+            let jbrPath = "/Applications/Android Studio.app/Contents/jbr/Contents/Home"
+            let jrePath = "/Applications/Android Studio.app/Contents/jre/Contents/Home"
+            if FileManager.default.fileExists(atPath: jbrPath) {
+                javaPrefix = "export JAVA_HOME='\(jbrPath)' && export PATH='\(jbrPath)/bin':$PATH && "
+            } else if FileManager.default.fileExists(atPath: jrePath) {
+                javaPrefix = "export JAVA_HOME='\(jrePath)' && export PATH='\(jrePath)/bin':$PATH && "
+            }
+            
             log("  🔄  Ejecutando npx cap sync android...\n")
-            let okSync = streamShell("cd '\(dir)' && npx cap sync android 2>&1", stageIdx: 3, approxLines: 15, minPct: 0, maxPct: 15)
+            let okSync = streamShell("\(javaPrefix)cd '\(dir)' && npx cap sync android 2>&1", stageIdx: 3, approxLines: 15, minPct: 0, maxPct: 15)
             if !okSync { return failBuild("npx cap sync android falló.") }
             prog(3, 15)
             if isCancelled { return }
             
             log("  ⚙️  Compilando APK con Gradle (./gradlew assembleRelease)...\n")
-            let okGradle = streamShell("cd '\(dir)/android' && ./gradlew assembleRelease 2>&1", stageIdx: 3, approxLines: 250, minPct: 15, maxPct: 45)
+            let okGradle = streamShell("\(javaPrefix)cd '\(dir)/android' && ./gradlew assembleRelease 2>&1", stageIdx: 3, approxLines: 250, minPct: 15, maxPct: 45)
             if !okGradle { return failBuild("gradlew assembleRelease falló.") }
             prog(3, 45)
             if isCancelled { return }
