@@ -2491,7 +2491,7 @@ export default function PublicView() {
       micRecorderRef.current = recorder;
       recorder.ondataavailable = e => { if (e.data.size > 0) micChunksRef.current.push(e.data); };
       recorder.onstop = () => sendMicAudioToAPI();
-      recorder.start();
+      recorder.start(500);
 
       // Cuenta regresiva de 10s
       let secs = 10;
@@ -2537,7 +2537,7 @@ export default function PublicView() {
       const res = await fetch(`${backendUrl}/api/identify-audio`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ audio: base64 }),
+        body: JSON.stringify({ audio: base64, mime: mime }),
       });
       
       let data = {};

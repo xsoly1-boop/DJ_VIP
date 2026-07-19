@@ -169,7 +169,7 @@ app.post('/api/subscription/cancel', async (req, res) => {
 // If AUDD_API_TOKEN is not set, runs in demo mode (simulates identification).
 app.post('/api/identify-audio', async (req, res) => {
   try {
-    const { audio } = req.body; // base64-encoded audio data
+    const { audio, mime } = req.body;
     if (!audio) return res.status(400).json({ success: false, error: 'No audio data received.' });
 
     const token = process.env.AUDD_API_TOKEN;
@@ -183,41 +183,52 @@ app.post('/api/identify-audio', async (req, res) => {
         { title: 'La Bebe (Remix)', artist: 'Yng Lvcas & Peso Pluma', album: 'La Bebe Remix', genre: 'Urbano' },
         { title: 'As It Was', artist: 'Harry Styles', album: "Harry's House", genre: 'Pop' },
       ];
-      await new Promise(r => setTimeout(r, 2000)); // simulate processing delay
+      await new Promise(r => setTimeout(r, 2000));
       const song = demos[Math.floor(Math.random() * demos.length)];
       return res.json({ success: true, demo: true, result: song });
     }
 
-    // ── PRODUCTION MODE (AudD API) ────────────────────────────────────────
+    // ── PRODUCTION MODE (AudD API + Humming Fallback) ─────────────────────
     const audioBuffer = Buffer.from(audio, 'base64');
 
-    // Build multipart/form-data manually (native, no extra deps)
-    const boundary = `----DJVIPBoundary${Date.now()}`;
-    const fieldName = 'file';
-    const fileName = 'audio.mp3';
+    let ext = 'webm';
+    let contentType = 'audio/webm';
+    if (mime) {
+      if (mime.includes('mp4')) { ext = 'mp4'; contentType = 'audio/mp4'; }
+      else if (mime.includes('aac')) { ext = 'aac'; contentType = 'audio/aac'; }
+      else if (mime.includes('wav')) { ext = 'wav'; contentType = 'audio/wav'; }
+      else if (mime.includes('ogg')) { ext = 'ogg'; contentType = 'audio/ogg'; }
+      else if (mime.includes('mp3') || mime.includes('mpeg')) { ext = 'mp3'; contentType = 'audio/mpeg'; }
+    }
 
-    const bodyParts = [];
-    bodyParts.push(Buffer.from(
-      `--${boundary}\r\nContent-Disposition: form-data; name="${fieldName}"; filename="${fileName}"\r\nContent-Type: audio/mpeg\r\n\r\n`
-    ));
-    bodyParts.push(audioBuffer);
-    bodyParts.push(Buffer.from(`\r\n--${boundary}--\r\n`));
-    const multipartBody = Buffer.concat(bodyParts);
+    const buildMultipart = (fileName, cType) => {
+      const bMark = `----DJVIPBoundary${Date.now()}`;
+      const parts = [];
+      parts.push(Buffer.from(
+        `--${bMark}\r\nContent-Disposition: form-data; name="file"; filename="${fileName}"\r\nContent-Type: ${cType}\r\n\r\n`
+      ));
+      parts.push(audioBuffer);
+      parts.push(Buffer.from(`\r\n--${bMark}--\r\n`));
+      return { boundary: bMark, multipartBody: Buffer.concat(parts) };
+    };
 
+    // 1. Probar reconocimiento estándar de huella digital de audio
+    const mainMp = buildMultipart(`audio.${ext}`, contentType);
     const auddRes = await fetch(
       `https://api.audd.io/?api_token=${token}&return=title,artist,album,release_date,timecode,label&method=recognize`,
       {
         method: 'POST',
         headers: {
-          'Content-Type': `multipart/form-data; boundary=${boundary}`,
-          'Content-Length': multipartBody.length.toString(),
+          'Content-Type': `multipart/form-data; boundary=${mainMp.boundary}`,
+          'Content-Length': mainMp.multipartBody.length.toString(),
         },
-        body: multipartBody,
+        body: mainMp.multipartBody,
       }
     );
 
     const data = await auddRes.json();
-    console.log('[AudD API Response]', data);
+    console.log('[AudD Standard API Response]', data);
+
     if (data.status === 'success' && data.result) {
       const r = data.result;
       return res.json({
@@ -231,13 +242,51 @@ app.post('/api/identify-audio', async (req, res) => {
           label:   r.label,
         }
       });
-    } else {
-      const detail = data.error?.message || (data.result === null ? 'audio no reconocido' : 'sin coincidencia');
-      return res.json({ 
-        success: false, 
-        error: `No se logró reconocer la canción (${detail}). Intenta acercar más el micrófono a la música o tararear con mayor volumen.` 
-      });
     }
+
+    // 2. Si la huella digital no coincide, probar la API de Tarareo/Voz (Humming API)
+    try {
+      const humMp = buildMultipart(`audio.${ext}`, contentType);
+      const hummingRes = await fetch(
+        `https://api.audd.io/humming/?api_token=${token}`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': `multipart/form-data; boundary=${humMp.boundary}`,
+            'Content-Length': humMp.multipartBody.length.toString(),
+          },
+          body: humMp.multipartBody,
+        }
+      );
+      const humData = await hummingRes.json();
+      console.log('[AudD Humming API Response]', humData);
+
+      if (humData.status === 'success' && humData.result && humData.result.list && humData.result.list.length > 0) {
+        const top = humData.result.list[0];
+        const titleParts = (top.title || '').split(' - ');
+        const artist = titleParts.length > 1 ? titleParts[0].trim() : 'Artista Desconocido';
+        const title = titleParts.length > 1 ? titleParts.slice(1).join(' - ').trim() : top.title;
+
+        return res.json({
+          success: true,
+          demo: false,
+          result: {
+            title: title || 'Canción Reconocida',
+            artist: artist,
+            album: 'Identificado por Voz / Tarareo',
+            score: top.score || null
+          }
+        });
+      }
+    } catch (humErr) {
+      console.warn('[AudD Humming Fallback Error]', humErr);
+    }
+
+    const detail = data.error?.message || 'sin coincidencia en catálogo';
+    return res.json({ 
+      success: false, 
+      error: `No se logró reconocer la canción (${detail}). Acerca el micrófono a los altavoces o tararea más fuerte.` 
+    });
   } catch (e) {
     console.error('[identify-audio]', e);
     res.status(500).json({ success: false, error: e.message });
