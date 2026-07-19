@@ -593,19 +593,33 @@ export const SupabaseProvider = ({ children }) => {
 
   const uploadLogo = async (file) => {
     if (isMockMode) return "";
+    if (!supabaseAdmin) {
+      throw new Error("Supabase Service Role Key no configurada.");
+    }
+
     const fileExt = file.name.split('.').pop();
     const filePath = `logos/${activeUid}_${currentEventId}_logo_${Date.now()}.${fileExt}`;
     
-    const { error: uploadError } = await supabase.storage
+    // 1. Asegurar que el bucket 'logos' exista de forma pública
+    try {
+      await supabaseAdmin.storage.createBucket('logos', { public: true });
+    } catch (e) {
+      // Ignorar error si ya existe
+    }
+
+    // 2. Subir el archivo usando el cliente administrador para evadir políticas RLS
+    const { error: uploadError } = await supabaseAdmin.storage
       .from('logos')
       .upload(filePath, file);
 
     if (uploadError) throw uploadError;
 
-    const { data: { publicUrl } } = supabase.storage
+    // 3. Obtener la URL pública del archivo
+    const { data: { publicUrl } } = supabaseAdmin.storage
       .from('logos')
       .getPublicUrl(filePath);
 
+    // 4. Actualizar los ajustes del evento con la nueva URL del logotipo
     await updateEventSettings({ logoUrl: publicUrl });
     return publicUrl;
   };
