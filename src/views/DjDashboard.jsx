@@ -1490,8 +1490,8 @@ export default function DjDashboard() {
   };
 
   useEffect(() => {
-    const prevCount = Object.keys(prevRequestsRef.current).length;
-    const currentKeys = Object.keys(requests);
+    const prevCount = Object.keys(prevRequestsRef.current || {}).length;
+    const currentKeys = Object.keys(requests || {});
     const currentCount = currentKeys.length;
     if (currentCount > prevCount) {
       const newKeys = currentKeys.filter(key => !prevRequestsRef.current[key]);
@@ -2230,8 +2230,11 @@ export default function DjDashboard() {
     : `/?event=${uniqueEventKey}`;
 
   // Filtrar y ordenar peticiones
-  const sortedRequests = Object.keys(requests)
-    .map(key => ({ id: key, ...requests[key] }))
+  const safeRequests = requests || {};
+  const safePlayedRequests = playedRequests || {};
+
+  const sortedRequests = Object.keys(safeRequests)
+    .map(key => ({ id: key, ...safeRequests[key] }))
     .filter(req => filterStatus === 'all' ? true : req.status === filterStatus)
     .sort((a, b) => {
       // 1. Si hay alguna canción en reproducción, va arriba del todo
@@ -2245,20 +2248,20 @@ export default function DjDashboard() {
       return b.timestamp - a.timestamp;
     });
 
-  const playedRequestsList = Object.keys(playedRequests || {})
-    .map(key => ({ id: key, ...playedRequests[key] }))
+  const playedRequestsList = Object.keys(safePlayedRequests)
+    .map(key => ({ id: key, ...safePlayedRequests[key] }))
     .sort((a, b) => (b.playedAt || 0) - (a.playedAt || 0));
 
   const stats = {
-    total: Object.keys(requests).length + Object.keys(playedRequests || {}).length,
-    pending: Object.values(requests).filter(r => r.status === 'pending').length,
-    playing: Object.values(playedRequests || {}).filter(r => r.status === 'playing').length,
-    votes: Object.values(requests).reduce((sum, r) => sum + (r.votes || 0), 0) + 
-           Object.values(playedRequests || {}).reduce((sum, r) => sum + (r.votes || 0), 0)
+    total: Object.keys(safeRequests).length + Object.keys(safePlayedRequests).length,
+    pending: Object.values(safeRequests).filter(r => r.status === 'pending').length,
+    playing: Object.values(safePlayedRequests).filter(r => r.status === 'playing').length,
+    votes: Object.values(safeRequests).reduce((sum, r) => sum + (r.votes || 0), 0) + 
+           Object.values(safePlayedRequests).reduce((sum, r) => sum + (r.votes || 0), 0)
   };
 
   // Construir lista de usuarios para el panel admin
-  const adminUsersList = Object.keys(allUsersData).map(uid => {
+  const adminUsersList = Object.keys(allUsersData || {}).map(uid => {
     const userData = allUsersData[uid];
     const events = userData?.events_index ? Object.values(userData.events_index) : [];
     const eventsCount = events.length;

@@ -617,10 +617,80 @@ function AppContent() {
   );
 }
 
+class ErrorBoundary extends React.Component {
+  constructor(props) {
+    super(props);
+    this.state = { hasError: false, error: null };
+  }
+
+  static getDerivedStateFromError(error) {
+    return { hasError: true, error };
+  }
+
+  componentDidCatch(error, errorInfo) {
+    console.error('[ErrorBoundary caught an error]', error, errorInfo);
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div style={{
+          minHeight: '100vh',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          background: '#09090b',
+          color: '#fff',
+          padding: '24px',
+          fontFamily: 'system-ui, -apple-system, sans-serif'
+        }}>
+          <div style={{
+            background: 'rgba(24, 24, 27, 0.8)',
+            border: '1px solid rgba(124, 58, 237, 0.3)',
+            borderRadius: '20px',
+            padding: '32px',
+            maxWidth: '450px',
+            textAlign: 'center',
+            boxShadow: '0 0 30px rgba(124, 58, 237, 0.2)'
+          }}>
+            <div style={{ fontSize: '3rem', marginBottom: '12px' }}>⚠️</div>
+            <h2 style={{ fontSize: '1.4rem', marginBottom: '8px' }}>Se detectó una pausa visual temporal</h2>
+            <p style={{ color: '#a1a1aa', fontSize: '0.9rem', marginBottom: '20px', lineHeight: '1.5' }}>
+              La interfaz se protegió para evitar pérdida de datos durante la sincronización.
+            </p>
+            <button
+              onClick={() => {
+                this.setState({ hasError: false, error: null });
+                window.location.reload();
+              }}
+              style={{
+                background: 'linear-gradient(135deg, #7c3aed 0%, #4f46e5 100%)',
+                color: '#fff',
+                border: 'none',
+                padding: '12px 24px',
+                borderRadius: '12px',
+                fontWeight: 'bold',
+                fontSize: '0.95rem',
+                cursor: 'pointer',
+                boxShadow: '0 4px 12px rgba(124, 58, 237, 0.4)'
+              }}
+            >
+              🔄 Recargar Panel
+            </button>
+          </div>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
+
 export default function App() {
   return (
-    <SupabaseProvider>
-      <AppContent />
-    </SupabaseProvider>
+    <ErrorBoundary>
+      <SupabaseProvider>
+        <AppContent />
+      </SupabaseProvider>
+    </ErrorBoundary>
   );
 }

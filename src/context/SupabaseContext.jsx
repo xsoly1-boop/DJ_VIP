@@ -1179,7 +1179,7 @@ export const SupabaseProvider = ({ children }) => {
         .from('events')
         .select('*')
         .eq('id', targetEventDbId)
-        .single();
+        .maybeSingle();
       
       if (!error && eventRow) {
         setEventSettings({
