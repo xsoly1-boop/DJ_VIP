@@ -228,17 +228,14 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         chkOpenFinder.contentTintColor = C.text
         cfgP.addSubview(chkOpenFinder)
         
-        copyBtn = NSButton(title: "  📋  Copiar Rutas DMG", target: self, action: #selector(copyDMGPaths))
-        copyBtn.frame = NSRect(x: 14, y: 320 - 240, width: 332, height: 34)
-        copyBtn.bezelStyle = .rounded; copyBtn.font = .boldSystemFont(ofSize: 13)
-        copyBtn.bezelColor = NSColor(red: 0.08, green: 0.18, blue: 0.10, alpha: 1)
-        copyBtn.contentTintColor = C.green
+        copyBtn = NSButton(frame: NSRect(x: 14, y: 320 - 240, width: 332, height: 34))
+        copyBtn.target = self; copyBtn.action = #selector(copyDMGPaths)
+        styleButton(copyBtn, title: "  📋  Copiar Rutas DMG", bg: NSColor(red: 0.08, green: 0.18, blue: 0.10, alpha: 1), fg: C.green, size: 13, bold: true)
         cfgP.addSubview(copyBtn)
         
-        let openFolderBtn = NSButton(title: "  📂  Abrir dist-desktop", target: self, action: #selector(openFolder))
-        openFolderBtn.frame = NSRect(x: 14, y: 320 - 290, width: 332, height: 34)
-        openFolderBtn.bezelStyle = .rounded; openFolderBtn.font = .systemFont(ofSize: 13)
-        openFolderBtn.bezelColor = C.panel2; openFolderBtn.contentTintColor = C.text
+        let openFolderBtn = NSButton(frame: NSRect(x: 14, y: 320 - 290, width: 332, height: 34))
+        openFolderBtn.target = self; openFolderBtn.action = #selector(openFolder)
+        styleButton(openFolderBtn, title: "  📂  Abrir dist-desktop", bg: C.panel2, fg: C.text, size: 13, bold: false)
         cfgP.addSubview(openFolderBtn)
         
         col2.addSubview(cfgP)
@@ -262,16 +259,14 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         testEmailField.isBezeled = true
         testP.addSubview(testEmailField)
         
-        let sendPushBtn = NSButton(title: "🔔 Enviar Push", target: self, action: #selector(sendTestPush))
-        sendPushBtn.frame = NSRect(x: 232, y: 280 - 100, width: 114, height: 24)
-        sendPushBtn.bezelStyle = .rounded; sendPushBtn.font = .systemFont(ofSize: 12, weight: .bold)
-        sendPushBtn.bezelColor = C.panel2; sendPushBtn.contentTintColor = C.accent
+        let sendPushBtn = NSButton(frame: NSRect(x: 232, y: 280 - 100, width: 114, height: 24))
+        sendPushBtn.target = self; sendPushBtn.action = #selector(sendTestPush)
+        styleButton(sendPushBtn, title: "🔔 Enviar Push", bg: C.panel2, fg: C.accent, size: 12, bold: true)
         testP.addSubview(sendPushBtn)
         
-        let sendAdminPushBtn = NSButton(title: "🔔 Enviar Push de Prueba al Admin Master", target: self, action: #selector(sendAdminPush))
-        sendAdminPushBtn.frame = NSRect(x: 14, y: 280 - 134, width: 332, height: 26)
-        sendAdminPushBtn.bezelStyle = .rounded; sendAdminPushBtn.font = .systemFont(ofSize: 11, weight: .semibold)
-        sendAdminPushBtn.bezelColor = C.panel2; sendAdminPushBtn.contentTintColor = C.text
+        let sendAdminPushBtn = NSButton(frame: NSRect(x: 14, y: 280 - 134, width: 332, height: 26))
+        sendAdminPushBtn.target = self; sendAdminPushBtn.action = #selector(sendAdminPush)
+        styleButton(sendAdminPushBtn, title: "🔔 Enviar Push de Prueba al Admin Master", bg: C.panel2, fg: C.text, size: 11, bold: true)
         testP.addSubview(sendAdminPushBtn)
         
         let sepTest = cview(C.border, frame: NSRect(x: 14, y: 280 - 148, width: 332, height: 1))
@@ -304,10 +299,9 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         injectCountField.isBezeled = true
         testP.addSubview(injectCountField)
         
-        let injectBtn = NSButton(title: "🎵 Inyectar", target: self, action: #selector(injectRequests))
-        injectBtn.frame = NSRect(x: 246, y: 280 - 230, width: 100, height: 24)
-        injectBtn.bezelStyle = .rounded; injectBtn.font = .systemFont(ofSize: 12, weight: .bold)
-        injectBtn.bezelColor = C.panel2; injectBtn.contentTintColor = C.green
+        let injectBtn = NSButton(frame: NSRect(x: 246, y: 280 - 230, width: 100, height: 24))
+        injectBtn.target = self; injectBtn.action = #selector(injectRequests)
+        styleButton(injectBtn, title: "🎵 Inyectar", bg: C.panel2, fg: C.green, size: 12, bold: true)
         testP.addSubview(injectBtn)
         
         col2.addSubview(testP)
@@ -357,20 +351,18 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         let abP = panel(frame: NSRect(x: 0, y: col3.frame.height - progH - 16 - abH, width: col3.frame.width, height: abH))
         abP.autoresizingMask = [.width, .minYMargin]
         
-        startBtn = NSButton(title: "  ▶   S T A R T", target: self, action: #selector(startBuild))
-        startBtn.frame = NSRect(x: 14, y: 13, width: 180, height: 34)
-        startBtn.bezelStyle = .rounded; startBtn.font = .boldSystemFont(ofSize: 15)
-        startBtn.bezelColor = C.accent; startBtn.contentTintColor = .white
+        startBtn = NSButton(frame: NSRect(x: 14, y: 13, width: 180, height: 34))
+        startBtn.target = self; startBtn.action = #selector(startBuild)
         startBtn.keyEquivalent = "\r"
         startBtn.autoresizingMask = .maxXMargin
+        styleButton(startBtn, title: "  ▶   S T A R T", bg: C.accent, fg: .white, size: 15, bold: true)
         abP.addSubview(startBtn)
         
-        cancelBtn = NSButton(title: "  ✕   CANCELAR", target: self, action: #selector(cancelBuild))
-        cancelBtn.frame = NSRect(x: 210, y: 13, width: 180, height: 34)
-        cancelBtn.bezelStyle = .rounded; cancelBtn.font = .boldSystemFont(ofSize: 15)
-        cancelBtn.bezelColor = NSColor(red: 0.22, green: 0.06, blue: 0.08, alpha: 1)
-        cancelBtn.contentTintColor = C.red; cancelBtn.isEnabled = false
+        cancelBtn = NSButton(frame: NSRect(x: 210, y: 13, width: 180, height: 34))
+        cancelBtn.target = self; cancelBtn.action = #selector(cancelBuild)
+        cancelBtn.isEnabled = false
         cancelBtn.autoresizingMask = .maxXMargin
+        styleButton(cancelBtn, title: "  ✕   CANCELAR", bg: NSColor(red: 0.22, green: 0.06, blue: 0.08, alpha: 1), fg: C.red, size: 15, bold: true)
         abP.addSubview(cancelBtn)
         col3.addSubview(abP)
 
@@ -1114,6 +1106,23 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         let l = NSTextField(labelWithString: text)
         l.font = bold ? .boldSystemFont(ofSize: size) : .systemFont(ofSize: size)
         l.textColor = color; l.frame = frame; parent.addSubview(l); return l
+    }
+
+    func styleButton(_ btn: NSButton, title: String, bg: NSColor, fg: NSColor, size: CGFloat = 13, bold: Bool = false) {
+        btn.title = title
+        btn.bezelStyle = .rounded
+        btn.bezelColor = bg
+        btn.wantsLayer = true
+        
+        let pstyle = NSMutableParagraphStyle()
+        pstyle.alignment = .center
+        let font = bold ? NSFont.boldSystemFont(ofSize: size) : NSFont.systemFont(ofSize: size)
+        let attrs: [NSAttributedString.Key: Any] = [
+            .foregroundColor: fg,
+            .font: font,
+            .paragraphStyle: pstyle
+        ]
+        btn.attributedTitle = NSAttributedString(string: title, attributes: attrs)
     }
 
     func cview(_ c: NSColor, frame: NSRect) -> NSView {
