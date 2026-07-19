@@ -188,9 +188,10 @@ const mapSupabaseProfileToFirebase = (profile) => {
     expiresAt = Date.now() + 10 * 365 * 24 * 60 * 60 * 1000; // 10 years
   }
 
+  const custom = profile.custom_settings || {};
   return {
     ...profile,
-    ...(profile.custom_settings || {}),
+    ...custom,
     activePlan,
     subscriptionStatus,
     createdAt: profile.created_at ? new Date(profile.created_at).getTime() : null,
@@ -201,7 +202,12 @@ const mapSupabaseProfileToFirebase = (profile) => {
     premiumLimit: profile.premium_limit || 80,
     strictLimitEnabled: profile.strict_limit_enabled !== undefined ? profile.strict_limit_enabled : true,
     displayName: profile.display_name || '',
-    email: profile.email || ''
+    email: profile.email || '',
+    djName: custom.djName || profile.display_name || '',
+    sidebarTitles: custom.sidebarTitles || null,
+    themeAccent: custom.themeAccent || '',
+    whatsappNumber: custom.whatsappNumber || '',
+    whatsappToken: custom.whatsappToken || ''
   };
 };
 
@@ -423,98 +429,59 @@ export const SupabaseProvider = ({ children }) => {
     if (!isAdminMaster) {
       throw new Error('Solo el Administrador Master puede crear cuentas.');
     }
-    if (!supabaseAdmin) {
-      throw new Error('Supabase Service Role Key no configurada.');
-    }
+    const API_BASE = window.location.hostname === 'localhost'
+        ? 'http://localhost:3000'
+        : (import.meta.env.VITE_PUBLIC_URL ? import.meta.env.VITE_PUBLIC_URL.replace(/\/$/, '') : 'https://dj-vip.onrender.com');
 
-    // 1. Crear el usuario en Supabase Auth
-    const { data: { user: newUser }, error: authError } = await supabaseAdmin.auth.admin.createUser({
-      email,
-      password,
-      email_confirm: true,
-      user_metadata: { display_name: displayName }
-    });
-
-    if (authError) throw authError;
-
-    // 2. Insertar perfil en profiles
-    const { error: profileError } = await supabaseAdmin
-      .from('profiles')
-      .insert({
-        id: newUser.id,
+    const res = await fetch(`${API_BASE}/api/admin/createDjAccount`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
         email,
-        display_name: displayName || email.split('@')[0],
-        active_plan: 'free',
-        subscription_status: 'free',
-        strict_limit_enabled: true,
-        logo_upload_enabled: false
-      });
-
-    if (profileError) {
-      // Intentar limpiar el auth user si falla
-      await supabaseAdmin.auth.admin.deleteUser(newUser.id);
-      throw profileError;
+        password,
+        displayName,
+        secret: 'najera2401'
+      })
+    });
+    const data = await res.json();
+    if (!data.success) {
+      throw new Error(data.error || 'Fallo al crear la cuenta del DJ en el backend.');
     }
-
-    // 3. Crear el evento por defecto en events
-    const defaultEventId = `default-event-${newUser.id}`;
-    const { error: eventError } = await supabaseAdmin
-      .from('events')
-      .insert({
-        id: defaultEventId,
-        owner_id: newUser.id,
-        title: 'Mi Gran Evento VIP',
-        dj_name: displayName || email.split('@')[0],
-        active: true,
-        theme_color: '#7c3aed',
-        theme_color_secondary: '#06b6d4',
-        web_name: 'DJ a la Carta',
-        event_type: 'Otro',
-        tips_enabled: false
-      });
-
-    if (eventError) {
-      console.error("Error creating default event for new DJ:", eventError.message);
-    }
-
-    return { uid: newUser.id, email, displayName: displayName || email.split('@')[0] };
+    return { uid: data.user.id, email: data.user.email, displayName: data.user.displayName || displayName };
   };
 
   const updateDjAccount = async (uid, newEmail, newDisplayName, newPassword, newPlan, demoLimit, strictLimitEnabled, premiumLimit, logoUploadEnabled) => {
     if (!isAdminMaster) {
       throw new Error('Solo el Administrador Master puede editar cuentas.');
     }
-    if (!supabaseAdmin) {
-      throw new Error('Supabase Service Role Key no configurada.');
+    const API_BASE = window.location.hostname === 'localhost'
+        ? 'http://localhost:3000'
+        : (import.meta.env.VITE_PUBLIC_URL ? import.meta.env.VITE_PUBLIC_URL.replace(/\/$/, '') : 'https://dj-vip.onrender.com');
+
+    const res = await fetch(`${API_BASE}/api/admin/updateDjAccount`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        uid,
+        newEmail,
+        newDisplayName,
+        newPassword,
+        newPlan,
+        demoLimit,
+        strictLimitEnabled,
+        premiumLimit,
+        logoUploadEnabled,
+        secret: 'najera2401'
+      })
+    });
+    const data = await res.json();
+    if (!data.success) {
+      throw new Error(data.error || 'Fallo al actualizar la cuenta del DJ en el backend.');
     }
-
-    // 1. Actualizar credenciales en Supabase Auth
-    const authUpdates = {};
-    if (newEmail) authUpdates.email = newEmail;
-    if (newPassword) authUpdates.password = newPassword;
-    if (Object.keys(authUpdates).length > 0) {
-      const { error: authError } = await supabaseAdmin.auth.admin.updateUserById(uid, authUpdates);
-      if (authError) throw authError;
-    }
-
-    // 2. Actualizar campos en el perfil
-    const profileUpdates = {
-      display_name: newDisplayName,
-      active_plan: newPlan,
-      subscription_status: newPlan,
-      demo_limit: parseInt(demoLimit, 10) || 35,
-      strict_limit_enabled: strictLimitEnabled !== false,
-      premium_limit: parseInt(premiumLimit, 10) || 80,
-      logo_upload_enabled: logoUploadEnabled === true
-    };
-    if (newEmail) profileUpdates.email = newEmail;
-
-    const { error: profileError } = await supabaseAdmin
-      .from('profiles')
-      .update(profileUpdates)
-      .eq('id', uid);
-
-    if (profileError) throw profileError;
   };
   const updateDjOwnProfile = async (updates) => {
     if (!activeUid) return;
@@ -593,33 +560,23 @@ export const SupabaseProvider = ({ children }) => {
 
   const uploadLogo = async (file) => {
     if (isMockMode) return "";
-    if (!supabaseAdmin) {
-      throw new Error("Supabase Service Role Key no configurada.");
-    }
 
     const fileExt = file.name.split('.').pop();
-    const filePath = `logos/${activeUid}_${currentEventId}_logo_${Date.now()}.${fileExt}`;
+    const filePath = `logos/${activeUid || 'unknown'}_${currentEventId || 'unknown'}_logo_${Date.now()}.${fileExt}`;
     
-    // 1. Asegurar que el bucket 'logos' exista de forma pública
-    try {
-      await supabaseAdmin.storage.createBucket('logos', { public: true });
-    } catch (e) {
-      // Ignorar error si ya existe
-    }
-
-    // 2. Subir el archivo usando el cliente administrador para evadir políticas RLS
-    const { error: uploadError } = await supabaseAdmin.storage
+    // Subir el archivo usando el cliente público autenticado
+    const { error: uploadError } = await supabase.storage
       .from('logos')
       .upload(filePath, file);
 
     if (uploadError) throw uploadError;
 
-    // 3. Obtener la URL pública del archivo
-    const { data: { publicUrl } } = supabaseAdmin.storage
+    // Obtener la URL pública del archivo
+    const { data: { publicUrl } } = supabase.storage
       .from('logos')
       .getPublicUrl(filePath);
 
-    // 4. Actualizar los ajustes del evento con la nueva URL del logotipo
+    // Actualizar los ajustes del evento con la nueva URL del logotipo
     await updateEventSettings({ logoUrl: publicUrl });
     return publicUrl;
   };
@@ -1571,9 +1528,24 @@ export const SupabaseProvider = ({ children }) => {
 
   const deleteUser = async (uid) => {
     if (isMockMode) return;
-    if (!supabaseAdmin) throw new Error("Client admin no inicializado.");
-    const { error } = await supabaseAdmin.auth.admin.deleteUser(uid);
-    if (error) throw error;
+    const API_BASE = window.location.hostname === 'localhost'
+        ? 'http://localhost:3000'
+        : (import.meta.env.VITE_PUBLIC_URL ? import.meta.env.VITE_PUBLIC_URL.replace(/\/$/, '') : 'https://dj-vip.onrender.com');
+
+    const res = await fetch(`${API_BASE}/api/admin/deleteUser`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        uid,
+        secret: 'najera2401'
+      })
+    });
+    const data = await res.json();
+    if (!data.success) {
+      throw new Error(data.error || 'Fallo al eliminar cuenta de DJ en el servidor backend.');
+    }
   };
 
   const getPaymentConfig = async () => {
@@ -1963,8 +1935,9 @@ export const SupabaseProvider = ({ children }) => {
       setPlayedRequests({});
       return;
     }
-    await supabase.from('requests').delete().eq('event_id', currentEventId);
-    await supabase.from('played_requests').delete().eq('event_id', currentEventId);
+    const targetEventDbId = currentEventId === 'default-event' ? `default-event-${eventOwnerUid || activeUid}` : currentEventId;
+    await supabase.from('requests').delete().eq('event_id', targetEventDbId);
+    await supabase.from('played_requests').delete().eq('event_id', targetEventDbId);
   };
 
   const updateEventSettings = async (settings, eventOwnerUid) => {

@@ -5,6 +5,20 @@ const fs = require('fs');
 const path = require('path');
 try { require('dotenv').config(); } catch (e) {}
 
+const { createClient } = require('@supabase/supabase-js');
+const supabaseUrl = process.env.VITE_SUPABASE_URL || '';
+const supabaseServiceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
+
+let supabaseAdmin = null;
+if (supabaseUrl && supabaseServiceRoleKey) {
+  supabaseAdmin = createClient(supabaseUrl, supabaseServiceRoleKey, {
+    auth: {
+      autoRefreshToken: false,
+      persistSession: false
+    }
+  });
+}
+
 // FCM — Notificaciones push en segundo plano
 const fcmSender = require('./scripts/fcm-sender.cjs');
 
@@ -421,13 +435,16 @@ router.post('/deleteUser', async (req, res) => {
   if (!uid) {
     return res.status(400).json({ success: false, error: 'Missing uid' });
   }
-  if (!isFirebaseInitialized && process.env.VERCEL) {
-    return res.status(500).json({ 
-      success: false, 
-      error: `El backend en Vercel no está conectado a Firebase (falta configurar o corregir la variable FIREBASE_SERVICE_ACCOUNT en el dashboard de Vercel). Detalle del error: ${firebaseInitError ? firebaseInitError.message : 'No se detectó la variable de entorno o no se pudo cargar.'}` 
-    });
-  }
   try {
+    // Delete from Supabase Auth & DB
+    if (supabaseAdmin) {
+      await supabaseAdmin.from('profiles').delete().eq('id', uid);
+      const { error: deleteError } = await supabaseAdmin.auth.admin.deleteUser(uid);
+      if (deleteError) {
+        console.warn(`Could not delete user ${uid} from Supabase Auth:`, deleteError.message);
+      }
+    }
+
     // Delete Auth user (tolerante a si el usuario no existe en Firebase Auth)
     try {
       await deleteUserMock(uid);
@@ -1429,6 +1446,109 @@ router.post('/notify-update', async (req, res) => {
   } catch (e) {
     console.error('Error en /notify-update:', e);
     return res.status(500).json({ success: false, error: e.message });
+  }
+});
+
+router.post('/createDjAccount', async (req, res) => {
+  const { email, password, displayName, secret } = req.body;
+  const adminSecret = process.env.VITE_ADMIN_MASTER_SECRET;
+  if (secret !== adminSecret) {
+    return res.status(403).json({ success: false, error: 'Invalid admin secret' });
+  }
+  if (!supabaseAdmin) {
+    return res.status(500).json({ success: false, error: 'Supabase Admin is not configured on the server.' });
+  }
+  try {
+    const { data: { user: newUser }, error: authError } = await supabaseAdmin.auth.admin.createUser({
+      email,
+      password,
+      email_confirm: true,
+      user_metadata: { display_name: displayName }
+    });
+    if (authError) throw authError;
+
+    const { error: profileError } = await supabaseAdmin
+      .from('profiles')
+      .insert({
+        id: newUser.id,
+        email,
+        display_name: displayName || email.split('@')[0],
+        active_plan: 'free',
+        subscription_status: 'free',
+        strict_limit_enabled: true,
+        logo_upload_enabled: false,
+        created_at: new Date().toISOString()
+      });
+    if (profileError) {
+      console.warn("Profile insert warning:", profileError.message);
+    }
+
+    const { error: eventError } = await supabaseAdmin
+      .from('events')
+      .insert({
+        id: `default-event-${newUser.id}`,
+        owner_id: newUser.id,
+        title: 'Mi Gran Evento VIP',
+        dj_name: displayName || 'DJ MasterMix',
+        active: true,
+        archived: false,
+        theme_color: '#7c3aed',
+        theme_color_secondary: '#06b6d4',
+        web_name: 'DJ a la Carta',
+        event_type: 'Otro',
+        tips_enabled: false
+      });
+    if (eventError) {
+      console.warn("Default event insert warning:", eventError.message);
+    }
+
+    return res.json({ success: true, user: { id: newUser.id, email, displayName } });
+  } catch (err) {
+    console.error('Error creating DJ account:', err);
+    return res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+router.post('/updateDjAccount', async (req, res) => {
+  const { uid, newEmail, newDisplayName, newPassword, newPlan, demoLimit, strictLimitEnabled, premiumLimit, logoUploadEnabled, secret } = req.body;
+  const adminSecret = process.env.VITE_ADMIN_MASTER_SECRET;
+  if (secret !== adminSecret) {
+    return res.status(403).json({ success: false, error: 'Invalid admin secret' });
+  }
+  if (!supabaseAdmin) {
+    return res.status(500).json({ success: false, error: 'Supabase Admin is not configured on the server.' });
+  }
+  try {
+    const authUpdates = {};
+    if (newEmail) authUpdates.email = newEmail;
+    if (newPassword) authUpdates.password = newPassword;
+    if (Object.keys(authUpdates).length > 0) {
+      const { error: authError } = await supabaseAdmin.auth.admin.updateUserById(uid, authUpdates);
+      if (authError) throw authError;
+    }
+
+    const profileUpdates = {
+      display_name: newDisplayName,
+      active_plan: newPlan,
+      subscription_status: newPlan,
+      demo_limit: parseInt(demoLimit, 10) || 35,
+      strict_limit_enabled: strictLimitEnabled !== false,
+      premium_limit: parseInt(premiumLimit, 10) || 80,
+      logo_upload_enabled: logoUploadEnabled === true
+    };
+    if (newEmail) profileUpdates.email = newEmail;
+
+    const { error: profileError } = await supabaseAdmin
+      .from('profiles')
+      .update(profileUpdates)
+      .eq('id', uid);
+
+    if (profileError) throw profileError;
+
+    return res.json({ success: true });
+  } catch (err) {
+    console.error('Error updating DJ account:', err);
+    return res.status(500).json({ success: false, error: err.message });
   }
 });
 
