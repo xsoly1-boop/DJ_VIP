@@ -927,8 +927,8 @@ deploy_github_release() {
                             v.dmgUrlIntel = url;
                             console.log('  ✅ dmgUrlIntel (Intel): ' + url);
                         } else if (name.endsWith('.apk')) {
-                            // APK se sirve desde Vercel, no cambiar
-                            console.log('  ℹ️  APK en GitHub: ' + url);
+                            v.apkUrl = url;
+                            console.log('  ✅ apkUrl (Android): ' + url);
                         } else if (name.endsWith('.exe')) {
                             v.exeUrl = url;
                             console.log('  ✅ exeUrl: ' + url);
@@ -1564,7 +1564,7 @@ print_summary() {
     echo -e "${PURPLE}║${RESET}  📋 Log:      ${CYAN}${BUILD_LOG}${RESET}"
     echo -e "${PURPLE}╠══════════════════════════════════════════════════════════════════════╣${RESET}"
     echo -e "${PURPLE}║${RESET}  ${WHITE}URLs de producción:${RESET}"
-    echo -e "${PURPLE}║${RESET}  🌐 Web     : ${CYAN}https://dj-vip.vercel.app${RESET}"
+    echo -e "${PURPLE}║${RESET}  🌐 Web     : ${CYAN}https://dj-vip.onrender.com${RESET}"
     echo -e "${PURPLE}║${RESET}  🔧 API     : ${CYAN}https://dj-vip-pro.onrender.com${RESET}"
     echo -e "${PURPLE}║${RESET}  📋 Release : ${CYAN}https://github.com/${GITHUB_REPO:-xsoly1-boop/DJ_VIP}/releases/tag/${TAG:-latest}${RESET}"
     echo -e "${PURPLE}╚══════════════════════════════════════════════════════════════════════╝${RESET}"

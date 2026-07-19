@@ -477,7 +477,7 @@ public class MainActivity extends BridgeActivity {
                     "{\"uid\":\"%s\",\"fcmToken\":\"%s\",\"platform\":\"android\"}",
                     userId, token);
 
-            URL url = new URL("https://dj-vip.vercel.app/api/register-fcm-token");
+            URL url = new URL("https://dj-vip-pro.onrender.com/api/register-fcm-token");
             HttpURLConnection conn = (HttpURLConnection) url.openConnection();
             conn.setRequestMethod("POST");
             conn.setRequestProperty("Content-Type", "application/json");

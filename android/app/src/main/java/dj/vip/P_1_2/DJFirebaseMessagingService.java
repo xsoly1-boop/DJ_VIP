@@ -63,7 +63,7 @@ public class DJFirebaseMessagingService extends FirebaseMessagingService {
     // ─── URL del backend para registrar el token ───────────────────────────────
     // Ajusta a tu URL de producción (Vercel / servidor propio)
     private static final String BACKEND_REGISTER_TOKEN_URL =
-            "https://dj-vip.vercel.app/api/register-fcm-token";
+            "https://dj-vip-pro.onrender.com/api/register-fcm-token";
 
     // ─────────────────────────────────────────────────────────────────────────
     // onNewToken: se llama cuando FCM genera o rota el token del dispositivo

@@ -6,6 +6,6 @@
     }
   ],
   "env": {
-    "PUBLIC_URL": "https://dj-vip.vercel.app"
+    "PUBLIC_URL": "https://dj-vip.onrender.com"
   }
 }

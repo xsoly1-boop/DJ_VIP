@@ -229,9 +229,9 @@ admin.database().ref('config/updates').update({
   latestVersion: '${NEW_VERSION}',
   dmgUrl: '${DMG_ARM_URL}',
   dmgUrlIntel: '${DMG_X64_URL}',
-  apkUrl: 'https://dj-vip.vercel.app/DJ.a.la.carta.apk',
-  ipaUrl: v.ipaUrl || 'https://dj-vip.vercel.app/DJ-Panel-Pro.ipa',
-  exeUrl: v.exeUrl || 'https://dj-vip.vercel.app/DJ-Panel-Pro-Setup.exe'
+  apkUrl: 'https://dj-vip.onrender.com/DJ.a.la.carta.apk',
+  ipaUrl: v.ipaUrl || 'https://dj-vip.onrender.com/DJ-Panel-Pro.ipa',
+  exeUrl: v.exeUrl || 'https://dj-vip.onrender.com/DJ-Panel-Pro-Setup.exe'
 }).then(() => {
   console.log('  ✅ Firebase RTDB sincronizado con la versión ${NEW_VERSION}');
   process.exit(0);
@@ -274,8 +274,8 @@ echo -e "${PURPLE}==============================================================
 echo ""
 echo -e "  🍎 arm64 : ${DMG_ARM_URL}"
 echo -e "  🖥️  x64   : ${DMG_X64_URL}"
-echo -e "  📱 APK   : https://dj-vip.vercel.app/DJ.a.la.carta.apk"
-echo -e "  🌐 Web   : https://dj-vip.vercel.app"
+echo -e "  📱 APK   : https://dj-vip.onrender.com/DJ.a.la.carta.apk"
+echo -e "  🌐 Web   : https://dj-vip.onrender.com"
 echo -e "  📋 Release: https://github.com/${GITHUB_REPO}/releases/tag/${TAG}"
 echo ""
 exit 0

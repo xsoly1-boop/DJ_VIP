@@ -23,7 +23,7 @@ env_vars = [
     {"key": "VITE_FIREBASE_PROJECT_ID",        "value": "djvip-c2cc9"},
     {"key": "VITE_FIREBASE_MESSAGING_SENDER_ID","value": "814917855042"},
     {"key": "VITE_FIREBASE_APP_ID",            "value": "1:814917855042:web:066636a11780c97dfa0adb"},
-    {"key": "VITE_PUBLIC_URL",                 "value": "https://dj-vip.vercel.app/"},
+    {"key": "VITE_PUBLIC_URL",                 "value": "https://dj-vip.onrender.com/"},
     {"key": "NODE_ENV",                        "value": "production"},
 ]
 

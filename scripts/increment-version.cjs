@@ -64,10 +64,10 @@ async function increment() {
   // Las URLs se actualizan correctamente en deploy.sh al leer los assets reales de GitHub
   jsonContent.latestVersion = newVersion;
   // Solo establecer defaults si no existen, NUNCA sobreescribir URLs existentes
-  if (!jsonContent.apkUrl) jsonContent.apkUrl = 'https://dj-vip.vercel.app/DJ.a.la.carta.apk';
+  if (!jsonContent.apkUrl) jsonContent.apkUrl = 'https://dj-vip.onrender.com/DJ.a.la.carta.apk';
   if (!jsonContent.dmgUrl) jsonContent.dmgUrl = `https://github.com/xsoly1-boop/DJ_VIP/releases/download/v${newVersion}/DJ.a.la.carta.silicon.dmg`;
   if (!jsonContent.dmgUrlIntel) jsonContent.dmgUrlIntel = `https://github.com/xsoly1-boop/DJ_VIP/releases/download/v${newVersion}/DJ.a.la.carta.dmg`;
-  if (!jsonContent.ipaUrl) jsonContent.ipaUrl = 'https://dj-vip.vercel.app/DJ-Panel-Pro.ipa';
+  if (!jsonContent.ipaUrl) jsonContent.ipaUrl = 'https://dj-vip.onrender.com/DJ-Panel-Pro.ipa';
   if (!jsonContent.exeUrl) jsonContent.exeUrl = `https://github.com/xsoly1-boop/DJ_VIP/releases/download/v${newVersion}/DJ.a.la.carta.exe`;
   fs.writeFileSync(jsonPath, JSON.stringify(jsonContent, null, 2) + '\n', 'utf8');
   console.log(`[version.json] Actualizado a: ${newVersion}`);
@@ -97,7 +97,7 @@ async function increment() {
     try {
       await admin.database().ref('config/updates').update({
         latestVersion: newVersion,
-        apkUrl:    'https://dj-vip.vercel.app/DJ.a.la.carta.apk',
+        apkUrl:    'https://dj-vip.onrender.com/DJ.a.la.carta.apk',
         dmgUrl:    `https://github.com/xsoly1-boop/DJ_VIP/releases/download/v${newVersion}/DJ.a.la.carta.silicon.dmg`,
         dmgUrlIntel: `https://github.com/xsoly1-boop/DJ_VIP/releases/download/v${newVersion}/DJ.a.la.carta.dmg`,
         exeUrl:    `https://github.com/xsoly1-boop/DJ_VIP/releases/download/v${newVersion}/DJ.a.la.carta.exe`

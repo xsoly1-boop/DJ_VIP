@@ -15,7 +15,7 @@ async function updateRemoteVersion() {
   const updatesRef = db.ref('config/updates');
   await updatesRef.set({
     latestVersion: '1.0.0.39',
-    apkUrl: 'https://dj-vip.vercel.app/DJ%20a%20la%20Carta%20Pro.apk',
+    apkUrl: 'https://dj-vip.onrender.com/DJ%20a%20la%20Carta%20Pro.apk',
     dmgUrl: 'https://github.com/xsoly1-boop/DJ_VIP/releases/latest',
     releaseNotes: [
       'Reducción del ancho del menú lateral (sidebar) en pantalla de escritorio para optimizar el área útil del panel.',

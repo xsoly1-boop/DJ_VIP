@@ -148,7 +148,7 @@ async function createSubscription({ userId, planId, paymentMethod, uid }) {
         process.env.PUBLIC_URL ||
         process.env.VITE_PUBLIC_URL ||
         (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : null) ||
-        'https://dj-vip.vercel.app'
+        'https://dj-vip.onrender.com'
       ).replace(/\/$/, '');
 
 

@@ -34,7 +34,7 @@ async function run() {
   // 2. Write public/version.json
   const jsonContent = {
     latestVersion: VERSION_NAME,
-    apkUrl: 'https://dj-vip.vercel.app/DJ%20a%20la%20Carta%20Pro.apk',
+    apkUrl: 'https://dj-vip.onrender.com/DJ%20a%20la%20Carta%20Pro.apk',
     dmgUrl: 'https://github.com/xsoly1-boop/DJ_VIP/releases/download/v1.0.0.39/DJ%20Panel%20Pro-1.0.0.39-arm64.dmg',
     dmgUrlIntel: 'https://github.com/xsoly1-boop/DJ_VIP/releases/download/v1.0.0.39/DJ%20Panel%20Pro-1.0.0.39-x64.dmg',
     releaseNotes: RELEASE_NOTES
@@ -63,7 +63,7 @@ async function run() {
   const updatesRef = db.ref('config/updates');
   await updatesRef.set({
     latestVersion: VERSION_NAME,
-    apkUrl: 'https://dj-vip.vercel.app/DJ%20a%20la%20Carta%20Pro.apk',
+    apkUrl: 'https://dj-vip.onrender.com/DJ%20a%20la%20Carta%20Pro.apk',
     dmgUrl: 'https://github.com/xsoly1-boop/DJ_VIP/releases/download/v1.0.0.39/DJ%20Panel%20Pro-1.0.0.39-arm64.dmg',
     dmgUrlIntel: 'https://github.com/xsoly1-boop/DJ_VIP/releases/download/v1.0.0.39/DJ%20Panel%20Pro-1.0.0.39-x64.dmg',
     releaseNotes: RELEASE_NOTES
