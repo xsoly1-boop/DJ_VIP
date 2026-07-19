@@ -42,6 +42,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     var chkInstallDeps: NSButton!
     var chkCodesign:    NSButton!       // ad-hoc codesign app + dmg
     var chkInstallRosetta: NSButton!    // auto-install Rosetta 2
+    var chkBuildAndroid: NSButton!      // compile Android APK
     var chkOpenFinder:  NSButton!
 
     // ── Environment / Config
@@ -68,7 +69,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         "1/5  Verificar entorno  &  .env",
         "2/5  Dependencias  (npm ci)",
         "3/5  Frontend  (vite build)",
-        "4/5  Empaquetar  (electron-builder)",
+        "4/5  Empaquetar  (electron-builder / APK)",
         "5/5  Firma ad-hoc  (codesign)"
     ]
 
@@ -169,6 +170,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         chkInstallDeps     = addCheck("📦  Instalar dependencias (npm ci)", sub: "Reinstala node_modules desde package-lock.json.", oy: 310 - 110, parent: optP)
         chkCodesign        = addCheck("🔏  Firma ad-hoc (codesign)", sub: "Firma la app y el DMG sin Developer ID.", oy: 310 - 160, parent: optP)
         chkInstallRosetta  = addCheck("⚙️  Instalar Rosetta 2", sub: "Requerido para compilar Intel en Mac Silicon.", oy: 310 - 210, def: .off, parent: optP)
+        chkBuildAndroid    = addCheck("📱  Compilar APK de Android", sub: "Compila el paquete APK instalable para celulares.", oy: 310 - 260, def: .on, parent: optP)
         col1.addSubview(optP)
         root.addSubview(col1)
 
@@ -523,6 +525,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         let doInstall     = chkInstallDeps.state == .on
         let doCodesign    = chkCodesign.state == .on
         let doRosetta     = chkInstallRosetta.state == .on
+        let doAndroid     = chkBuildAndroid.state == .on
         let doFinder      = chkOpenFinder.state == .on
         let publicURL     = urlField.stringValue.trimmingCharacters(in: .whitespacesAndNewlines)
         let dir           = projectDir()
@@ -541,7 +544,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             self.phase_checkEnv(dir: dir, arch: arch, publicURL: publicURL,
                                 doClean: doClean, doInstall: doInstall,
                                 doCodesign: doCodesign, doRosetta: doRosetta,
-                                doFinder: doFinder)
+                                doFinder: doFinder, doAndroid: doAndroid)
         }
         DispatchQueue.global(qos: .userInitiated).async(execute: buildTask!)
     }
@@ -549,7 +552,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     // ── Phase 0: Check env + handle .env URL + Rosetta ───────────────────
     func phase_checkEnv(dir: String, arch: String, publicURL: String,
                         doClean: Bool, doInstall: Bool, doCodesign: Bool,
-                        doRosetta: Bool, doFinder: Bool) {
+                        doRosetta: Bool, doFinder: Bool, doAndroid: Bool) {
         startStage(0, msg: "Verificando entorno…")
         if isCancelled { return }
 
@@ -620,12 +623,12 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         if isCancelled { return }
         phase_deps(dir: dir, arch: arch, publicURL: publicURL,
                    doClean: doClean, doInstall: doInstall,
-                   doCodesign: doCodesign, doFinder: doFinder)
+                   doCodesign: doCodesign, doFinder: doFinder, doAndroid: doAndroid)
     }
 
     // ── Phase 1: Clean + Install deps ────────────────────────────────────
     func phase_deps(dir: String, arch: String, publicURL: String,
-                    doClean: Bool, doInstall: Bool, doCodesign: Bool, doFinder: Bool) {
+                    doClean: Bool, doInstall: Bool, doCodesign: Bool, doFinder: Bool, doAndroid: Bool) {
         startStage(1, msg: "Instalando dependencias…")
         if isCancelled { return }
 
@@ -652,12 +655,12 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         doneStage(1)
         if isCancelled { return }
         phase_vite(dir: dir, arch: arch, publicURL: publicURL,
-                   doCodesign: doCodesign, doFinder: doFinder)
+                   doCodesign: doCodesign, doFinder: doFinder, doAndroid: doAndroid)
     }
 
     // ── Phase 2: Vite build ───────────────────────────────────────────────
     func phase_vite(dir: String, arch: String, publicURL: String,
-                    doCodesign: Bool, doFinder: Bool) {
+                    doCodesign: Bool, doFinder: Bool, doAndroid: Bool) {
         startStage(2, msg: "Compilando React + Vite…")
         if isCancelled { return }
 
@@ -670,29 +673,53 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         prog(2, 100)
         doneStage(2)
         if isCancelled { return }
-        phase_electron(dir: dir, arch: arch, doCodesign: doCodesign, doFinder: doFinder)
+        phase_electron(dir: dir, arch: arch, doCodesign: doCodesign, doFinder: doFinder, doAndroid: doAndroid)
     }
 
     // ── Phase 3: electron-builder (with --dir + codesign + dmg) ──────────
-    func phase_electron(dir: String, arch: String, doCodesign: Bool, doFinder: Bool) {
-        startStage(3, msg: "Empaquetando con electron-builder…")
+    func phase_electron(dir: String, arch: String, doCodesign: Bool, doFinder: Bool, doAndroid: Bool) {
+        startStage(3, msg: doAndroid ? "Compilando APK y Desktop…" : "Empaquetando con electron-builder…")
         if isCancelled { return }
 
-        log("\n🔨  Empaquetando instalador (\(arch))…\n", color: C.yellow)
+        if doAndroid {
+            log("\n🤖  Compilando APK de Android...\n", color: C.accent)
+            log("  🔄  Ejecutando npx cap sync android...\n")
+            let okSync = streamShell("cd '\(dir)' && npx cap sync android 2>&1", stageIdx: 3, approxLines: 15, minPct: 0, maxPct: 15)
+            if !okSync { return failBuild("npx cap sync android falló.") }
+            prog(3, 15)
+            if isCancelled { return }
+            
+            log("  ⚙️  Compilando APK con Gradle (./gradlew assembleRelease)...\n")
+            let okGradle = streamShell("cd '\(dir)/android' && ./gradlew assembleRelease 2>&1", stageIdx: 3, approxLines: 250, minPct: 15, maxPct: 45)
+            if !okGradle { return failBuild("gradlew assembleRelease falló.") }
+            prog(3, 45)
+            if isCancelled { return }
+            
+            log("  📦  Copiando APK generado a carpeta pública...\n")
+            shellRun("cp '\(dir)/android/app/build/outputs/apk/release/app-release.apk' '\(dir)/public/DJ.a.la.carta.apk' 2>/dev/null || true")
+            shellRun("cp '\(dir)/android/app/build/outputs/apk/release/app-release.apk' '\(dir)/DJ.a.la.carta.apk' 2>/dev/null || true")
+            log("  ✅  APK de Android copiado con éxito: DJ.a.la.carta.apk\n", color: C.green)
+        }
+
+        log("\n🔨  Empaquetando instalador macOS (\(arch))…\n", color: C.yellow)
+
+        let minPct: Double = doAndroid ? 50 : 0
+        let midPct: Double = doAndroid ? 70 : 40
+        let maxPct: Double = doAndroid ? 100 : 100
 
         // Step A: --dir first (unpackaged app folder) for codesign
         if doCodesign {
             log("  📂  Generando carpeta de app sin empaquetar (--dir)…\n")
             let dirCmd = "cd '\(dir)' && CSC_IDENTITY_AUTO_DISCOVERY=false CSC_LINK='' npx electron-builder --mac --dir --\(arch) --publish never 2>&1"
-            let okDir = streamShell(dirCmd, stageIdx: 3, approxLines: 20, maxPct: 40)
+            let okDir = streamShell(dirCmd, stageIdx: 3, approxLines: 20, minPct: minPct, maxPct: midPct)
             if !okDir { return failBuild("electron-builder --dir falló.") }
-            prog(3, 40)
+            prog(3, midPct)
             if isCancelled { return }
-            phase_codesign(dir: dir, arch: arch, doFinder: doFinder)
+            phase_codesign(dir: dir, arch: arch, doFinder: doFinder, doAndroid: doAndroid)
         } else {
             // Without codesign — just build the DMG directly
             let cmd = "cd '\(dir)' && CSC_IDENTITY_AUTO_DISCOVERY=false CSC_LINK='' npx electron-builder --mac --\(arch) --publish never 2>&1"
-            let ok = streamShell(cmd, stageIdx: 3, approxLines: 30)
+            let ok = streamShell(cmd, stageIdx: 3, approxLines: 30, minPct: minPct, maxPct: maxPct)
             if !ok { return failBuild("electron-builder falló.") }
             prog(3, 100)
             doneStage(3)
@@ -700,12 +727,12 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             prog(4, 100)
             doneStage(4)
             if isCancelled { return }
-            buildDone(dir: dir, doFinder: doFinder)
+            buildDone(dir: dir, doFinder: doFinder, doAndroid: doAndroid)
         }
     }
 
     // ── Phase 4: ad-hoc codesign + DMG ────────────────────────────────────
-    func phase_codesign(dir: String, arch: String, doFinder: Bool) {
+    func phase_codesign(dir: String, arch: String, doFinder: Bool, doAndroid: Bool) {
         startStage(4, msg: "Aplicando firma ad-hoc…")
         if isCancelled { return }
 
@@ -739,7 +766,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         } else {
             packCmd = "cd '\(dir)' && CSC_IDENTITY_AUTO_DISCOVERY=false CSC_LINK='' npx electron-builder --mac --\(arch) --publish never 2>&1"
         }
-        let okDmg = streamShell(packCmd, stageIdx: 3, approxLines: 10, minPct: 40, maxPct: 100)
+        let okDmg = streamShell(packCmd, stageIdx: 3, approxLines: 10, minPct: 50, maxPct: 100)
         if !okDmg { return failBuild("Creación del DMG falló.") }
         prog(3, 100); doneStage(3)
         if isCancelled { return }
@@ -759,11 +786,11 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
         prog(4, 100); doneStage(4)
         if isCancelled { return }
-        buildDone(dir: dir, doFinder: doFinder)
+        buildDone(dir: dir, doFinder: doFinder, doAndroid: doAndroid)
     }
 
     // ── Build finished ────────────────────────────────────────────────────
-    func buildDone(dir: String, doFinder: Bool) {
+    func buildDone(dir: String, doFinder: Bool, doAndroid: Bool) {
         let dmgArm = shellOutput("find '\(dir)/dist-desktop' -name '*arm64*.dmg' 2>/dev/null | head -1").trimmingCharacters(in: .whitespacesAndNewlines)
         let dmgX64 = shellOutput("find '\(dir)/dist-desktop' -name '*.dmg' ! -name '*arm64*' ! -name '*universal*' 2>/dev/null | head -1").trimmingCharacters(in: .whitespacesAndNewlines)
         let dmgUni = shellOutput("find '\(dir)/dist-desktop' -name '*universal*.dmg' 2>/dev/null | head -1").trimmingCharacters(in: .whitespacesAndNewlines)
@@ -779,6 +806,14 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             self.log("╔══════════════════════════════════════════════════════════════╗\n", color: C.green)
             self.log("║  🎉  ¡COMPILACIÓN EXITOSA! LOS INSTALADORES ESTÁN LISTOS   ║\n", color: C.green)
             self.log("╚══════════════════════════════════════════════════════════════╝\n\n", color: C.green)
+
+            if doAndroid {
+                let apkPath = "\(dir)/DJ.a.la.carta.apk"
+                if FileManager.default.fileExists(atPath: apkPath) {
+                    let size = self.shellOutput("du -sh '\(apkPath)' | cut -f1").trimmingCharacters(in: .whitespacesAndNewlines)
+                    self.log("  📱 Android APK : \(apkPath)  (\(size))\n", color: C.green)
+                }
+            }
 
             let showDmg = { (label: String, path: String) in
                 if !path.isEmpty {
@@ -810,18 +845,31 @@ class AppDelegate: NSObject, NSApplicationDelegate {
                 if FileManager.default.fileExists(atPath: p) {
                     NSWorkspace.shared.selectFile(nil, inFileViewerRootedAtPath: p)
                 }
+                if doAndroid {
+                    NSWorkspace.shared.open(URL(fileURLWithPath: dir))
+                }
             }
 
             let alert = NSAlert()
             alert.messageText = "✅ ¡Compilación exitosa!"
-            alert.informativeText = "Los instaladores .dmg están en dist-desktop/\n\nRecuerda: primera apertura con clic derecho → Abrir."
+            
+            var infText = "Los instaladores están listos.\n\n"
+            if doAndroid {
+                infText += "📱 El APK se generó en la raíz: DJ.a.la.carta.apk\n"
+            }
+            infText += "🍎 Los DMGs de macOS están en dist-desktop/\n(Recuerda: primera apertura con clic derecho → Abrir)"
+            
+            alert.informativeText = infText
             alert.alertStyle = .informational
-            alert.addButton(withTitle: "Abrir Finder")
+            alert.addButton(withTitle: "Abrir carpetas")
             alert.addButton(withTitle: "Cerrar")
             if alert.runModal() == .alertFirstButtonReturn {
                 let p = "\(dir)/dist-desktop"
                 if FileManager.default.fileExists(atPath: p) {
                     NSWorkspace.shared.selectFile(nil, inFileViewerRootedAtPath: p)
+                }
+                if doAndroid {
+                    NSWorkspace.shared.open(URL(fileURLWithPath: dir))
                 }
             }
         }
@@ -1085,6 +1133,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     func setUIBuilding(_ building: Bool) {
         startBtn.isEnabled = !building; cancelBtn.isEnabled = building
         for r in [radioArm64, radioX64, radioUniversal, radioCurrent] { r?.isEnabled = !building }
+        chkBuildAndroid.isEnabled = !building
     }
 
     // MARK: - Console
