@@ -1861,7 +1861,7 @@ export const SupabaseProvider = ({ children }) => {
       return;
     }
 
-    if (status === 'played' || status === 'playing' || status === 'accepted') {
+    if (status === 'played' || status === 'playing' || status === 'rejected') {
       // Si pasa a reproducida, mover a played_requests
       const { data: req } = await supabase
         .from('requests')
