@@ -82,6 +82,8 @@ function createWindow() {
     }
   });
 
+  mainWindow.maximize();
+
   // Determinar si corre en desarrollo o producción
   const isDev = process.env.ELECTRON_DEV === 'true' || !app.isPackaged;
 
