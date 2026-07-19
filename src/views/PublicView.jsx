@@ -2474,7 +2474,20 @@ export default function PublicView() {
       };
       trackVolume();
 
-      const recorder = new MediaRecorder(stream, { mimeType: 'audio/webm' });
+      let recOptions = {};
+      if (typeof MediaRecorder !== 'undefined' && MediaRecorder.isTypeSupported) {
+        if (MediaRecorder.isTypeSupported('audio/webm;codecs=opus')) {
+          recOptions = { mimeType: 'audio/webm;codecs=opus' };
+        } else if (MediaRecorder.isTypeSupported('audio/webm')) {
+          recOptions = { mimeType: 'audio/webm' };
+        } else if (MediaRecorder.isTypeSupported('audio/mp4')) {
+          recOptions = { mimeType: 'audio/mp4' };
+        } else if (MediaRecorder.isTypeSupported('audio/aac')) {
+          recOptions = { mimeType: 'audio/aac' };
+        }
+      }
+
+      const recorder = new MediaRecorder(stream, recOptions);
       micRecorderRef.current = recorder;
       recorder.ondataavailable = e => { if (e.data.size > 0) micChunksRef.current.push(e.data); };
       recorder.onstop = () => sendMicAudioToAPI();
@@ -2511,7 +2524,8 @@ export default function PublicView() {
 
   async function sendMicAudioToAPI() {
     try {
-      const blob = new Blob(micChunksRef.current, { type: 'audio/webm' });
+      const mime = micRecorderRef.current?.mimeType || 'audio/webm';
+      const blob = new Blob(micChunksRef.current, { type: mime });
       const base64 = await new Promise((resolve, reject) => {
         const reader = new FileReader();
         reader.onload = () => resolve(reader.result.split(',')[1]);
@@ -2525,13 +2539,18 @@ export default function PublicView() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ audio: base64 }),
       });
-      const data = await res.json();
+      
+      let data = {};
+      const text = await res.text();
+      if (text && text.trim()) {
+        try { data = JSON.parse(text); } catch (e) { /* ignore */ }
+      }
 
-      if (data.success && data.result) {
+      if (res.ok && data.success && data.result) {
         setMicResult({ ...data.result, demo: data.demo });
         setMicState('done');
       } else {
-        setMicError(data.error || 'No se pudo identificar la canción. Intenta de nuevo.');
+        setMicError(data.error || `No se pudo identificar la canción (${res.status}). Intenta de nuevo.`);
         setMicState('error');
       }
     } catch (err) {
