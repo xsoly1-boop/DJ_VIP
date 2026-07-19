@@ -18,6 +18,8 @@ create table public.profiles (
   extra_requests integer default 0,
   extra_requests_expires_at bigint,
   strict_limit_enabled boolean default true,
+  logo_upload_enabled boolean default false,
+  custom_settings jsonb default '{}'::jsonb,
   revenue numeric(10, 2) default 0.0,
   created_at timestamptz default now()
 );
