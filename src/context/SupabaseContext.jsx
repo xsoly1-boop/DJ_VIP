@@ -1042,6 +1042,39 @@ export const SupabaseProvider = ({ children }) => {
 
   const isPublicView = window.location.search.includes('event=');
 
+  // Sincronizar el evento activo al cambiar de usuario o al cargar la sesión
+  useEffect(() => {
+    if (isMockMode || !activeUid || isPublicView) return;
+
+    const syncActiveEvent = async () => {
+      try {
+        const { data: activeEvent } = await supabase
+          .from('events')
+          .select('id')
+          .eq('owner_id', activeUid)
+          .eq('active', true)
+          .maybeSingle();
+
+        if (activeEvent) {
+          const frontendEventId = activeEvent.id === `default-event-${activeUid}` ? 'default-event' : activeEvent.id;
+          setCurrentEventId(frontendEventId);
+          localStorage.setItem(`djvip_active_event_id_${activeUid}`, frontendEventId);
+        } else {
+          const savedEventId = localStorage.getItem(`djvip_active_event_id_${activeUid}`);
+          if (savedEventId) {
+            setCurrentEventId(savedEventId);
+          } else {
+            setCurrentEventId('default-event');
+          }
+        }
+      } catch (e) {
+        console.warn("Fallo al sincronizar evento activo del usuario:", e);
+      }
+    };
+
+    syncActiveEvent();
+  }, [activeUid, isMockMode, isPublicView]);
+
   // Resolver el ownerUid del evento actual
   useEffect(() => {
     if (isMockMode) return;
