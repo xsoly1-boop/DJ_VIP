@@ -107,6 +107,7 @@ export default function DjDashboard() {
     plansConfig,
     revenueResetTimestamp,
     updatePlansConfig,
+    updateVersionConfig,
     sendSupportMessage,
     markSupportChatAsRead,
     subscribeToSupportChat,
@@ -584,13 +585,14 @@ export default function DjDashboard() {
         .map(line => line.trim())
         .filter(line => line.length > 0);
 
-      const updatesRef = ref(database, 'config/updates');
-      await set(updatesRef, {
-        latestVersion: adminUpdateVersion,
-        apkUrl: adminUpdateApkUrl,
-        dmgUrl: "https://github.com/xsoly1-boop/DJ_VIP/releases/latest",
-        releaseNotes: parsedNotes
-      });
+      if (updateVersionConfig) {
+        await updateVersionConfig({
+          latestVersion: adminUpdateVersion,
+          apkUrl: adminUpdateApkUrl,
+          dmgUrl: "https://github.com/xsoly1-boop/DJ_VIP/releases/latest",
+          releaseNotes: parsedNotes
+        });
+      }
 
       if (notifyUsersOnPublish) {
         const backendUrl = `${API_BASE}/api/admin/notify-update`;

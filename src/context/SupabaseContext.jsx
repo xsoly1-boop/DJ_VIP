@@ -636,6 +636,28 @@ export const SupabaseProvider = ({ children }) => {
     if (error) throw error;
     setPlansConfig(newPlansConfig);
   };
+
+  const updateVersionConfig = async (versionConfig) => {
+    if (!isAdminMaster) throw new Error("Acceso denegado: Solo el administrador master puede realizar esta acción.");
+    if (isMockMode) return;
+
+    const { data: adminProfile } = await supabase
+      .from('profiles')
+      .select('custom_settings')
+      .eq('email', 'dj@admin.com')
+      .maybeSingle();
+
+    const custom = adminProfile?.custom_settings || {};
+    custom.version_config = versionConfig;
+
+    const { error } = await supabase
+      .from('profiles')
+      .update({ custom_settings: custom })
+      .eq('email', 'dj@admin.com');
+
+    if (error) throw error;
+  };
+
   const sendSupportMessage = async (userUid, text) => {
     if (!user) throw new Error("Debes iniciar sesión para chatear.");
     const senderId = impersonatingUid || user.id;
@@ -2132,6 +2154,7 @@ export const SupabaseProvider = ({ children }) => {
       plansConfig,
       revenueResetTimestamp,
       updatePlansConfig,
+      updateVersionConfig,
       sendSupportMessage,
       markSupportChatAsRead,
       subscribeToSupportChat,
