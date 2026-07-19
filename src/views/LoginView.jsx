@@ -18,6 +18,29 @@ export default function LoginView() {
   const [successMessage, setSuccessMessage] = useState(null);
   const [loading, setLoading] = useState(false);
 
+  const [downloadUrls, setDownloadUrls] = useState({
+    apkUrl: 'https://dj-vip.onrender.com/DJ.a.la.carta.apk',
+    dmgUrl: 'https://github.com/xsoly1-boop/DJ_VIP/releases/latest',
+    dmgUrlIntel: 'https://github.com/xsoly1-boop/DJ_VIP/releases/latest',
+    exeUrl: 'https://github.com/xsoly1-boop/DJ_VIP/releases/latest'
+  });
+
+  useEffect(() => {
+    fetch('/version.json')
+      .then(res => res.json())
+      .then(data => {
+        if (data) {
+          setDownloadUrls({
+            apkUrl: data.apkUrl || 'https://dj-vip.onrender.com/DJ.a.la.carta.apk',
+            dmgUrl: data.dmgUrl || 'https://github.com/xsoly1-boop/DJ_VIP/releases/latest',
+            dmgUrlIntel: data.dmgUrlIntel || 'https://github.com/xsoly1-boop/DJ_VIP/releases/latest',
+            exeUrl: data.exeUrl || 'https://github.com/xsoly1-boop/DJ_VIP/releases/latest'
+          });
+        }
+      })
+      .catch(err => console.warn('No se pudo cargar version.json:', err));
+  }, []);
+
   // States for input focus glows
   const [emailFocused, setEmailFocused] = useState(false);
   const [passwordFocused, setPasswordFocused] = useState(false);
@@ -521,14 +544,155 @@ export default function LoginView() {
           fontSize: '0.7rem',
           color: 'rgba(255, 255, 255, 0.35)',
           marginTop: '25px',
-          marginBottom: '15px',
+          marginBottom: '10px',
           fontWeight: '600'
         }}>
           Versión Instalada: v{CURRENT_APP_VERSION}
         </p>
 
-        {/* ── Footer: Botón descarga APK ── */}
-
+        {/* ── Directorio de Descargas de Aplicaciones ── */}
+        <div style={{
+          marginTop: '20px',
+          borderTop: '1px solid rgba(255, 255, 255, 0.08)',
+          paddingTop: '20px',
+          textAlign: 'left'
+        }}>
+          <h5 style={{
+            fontSize: '0.8rem',
+            fontWeight: '700',
+            letterSpacing: '0.08em',
+            color: '#a78bfa',
+            textTransform: 'uppercase',
+            marginBottom: '10px',
+            marginTop: 0,
+            display: 'flex',
+            alignItems: 'center',
+            gap: '6px'
+          }}>
+            📥 Directorio de Descargas
+          </h5>
+          <p style={{ fontSize: '0.75rem', color: '#94a3b8', marginBottom: '14px', lineHeight: '1.4' }}>
+            Si aún no has instalado la app, descárgala en tu dispositivo:
+          </p>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+            <a
+              href={downloadUrls.apkUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                padding: '10px 8px',
+                background: 'rgba(255, 255, 255, 0.02)',
+                border: '1px solid rgba(255, 255, 255, 0.06)',
+                borderRadius: '8px',
+                color: '#ffffff',
+                fontSize: '0.78rem',
+                fontWeight: '500',
+                textDecoration: 'none',
+                transition: 'all 0.2s ease',
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.background = 'rgba(16, 185, 129, 0.08)';
+                e.currentTarget.style.borderColor = 'rgba(16, 185, 129, 0.3)';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.background = 'rgba(255, 255, 255, 0.02)';
+                e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.06)';
+              }}
+            >
+              <span>📱 Android (APK)</span>
+            </a>
+            <a
+              href={downloadUrls.exeUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                padding: '10px 8px',
+                background: 'rgba(255, 255, 255, 0.02)',
+                border: '1px solid rgba(255, 255, 255, 0.06)',
+                borderRadius: '8px',
+                color: '#ffffff',
+                fontSize: '0.78rem',
+                fontWeight: '500',
+                textDecoration: 'none',
+                transition: 'all 0.2s ease',
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.background = 'rgba(59, 130, 246, 0.08)';
+                e.currentTarget.style.borderColor = 'rgba(59, 130, 246, 0.3)';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.background = 'rgba(255, 255, 255, 0.02)';
+                e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.06)';
+              }}
+            >
+              <span>🪟 Windows (EXE)</span>
+            </a>
+            <a
+              href={downloadUrls.dmgUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                padding: '10px 8px',
+                background: 'rgba(255, 255, 255, 0.02)',
+                border: '1px solid rgba(255, 255, 255, 0.06)',
+                borderRadius: '8px',
+                color: '#ffffff',
+                fontSize: '0.78rem',
+                fontWeight: '500',
+                textDecoration: 'none',
+                transition: 'all 0.2s ease',
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.background = 'rgba(167, 139, 250, 0.08)';
+                e.currentTarget.style.borderColor = 'rgba(167, 139, 250, 0.3)';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.background = 'rgba(255, 255, 255, 0.02)';
+                e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.06)';
+              }}
+            >
+              <span>🍎 Mac Silicon (DMG)</span>
+            </a>
+            <a
+              href={downloadUrls.dmgUrlIntel}
+              target="_blank"
+              rel="noopener noreferrer"
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                padding: '10px 8px',
+                background: 'rgba(255, 255, 255, 0.02)',
+                border: '1px solid rgba(255, 255, 255, 0.06)',
+                borderRadius: '8px',
+                color: '#ffffff',
+                fontSize: '0.78rem',
+                fontWeight: '500',
+                textDecoration: 'none',
+                transition: 'all 0.2s ease',
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.background = 'rgba(167, 139, 250, 0.08)';
+                e.currentTarget.style.borderColor = 'rgba(167, 139, 250, 0.3)';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.background = 'rgba(255, 255, 255, 0.02)';
+                e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.06)';
+              }}
+            >
+              <span>💻 Mac Intel (DMG)</span>
+            </a>
+          </div>
+        </div>
 
       </div>
     </div>
