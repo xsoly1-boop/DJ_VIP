@@ -265,39 +265,49 @@ export default function PublicView() {
     document.title = `${webName}${eventTitle}`;
   }, [eventSettings.webName, eventSettings.title]);
 
-  // Filtrar canciones para el autocompletado evolutivo
+  // Buscar sugerencias para el autocompletado evolutivo en la BD (con debounce)
   useEffect(() => {
-    if (!title && !artist) {
+    const query = (title || artist || '').trim();
+    if (!query || query.length < 2) {
       setFilteredSongs([]);
       return;
     }
 
-    const query = (title || artist).toLowerCase();
-    const matches = autocompleteSongs.filter(song => 
-      song.title.toLowerCase().includes(query) || 
-      song.artist.toLowerCase().includes(query)
-    );
-    
-    // Limitar a 5 sugerencias más populares
-    setFilteredSongs(matches.slice(0, 5));
-  }, [title, artist, autocompleteSongs]);
+    const delayDebounceFn = setTimeout(async () => {
+      try {
+        if (searchAutocompleteSongs) {
+          const matches = await searchAutocompleteSongs(query);
+          setFilteredSongs(matches.slice(0, 5));
+        }
+      } catch (e) {
+        console.error("Error al buscar autocompletado:", e);
+      }
+    }, 250);
 
-  // Filtrar canciones para el buscador global rápido
+    return () => clearTimeout(delayDebounceFn);
+  }, [title, artist, searchAutocompleteSongs]);
+
+  // Buscar canciones para el buscador global rápido en la BD (con debounce)
   useEffect(() => {
-    if (!searchQuery) {
+    const q = (searchQuery || '').trim();
+    if (!q || q.length < 2) {
       setGlobalFilteredSongs([]);
       return;
     }
 
-    const q = searchQuery.toLowerCase();
-    const matches = autocompleteSongs.filter(song => 
-      (song.title && song.title.toLowerCase().includes(q)) || 
-      (song.artist && song.artist.toLowerCase().includes(q)) ||
-      (song.genre && song.genre.toLowerCase().includes(q))
-    );
-    
-    setGlobalFilteredSongs(matches.slice(0, 8));
-  }, [searchQuery, autocompleteSongs]);
+    const delayDebounceFn = setTimeout(async () => {
+      try {
+        if (searchAutocompleteSongs) {
+          const matches = await searchAutocompleteSongs(q);
+          setGlobalFilteredSongs(matches.slice(0, 8));
+        }
+      } catch (e) {
+        console.error("Error al buscar autocompletado global:", e);
+      }
+    }, 250);
+
+    return () => clearTimeout(delayDebounceFn);
+  }, [searchQuery, searchAutocompleteSongs]);
 
   // Cerrar sugerencias al hacer click afuera
   useEffect(() => {

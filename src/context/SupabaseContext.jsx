@@ -1617,13 +1617,15 @@ export const SupabaseProvider = ({ children }) => {
     }
   };
 
-  const searchAutocompleteSongs = async (prefix) => {
+  const searchAutocompleteSongs = async (queryText) => {
     if (isMockMode) return [];
+    const cleanQuery = (queryText || '').trim();
+    if (!cleanQuery) return [];
     const { data, error } = await supabase
       .from('autocomplete_songs')
       .select('*')
-      .ilike('title', `${prefix}%`)
-      .limit(150);
+      .or(`title.ilike.%${cleanQuery}%,artist.ilike.%${cleanQuery}%`)
+      .limit(100);
     if (error) throw error;
     return data || [];
   };
