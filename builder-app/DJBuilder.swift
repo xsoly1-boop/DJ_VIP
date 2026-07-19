@@ -32,10 +32,10 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     var outputView: NSTextView!
 
     // ── Architecture
-    var radioArm64:     NSButton!
-    var radioX64:       NSButton!
-    var radioUniversal: NSButton!
-    var radioCurrent:   NSButton!
+    var chkArm64:       NSButton!
+    var chkX64:         NSButton!
+    var chkUniversal:   NSButton!
+    var chkCurrent:     NSButton!
 
     // ── Build Options
     var chkClean:       NSButton!
@@ -140,21 +140,10 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         let archP = panel(frame: NSRect(x: 0, y: col1.frame.height - 310, width: 360, height: 310))
         sectionTitle("🎯  PLATAFORMAS Y ARQUITECTURA", in: archP, yTop: 310 - 8)
         
-        func addRadio(_ title: String, sub: String, ry: CGFloat, tag: Int, parent: NSView) -> NSButton {
-            let r = NSButton(radioButtonWithTitle: "  " + title, target: self, action: #selector(radioChanged(_:)))
-            r.frame = NSRect(x: 14, y: ry, width: 330, height: 22)
-            r.tag = tag; r.state = tag == 0 ? .on : .off
-            r.font = .systemFont(ofSize: 13, weight: .medium)
-            r.contentTintColor = C.text
-            parent.addSubview(r)
-            lbl(sub, size: 11, color: C.dim, frame: NSRect(x: 36, y: ry - 14, width: 310, height: 14), in: parent)
-            return r
-        }
-        
-        radioArm64      = addRadio("🍎  Apple Silicon (arm64)", sub: "Nativo en Mac M1/M2/M3/M4. Máximo rendimiento.", ry: 310 - 60, tag: 0, parent: archP)
-        radioX64        = addRadio("🖥️   Intel x64 (macOS 10.14+)", sub: "Compatible con Mac Intel.", ry: 310 - 110, tag: 1, parent: archP)
-        radioUniversal  = addRadio("🌐  Universal (arm64 + x64)", sub: "Un solo instalador para cualquier Mac. Más pesado.", ry: 310 - 160, tag: 2, parent: archP)
-        radioCurrent    = addRadio("⚡  Automático (chip actual)", sub: "Detecta el chip nativo y compila para él.", ry: 310 - 210, tag: 3, parent: archP)
+        chkArm64      = addCheck("🍎  Apple Silicon (arm64)", sub: "Nativo en Mac M1/M2/M3/M4. Máximo rendimiento.", oy: 310 - 60, def: .off, parent: archP)
+        chkX64        = addCheck("🖥️   Intel x64 (macOS 10.14+)", sub: "Compatible con Mac Intel.", oy: 310 - 110, def: .off, parent: archP)
+        chkUniversal  = addCheck("🌐  Universal (arm64 + x64)", sub: "Un solo instalador para cualquier Mac. Más pesado.", oy: 310 - 160, def: .on, parent: archP)
+        chkCurrent    = addCheck("⚡  Automático (chip actual)", sub: "Detecta el chip nativo y compila para él.", oy: 310 - 210, def: .off, parent: archP)
         chkBuildAndroid = addCheck("📱  Compilar APK de Android", sub: "Compila el paquete APK instalable para celulares.", oy: 310 - 260, def: .on, parent: archP)
         col1.addSubview(archP)
 
@@ -529,31 +518,38 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         return env
     }
 
-    // MARK: - Radio changed
-    @objc func radioChanged(_ sender: NSButton) {
-        for r in [radioArm64, radioX64, radioUniversal, radioCurrent] { r?.state = .off }
-        sender.state = .on
-    }
-
     // MARK: - START ────────────────────────────────────────────────────────
     @objc func startBuild() {
         guard !isBuilding else { return }
 
-        let arch: String
-        if radioArm64.state == .on          { arch = "arm64" }
-        else if radioX64.state == .on        { arch = "x64" }
-        else if radioUniversal.state == .on  { arch = "universal" }
-        else {
-            // auto-detect current chip
+        // Compile targets array
+        var macOSTargets: [String] = []
+        if chkArm64.state == .on     { macOSTargets.append("arm64") }
+        if chkX64.state == .on       { macOSTargets.append("x64") }
+        if chkUniversal.state == .on { macOSTargets.append("universal") }
+        if chkCurrent.state == .on {
             let native = shellOutput("uname -m").trimmingCharacters(in: .whitespacesAndNewlines)
-            arch = native == "arm64" ? "arm64" : "x64"
+            let nativeTarget = native == "arm64" ? "arm64" : "x64"
+            if !macOSTargets.contains(nativeTarget) {
+                macOSTargets.append(nativeTarget)
+            }
+        }
+
+        let doAndroid = chkBuildAndroid.state == .on
+
+        if macOSTargets.isEmpty && !doAndroid {
+            let a = NSAlert()
+            a.messageText = "Falta selección"; a.alertStyle = .critical
+            a.informativeText = "Selecciona al menos una plataforma o arquitectura para compilar."
+            a.addButton(withTitle: "Entendido")
+            a.runModal()
+            return
         }
 
         let doClean       = chkClean.state == .on
         let doInstall     = chkInstallDeps.state == .on
         let doCodesign    = chkCodesign.state == .on
         let doRosetta     = chkInstallRosetta.state == .on
-        let doAndroid     = chkBuildAndroid.state == .on
         let doFinder      = chkOpenFinder.state == .on
         let publicURL     = urlField.stringValue.trimmingCharacters(in: .whitespacesAndNewlines)
         let dir           = projectDir()
@@ -564,23 +560,46 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
         log("\n\n")
         log("╔══════════════════════════════════════════════════════════════╗\n", color: C.accent)
-        log("║  🚀  Iniciando compilación — Arquitectura: \(arch.padding(toLength: 10, withPad: " ", startingAt: 0))          ║\n", color: C.accent)
+        log("║  🚀  Iniciando proceso de compilación multi-plataforma      ║\n", color: C.accent)
         log("╚══════════════════════════════════════════════════════════════╝\n\n", color: C.accent)
 
         buildTask = DispatchWorkItem { [weak self] in
             guard let self else { return }
-            self.phase_checkEnv(dir: dir, arch: arch, publicURL: publicURL,
-                                doClean: doClean, doInstall: doInstall,
-                                doCodesign: doCodesign, doRosetta: doRosetta,
-                                doFinder: doFinder, doAndroid: doAndroid)
+            
+            // ── Phase 0: Check environment + Rosetta
+            let needsRosetta = doRosetta && (macOSTargets.contains("x64") || macOSTargets.contains("universal"))
+            self.phase_checkEnv(dir: dir, needsRosetta: needsRosetta, publicURL: publicURL, doAndroid: doAndroid)
+            if self.isCancelled { return }
+
+            // ── Phase 1: Clean & Install dependencies (Run once)
+            self.phase_deps(dir: dir, doClean: doClean, doInstall: doInstall)
+            if self.isCancelled { return }
+
+            // ── Phase 2: Vite compilation (Run once)
+            self.phase_vite(dir: dir, publicURL: publicURL)
+            if self.isCancelled { return }
+
+            // ── Phase 3: Android APK (if checked, run once)
+            if doAndroid {
+                self.phase_android(dir: dir)
+                if self.isCancelled { return }
+            }
+
+            // ── Phase 4: Build each macOS target
+            for (idx, target) in macOSTargets.enumerated() {
+                self.log("\n📦  Compilando macOS para target: \(target.uppercased()) (\(idx + 1)/\(macOSTargets.count))...\n", color: C.yellow)
+                self.phase_electron_target(dir: dir, arch: target, doCodesign: doCodesign)
+                if self.isCancelled { return }
+            }
+
+            // ── Build completed!
+            self.buildDone(dir: dir, doFinder: doFinder, doAndroid: doAndroid)
         }
         DispatchQueue.global(qos: .userInitiated).async(execute: buildTask!)
     }
 
     // ── Phase 0: Check env + handle .env URL + Rosetta ───────────────────
-    func phase_checkEnv(dir: String, arch: String, publicURL: String,
-                        doClean: Bool, doInstall: Bool, doCodesign: Bool,
-                        doRosetta: Bool, doFinder: Bool, doAndroid: Bool) {
+    func phase_checkEnv(dir: String, needsRosetta: Bool, publicURL: String, doAndroid: Bool) {
         startStage(0, msg: "Verificando entorno…")
         if isCancelled { return }
 
@@ -596,7 +615,6 @@ class AppDelegate: NSObject, NSApplicationDelegate {
                     json["version"] = coerced
                     if let newData = try? JSONSerialization.data(withJSONObject: json, options: [.prettyPrinted, .sortedKeys]),
                        var text = String(data: newData, encoding: .utf8) {
-                        // JSONSerialization uses 2-space indent, keep it clean
                         try? text.write(toFile: pkgPath, atomically: true, encoding: .utf8)
                         log("  ✅  Versión actualizada: \(oldVersion) → \(coerced) en package.json (coercionada a SemVer)\n", color: C.green)
                     }
@@ -629,7 +647,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         }
 
         // Install Rosetta if needed
-        if doRosetta && (arch == "x64" || arch == "universal") {
+        if needsRosetta {
             let hasRosetta = FileManager.default.fileExists(atPath: "/Library/Apple/usr/share/rosetta/rosetta")
             if !hasRosetta {
                 log("  ⚙️  Instalando Rosetta 2…\n", color: C.yellow)
@@ -649,15 +667,10 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
         prog(0, 100)
         doneStage(0)
-        if isCancelled { return }
-        phase_deps(dir: dir, arch: arch, publicURL: publicURL,
-                   doClean: doClean, doInstall: doInstall,
-                   doCodesign: doCodesign, doFinder: doFinder, doAndroid: doAndroid)
     }
 
     // ── Phase 1: Clean + Install deps ────────────────────────────────────
-    func phase_deps(dir: String, arch: String, publicURL: String,
-                    doClean: Bool, doInstall: Bool, doCodesign: Bool, doFinder: Bool, doAndroid: Bool) {
+    func phase_deps(dir: String, doClean: Bool, doInstall: Bool) {
         startStage(1, msg: "Instalando dependencias…")
         if isCancelled { return }
 
@@ -682,150 +695,111 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
         prog(1, 100)
         doneStage(1)
-        if isCancelled { return }
-        phase_vite(dir: dir, arch: arch, publicURL: publicURL,
-                   doCodesign: doCodesign, doFinder: doFinder, doAndroid: doAndroid)
     }
 
     // ── Phase 2: Vite build ───────────────────────────────────────────────
-    func phase_vite(dir: String, arch: String, publicURL: String,
-                    doCodesign: Bool, doFinder: Bool, doAndroid: Bool) {
+    func phase_vite(dir: String, publicURL: String) {
         startStage(2, msg: "Compilando React + Vite…")
         if isCancelled { return }
 
         log("\n⚡  Compilando frontend (React + Vite)…\n", color: C.yellow)
-        // Inject VITE_PUBLIC_URL if provided
         let envPrefix = publicURL.isEmpty ? "" : "VITE_PUBLIC_URL='\(publicURL)' "
         let ok = streamShell("\(envPrefix)cd '\(dir)' && npm run build 2>&1", stageIdx: 2, approxLines: 20)
         if !ok { return failBuild("Vite build falló. Revisa la consola.") }
 
         prog(2, 100)
         doneStage(2)
-        if isCancelled { return }
-        phase_electron(dir: dir, arch: arch, doCodesign: doCodesign, doFinder: doFinder, doAndroid: doAndroid)
     }
 
-    // ── Phase 3: electron-builder (with --dir + codesign + dmg) ──────────
-    func phase_electron(dir: String, arch: String, doCodesign: Bool, doFinder: Bool, doAndroid: Bool) {
-        startStage(3, msg: doAndroid ? "Compilando APK y Desktop…" : "Empaquetando con electron-builder…")
-        if isCancelled { return }
-
-        if doAndroid {
-            log("\n🤖  Compilando APK de Android...\n", color: C.accent)
-            
-            var javaPrefix = ""
-            let jbrPath = "/Applications/Android Studio.app/Contents/jbr/Contents/Home"
-            let jrePath = "/Applications/Android Studio.app/Contents/jre/Contents/Home"
-            if FileManager.default.fileExists(atPath: jbrPath) {
-                javaPrefix = "export JAVA_HOME='\(jbrPath)' && export PATH='\(jbrPath)/bin':$PATH && "
-            } else if FileManager.default.fileExists(atPath: jrePath) {
-                javaPrefix = "export JAVA_HOME='\(jrePath)' && export PATH='\(jrePath)/bin':$PATH && "
-            }
-            
-            log("  🔄  Ejecutando npx cap sync android...\n")
-            let okSync = streamShell("\(javaPrefix)cd '\(dir)' && npx cap sync android 2>&1", stageIdx: 3, approxLines: 15, minPct: 0, maxPct: 15)
-            if !okSync { return failBuild("npx cap sync android falló.") }
-            prog(3, 15)
-            if isCancelled { return }
-            
-            log("  ⚙️  Compilando APK con Gradle (./gradlew assembleRelease)...\n")
-            let okGradle = streamShell("\(javaPrefix)cd '\(dir)/android' && ./gradlew assembleRelease 2>&1", stageIdx: 3, approxLines: 250, minPct: 15, maxPct: 45)
-            if !okGradle { return failBuild("gradlew assembleRelease falló.") }
-            prog(3, 45)
-            if isCancelled { return }
-            
-            log("  📦  Copiando APK generado a carpeta pública...\n")
-            shellRun("cp '\(dir)/android/app/build/outputs/apk/release/app-release.apk' '\(dir)/public/DJ.a.la.carta.apk' 2>/dev/null || true")
-            shellRun("cp '\(dir)/android/app/build/outputs/apk/release/app-release.apk' '\(dir)/DJ.a.la.carta.apk' 2>/dev/null || true")
-            log("  ✅  APK de Android copiado con éxito: DJ.a.la.carta.apk\n", color: C.green)
+    // ── Phase 3: Android APK (if checked) ─────────────────────────────────
+    func phase_android(dir: String) {
+        log("\n🤖  Compilando APK de Android...\n", color: C.accent)
+        
+        var javaPrefix = ""
+        let jbrPath = "/Applications/Android Studio.app/Contents/jbr/Contents/Home"
+        let jrePath = "/Applications/Android Studio.app/Contents/jre/Contents/Home"
+        if FileManager.default.fileExists(atPath: jbrPath) {
+            javaPrefix = "export JAVA_HOME='\(jbrPath)' && export PATH='\(jbrPath)/bin':$PATH && "
+        } else if FileManager.default.fileExists(atPath: jrePath) {
+            javaPrefix = "export JAVA_HOME='\(jrePath)' && export PATH='\(jrePath)/bin':$PATH && "
         }
+        
+        log("  🔄  Ejecutando npx cap sync android...\n")
+        let okSync = streamShell("\(javaPrefix)cd '\(dir)' && npx cap sync android 2>&1", stageIdx: 3, approxLines: 15, minPct: 0, maxPct: 30)
+        if !okSync { return failBuild("npx cap sync android falló.") }
+        if isCancelled { return }
+        
+        log("  ⚙️  Compilando APK con Gradle (./gradlew assembleRelease)...\n")
+        let okGradle = streamShell("\(javaPrefix)cd '\(dir)/android' && ./gradlew assembleRelease 2>&1", stageIdx: 3, approxLines: 250, minPct: 30, maxPct: 90)
+        if !okGradle { return failBuild("gradlew assembleRelease falló.") }
+        if isCancelled { return }
+        
+        log("  📦  Copiando APK generado a carpeta pública...\n")
+        shellRun("cp '\(dir)/android/app/build/outputs/apk/release/app-release.apk' '\(dir)/public/DJ.a.la.carta.apk' 2>/dev/null || true")
+        shellRun("cp '\(dir)/android/app/build/outputs/apk/release/app-release.apk' '\(dir)/DJ.a.la.carta.apk' 2>/dev/null || true")
+        log("  ✅  APK de Android copiado con éxito: DJ.a.la.carta.apk\n", color: C.green)
+    }
 
+    // ── Phase 4: Target macOS compilation ─────────────────────────────────
+    func phase_electron_target(dir: String, arch: String, doCodesign: Bool) {
         log("\n🔨  Empaquetando instalador macOS (\(arch))…\n", color: C.yellow)
-
-        let minPct: Double = doAndroid ? 50 : 0
-        let midPct: Double = doAndroid ? 70 : 40
-        let maxPct: Double = doAndroid ? 100 : 100
 
         // Step A: --dir first (unpackaged app folder) for codesign
         if doCodesign {
             log("  📂  Generando carpeta de app sin empaquetar (--dir)…\n")
             let dirCmd = "cd '\(dir)' && CSC_IDENTITY_AUTO_DISCOVERY=false CSC_LINK='' npx electron-builder --mac --dir --\(arch) --publish never 2>&1"
-            let okDir = streamShell(dirCmd, stageIdx: 3, approxLines: 20, minPct: minPct, maxPct: midPct)
+            let okDir = streamShell(dirCmd, stageIdx: 3, approxLines: 20, minPct: 0, maxPct: 50)
             if !okDir { return failBuild("electron-builder --dir falló.") }
-            prog(3, midPct)
             if isCancelled { return }
-            phase_codesign(dir: dir, arch: arch, doFinder: doFinder, doAndroid: doAndroid)
+            
+            // Find the .app folder
+            let appFolder: String
+            switch arch {
+            case "arm64":     appFolder = "\(dir)/dist-desktop/mac-arm64"
+            case "x64":       appFolder = "\(dir)/dist-desktop/mac"
+            case "universal": appFolder = "\(dir)/dist-desktop/mac-universal"
+            default:          appFolder = "\(dir)/dist-desktop"
+            }
+
+            // Find .app bundle inside the folder
+            let appPath = shellOutput("find '\(appFolder)' -name '*.app' -maxdepth 2 2>/dev/null | head -1")
+                .trimmingCharacters(in: .whitespacesAndNewlines)
+
+            if !appPath.isEmpty {
+                log("  🔏  Aplicando firma ad-hoc a la App…\n  \(appPath)\n", color: C.yellow)
+                shellRun("codesign --force --deep --sign - '\(appPath)' 2>/dev/null || true")
+                log("  ✅  Firma aplicada a la App\n")
+                
+                log("\n  📦  Creando DMG con app ya firmada…\n", color: C.yellow)
+                let packCmd = "cd '\(dir)' && CSC_IDENTITY_AUTO_DISCOVERY=false CSC_LINK='' npx electron-builder --mac --\(arch) --prepackaged '\(appPath)' --publish never 2>&1"
+                let okDmg = streamShell(packCmd, stageIdx: 3, approxLines: 10, minPct: 50, maxPct: 100)
+                if !okDmg { return failBuild("Creación del DMG falló.") }
+            } else {
+                log("  ⚠️  No se encontró la .app para firmar, compilando DMG directo\n", color: C.yellow)
+                let cmd = "cd '\(dir)' && CSC_IDENTITY_AUTO_DISCOVERY=false CSC_LINK='' npx electron-builder --mac --\(arch) --publish never 2>&1"
+                let ok = streamShell(cmd, stageIdx: 3, approxLines: 30, minPct: 0, maxPct: 100)
+                if !ok { return failBuild("electron-builder falló.") }
+            }
         } else {
             // Without codesign — just build the DMG directly
             let cmd = "cd '\(dir)' && CSC_IDENTITY_AUTO_DISCOVERY=false CSC_LINK='' npx electron-builder --mac --\(arch) --publish never 2>&1"
-            let ok = streamShell(cmd, stageIdx: 3, approxLines: 30, minPct: minPct, maxPct: maxPct)
+            let ok = streamShell(cmd, stageIdx: 3, approxLines: 30, minPct: 0, maxPct: 100)
             if !ok { return failBuild("electron-builder falló.") }
-            prog(3, 100)
-            doneStage(3)
-            // Skip codesign, go directly to done
-            prog(4, 100)
-            doneStage(4)
-            if isCancelled { return }
-            buildDone(dir: dir, doFinder: doFinder, doAndroid: doAndroid)
-        }
-    }
-
-    // ── Phase 4: ad-hoc codesign + DMG ────────────────────────────────────
-    func phase_codesign(dir: String, arch: String, doFinder: Bool, doAndroid: Bool) {
-        startStage(4, msg: "Aplicando firma ad-hoc…")
-        if isCancelled { return }
-
-        // Find the .app folder
-        let appFolder: String
-        switch arch {
-        case "arm64":     appFolder = "\(dir)/dist-desktop/mac-arm64"
-        case "x64":       appFolder = "\(dir)/dist-desktop/mac"
-        case "universal": appFolder = "\(dir)/dist-desktop/mac-universal"
-        default:          appFolder = "\(dir)/dist-desktop"
         }
 
-        // Find .app bundle inside the folder
-        let appPath = shellOutput("find '\(appFolder)' -name '*.app' -maxdepth 2 2>/dev/null | head -1")
-            .trimmingCharacters(in: .whitespacesAndNewlines)
-
-        if !appPath.isEmpty {
-            log("  🔏  Aplicando firma ad-hoc a la App…\n  \(appPath)\n", color: C.yellow)
-            shellRun("codesign --force --deep --sign - '\(appPath)' 2>/dev/null || true")
-            log("  ✅  Firma aplicada a la App\n")
-        } else {
-            log("  ⚠️  No se encontró la .app para firmar\n", color: C.yellow)
-        }
-        prog(4, 50)
-
-        // Now build the DMG from the pre-packaged (signed) app
-        log("\n  📦  Creando DMG con app ya firmada…\n", color: C.yellow)
-        let packCmd: String
-        if !appPath.isEmpty {
-            packCmd = "cd '\(dir)' && CSC_IDENTITY_AUTO_DISCOVERY=false CSC_LINK='' npx electron-builder --mac --\(arch) --prepackaged '\(appPath)' --publish never 2>&1"
-        } else {
-            packCmd = "cd '\(dir)' && CSC_IDENTITY_AUTO_DISCOVERY=false CSC_LINK='' npx electron-builder --mac --\(arch) --publish never 2>&1"
-        }
-        let okDmg = streamShell(packCmd, stageIdx: 3, approxLines: 10, minPct: 50, maxPct: 100)
-        if !okDmg { return failBuild("Creación del DMG falló.") }
-        prog(3, 100); doneStage(3)
-        if isCancelled { return }
-
-        // Sign the DMG container too
-        let dmgPath = shellOutput("find '\(dir)/dist-desktop' -name '*.dmg' 2>/dev/null | head -1")
-            .trimmingCharacters(in: .whitespacesAndNewlines)
-        if !dmgPath.isEmpty {
-            log("  🔏  Aplicando firma ad-hoc al archivo DMG…\n", color: C.yellow)
-            shellRun("codesign --force --sign - '\(dmgPath)' 2>/dev/null || true")
-            log("  ✅  Firma aplicada al DMG\n")
+        // Sign the DMG container too (if codesign is enabled)
+        if doCodesign {
+            let dmgPath = shellOutput("find '\(dir)/dist-desktop' -name '*\(arch)*.dmg' 2>/dev/null | head -1")
+                .trimmingCharacters(in: .whitespacesAndNewlines)
+            if !dmgPath.isEmpty {
+                log("  🔏  Aplicando firma ad-hoc al archivo DMG…\n", color: C.yellow)
+                shellRun("codesign --force --sign - '\(dmgPath)' 2>/dev/null || true")
+                log("  ✅  Firma aplicada al DMG\n")
+            }
         }
 
         // Remove quarantine for easier first open
         shellRun("xattr -cr '\(dir)/dist-desktop' 2>/dev/null || true")
-        log("  ✅  Atributo quarantine eliminado\n")
-
-        prog(4, 100); doneStage(4)
-        if isCancelled { return }
-        buildDone(dir: dir, doFinder: doFinder, doAndroid: doAndroid)
     }
 
     // ── Build finished ────────────────────────────────────────────────────
@@ -1232,8 +1206,9 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     func setUIBuilding(_ building: Bool) {
-        startBtn.isEnabled = !building; cancelBtn.isEnabled = building
-        for r in [radioArm64, radioX64, radioUniversal, radioCurrent] { r?.isEnabled = !building }
+        startBtn.isEnabled = !building
+        cancelBtn.isEnabled = building
+        for r in [chkArm64, chkX64, chkUniversal, chkCurrent] { r?.isEnabled = !building }
         chkBuildAndroid.isEnabled = !building
     }
 
