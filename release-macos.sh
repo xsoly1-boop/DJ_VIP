@@ -216,36 +216,13 @@ v.dmgUrl = '${DMG_ARM_URL}';
 v.dmgUrlIntel = '${DMG_X64_URL}';
 fs.writeFileSync('public/version.json', JSON.stringify(v, null, 2) + '\n', 'utf8');
 console.log('  ✅ version.json actualizado');
-
-const admin = require('firebase-admin');
-const sa = require('./serviceAccountKey.json');
-if (!admin.apps.length) {
-  admin.initializeApp({
-    credential: admin.credential.cert(sa),
-    databaseURL: 'https://djvip-c2cc9-default-rtdb.firebaseio.com'
-  });
-}
-admin.database().ref('config/updates').update({
-  latestVersion: '${NEW_VERSION}',
-  dmgUrl: '${DMG_ARM_URL}',
-  dmgUrlIntel: '${DMG_X64_URL}',
-  apkUrl: 'https://dj-vip.onrender.com/DJ.a.la.carta.apk',
-  ipaUrl: v.ipaUrl || 'https://dj-vip.onrender.com/DJ-Panel-Pro.ipa',
-  exeUrl: v.exeUrl || 'https://dj-vip.onrender.com/DJ-Panel-Pro-Setup.exe'
-}).then(() => {
-  console.log('  ✅ Firebase RTDB sincronizado con la versión ${NEW_VERSION}');
-  process.exit(0);
-}).catch(err => {
-  console.error('  ❌ Error actualizando Firebase:', err.message);
-  process.exit(1);
-});
 "
 
 # -----------------------------------------------------------------------
-# 6. Compilar Android APK y desplegar a Vercel
+# 6. Compilar Android APK
 # -----------------------------------------------------------------------
 echo ""
-echo -e "${CYAN}[6/7] Compilando APK Android y desplegando a Vercel...${RESET}"
+echo -e "${CYAN}[6/7] Compilando APK Android...${RESET}"
 
 # Rebuild dist sin archivos pesados
 npm run build
@@ -253,10 +230,6 @@ rm -f dist/*.dmg dist/*.apk dist/*.ipa 2>/dev/null || true
 npx cap sync --inline 2>/dev/null || npx cap sync
 
 NO_INCREMENT=true bash build-android.sh
-
-echo ""
-echo -e "${CYAN}[6/7] Desplegando a Vercel...${RESET}"
-npx vercel --prod --yes
 
 # -----------------------------------------------------------------------
 # 7. Push a GitHub

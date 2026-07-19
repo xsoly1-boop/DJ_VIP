@@ -350,8 +350,8 @@ parse_args() {
         BUILD_MACOS_INTEL=1
         BUILD_WINDOWS=1
         DEPLOY_GITHUB=1
-        DEPLOY_VERCEL=1
-        SYNC_FIREBASE=1
+        DEPLOY_VERCEL=0
+        SYNC_FIREBASE=0
         DO_GIT_PUSH=1
     fi
 }
@@ -378,9 +378,7 @@ show_interactive_menu() {
     echo ""
     echo -e "  ${YELLOW}── DESPLEGAR ─────────────────────────────────────────────${RESET}"
     echo -e "   ${GREEN}5${RESET}) 🐙 GitHub Release (crear release + subir binarios)"
-    echo -e "   ${GREEN}6${RESET}) ▲  Vercel (desplegar frontend web)"
-    echo -e "   ${GREEN}7${RESET}) 🔥 Firebase RTDB (sincronizar versión y URLs)"
-    echo -e "   ${GREEN}8${RESET}) 📤 Git Push (commit + push → Render se autodespliega)"
+    echo -e "   ${GREEN}6${RESET}) 📤 Git Push (commit + push → Render se autodespliega)"
     echo ""
     echo -e "  ${YELLOW}── PRUEBAS / UTILIDADES ─────────────────────────────${RESET}"
     echo -e "   ${CYAN}A${RESET}) 🔔 Test notificaciones → Admin Master"
@@ -388,7 +386,7 @@ show_interactive_menu() {
     echo -e "   ${CYAN}C${RESET}) 🎵 Inyectar peticiones de canciones a un evento"
     echo ""
     echo -e "  ${YELLOW}── ATAJOS ────────────────────────────────────────────────${RESET}"
-    echo -e "   ${GREEN}9${RESET}) ⭐ TODO (compilar todas las plataformas + desplegar todo)"
+    echo -e "   ${GREEN}9${RESET}) ⭐ TODO (compilar todas las plataformas + desplegar a GitHub y Render)"
     echo -e "   ${GREEN}0${RESET}) ❌ Cancelar"
     echo ""
     echo -ne "  ${WHITE}Tu selección: ${RESET}"
@@ -408,12 +406,11 @@ show_interactive_menu() {
             3) BUILD_MACOS_INTEL=1 ;;
             4) BUILD_WINDOWS=1 ;;
             5) DEPLOY_GITHUB=1 ;;
-            6) DEPLOY_VERCEL=1 ;;
-            7) SYNC_FIREBASE=1 ;;
+            6) DO_GIT_PUSH=1 ;;
+            7) echo -e "  ${YELLOW}Firebase RTDB ya no se utiliza para sincronizar versiones.${RESET}" ;;
             8) DO_GIT_PUSH=1 ;;
             9) BUILD_ANDROID=1; BUILD_MACOS_SILICON=1; BUILD_MACOS_INTEL=1
-               BUILD_WINDOWS=1; DEPLOY_GITHUB=1; DEPLOY_VERCEL=1
-               SYNC_FIREBASE=1; DO_GIT_PUSH=1 ;;
+               BUILD_WINDOWS=1; DEPLOY_GITHUB=1; DO_GIT_PUSH=1 ;;
             A|a) TEST_NOTIF_ADMIN=1 ;;
             B|b) TEST_NOTIF_USER=1 ;;
             C|c) INJECT_REQUESTS=1 ;;
@@ -425,8 +422,7 @@ show_interactive_menu() {
     # Si no seleccionó nada válido
     if [ $BUILD_ANDROID -eq 0 ] && [ $BUILD_MACOS_SILICON -eq 0 ] && \
        [ $BUILD_MACOS_INTEL -eq 0 ] && [ $BUILD_WINDOWS -eq 0 ] && \
-       [ $DEPLOY_GITHUB -eq 0 ] && [ $DEPLOY_VERCEL -eq 0 ] && \
-       [ $SYNC_FIREBASE -eq 0 ] && [ $DO_GIT_PUSH -eq 0 ] && \
+       [ $DEPLOY_GITHUB -eq 0 ] && [ $DO_GIT_PUSH -eq 0 ] && \
        [ $TEST_NOTIF_ADMIN -eq 0 ] && [ $TEST_NOTIF_USER -eq 0 ] && \
        [ $INJECT_REQUESTS -eq 0 ]; then
         echo -e "  ${YELLOW}No se seleccionó ninguna opción válida.${RESET}"
@@ -953,58 +949,8 @@ deploy_github_release() {
 }
 
 sync_firebase() {
-    if [ $SYNC_FIREBASE -eq 0 ]; then
-        return
-    fi
-
-    print_step "$CURRENT_STEP" "$TOTAL_STEPS" "Sincronizando Firebase RTDB" "🔥"
-    CURRENT_STEP=$((CURRENT_STEP + 1))
-
-    if [ ! -f "serviceAccountKey.json" ]; then
-        log_warn "serviceAccountKey.json no encontrado — Firebase sync omitido"
-        log_result "Firebase RTDB" "FAIL" "Sin credenciales"
-        return
-    fi
-
-    set +e
-    node -e "
-        const fs = require('fs');
-        const admin = require('firebase-admin');
-        const sa = require('./serviceAccountKey.json');
-        const v = JSON.parse(fs.readFileSync('public/version.json','utf8'));
-
-        if (!admin.apps.length) {
-            admin.initializeApp({
-                credential: admin.credential.cert(sa),
-                databaseURL: 'https://djvip-c2cc9-default-rtdb.firebaseio.com'
-            });
-        }
-
-        admin.database().ref('config/updates').update({
-            latestVersion: v.latestVersion,
-            apkUrl: v.apkUrl,
-            dmgUrl: v.dmgUrl,
-            dmgUrlIntel: v.dmgUrlIntel,
-            ipaUrl: v.ipaUrl || '',
-            exeUrl: v.exeUrl || '',
-            releaseNotes: v.releaseNotes || []
-        }).then(() => {
-            console.log('Firebase RTDB sincronizado con v${NEW_VERSION}');
-            process.exit(0);
-        }).catch(err => {
-            console.error('Error:', err.message);
-            process.exit(1);
-        });
-    " 2>&1
-    local FB_EXIT=$?
-    set -e
-
-    if [ $FB_EXIT -eq 0 ]; then
-        log_ok "Firebase RTDB → config/updates sincronizado"
-        log_result "Firebase RTDB" "OK" "config/updates → v${NEW_VERSION}"
-    else
-        log_result "Firebase RTDB" "FAIL" "Error al sincronizar"
-    fi
+    # Deprecated: Firebase RTDB no longer used for version sync
+    return 0
 }
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -1083,28 +1029,8 @@ verify_urls() {
 }
 
 deploy_vercel() {
-    if [ $DEPLOY_VERCEL -eq 0 ]; then
-        return
-    fi
-
-    print_step "$CURRENT_STEP" "$TOTAL_STEPS" "Desplegando a Vercel (producción)" "▲ "
-    CURRENT_STEP=$((CURRENT_STEP + 1))
-
-    # Limpiar binarios pesados de dist/ para que Vercel no suba 500MB
-    rm -f dist/*.dmg dist/*.exe 2>/dev/null || true
-
-    set +e
-    npx vercel --prod --yes 2>&1 | tail -8
-    local VERCEL_EXIT=$?
-    set -e
-
-    if [ $VERCEL_EXIT -eq 0 ]; then
-        log_ok "Frontend desplegado en https://dj-vip.vercel.app"
-        log_result "Vercel" "OK" "https://dj-vip.vercel.app"
-    else
-        log_warn "Vercel deploy tuvo problemas (código: ${VERCEL_EXIT})"
-        log_result "Vercel" "FAIL" "Deploy falló"
-    fi
+    # Deprecated: Vercel is no longer used for web hosting (migrated to Render)
+    return 0
 }
 
 do_git_push() {

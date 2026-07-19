@@ -155,7 +155,7 @@ if [ -z "${VITE_PUBLIC_URL:-}" ]; then
     echo ""
     echo -e "  ${YELLOW}⚠️  VITE_PUBLIC_URL no configurada — el QR no apuntará a tu sitio.${RESET}"
     if [ "$INTERACTIVE" -eq 1 ]; then
-        read -p "  Ingresa tu URL de Vercel (ej: https://mi-app.vercel.app) o Enter para omitir: " MANUAL_URL
+        read -p "  Ingresa tu URL de Render (ej: https://mi-app.onrender.com) o Enter para omitir: " MANUAL_URL
         if [ -n "${MANUAL_URL:-}" ]; then
             MANUAL_URL="${MANUAL_URL%/}"   # Quitar slash final
             if grep -q "VITE_PUBLIC_URL" .env 2>/dev/null; then
@@ -170,16 +170,15 @@ if [ -z "${VITE_PUBLIC_URL:-}" ]; then
         echo "   [No interactivo] Omitiendo configuración manual de URL."
     fi
 else
-    echo -e "  ✅ URL de Vercel (QR): ${GREEN}${VITE_PUBLIC_URL}${RESET}"
+    echo -e "  ✅ URL de Render (QR): ${GREEN}${VITE_PUBLIC_URL}${RESET}"
 fi
 
 echo ""
 echo -e "${PURPLE}┌─────────────────────────────────────────────────────────┐${RESET}"
 echo -e "${PURPLE}│           RESUMEN PRE-COMPILACIÓN                       │${RESET}"
 echo -e "${PURPLE}└─────────────────────────────────────────────────────────┘${RESET}"
-echo -e "  🔥 Firebase Proyecto  : ${CYAN}${VITE_FIREBASE_PROJECT_ID:-⚠️  No configurado}${RESET}"
-echo -e "  🌐 URL Vercel (QR)    : ${CYAN}${VITE_PUBLIC_URL:-⚠️  Sin configurar}${RESET}"
-echo -e "  💾 Storage Logos      : ${CYAN}${VITE_FIREBASE_STORAGE_BUCKET:-⚠️  No configurado}${RESET}"
+echo -e "  ⚡ Supabase URL       : ${CYAN}${VITE_SUPABASE_URL:-⚠️  No configurado}${RESET}"
+echo -e "  🌐 URL Render (QR)    : ${CYAN}${VITE_PUBLIC_URL:-⚠️  Sin configurar}${RESET}"
 echo -e "  🖥️  Arquitectura target : ${CYAN}${TARGET_ARCH}${RESET}"
 echo ""
 
