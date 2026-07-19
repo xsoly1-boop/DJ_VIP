@@ -79,6 +79,7 @@ export default function DjDashboard() {
     isMock,
     isAdminMaster,
     impersonatingUid,
+    ownerProfile,
     impersonateUser,
     stopImpersonating,
     updateActiveRequest,
