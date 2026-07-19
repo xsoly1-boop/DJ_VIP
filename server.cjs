@@ -162,6 +162,82 @@ app.post('/api/subscription/cancel', async (req, res) => {
   }
 });
 
+// ── AI Audio Recognition ────────────────────────────────────────────────────
+// POST /api/identify-audio
+// Receives a Base64-encoded audio blob and identifies the song via AudD API.
+// If AUDD_API_TOKEN is not set, runs in demo mode (simulates identification).
+app.post('/api/identify-audio', async (req, res) => {
+  try {
+    const { audio } = req.body; // base64-encoded audio data
+    if (!audio) return res.status(400).json({ success: false, error: 'No audio data received.' });
+
+    const token = process.env.AUDD_API_TOKEN;
+
+    // ── DEMO MODE (no token configured) ──────────────────────────────────
+    if (!token) {
+      const demos = [
+        { title: 'Ella Baila Sola', artist: 'Eslabon Armado & Peso Pluma', album: 'Ella Baila Sola', genre: 'Corridos Tumbados' },
+        { title: 'Golden Hour', artist: 'JVKE', album: 'this is what ____ feels like', genre: 'Pop' },
+        { title: 'Flowers', artist: 'Miley Cyrus', album: 'Endless Summer Vacation', genre: 'Pop' },
+        { title: 'La Bebe (Remix)', artist: 'Yng Lvcas & Peso Pluma', album: 'La Bebe Remix', genre: 'Urbano' },
+        { title: 'As It Was', artist: 'Harry Styles', album: "Harry's House", genre: 'Pop' },
+      ];
+      await new Promise(r => setTimeout(r, 2000)); // simulate processing delay
+      const song = demos[Math.floor(Math.random() * demos.length)];
+      return res.json({ success: true, demo: true, result: song });
+    }
+
+    // ── PRODUCTION MODE (AudD API) ────────────────────────────────────────
+    const audioBuffer = Buffer.from(audio, 'base64');
+
+    // Build multipart/form-data manually (native, no extra deps)
+    const boundary = `----DJVIPBoundary${Date.now()}`;
+    const fieldName = 'file';
+    const fileName = 'audio.mp3';
+
+    const bodyParts = [];
+    bodyParts.push(Buffer.from(
+      `--${boundary}\r\nContent-Disposition: form-data; name="${fieldName}"; filename="${fileName}"\r\nContent-Type: audio/mpeg\r\n\r\n`
+    ));
+    bodyParts.push(audioBuffer);
+    bodyParts.push(Buffer.from(`\r\n--${boundary}--\r\n`));
+    const multipartBody = Buffer.concat(bodyParts);
+
+    const auddRes = await fetch(
+      `https://api.audd.io/?api_token=${token}&return=title,artist,album,release_date,timecode,label&method=recognize`,
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': `multipart/form-data; boundary=${boundary}`,
+          'Content-Length': multipartBody.length.toString(),
+        },
+        body: multipartBody,
+      }
+    );
+
+    const data = await auddRes.json();
+    if (data.status === 'success' && data.result) {
+      const r = data.result;
+      return res.json({
+        success: true,
+        demo: false,
+        result: {
+          title:   r.title,
+          artist:  r.artist,
+          album:   r.album,
+          timecode: r.timecode,
+          label:   r.label,
+        }
+      });
+    } else {
+      return res.json({ success: false, error: 'No se pudo identificar la canción. Intenta de nuevo.' });
+    }
+  } catch (e) {
+    console.error('[identify-audio]', e);
+    res.status(500).json({ success: false, error: e.message });
+  }
+});
+
 const PORT = process.env.PORT || 4000;
 if (require.main === module) {
   app.listen(PORT, () => console.log(`🚀 Subscription API listening on port ${PORT}`));

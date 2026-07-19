@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useFirebase } from '../context/SupabaseContext';
-import { Music, Heart, Sparkles, Send, Clock, Volume2, ShieldAlert, CheckCircle } from 'lucide-react';
+import { Music, Heart, Sparkles, Send, Clock, Volume2, ShieldAlert, CheckCircle, Mic, MicOff, Loader2 } from 'lucide-react';
 
 // Generar o recuperar ID de sesión único para controlar anti-spam y votos
 const getSessionId = () => {
@@ -180,6 +180,21 @@ export default function PublicView() {
   const [focusedSuggestionIndex, setFocusedSuggestionIndex] = useState(-1);
   const [recentSearches, setRecentSearches] = useState([]);
   const [inlineSpellingSuggestion, setInlineSpellingSuggestion] = useState(null);
+
+  // ── AI Mic Recognition ────────────────────────────────────────────────
+  const [showMicModal, setShowMicModal] = useState(false);
+  const [micState, setMicState] = useState('idle'); // idle | recording | processing | done | error
+  const [micResult, setMicResult] = useState(null);
+  const [micError, setMicError] = useState('');
+  const [micCountdown, setMicCountdown] = useState(10);
+  const [micVolume, setMicVolume] = useState(0);
+  const micRecorderRef = useRef(null);
+  const micStreamRef = useRef(null);
+  const micChunksRef = useRef([]);
+  const micCountdownRef = useRef(null);
+  const micAnalyserRef = useRef(null);
+  const micAudioCtxRef = useRef(null);
+  const micAnimFrameRef = useRef(null);
 
   // Géneros aprendidos dinámicamente del historial de peticiones y autocompletado
   const dynamicGenres = React.useMemo(() => {
@@ -1115,18 +1130,39 @@ export default function PublicView() {
                 <label className="form-label" style={{ color: 'var(--secondary-color)', fontWeight: '700', display: 'flex', alignItems: 'center', gap: '6px' }}>
                   <span>🔍 Buscador Rápido (Autocompletar)</span>
                 </label>
-                <input
-                  type="text"
-                  placeholder="Busca por canción, artista o género..."
-                  className="input-field"
-                  value={searchQuery}
-                  onChange={(e) => {
-                    setSearchQuery(e.target.value);
-                    setShowGlobalSuggestions(true);
-                  }}
-                  onFocus={() => setShowGlobalSuggestions(true)}
-                  style={{ borderColor: 'rgba(6,182,212,0.3)', boxShadow: searchQuery ? '0 0 10px rgba(6,182,212,0.1)' : 'none' }}
-                />
+                <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+                  <input
+                    type="text"
+                    placeholder="Busca por canción, artista o género..."
+                    className="input-field"
+                    value={searchQuery}
+                    onChange={(e) => {
+                      setSearchQuery(e.target.value);
+                      setShowGlobalSuggestions(true);
+                    }}
+                    onFocus={() => setShowGlobalSuggestions(true)}
+                    style={{ borderColor: 'rgba(6,182,212,0.3)', boxShadow: searchQuery ? '0 0 10px rgba(6,182,212,0.1)' : 'none', paddingRight: '48px' }}
+                  />
+                  {/* Botón de micrófono IA */}
+                  <button
+                    id="btn-mic-identify"
+                    type="button"
+                    title="Identificar canción con IA 🎙️"
+                    onClick={() => { setShowMicModal(true); setMicState('idle'); setMicResult(null); setMicError(''); setMicCountdown(10); }}
+                    style={{
+                      position: 'absolute', right: '10px',
+                      background: 'none', border: 'none', cursor: 'pointer',
+                      color: 'rgba(6,182,212,0.8)', padding: '4px',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      transition: 'color 0.2s, transform 0.2s',
+                      borderRadius: '50%',
+                    }}
+                    onMouseEnter={e => { e.currentTarget.style.color = '#06b6d4'; e.currentTarget.style.transform = 'scale(1.15)'; }}
+                    onMouseLeave={e => { e.currentTarget.style.color = 'rgba(6,182,212,0.8)'; e.currentTarget.style.transform = 'scale(1)'; }}
+                  >
+                    <Mic size={18} />
+                  </button>
+                </div>
 
                 {/* Lista de Sugerencias Globales */}
                 {showGlobalSuggestions && globalFilteredSongs.length > 0 && (
@@ -2380,6 +2416,368 @@ export default function PublicView() {
           </div>
         </div>
       )}
+      {/* ══════════════════════════════════════════════════════════════ */}
+      {/* 🎙️ MODAL DE RECONOCIMIENTO DE CANCIÓN POR IA                  */}
+      {/* ══════════════════════════════════════════════════════════════ */}
+      {showMicModal && (
+        <MicModal
+          state={micState}
+          result={micResult}
+          error={micError}
+          countdown={micCountdown}
+          volume={micVolume}
+          onStart={() => startMicRecording()}
+          onStop={() => stopMicRecording()}
+          onUse={(song) => {
+            setTitle(song.title || '');
+            setArtist(song.artist || '');
+            setSearchQuery(song.title ? `${song.title} - ${song.artist}` : '');
+            setShowMicModal(false);
+            setMicState('idle');
+            showToast(`✅ "${song.title}" añadido al formulario`, 'success');
+          }}
+          onClose={() => {
+            stopMicRecording();
+            setShowMicModal(false);
+            setMicState('idle');
+          }}
+        />
+      )}
     </div>
+  );
+
+  // ── Helpers de grabación ──────────────────────────────────────────────────
+  function startMicRecording() {
+    setMicState('recording');
+    setMicResult(null);
+    setMicError('');
+    setMicCountdown(10);
+    micChunksRef.current = [];
+
+    navigator.mediaDevices.getUserMedia({ audio: true }).then(stream => {
+      micStreamRef.current = stream;
+
+      // Analizador de volumen en tiempo real
+      const ctx = new (window.AudioContext || window.webkitAudioContext)();
+      micAudioCtxRef.current = ctx;
+      const analyser = ctx.createAnalyser();
+      analyser.fftSize = 256;
+      micAnalyserRef.current = analyser;
+      ctx.createMediaStreamSource(stream).connect(analyser);
+
+      const buf = new Uint8Array(analyser.frequencyBinCount);
+      const trackVolume = () => {
+        analyser.getByteFrequencyData(buf);
+        const avg = buf.reduce((a, b) => a + b, 0) / buf.length;
+        setMicVolume(Math.min(100, Math.round(avg * 2.5)));
+        micAnimFrameRef.current = requestAnimationFrame(trackVolume);
+      };
+      trackVolume();
+
+      const recorder = new MediaRecorder(stream, { mimeType: 'audio/webm' });
+      micRecorderRef.current = recorder;
+      recorder.ondataavailable = e => { if (e.data.size > 0) micChunksRef.current.push(e.data); };
+      recorder.onstop = () => sendMicAudioToAPI();
+      recorder.start();
+
+      // Cuenta regresiva de 10s
+      let secs = 10;
+      micCountdownRef.current = setInterval(() => {
+        secs -= 1;
+        setMicCountdown(secs);
+        if (secs <= 0) stopMicRecording();
+      }, 1000);
+    }).catch(err => {
+      setMicError('No se pudo acceder al micrófono. Verifica los permisos del navegador.');
+      setMicState('error');
+    });
+  }
+
+  function stopMicRecording() {
+    clearInterval(micCountdownRef.current);
+    cancelAnimationFrame(micAnimFrameRef.current);
+    setMicVolume(0);
+    if (micRecorderRef.current && micRecorderRef.current.state !== 'inactive') {
+      micRecorderRef.current.stop();
+    }
+    if (micStreamRef.current) {
+      micStreamRef.current.getTracks().forEach(t => t.stop());
+    }
+    if (micAudioCtxRef.current) {
+      micAudioCtxRef.current.close();
+    }
+    setMicState('processing');
+  }
+
+  async function sendMicAudioToAPI() {
+    try {
+      const blob = new Blob(micChunksRef.current, { type: 'audio/webm' });
+      const base64 = await new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result.split(',')[1]);
+        reader.onerror = reject;
+        reader.readAsDataURL(blob);
+      });
+
+      const backendUrl = import.meta.env.VITE_PUBLIC_URL || '';
+      const res = await fetch(`${backendUrl}/api/identify-audio`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ audio: base64 }),
+      });
+      const data = await res.json();
+
+      if (data.success && data.result) {
+        setMicResult({ ...data.result, demo: data.demo });
+        setMicState('done');
+      } else {
+        setMicError(data.error || 'No se pudo identificar la canción. Intenta de nuevo.');
+        setMicState('error');
+      }
+    } catch (err) {
+      setMicError('Error de conexión con el servidor. Intenta de nuevo.');
+      setMicState('error');
+    }
+  }
+
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+// 🎙️ MicModal — Modal de reconocimiento premium
+// ══════════════════════════════════════════════════════════════════════════════
+function MicModal({ state, result, error, countdown, volume, onStart, onStop, onUse, onClose }) {
+  const bars = 20;
+  return (
+    <>
+      <style>{`
+        @keyframes micPulse {
+          0%, 100% { transform: scale(1); opacity: 1; }
+          50% { transform: scale(1.18); opacity: 0.75; }
+        }
+        @keyframes micRing {
+          0% { transform: scale(0.8); opacity: 0.8; }
+          100% { transform: scale(2.2); opacity: 0; }
+        }
+        @keyframes micFadeIn {
+          from { opacity: 0; transform: translateY(24px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes micSpin {
+          to { transform: rotate(360deg); }
+        }
+        .mic-bar { transition: height 0.08s ease; }
+      `}</style>
+
+      {/* Overlay */}
+      <div
+        onClick={onClose}
+        style={{
+          position: 'fixed', inset: 0, zIndex: 9000,
+          background: 'rgba(0,0,0,0.75)',
+          backdropFilter: 'blur(8px)',
+          WebkitBackdropFilter: 'blur(8px)',
+        }}
+      />
+
+      {/* Panel */}
+      <div style={{
+        position: 'fixed', left: '50%', top: '50%',
+        transform: 'translate(-50%, -50%)',
+        zIndex: 9001,
+        width: 'min(92vw, 400px)',
+        background: 'linear-gradient(145deg, rgba(14,14,24,0.98), rgba(20,20,36,0.98))',
+        border: '1px solid rgba(6,182,212,0.3)',
+        borderRadius: '20px',
+        padding: '32px 28px 28px',
+        boxShadow: '0 30px 80px rgba(0,0,0,0.8), 0 0 40px rgba(6,182,212,0.12)',
+        animation: 'micFadeIn 0.3s ease',
+        textAlign: 'center',
+      }}>
+        {/* Cerrar */}
+        <button onClick={onClose} style={{
+          position: 'absolute', top: '14px', right: '16px',
+          background: 'none', border: 'none', color: 'rgba(255,255,255,0.4)',
+          fontSize: '20px', cursor: 'pointer', lineHeight: 1,
+        }}>✕</button>
+
+        {/* Título */}
+        <p style={{ margin: '0 0 6px', fontSize: '0.72rem', letterSpacing: '2px', color: 'rgba(6,182,212,0.7)', textTransform: 'uppercase', fontWeight: '700' }}>
+          Identificar Canción
+        </p>
+        <h3 style={{ margin: '0 0 28px', fontSize: '1.3rem', fontWeight: '800', color: '#fff' }}>
+          🎙️ Reconocimiento por IA
+        </h3>
+
+        {/* Icono central animado */}
+        <div style={{ position: 'relative', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', marginBottom: '24px' }}>
+          {state === 'recording' && (
+            <>
+              <div style={{ position:'absolute', width:'80px', height:'80px', borderRadius:'50%', border:'2px solid rgba(6,182,212,0.6)', animation:'micRing 1.2s ease-out infinite' }} />
+              <div style={{ position:'absolute', width:'80px', height:'80px', borderRadius:'50%', border:'2px solid rgba(6,182,212,0.3)', animation:'micRing 1.2s ease-out infinite 0.4s' }} />
+            </>
+          )}
+          <div style={{
+            width: '72px', height: '72px', borderRadius: '50%',
+            background: state === 'recording'
+              ? `radial-gradient(circle, rgba(6,182,212,${0.25 + volume / 250}) 0%, rgba(6,182,212,0.15) 70%)`
+              : state === 'processing'
+                ? 'rgba(124,58,237,0.2)'
+                : state === 'done'
+                  ? 'rgba(16,185,129,0.2)'
+                  : state === 'error'
+                    ? 'rgba(239,68,68,0.2)'
+                    : 'rgba(6,182,212,0.1)',
+            border: `2px solid ${state === 'done' ? '#10b981' : state === 'error' ? '#ef4444' : '#06b6d4'}`,
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            animation: state === 'recording' ? 'micPulse 0.8s ease-in-out infinite' : 'none',
+            transition: 'background 0.2s',
+          }}>
+            {state === 'processing'
+              ? <Loader2 size={32} color="#7c3aed" style={{ animation: 'micSpin 1s linear infinite' }} />
+              : state === 'done'
+                ? <span style={{ fontSize: '32px' }}>✅</span>
+                : state === 'error'
+                  ? <MicOff size={32} color="#ef4444" />
+                  : <Mic size={32} color="#06b6d4" />
+            }
+          </div>
+        </div>
+
+        {/* Visualizador de ondas durante grabación */}
+        {state === 'recording' && (
+          <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'center', gap: '3px', height: '48px', marginBottom: '16px' }}>
+            {Array.from({ length: bars }).map((_, i) => {
+              const heightPct = volume > 5
+                ? 15 + Math.abs(Math.sin((i / bars) * Math.PI + Date.now() / 250 + i)) * volume * 0.6
+                : 8 + Math.random() * 8;
+              return (
+                <div
+                  key={i}
+                  className="mic-bar"
+                  style={{
+                    width: '4px',
+                    height: `${Math.min(48, heightPct)}px`,
+                    borderRadius: '2px',
+                    background: `rgba(6,182,212,${0.4 + (i % 3) * 0.2})`,
+                  }}
+                />
+              );
+            })}
+          </div>
+        )}
+
+        {/* Mensajes de estado */}
+        <div style={{ minHeight: '56px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
+          {state === 'idle' && (
+            <p style={{ margin: 0, color: 'rgba(255,255,255,0.6)', fontSize: '0.9rem', lineHeight: 1.5 }}>
+              Toca <strong style={{ color: '#06b6d4' }}>Escuchar</strong> y acerca el celular a la música,<br />o tararea la melodía.
+            </p>
+          )}
+          {state === 'recording' && (
+            <>
+              <p style={{ margin: 0, color: '#06b6d4', fontWeight: '700', fontSize: '0.95rem' }}>
+                Escuchando... {countdown}s
+              </p>
+              <div style={{ width: '160px', height: '4px', background: 'rgba(255,255,255,0.1)', borderRadius: '4px', overflow: 'hidden' }}>
+                <div style={{ width: `${(countdown / 10) * 100}%`, height: '100%', background: 'linear-gradient(90deg, #06b6d4, #7c3aed)', borderRadius: '4px', transition: 'width 0.9s linear' }} />
+              </div>
+            </>
+          )}
+          {state === 'processing' && (
+            <p style={{ margin: 0, color: '#a78bfa', fontWeight: '700', fontSize: '0.95rem' }}>
+              Procesando con IA...
+            </p>
+          )}
+          {state === 'done' && result && (
+            <div style={{ background: 'rgba(16,185,129,0.1)', border: '1px solid rgba(16,185,129,0.3)', borderRadius: '12px', padding: '14px 18px', width: '100%' }}>
+              <p style={{ margin: '0 0 4px', fontWeight: '800', fontSize: '1.05rem', color: '#fff' }}>🎵 {result.title}</p>
+              <p style={{ margin: '0 0 2px', fontSize: '0.88rem', color: 'rgba(255,255,255,0.7)' }}>👤 {result.artist}</p>
+              {result.album && <p style={{ margin: 0, fontSize: '0.78rem', color: 'rgba(255,255,255,0.4)' }}>💿 {result.album}</p>}
+              {result.demo && <p style={{ margin: '6px 0 0', fontSize: '0.72rem', color: 'rgba(6,182,212,0.6)', letterSpacing: '1px' }}>MODO DEMO</p>}
+            </div>
+          )}
+          {state === 'error' && (
+            <p style={{ margin: 0, color: '#f87171', fontSize: '0.88rem', lineHeight: 1.5 }}>{error}</p>
+          )}
+        </div>
+
+        {/* Botones de acción */}
+        <div style={{ marginTop: '24px', display: 'flex', gap: '10px', justifyContent: 'center' }}>
+          {state === 'idle' && (
+            <button
+              id="btn-mic-start"
+              onClick={onStart}
+              style={{
+                flex: 1, padding: '13px', borderRadius: '12px', border: 'none', cursor: 'pointer',
+                background: 'linear-gradient(135deg, #06b6d4, #7c3aed)',
+                color: '#fff', fontWeight: '700', fontSize: '0.95rem',
+                boxShadow: '0 4px 20px rgba(6,182,212,0.35)',
+                transition: 'opacity 0.2s',
+              }}
+              onMouseEnter={e => e.currentTarget.style.opacity = '0.88'}
+              onMouseLeave={e => e.currentTarget.style.opacity = '1'}
+            >
+              🎙️ Escuchar
+            </button>
+          )}
+          {state === 'recording' && (
+            <button
+              id="btn-mic-stop"
+              onClick={onStop}
+              style={{
+                flex: 1, padding: '13px', borderRadius: '12px', border: 'none', cursor: 'pointer',
+                background: 'rgba(239,68,68,0.85)', color: '#fff', fontWeight: '700', fontSize: '0.95rem',
+                boxShadow: '0 4px 20px rgba(239,68,68,0.3)',
+              }}
+            >
+              ⏹ Detener
+            </button>
+          )}
+          {state === 'done' && result && (
+            <>
+              <button
+                id="btn-mic-use"
+                onClick={() => onUse(result)}
+                style={{
+                  flex: 1, padding: '13px', borderRadius: '12px', border: 'none', cursor: 'pointer',
+                  background: 'linear-gradient(135deg, #10b981, #06b6d4)',
+                  color: '#fff', fontWeight: '700', fontSize: '0.9rem',
+                  boxShadow: '0 4px 20px rgba(16,185,129,0.3)',
+                }}
+              >
+                ✅ Usar esta canción
+              </button>
+              <button
+                id="btn-mic-retry"
+                onClick={() => { onStart(); }}
+                style={{
+                  padding: '13px 16px', borderRadius: '12px', cursor: 'pointer',
+                  background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.1)',
+                  color: 'rgba(255,255,255,0.7)', fontWeight: '600', fontSize: '0.88rem',
+                }}
+              >
+                🔄
+              </button>
+            </>
+          )}
+          {state === 'error' && (
+            <button
+              id="btn-mic-retry-error"
+              onClick={() => { onStart(); }}
+              style={{
+                flex: 1, padding: '13px', borderRadius: '12px', border: 'none', cursor: 'pointer',
+                background: 'linear-gradient(135deg, #06b6d4, #7c3aed)',
+                color: '#fff', fontWeight: '700', fontSize: '0.95rem',
+              }}
+            >
+              🔄 Intentar de nuevo
+            </button>
+          )}
+          {(state === 'processing') && (
+            <p style={{ color: 'rgba(255,255,255,0.4)', fontSize: '0.8rem', margin: 0 }}>Por favor espera...</p>
+          )}
+        </div>
+      </div>
+    </>
   );
 }
