@@ -325,13 +325,57 @@ export const SupabaseProvider = ({ children }) => {
 
   const activeUid = impersonatingUid || user?.id;
 
-  const impersonateUser = (uid) => {
+  const impersonateUser = async (uid) => {
     setImpersonatingUid(uid);
-    setCurrentEventId('default-event');
+    try {
+      const { data: activeEvent } = await supabase
+        .from('events')
+        .select('id')
+        .eq('owner_id', uid)
+        .eq('active', true)
+        .maybeSingle();
+
+      if (activeEvent) {
+        const frontendEventId = activeEvent.id === `default-event-${uid}` ? 'default-event' : activeEvent.id;
+        setCurrentEventId(frontendEventId);
+        localStorage.setItem(`djvip_active_event_id_${uid}`, frontendEventId);
+      } else {
+        const savedEventId = localStorage.getItem(`djvip_active_event_id_${uid}`);
+        setCurrentEventId(savedEventId || 'default-event');
+      }
+    } catch {
+      const savedEventId = localStorage.getItem(`djvip_active_event_id_${uid}`);
+      setCurrentEventId(savedEventId || 'default-event');
+    }
   };
-  const stopImpersonating = () => {
+
+  const stopImpersonating = async () => {
     setImpersonatingUid(null);
-    setCurrentEventId('default-event');
+    const adminUid = user?.id;
+    if (adminUid) {
+      try {
+        const { data: activeEvent } = await supabase
+          .from('events')
+          .select('id')
+          .eq('owner_id', adminUid)
+          .eq('active', true)
+          .maybeSingle();
+
+        if (activeEvent) {
+          const frontendEventId = activeEvent.id === `default-event-${adminUid}` ? 'default-event' : activeEvent.id;
+          setCurrentEventId(frontendEventId);
+          localStorage.setItem(`djvip_active_event_id_${adminUid}`, frontendEventId);
+        } else {
+          const savedEventId = localStorage.getItem(`djvip_active_event_id_${adminUid}`);
+          setCurrentEventId(savedEventId || 'default-event');
+        }
+      } catch {
+        const savedEventId = localStorage.getItem(`djvip_active_event_id_${adminUid}`);
+        setCurrentEventId(savedEventId || 'default-event');
+      }
+    } else {
+      setCurrentEventId('default-event');
+    }
   };
 
   const updateActiveRequest = async () => {};

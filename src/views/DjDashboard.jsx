@@ -2433,7 +2433,7 @@ export default function DjDashboard() {
             </h1>
             <p style={{ fontSize: userProfile?.headerEventTextSize ? `${userProfile.headerEventTextSize}px` : '0.85rem', color: 'var(--text-secondary)' }}>
               {impersonatingUid
-                ? <span style={{ color: 'var(--warning-color)' }}>Viendo: {impersonatingUid}</span>
+                ? <span style={{ color: 'var(--warning-color)' }}>Viendo: {ownerProfile?.displayName || impersonatingUid} · Evento: <strong style={{ color: 'var(--secondary-color)' }}>{eventSettings.title}</strong></span>
                 : <>Evento: <strong style={{ color: 'var(--secondary-color)' }}>{eventSettings.title}</strong></>
               }
             </p>
