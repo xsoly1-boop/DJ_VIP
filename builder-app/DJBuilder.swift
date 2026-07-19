@@ -54,6 +54,12 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     var rosettaLabel:   NSTextField!
     var supabaseLabel:  NSTextField!
 
+    // ── Compiled URLs Panel
+    var apkUrlField:        NSTextField!
+    var dmgSiliconUrlField: NSTextField!
+    var dmgIntelUrlField:   NSTextField!
+    var exeUrlField:        NSTextField!
+
     // ── Testing / Utilities
     var testEmailField: NSTextField!
     var injectEmailField: NSTextField!
@@ -161,6 +167,38 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         chkCodesign        = addCheck("🔏  Firma ad-hoc (codesign)", sub: "Firma la app y el DMG sin Developer ID.", oy: 310 - 160, parent: optP)
         chkInstallRosetta  = addCheck("⚙️  Instalar Rosetta 2", sub: "Requerido para compilar Intel en Mac Silicon.", oy: 310 - 210, def: .off, parent: optP)
         col1.addSubview(optP)
+
+        // urlsP (height 158)
+        let urlsP = panel(frame: NSRect(x: 0, y: 0, width: 360, height: 158))
+        sectionTitle("📥  COMPILADOS DISPONIBLES EN REPOSITORIO", in: urlsP, yTop: 158 - 8)
+        
+        func addUrlRow(_ label: String, oy: CGFloat, action: Selector) -> NSTextField {
+            lbl(label, size: 11, bold: true, color: C.text, frame: NSRect(x: 14, y: oy + 2, width: 48, height: 16), in: urlsP)
+            
+            let f = NSTextField(frame: NSRect(x: 64, y: oy, width: 220, height: 20))
+            f.isEditable = false
+            f.isSelectable = true
+            f.backgroundColor = C.bg
+            f.textColor = C.text
+            f.font = .monospacedSystemFont(ofSize: 10, weight: .regular)
+            f.bezelStyle = .roundedBezel
+            f.isBezeled = true
+            urlsP.addSubview(f)
+            
+            let btn = NSButton(frame: NSRect(x: 290, y: oy - 1, width: 56, height: 22))
+            btn.target = self; btn.action = action
+            styleButton(btn, title: "Copiar", bg: C.panel2, fg: C.accent, size: 10, bold: true)
+            urlsP.addSubview(btn)
+            
+            return f
+        }
+        
+        apkUrlField        = addUrlRow("📱 APK", oy: 158 - 48, action: #selector(copyApkUrl))
+        dmgSiliconUrlField = addUrlRow("🍎 Arm", oy: 158 - 76, action: #selector(copySiliconUrl))
+        dmgIntelUrlField   = addUrlRow("🖥️ Intel", oy: 158 - 104, action: #selector(copyIntelUrl))
+        exeUrlField        = addUrlRow("🪟 Win", oy: 158 - 132, action: #selector(copyExeUrl))
+        
+        col1.addSubview(urlsP)
         root.addSubview(col1)
 
         // ── COLUMN 2 (x: 392, width: 360) - Environment & Config
@@ -468,6 +506,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         }
 
         log("\nSelecciona la arquitectura y presiona  Start.\n")
+        refreshDownloadedUrls()
     }
 
     func loadEnv(path: String) -> [String: String] {
@@ -800,6 +839,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         DispatchQueue.main.async {
             self.isBuilding = false
             self.setUIBuilding(false)
+            self.refreshDownloadedUrls()
 
             self.log("\n")
             self.log("╔══════════════════════════════════════════════════════════════╗\n", color: C.green)
@@ -1029,6 +1069,54 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         copyBtn.title = "  ✅  ¡Copiado!"
         DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
             self.copyBtn.title = original
+        }
+    }
+
+    // MARK: - Clipboard & URL Helpers
+    func copyToClipboard(_ text: String) {
+        NSPasteboard.general.clearContents()
+        NSPasteboard.general.setString(text, forType: .string)
+    }
+
+    @objc func copyApkUrl() {
+        copyToClipboard(apkUrlField.stringValue)
+        log("📋  URL de Android APK copiado al portapapeles\n", color: C.green)
+    }
+    @objc func copySiliconUrl() {
+        copyToClipboard(dmgSiliconUrlField.stringValue)
+        log("📋  URL de macOS Silicon DMG copiado al portapapeles\n", color: C.green)
+    }
+    @objc func copyIntelUrl() {
+        copyToClipboard(dmgIntelUrlField.stringValue)
+        log("📋  URL de macOS Intel DMG copiado al portapapeles\n", color: C.green)
+    }
+    @objc func copyExeUrl() {
+        copyToClipboard(exeUrlField.stringValue)
+        log("📋  URL de Windows EXE copiado al portapapeles\n", color: C.green)
+    }
+
+    func loadVersionJson() -> [String: Any]? {
+        let dir = projectDir()
+        let path = "\(dir)/public/version.json"
+        guard let data = try? Data(contentsOf: URL(fileURLWithPath: path)),
+              let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any] else {
+            return nil
+        }
+        return json
+    }
+
+    func refreshDownloadedUrls() {
+        let env = loadVersionJson()
+        let apk = env?["apkUrl"] as? String ?? ""
+        let dmgSilicon = env?["dmgUrl"] as? String ?? ""
+        let dmgIntel = env?["dmgUrlIntel"] as? String ?? ""
+        let exe = env?["exeUrl"] as? String ?? ""
+        
+        DispatchQueue.main.async {
+            self.apkUrlField.stringValue = apk.isEmpty ? "No disponible" : apk
+            self.dmgSiliconUrlField.stringValue = dmgSilicon.isEmpty ? "No disponible" : dmgSilicon
+            self.dmgIntelUrlField.stringValue = dmgIntel.isEmpty ? "No disponible" : dmgIntel
+            self.exeUrlField.stringValue = exe.isEmpty ? "No disponible" : exe
         }
     }
 
