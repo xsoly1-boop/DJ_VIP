@@ -53,6 +53,11 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     var rosettaLabel:   NSTextField!
     var supabaseLabel:  NSTextField!
 
+    // ── Testing / Utilities
+    var testEmailField: NSTextField!
+    var injectEmailField: NSTextField!
+    var injectCountField: NSTextField!
+
     // ── State: generated DMG paths after build
     var generatedDMGPaths: [String] = []
     var copyBtn: NSButton!
@@ -95,13 +100,13 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
     // MARK: - Build Window ─────────────────────────────────────────────────
     func buildWindow() {
-        let W: CGFloat = 1200, H: CGFloat = 800
+        let W: CGFloat = 1200, H: CGFloat = 920
         window = NSWindow(
             contentRect: NSRect(x: 0, y: 0, width: W, height: H),
             styleMask: [.titled, .closable, .miniaturizable, .resizable],
             backing: .buffered, defer: false)
         window.title = "DJ Panel Pro — Compilador macOS"
-        window.minSize = NSSize(width: 1150, height: 750)
+        window.minSize = NSSize(width: 1150, height: 870)
         window.center()
         window.isReleasedWhenClosed = false
         window.appearance = NSAppearance(named: .darkAqua)
@@ -171,25 +176,25 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         let col2 = NSView(frame: NSRect(x: 392, y: 16, width: 360, height: H - 78 - 32))
         col2.autoresizingMask = [.height, .maxXMargin]
 
-        // envP
-        let envP = panel(frame: NSRect(x: 0, y: col2.frame.height - 200, width: 360, height: 200))
-        sectionTitle("🔍  ENTORNO DETECTADO", in: envP, yTop: 200 - 8)
+        // envP (height 170)
+        let envP = panel(frame: NSRect(x: 0, y: col2.frame.height - 170, width: 360, height: 170))
+        sectionTitle("🔍  ENTORNO DETECTADO", in: envP, yTop: 170 - 8)
         
-        nodeVerLabel  = lbl("Node.js: detectando…", size: 12, color: C.dim, frame: NSRect(x: 14, y: 200 - 56, width: 332, height: 16), in: envP)
-        chipLabel     = lbl("Chip: detectando…",    size: 12, color: C.dim, frame: NSRect(x: 14, y: 200 - 76, width: 332, height: 16), in: envP)
-        rosettaLabel  = lbl("Rosetta 2: —",         size: 12, color: C.dim, frame: NSRect(x: 14, y: 200 - 96, width: 332, height: 16), in: envP)
-        supabaseLabel = lbl("Supabase URL: —",       size: 12, color: C.dim, frame: NSRect(x: 14, y: 200 - 116, width: 332, height: 16), in: envP)
-        envStatusLabel = lbl(".env: detectando…",   size: 12, color: C.dim, frame: NSRect(x: 14, y: 200 - 136, width: 332, height: 16), in: envP)
+        nodeVerLabel  = lbl("Node.js: detectando…", size: 12, color: C.dim, frame: NSRect(x: 14, y: 170 - 50, width: 332, height: 16), in: envP)
+        chipLabel     = lbl("Chip: detectando…",    size: 12, color: C.dim, frame: NSRect(x: 14, y: 170 - 72, width: 332, height: 16), in: envP)
+        rosettaLabel  = lbl("Rosetta 2: —",         size: 12, color: C.dim, frame: NSRect(x: 14, y: 170 - 94, width: 332, height: 16), in: envP)
+        supabaseLabel = lbl("Supabase URL: —",       size: 12, color: C.dim, frame: NSRect(x: 14, y: 170 - 116, width: 332, height: 16), in: envP)
+        envStatusLabel = lbl(".env: detectando…",   size: 12, color: C.dim, frame: NSRect(x: 14, y: 170 - 138, width: 332, height: 16), in: envP)
         col2.addSubview(envP)
 
-        // cfgP
-        let cfgP = panel(frame: NSRect(x: 0, y: col2.frame.height - 200 - 16 - 420, width: 360, height: 420))
-        sectionTitle("🌐  CONFIGURACIÓN Y POST-BUILD", in: cfgP, yTop: 420 - 8)
+        // cfgP (height 320)
+        let cfgP = panel(frame: NSRect(x: 0, y: col2.frame.height - 170 - 16 - 320, width: 360, height: 320))
+        sectionTitle("🌐  CONFIGURACIÓN Y POST-BUILD", in: cfgP, yTop: 320 - 8)
         
         lbl("Versión de compilación (actualiza package.json):", size: 11, bold: true, color: C.dim,
-            frame: NSRect(x: 14, y: 420 - 46, width: 332, height: 16), in: cfgP)
+            frame: NSRect(x: 14, y: 320 - 42, width: 332, height: 16), in: cfgP)
         
-        versionField = NSTextField(frame: NSRect(x: 14, y: 420 - 72, width: 140, height: 24))
+        versionField = NSTextField(frame: NSRect(x: 14, y: 320 - 68, width: 140, height: 24))
         versionField.placeholderString = "1.0.0"
         versionField.font = .monospacedSystemFont(ofSize: 13, weight: .bold)
         versionField.backgroundColor = C.bg
@@ -199,12 +204,12 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         cfgP.addSubview(versionField)
         
         lbl("Ej: 1.0.0 · 2.0.1-beta", size: 10, color: C.dim,
-            frame: NSRect(x: 162, y: 420 - 66, width: 180, height: 14), in: cfgP)
+            frame: NSRect(x: 162, y: 320 - 62, width: 180, height: 14), in: cfgP)
 
         lbl("URL de producción (VITE_PUBLIC_URL):", size: 11, bold: true, color: C.dim,
-            frame: NSRect(x: 14, y: 420 - 102, width: 332, height: 16), in: cfgP)
+            frame: NSRect(x: 14, y: 320 - 98, width: 332, height: 16), in: cfgP)
             
-        urlField = NSTextField(frame: NSRect(x: 14, y: 420 - 128, width: 332, height: 24))
+        urlField = NSTextField(frame: NSRect(x: 14, y: 320 - 124, width: 332, height: 24))
         urlField.placeholderString = "https://dj-vip.onrender.com"
         urlField.font = .monospacedSystemFont(ofSize: 12, weight: .regular)
         urlField.backgroundColor = C.bg
@@ -214,38 +219,98 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         cfgP.addSubview(urlField)
         
         lbl("Se guarda en .env automáticamente al compilar.", size: 10, color: C.dim,
-            frame: NSRect(x: 14, y: 420 - 144, width: 332, height: 14), in: cfgP)
-            
-        let sep2 = cview(C.border, frame: NSRect(x: 14, y: 420 - 158, width: 332, height: 1))
-        cfgP.addSubview(sep2)
-        
-        lbl("Post-build:", size: 11, bold: true, color: C.dim,
-            frame: NSRect(x: 14, y: 420 - 176, width: 332, height: 16), in: cfgP)
+            frame: NSRect(x: 14, y: 320 - 140, width: 332, height: 14), in: cfgP)
             
         chkOpenFinder = NSButton(checkboxWithTitle: "  📂  Abrir Finder al terminar", target: nil, action: nil)
-        chkOpenFinder.frame = NSRect(x: 14, y: 420 - 200, width: 332, height: 22)
+        chkOpenFinder.frame = NSRect(x: 14, y: 320 - 180, width: 332, height: 22)
         chkOpenFinder.state = .on
         chkOpenFinder.font = .systemFont(ofSize: 13, weight: .medium)
         chkOpenFinder.contentTintColor = C.text
         cfgP.addSubview(chkOpenFinder)
         
-        let sep3 = cview(C.border, frame: NSRect(x: 14, y: 420 - 215, width: 332, height: 1))
-        cfgP.addSubview(sep3)
-        
         copyBtn = NSButton(title: "  📋  Copiar Rutas DMG", target: self, action: #selector(copyDMGPaths))
-        copyBtn.frame = NSRect(x: 14, y: 420 - 265, width: 332, height: 34)
+        copyBtn.frame = NSRect(x: 14, y: 320 - 240, width: 332, height: 34)
         copyBtn.bezelStyle = .rounded; copyBtn.font = .boldSystemFont(ofSize: 13)
         copyBtn.bezelColor = NSColor(red: 0.08, green: 0.18, blue: 0.10, alpha: 1)
         copyBtn.contentTintColor = C.green
         cfgP.addSubview(copyBtn)
         
         let openFolderBtn = NSButton(title: "  📂  Abrir dist-desktop", target: self, action: #selector(openFolder))
-        openFolderBtn.frame = NSRect(x: 14, y: 420 - 315, width: 332, height: 34)
+        openFolderBtn.frame = NSRect(x: 14, y: 320 - 290, width: 332, height: 34)
         openFolderBtn.bezelStyle = .rounded; openFolderBtn.font = .systemFont(ofSize: 13)
         openFolderBtn.bezelColor = C.panel2; openFolderBtn.contentTintColor = C.text
         cfgP.addSubview(openFolderBtn)
         
         col2.addSubview(cfgP)
+
+        // testP (height 280)
+        let testP = panel(frame: NSRect(x: 0, y: col2.frame.height - 170 - 16 - 320 - 16 - 280, width: 360, height: 280))
+        sectionTitle("🧪  PANEL DE PRUEBAS Y UTILIDADES", in: testP, yTop: 280 - 8)
+        
+        lbl("Enviar Push Notification de prueba:", size: 11, bold: true, color: C.dim,
+            frame: NSRect(x: 14, y: 280 - 45, width: 332, height: 16), in: testP)
+            
+        lbl("Email del DJ:", size: 10, color: C.dim,
+            frame: NSRect(x: 14, y: 280 - 75, width: 210, height: 14), in: testP)
+            
+        testEmailField = NSTextField(frame: NSRect(x: 14, y: 280 - 100, width: 210, height: 24))
+        testEmailField.placeholderString = "dj@admin.com"
+        testEmailField.font = .monospacedSystemFont(ofSize: 12, weight: .regular)
+        testEmailField.backgroundColor = C.bg
+        testEmailField.textColor = C.text
+        testEmailField.bezelStyle = .roundedBezel
+        testEmailField.isBezeled = true
+        testP.addSubview(testEmailField)
+        
+        let sendPushBtn = NSButton(title: "🔔 Enviar Push", target: self, action: #selector(sendTestPush))
+        sendPushBtn.frame = NSRect(x: 232, y: 280 - 100, width: 114, height: 24)
+        sendPushBtn.bezelStyle = .rounded; sendPushBtn.font = .systemFont(ofSize: 12, weight: .bold)
+        sendPushBtn.bezelColor = C.panel2; sendPushBtn.contentTintColor = C.accent
+        testP.addSubview(sendPushBtn)
+        
+        let sendAdminPushBtn = NSButton(title: "🔔 Enviar Push de Prueba al Admin Master", target: self, action: #selector(sendAdminPush))
+        sendAdminPushBtn.frame = NSRect(x: 14, y: 280 - 134, width: 332, height: 26)
+        sendAdminPushBtn.bezelStyle = .rounded; sendAdminPushBtn.font = .systemFont(ofSize: 11, weight: .semibold)
+        sendAdminPushBtn.bezelColor = C.panel2; sendAdminPushBtn.contentTintColor = C.text
+        testP.addSubview(sendAdminPushBtn)
+        
+        let sepTest = cview(C.border, frame: NSRect(x: 14, y: 280 - 148, width: 332, height: 1))
+        testP.addSubview(sepTest)
+        
+        lbl("Inyectar peticiones al evento activo del DJ:", size: 11, bold: true, color: C.dim,
+            frame: NSRect(x: 14, y: 280 - 175, width: 332, height: 16), in: testP)
+            
+        lbl("Email del DJ:", size: 10, color: C.dim,
+            frame: NSRect(x: 14, y: 280 - 205, width: 170, height: 14), in: testP)
+            
+        injectEmailField = NSTextField(frame: NSRect(x: 14, y: 280 - 230, width: 170, height: 24))
+        injectEmailField.placeholderString = "dj@admin.com"
+        injectEmailField.font = .monospacedSystemFont(ofSize: 12, weight: .regular)
+        injectEmailField.backgroundColor = C.bg
+        injectEmailField.textColor = C.text
+        injectEmailField.bezelStyle = .roundedBezel
+        injectEmailField.isBezeled = true
+        testP.addSubview(injectEmailField)
+        
+        lbl("Cant:", size: 10, color: C.dim,
+            frame: NSRect(x: 194, y: 280 - 205, width: 44, height: 14), in: testP)
+            
+        injectCountField = NSTextField(frame: NSRect(x: 194, y: 280 - 230, width: 44, height: 24))
+        injectCountField.placeholderString = "10"
+        injectCountField.font = .monospacedSystemFont(ofSize: 12, weight: .regular)
+        injectCountField.backgroundColor = C.bg
+        injectCountField.textColor = C.text
+        injectCountField.bezelStyle = .roundedBezel
+        injectCountField.isBezeled = true
+        testP.addSubview(injectCountField)
+        
+        let injectBtn = NSButton(title: "🎵 Inyectar", target: self, action: #selector(injectRequests))
+        injectBtn.frame = NSRect(x: 246, y: 280 - 230, width: 100, height: 24)
+        injectBtn.bezelStyle = .rounded; injectBtn.font = .systemFont(ofSize: 12, weight: .bold)
+        injectBtn.bezelColor = C.panel2; injectBtn.contentTintColor = C.green
+        testP.addSubview(injectBtn)
+        
+        col2.addSubview(testP)
         root.addSubview(col2)
 
         // ── COLUMN 3 (x: 768, width: W - 768 - 16) - Progress, Buttons, Terminal
@@ -793,6 +858,90 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             a.messageText = "Carpeta no encontrada"
             a.informativeText = "dist-desktop/ todavía no existe. Realiza al menos una compilación."
             a.runModal()
+        }
+    }
+
+    // MARK: - Testing Methods
+    @objc func sendTestPush() {
+        let email = testEmailField.stringValue.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !email.isEmpty else {
+            let a = NSAlert()
+            a.messageText = "Email requerido"
+            a.informativeText = "Por favor ingresa el email del DJ para enviar la notificación de prueba."
+            a.addButton(withTitle: "Aceptar")
+            a.runModal()
+            return
+        }
+        let dir = projectDir()
+        runCommandAsync(cmd: "cd '\(dir)' && bash deploy.sh --test-user '\(email)'", title: "Test Push a \(email)")
+    }
+
+    @objc func sendAdminPush() {
+        let dir = projectDir()
+        runCommandAsync(cmd: "cd '\(dir)' && bash deploy.sh --test-admin", title: "Test Push a Admin Master")
+    }
+
+    @objc func injectRequests() {
+        let email = injectEmailField.stringValue.trimmingCharacters(in: .whitespacesAndNewlines)
+        let countStr = injectCountField.stringValue.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !email.isEmpty else {
+            let a = NSAlert()
+            a.messageText = "Email requerido"
+            a.informativeText = "Por favor ingresa el email del DJ para inyectar las peticiones de prueba."
+            a.addButton(withTitle: "Aceptar")
+            a.runModal()
+            return
+        }
+        let count = Int(countStr) ?? 10
+        let dir = projectDir()
+        runCommandAsync(cmd: "cd '\(dir)' && bash deploy.sh --inject '\(email)' \(count)", title: "Inyectar \(count) peticiones a \(email)")
+    }
+
+    func runCommandAsync(cmd: String, title: String) {
+        DispatchQueue.global(qos: .userInitiated).async { [weak self] in
+            guard let self = self else { return }
+            self.log("\n\n=== 🧪 EJECUTANDO: \(title) ===\n", color: C.yellow)
+            self.log("Comando: \(cmd)\n\n")
+            
+            let t = Process(); let pipe = Pipe()
+            t.executableURL = URL(fileURLWithPath: "/bin/zsh")
+            t.arguments = ["-c", cmd]
+            t.standardOutput = pipe; t.standardError = pipe
+            
+            pipe.fileHandleForReading.readabilityHandler = { handle in
+                guard let str = String(data: handle.availableData, encoding: .utf8), !str.isEmpty else { return }
+                DispatchQueue.main.async { self.log(str) }
+            }
+            
+            do {
+                try t.run()
+                t.waitUntilExit()
+            } catch {
+                DispatchQueue.main.async {
+                    self.log("❌ Error ejecutando proceso: \(error.localizedDescription)\n", color: C.red)
+                }
+            }
+            
+            pipe.fileHandleForReading.readabilityHandler = nil
+            
+            let success = t.terminationStatus == 0
+            DispatchQueue.main.async {
+                if success {
+                    self.log("\n✅ \(title) completado con éxito\n\n", color: C.green)
+                    let a = NSAlert()
+                    a.messageText = "Prueba completada"
+                    a.informativeText = "\(title) se ejecutó con éxito."
+                    a.addButton(withTitle: "OK")
+                    a.runModal()
+                } else {
+                    self.log("\n❌ \(title) falló con código \(t.terminationStatus)\n\n", color: C.red)
+                    let a = NSAlert()
+                    a.messageText = "Prueba fallida"
+                    a.informativeText = "\(title) falló con código \(t.terminationStatus).\nRevisa la consola para ver los detalles."
+                    a.addButton(withTitle: "OK")
+                    a.runModal()
+                }
+            }
         }
     }
 
