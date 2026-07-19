@@ -16,21 +16,26 @@ app.get('/', (req, res) => {
   res.send('🚀 DJVIP Subscription Backend API is running.');
 });
 
-// Endpoint de diagnóstico para verificar el estado de Firebase en Vercel
-app.get('/api/firebase-status', async (req, res) => {
+// Endpoint de diagnóstico para verificar el estado de Supabase y Render
+app.get('/api/supabase-status', async (req, res) => {
   try {
-    const admin = require('firebase-admin');
-    const initialized = admin.apps.length > 0;
-    const hasServiceAccountEnv = !!process.env.FIREBASE_SERVICE_ACCOUNT;
-    
+    const { createClient } = require('@supabase/supabase-js');
+    const supabaseUrl = process.env.VITE_SUPABASE_URL;
+    const supabaseAnonKey = process.env.VITE_SUPABASE_ANON_KEY;
+    const hasServiceRoleKey = !!process.env.SUPABASE_SERVICE_ROLE_KEY;
+
     let dbConnection = false;
     let dbError = null;
-    
-    if (initialized) {
+
+    if (supabaseUrl && supabaseAnonKey) {
       try {
-        // Intentar una lectura rápida de prueba en Realtime Database
-        await admin.database().ref('.info/connected').once('value');
-        dbConnection = true;
+        const client = createClient(supabaseUrl, supabaseAnonKey);
+        const { error } = await client.from('profiles').select('id').limit(1);
+        if (error) {
+          dbError = error.message;
+        } else {
+          dbConnection = true;
+        }
       } catch (err) {
         dbError = err.message;
       }
@@ -38,11 +43,12 @@ app.get('/api/firebase-status', async (req, res) => {
 
     res.json({
       success: true,
-      firebaseInitialized: initialized,
-      hasServiceAccountEnv,
+      supabaseInitialized: !!(supabaseUrl && supabaseAnonKey),
+      hasServiceRoleKey,
       databaseConnected: dbConnection,
       databaseError: dbError,
-      environment: process.env.NODE_ENV || 'production'
+      environment: process.env.NODE_ENV || 'production',
+      hosting: 'Render.com'
     });
   } catch (e) {
     res.status(500).json({ success: false, error: e.message });

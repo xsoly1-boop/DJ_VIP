@@ -1686,7 +1686,7 @@ export default function DjDashboard() {
       showToast("🖼️ Logotipo subido con éxito");
     } catch (err) {
       console.error(err);
-      showToast("❌ Error al subir logotipo. Verifica Firebase Storage.");
+      showToast("❌ Error al subir logotipo. Verifica Supabase Storage.");
     }
   };
 
@@ -1726,7 +1726,7 @@ export default function DjDashboard() {
       console.error('Error guardando configuración:', err);
       const msg = err?.message || '';
       if (msg.includes('PERMISSION_DENIED') || msg.includes('permission')) {
-        showToast('⛔ Sin permiso en Firebase. Actualiza las reglas de la BD.');
+        showToast('⛔ Sin permiso en Supabase. Actualiza las políticas RLS.');
       } else if (msg.includes('sesión') || msg.includes('session')) {
         showToast('🔒 Sin sesión activa. Cierra sesión y vuelve a entrar.');
       } else {
@@ -1804,7 +1804,7 @@ export default function DjDashboard() {
       console.error('Error guardando logo URL:', err);
       const msg = err?.message || '';
       if (msg.includes('PERMISSION_DENIED') || msg.includes('permission')) {
-        showToast('⛔ Sin permiso en Firebase. Actualiza las reglas de la BD en la consola.');
+        showToast('⛔ Sin permiso en Supabase. Actualiza las políticas RLS en la consola.');
       } else if (msg.includes('sesión') || msg.includes('session')) {
         showToast('🔒 Sin sesión activa. Cierra sesión y vuelve a entrar.');
       } else {
@@ -6441,7 +6441,7 @@ export default function DjDashboard() {
 
               {/* === SECCIÓN: LISTA DE USUARIOS === */}
               <h4 style={{ fontSize: '0.9rem', color: 'var(--text-secondary)', marginBottom: '14px', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                <Users size={14} /> Usuarios Registrados en Firebase ({adminUsersList.length})
+                <Users size={14} /> Usuarios Registrados en Supabase ({adminUsersList.length})
               </h4>
 
               {adminUsersList.length === 0 ? (

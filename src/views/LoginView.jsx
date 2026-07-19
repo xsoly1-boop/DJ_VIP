@@ -225,7 +225,7 @@ export default function LoginView() {
             <div>
               <p style={{ color: 'var(--warning-color)', fontSize: '0.85rem', fontWeight: '700', textTransform: 'uppercase', marginBottom: '2px' }}>Modo Demostración</p>
               <p style={{ color: '#94a3b8', fontSize: '0.8rem', lineHeight: '1.4' }}>
-                Para pruebas locales sin Firebase configurado, usa:<br />
+                Para pruebas locales sin Supabase configurado, usa:<br />
                 📧 <strong>dj@admin.com</strong> (Admin Master)<br />
                 🔑 <strong>admin123</strong>
               </p>
