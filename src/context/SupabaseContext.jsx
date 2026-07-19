@@ -1308,10 +1308,40 @@ export const SupabaseProvider = ({ children }) => {
           uid: session.user.id,
           emailVerified: !!session.user.email_confirmed_at
         });
-        // Restaurar el evento activo guardado para este usuario
-        const savedEventId = localStorage.getItem(`djvip_active_event_id_${session.user.id}`);
-        if (savedEventId) {
-          setCurrentEventId(savedEventId);
+        
+        try {
+          // 1. Cargar el evento activo guardado en Supabase
+          const { data: activeEvent } = await supabase
+            .from('events')
+            .select('id')
+            .eq('owner_id', session.user.id)
+            .eq('active', true)
+            .maybeSingle();
+
+          if (activeEvent) {
+            const frontendEventId = activeEvent.id === `default-event-${session.user.id}` ? 'default-event' : activeEvent.id;
+            setCurrentEventId(frontendEventId);
+            localStorage.setItem(`djvip_active_event_id_${session.user.id}`, frontendEventId);
+          } else {
+            // 2. Si no hay ninguno activo en la BD, usar localStorage
+            const savedEventId = localStorage.getItem(`djvip_active_event_id_${session.user.id}`);
+            if (savedEventId) {
+              const frontendEventId = savedEventId;
+              setCurrentEventId(frontendEventId);
+              const targetEventDbId = frontendEventId === 'default-event' ? `default-event-${session.user.id}` : frontendEventId;
+              await supabase.from('events').update({ active: true }).eq('id', targetEventDbId);
+            } else {
+              // 3. Fallback a default-event
+              setCurrentEventId('default-event');
+              await supabase.from('events').update({ active: true }).eq('id', `default-event-${session.user.id}`);
+            }
+          }
+        } catch (e) {
+          console.warn("Fallo al restaurar evento activo de la BD:", e);
+          const savedEventId = localStorage.getItem(`djvip_active_event_id_${session.user.id}`);
+          if (savedEventId) {
+            setCurrentEventId(savedEventId);
+          }
         }
       } else {
         setUser(null);
