@@ -36,6 +36,9 @@ async function fetchGitHub(url, options = {}) {
     const errText = await response.text();
     throw new Error(`GitHub API Error: ${response.status} ${response.statusText}\n${errText}`);
   }
+  if (response.status === 204) {
+    return { success: true };
+  }
   return response.json();
 }
 
