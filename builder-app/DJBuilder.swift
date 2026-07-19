@@ -191,7 +191,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         let cfgP = panel(frame: NSRect(x: 0, y: col2.frame.height - 170 - 16 - 320, width: 360, height: 320))
         sectionTitle("🌐  CONFIGURACIÓN Y POST-BUILD", in: cfgP, yTop: 320 - 8)
         
-        lbl("Versión de compilación (actualiza package.json):", size: 11, bold: true, color: C.dim,
+        lbl("Versión de compilación (actualiza package.json):", size: 11, bold: true, color: C.text,
             frame: NSRect(x: 14, y: 320 - 42, width: 332, height: 16), in: cfgP)
         
         versionField = NSTextField(frame: NSRect(x: 14, y: 320 - 68, width: 140, height: 24))
@@ -206,7 +206,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         lbl("Ej: 1.0.0 · 2.0.1-beta", size: 10, color: C.dim,
             frame: NSRect(x: 162, y: 320 - 62, width: 180, height: 14), in: cfgP)
 
-        lbl("URL de producción (VITE_PUBLIC_URL):", size: 11, bold: true, color: C.dim,
+        lbl("URL de producción (VITE_PUBLIC_URL):", size: 11, bold: true, color: C.text,
             frame: NSRect(x: 14, y: 320 - 98, width: 332, height: 16), in: cfgP)
             
         urlField = NSTextField(frame: NSRect(x: 14, y: 320 - 124, width: 332, height: 24))
@@ -247,7 +247,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         let testP = panel(frame: NSRect(x: 0, y: col2.frame.height - 170 - 16 - 320 - 16 - 280, width: 360, height: 280))
         sectionTitle("🧪  PANEL DE PRUEBAS Y UTILIDADES", in: testP, yTop: 280 - 8)
         
-        lbl("Enviar Push Notification de prueba:", size: 11, bold: true, color: C.dim,
+        lbl("Enviar Push Notification de prueba:", size: 11, bold: true, color: C.text,
             frame: NSRect(x: 14, y: 280 - 45, width: 332, height: 16), in: testP)
             
         lbl("Email del DJ:", size: 10, color: C.dim,
@@ -277,7 +277,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         let sepTest = cview(C.border, frame: NSRect(x: 14, y: 280 - 148, width: 332, height: 1))
         testP.addSubview(sepTest)
         
-        lbl("Inyectar peticiones al evento activo del DJ:", size: 11, bold: true, color: C.dim,
+        lbl("Inyectar peticiones al evento activo del DJ:", size: 11, bold: true, color: C.text,
             frame: NSRect(x: 14, y: 280 - 175, width: 332, height: 16), in: testP)
             
         lbl("Email del DJ:", size: 10, color: C.dim,
