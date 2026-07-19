@@ -743,11 +743,12 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     // ── Phase 4: Target macOS compilation ─────────────────────────────────
     func phase_electron_target(dir: String, arch: String, doCodesign: Bool) {
         log("\n🔨  Empaquetando instalador macOS (\(arch))…\n", color: C.yellow)
+        let extraFlags = (arch == "x64") ? " --config.electronVersion=22.3.27" : ""
 
         // Step A: --dir first (unpackaged app folder) for codesign
         if doCodesign {
             log("  📂  Generando carpeta de app sin empaquetar (--dir)…\n")
-            let dirCmd = "cd '\(dir)' && CSC_IDENTITY_AUTO_DISCOVERY=false CSC_LINK='' npx electron-builder --mac --dir --\(arch) --publish never 2>&1"
+            let dirCmd = "cd '\(dir)' && CSC_IDENTITY_AUTO_DISCOVERY=false CSC_LINK='' npx electron-builder --mac --dir --\(arch)\(extraFlags) --publish never 2>&1"
             let okDir = streamShell(dirCmd, stageIdx: 3, approxLines: 20, minPct: 0, maxPct: 50)
             if !okDir { return failBuild("electron-builder --dir falló.") }
             if isCancelled { return }
@@ -771,18 +772,18 @@ class AppDelegate: NSObject, NSApplicationDelegate {
                 log("  ✅  Firma aplicada a la App\n")
                 
                 log("\n  📦  Creando DMG con app ya firmada…\n", color: C.yellow)
-                let packCmd = "cd '\(dir)' && CSC_IDENTITY_AUTO_DISCOVERY=false CSC_LINK='' npx electron-builder --mac --\(arch) --prepackaged '\(appPath)' --publish never 2>&1"
+                let packCmd = "cd '\(dir)' && CSC_IDENTITY_AUTO_DISCOVERY=false CSC_LINK='' npx electron-builder --mac --\(arch)\(extraFlags) --prepackaged '\(appPath)' --publish never 2>&1"
                 let okDmg = streamShell(packCmd, stageIdx: 3, approxLines: 10, minPct: 50, maxPct: 100)
                 if !okDmg { return failBuild("Creación del DMG falló.") }
             } else {
                 log("  ⚠️  No se encontró la .app para firmar, compilando DMG directo\n", color: C.yellow)
-                let cmd = "cd '\(dir)' && CSC_IDENTITY_AUTO_DISCOVERY=false CSC_LINK='' npx electron-builder --mac --\(arch) --publish never 2>&1"
+                let cmd = "cd '\(dir)' && CSC_IDENTITY_AUTO_DISCOVERY=false CSC_LINK='' npx electron-builder --mac --\(arch)\(extraFlags) --publish never 2>&1"
                 let ok = streamShell(cmd, stageIdx: 3, approxLines: 30, minPct: 0, maxPct: 100)
                 if !ok { return failBuild("electron-builder falló.") }
             }
         } else {
             // Without codesign — just build the DMG directly
-            let cmd = "cd '\(dir)' && CSC_IDENTITY_AUTO_DISCOVERY=false CSC_LINK='' npx electron-builder --mac --\(arch) --publish never 2>&1"
+            let cmd = "cd '\(dir)' && CSC_IDENTITY_AUTO_DISCOVERY=false CSC_LINK='' npx electron-builder --mac --\(arch)\(extraFlags) --publish never 2>&1"
             let ok = streamShell(cmd, stageIdx: 3, approxLines: 30, minPct: 0, maxPct: 100)
             if !ok { return failBuild("electron-builder falló.") }
         }

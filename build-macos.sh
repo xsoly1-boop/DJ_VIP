@@ -263,7 +263,7 @@ echo -e "  ✅ arm64 (Apple Silicon) compilado y firmado"
 echo ""
 echo -e "  🔨 Generando estructura de archivos para ${GREEN}Intel x64 (macOS 10.14+)${RESET}..."
 set +e
-CSC_IDENTITY_AUTO_DISCOVERY=false CSC_LINK="" npx electron-builder --mac --dir --x64 --publish never
+CSC_IDENTITY_AUTO_DISCOVERY=false CSC_LINK="" npx electron-builder --mac --dir --x64 --config.electronVersion=22.3.27 --publish never
 BUILD_X64_DIR_EXIT=$?
 set -e
 
@@ -282,7 +282,7 @@ fi
 # Empaquetar la App ya firmada en el DMG
 echo -e "  📦 Creando instalador DMG x64 con la App firmada..."
 set +e
-CSC_IDENTITY_AUTO_DISCOVERY=false CSC_LINK="" npx electron-builder --mac --x64 --prepackaged "${APP_X64_PATH}" --publish never
+CSC_IDENTITY_AUTO_DISCOVERY=false CSC_LINK="" npx electron-builder --mac --x64 --config.electronVersion=22.3.27 --prepackaged "${APP_X64_PATH}" --publish never
 BUILD_X64_EXIT=$?
 set -e
 

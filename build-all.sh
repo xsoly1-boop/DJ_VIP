@@ -279,7 +279,7 @@ rm -rf dist-desktop
 set +e
 CSC_IDENTITY_AUTO_DISCOVERY=false \
 CSC_LINK="" \
-npx electron-builder --mac --x64 --publish never 2>&1 | tail -10
+npx electron-builder --mac --x64 --config.electronVersion=22.3.27 --publish never 2>&1 | tail -10
 MAC_X64_EXIT=$?
 set -e
 
