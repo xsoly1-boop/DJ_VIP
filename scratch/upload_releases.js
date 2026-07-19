@@ -12,7 +12,11 @@ dotenv.config({ path: path.join(__dirname, '../.env') });
 
 const token = process.env.GITHUB_TOKEN;
 const repo = process.env.GITHUB_REPO || 'xsoly1-boop/DJ_VIP';
-const version = 'v1.0.0';
+
+const pkg = JSON.parse(fs.readFileSync(path.join(__dirname, '../package.json'), 'utf8'));
+const pkgVersion = pkg.version;
+const version = 'v' + pkgVersion.replace('-', '.');
+const versionFolder = pkgVersion;
 
 if (!token) {
   console.error('❌ Error: GITHUB_TOKEN no configurado en .env');
@@ -64,7 +68,7 @@ async function run() {
     const uploadUrlBase = release.upload_url.split('{')[0]; // URL para subir assets
 
     // 3. Listar archivos a subir
-    const releasesDir = path.join(__dirname, '../releases/1.0.0');
+    const releasesDir = path.join(__dirname, '../releases', versionFolder);
     if (!fs.existsSync(releasesDir)) {
       console.error(`❌ Carpeta de compilaciones no encontrada: ${releasesDir}`);
       process.exit(1);
