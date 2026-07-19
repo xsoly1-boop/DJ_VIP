@@ -217,21 +217,26 @@ app.post('/api/identify-audio', async (req, res) => {
     );
 
     const data = await auddRes.json();
+    console.log('[AudD API Response]', data);
     if (data.status === 'success' && data.result) {
       const r = data.result;
       return res.json({
         success: true,
         demo: false,
         result: {
-          title:   r.title,
-          artist:  r.artist,
-          album:   r.album,
+          title:   r.title || 'Canción Desconocida',
+          artist:  r.artist || 'Artista Desconocido',
+          album:   r.album || '',
           timecode: r.timecode,
           label:   r.label,
         }
       });
     } else {
-      return res.json({ success: false, error: 'No se pudo identificar la canción. Intenta de nuevo.' });
+      const detail = data.error?.message || (data.result === null ? 'audio no reconocido' : 'sin coincidencia');
+      return res.json({ 
+        success: false, 
+        error: `No se logró reconocer la canción (${detail}). Intenta acercar más el micrófono a la música o tararear con mayor volumen.` 
+      });
     }
   } catch (e) {
     console.error('[identify-audio]', e);

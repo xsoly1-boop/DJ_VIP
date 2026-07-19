@@ -2550,7 +2550,8 @@ export default function PublicView() {
         setMicResult({ ...data.result, demo: data.demo });
         setMicState('done');
       } else {
-        setMicError(data.error || `No se pudo identificar la canción (${res.status}). Intenta de nuevo.`);
+        const errMsg = data.error || (!res.ok ? `Error en el servidor (${res.status})` : 'No se pudo identificar la canción. Intenta de nuevo.');
+        setMicError(errMsg);
         setMicState('error');
       }
     } catch (err) {
