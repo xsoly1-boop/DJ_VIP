@@ -7,7 +7,7 @@ import {
   Music, LogOut, Settings, Calendar, Download, RefreshCw, 
   Trash2, Plus, Play, Check, X, Bell, BellOff, Volume2, 
   Sparkles, Sliders, Users, Layers, ShieldCheck, Database, Cloud,
-  Link, AlertTriangle, ShieldAlert, ArrowLeft, UserCog, Edit, UserPlus, Mail, Lock, User, CreditCard,
+  Link, AlertTriangle, ShieldAlert, ArrowLeft, UserCog, Edit, UserPlus, Mail, Lock, Key, User, CreditCard,
   LayoutGrid, ExternalLink, Image, Search, Megaphone, Star, MessageSquare, Send, Printer,
   TrendingUp, DollarSign, BarChart2, ArrowUpCircle, Download as DownloadIcon, Clock, CreditCard as CardIcon, Save
 } from 'lucide-react';
@@ -206,6 +206,12 @@ export default function DjDashboard() {
   const [clearOptionCalendar, setClearOptionCalendar] = useState(false);
   const [clearErrorMsg, setClearErrorMsg] = useState('');
   const [clearingHistory, setClearingHistory] = useState(false);
+
+  // Modal de credenciales (email/password) de DJ (solo admin master)
+  const [credModalDj, setCredModalDj] = useState(null);
+  const [credEmail, setCredEmail] = useState('');
+  const [credPassword, setCredPassword] = useState('');
+  const [credLoading, setCredLoading] = useState(false);
 
   // Panel Admin: Agregar DJ
   const [showAddDjForm, setShowAddDjForm] = useState(false);
@@ -1994,6 +2000,35 @@ export default function DjDashboard() {
       showToast(`❌ Error al actualizar: ${err.message || ''}`);
     } finally {
       setEditDjLoading(false);
+    }
+  };
+
+  const handleSaveCredentials = async () => {
+    if (!credEmail.trim()) {
+      showToast('⚠️ El correo electrónico es requerido.');
+      return;
+    }
+    setCredLoading(true);
+    try {
+      await updateDjAccount(
+        credModalDj.uid,
+        credEmail.trim(),
+        credModalDj.djName,
+        credPassword.trim() || null,
+        credModalDj.currentPlan,
+        credModalDj.currentPlan === 'free' ? credModalDj.demoLimit : null,
+        credModalDj.currentPlan === 'free' || credModalDj.currentPlan === 'premium' ? credModalDj.strictLimitEnabled : null,
+        credModalDj.currentPlan === 'premium' ? credModalDj.premiumLimit : null,
+        credModalDj.currentPlan === 'vip' ? credModalDj.logoUploadEnabled : false
+      );
+      showToast('✅ Credenciales de DJ actualizadas con éxito.');
+      setCredModalDj(null);
+      setCredPassword('');
+      await refreshAdminData();
+    } catch (err) {
+      showToast(`❌ Error al actualizar credenciales: ${err.message || ''}`);
+    } finally {
+      setCredLoading(false);
     }
   };
 
@@ -6686,6 +6721,26 @@ export default function DjDashboard() {
                                 <Edit size={14} /> Editar
                               </button>
                               <button
+                                onClick={() => {
+                                  setCredModalDj({
+                                    uid,
+                                    email,
+                                    djName,
+                                    currentPlan,
+                                    demoLimit,
+                                    premiumLimit,
+                                    logoUploadEnabled,
+                                    strictLimitEnabled
+                                  });
+                                  setCredEmail(email);
+                                  setCredPassword('');
+                                }}
+                                className="btn btn-secondary"
+                                style={{ padding: '8px 12px', fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: '6px', border: '1px solid rgba(245,158,11,0.25)' }}
+                              >
+                                <Key size={14} color="var(--warning-color)" /> Accesos
+                              </button>
+                              <button
                                 onClick={() => { impersonateUser(uid); setActiveTab('requests'); showToast(`👁️ Viendo panel de ${djName}`); }}
                                 className="btn btn-secondary"
                                 style={{ padding: '8px 16px', fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: '6px', border: '1px solid rgba(124,58,237,0.3)' }}
@@ -7934,6 +7989,73 @@ export default function DjDashboard() {
                 ) : (
                   <><Trash2 size={14} /> Ejecutar Borrado</>
                 )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL: CAMBIAR EMAIL O CONTRASEÑA (CREDENCIALES DE DJ) */}
+      {credModalDj && (
+        <div style={{ position: 'fixed', inset: 0, zIndex: 2000, background: 'rgba(0,0,0,0.85)', backdropFilter: 'blur(8px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}>
+          <div className="glass-panel animate-scale-up" style={{ maxWidth: '420px', width: '100%', padding: '28px', borderRadius: 'var(--radius-lg)', border: '1px solid rgba(245,158,11,0.3)', boxShadow: '0 0 40px rgba(245,158,11,0.12)', display: 'flex', flexDirection: 'column', gap: '18px' }}>
+            
+            <div style={{ textAlign: 'center' }}>
+              <div style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: '60px', height: '60px', borderRadius: 'var(--radius-full)', background: 'rgba(245,158,11,0.1)', border: '1px solid rgba(245,158,11,0.3)', marginBottom: '12px' }}>
+                <Key size={28} color="var(--warning-color)" />
+              </div>
+              <h2 style={{ fontSize: '1.25rem', fontWeight: '800', color: 'var(--text-primary)', marginBottom: '6px' }}>🔑 Credenciales de Acceso</h2>
+              <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
+                Modifica el correo electrónico o la contraseña de <strong style={{ color: 'var(--warning-color)' }}>{credModalDj.djName}</strong>.
+              </p>
+            </div>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+              <div className="form-group" style={{ marginBottom: 0 }}>
+                <label className="form-label" style={{ fontSize: '0.75rem', fontWeight: '700', color: 'var(--text-secondary)' }}>CORREO ELECTRÓNICO</label>
+                <input
+                  type="email"
+                  className="input-field"
+                  placeholder="ejemplo@correo.com"
+                  value={credEmail}
+                  onChange={(e) => setCredEmail(e.target.value)}
+                  style={{ fontSize: '0.85rem', padding: '8px 12px' }}
+                />
+              </div>
+
+              <div className="form-group" style={{ marginBottom: 0 }}>
+                <label className="form-label" style={{ fontSize: '0.75rem', fontWeight: '700', color: 'var(--text-secondary)' }}>NUEVA CONTRASEÑA</label>
+                <input
+                  type="password"
+                  className="input-field"
+                  placeholder="Dejar en blanco para conservar actual"
+                  value={credPassword}
+                  onChange={(e) => setCredPassword(e.target.value)}
+                  style={{ fontSize: '0.85rem', padding: '8px 12px' }}
+                />
+              </div>
+            </div>
+
+            <div style={{ display: 'flex', gap: '10px', marginTop: '6px' }}>
+              <button
+                className="btn btn-secondary"
+                style={{ flex: 1, padding: '10px 14px', fontSize: '0.85rem' }}
+                onClick={() => {
+                  setCredModalDj(null);
+                  setCredEmail('');
+                  setCredPassword('');
+                }}
+                disabled={credLoading}
+              >
+                Cancelar
+              </button>
+              <button
+                className="btn btn-primary"
+                style={{ flex: 1, padding: '10px 14px', fontSize: '0.85rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', background: 'linear-gradient(135deg, var(--warning-color), #f59e0b)' }}
+                onClick={handleSaveCredentials}
+                disabled={credLoading}
+              >
+                {credLoading ? <RefreshCw size={14} className="animate-spin" /> : <Save size={14} />} Guardar
               </button>
             </div>
           </div>
