@@ -132,7 +132,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         
         // archP
         let archP = panel(frame: NSRect(x: 0, y: col1.frame.height - 310, width: 360, height: 310))
-        sectionTitle("🎯  ARQUITECTURA DE COMPILACIÓN", in: archP, yTop: 310 - 8)
+        sectionTitle("🎯  PLATAFORMAS Y ARQUITECTURA", in: archP, yTop: 310 - 8)
         
         func addRadio(_ title: String, sub: String, ry: CGFloat, tag: Int, parent: NSView) -> NSButton {
             let r = NSButton(radioButtonWithTitle: "  " + title, target: self, action: #selector(radioChanged(_:)))
@@ -145,32 +145,21 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             return r
         }
         
-        radioArm64     = addRadio("🍎  Apple Silicon (arm64)", sub: "Nativo en Mac M1/M2/M3/M4. Máximo rendimiento.", ry: 310 - 60, tag: 0, parent: archP)
-        radioX64       = addRadio("🖥️   Intel x64 (macOS 10.14+)", sub: "Compatible con Mac Intel.", ry: 310 - 110, tag: 1, parent: archP)
-        radioUniversal = addRadio("🌐  Universal (arm64 + x64)", sub: "Un solo instalador para cualquier Mac. Más pesado.", ry: 310 - 160, tag: 2, parent: archP)
-        radioCurrent   = addRadio("⚡  Automático (chip actual)", sub: "Detecta el chip nativo y compila para él.", ry: 310 - 210, tag: 3, parent: archP)
+        radioArm64      = addRadio("🍎  Apple Silicon (arm64)", sub: "Nativo en Mac M1/M2/M3/M4. Máximo rendimiento.", ry: 310 - 60, tag: 0, parent: archP)
+        radioX64        = addRadio("🖥️   Intel x64 (macOS 10.14+)", sub: "Compatible con Mac Intel.", ry: 310 - 110, tag: 1, parent: archP)
+        radioUniversal  = addRadio("🌐  Universal (arm64 + x64)", sub: "Un solo instalador para cualquier Mac. Más pesado.", ry: 310 - 160, tag: 2, parent: archP)
+        radioCurrent    = addRadio("⚡  Automático (chip actual)", sub: "Detecta el chip nativo y compila para él.", ry: 310 - 210, tag: 3, parent: archP)
+        chkBuildAndroid = addCheck("📱  Compilar APK de Android", sub: "Compila el paquete APK instalable para celulares.", oy: 310 - 260, def: .on, parent: archP)
         col1.addSubview(archP)
 
         // optP
         let optP = panel(frame: NSRect(x: 0, y: col1.frame.height - 310 - 16 - 310, width: 360, height: 310))
         sectionTitle("⚙️  OPCIONES DE COMPILACIÓN", in: optP, yTop: 310 - 8)
         
-        func addCheck(_ title: String, sub: String, oy: CGFloat, def: NSControl.StateValue = .on, parent: NSView) -> NSButton {
-            let c = NSButton(checkboxWithTitle: "  " + title, target: nil, action: nil)
-            c.frame = NSRect(x: 14, y: oy, width: 330, height: 22)
-            c.state = def
-            c.font = .systemFont(ofSize: 13, weight: .medium)
-            c.contentTintColor = C.text
-            parent.addSubview(c)
-            lbl(sub, size: 11, color: C.dim, frame: NSRect(x: 36, y: oy - 14, width: 310, height: 14), in: parent)
-            return c
-        }
-        
         chkClean           = addCheck("🧹  Limpiar dist/ y dist-desktop/", sub: "Borra builds anteriores antes de compilar.", oy: 310 - 60, parent: optP)
         chkInstallDeps     = addCheck("📦  Instalar dependencias (npm ci)", sub: "Reinstala node_modules desde package-lock.json.", oy: 310 - 110, parent: optP)
         chkCodesign        = addCheck("🔏  Firma ad-hoc (codesign)", sub: "Firma la app y el DMG sin Developer ID.", oy: 310 - 160, parent: optP)
         chkInstallRosetta  = addCheck("⚙️  Instalar Rosetta 2", sub: "Requerido para compilar Intel en Mac Silicon.", oy: 310 - 210, def: .off, parent: optP)
-        chkBuildAndroid    = addCheck("📱  Compilar APK de Android", sub: "Compila el paquete APK instalable para celulares.", oy: 310 - 260, def: .on, parent: optP)
         col1.addSubview(optP)
         root.addSubview(col1)
 
@@ -1182,6 +1171,17 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             .paragraphStyle: pstyle
         ]
         btn.attributedTitle = NSAttributedString(string: title, attributes: attrs)
+    }
+
+    func addCheck(_ title: String, sub: String, oy: CGFloat, def: NSControl.StateValue = .on, parent: NSView) -> NSButton {
+        let c = NSButton(checkboxWithTitle: "  " + title, target: nil, action: nil)
+        c.frame = NSRect(x: 14, y: oy, width: 330, height: 22)
+        c.state = def
+        c.font = .systemFont(ofSize: 13, weight: .medium)
+        c.contentTintColor = C.text
+        parent.addSubview(c)
+        lbl(sub, size: 11, color: C.dim, frame: NSRect(x: 36, y: oy - 14, width: 310, height: 14), in: parent)
+        return c
     }
 
     func cview(_ c: NSColor, frame: NSRect) -> NSView {
