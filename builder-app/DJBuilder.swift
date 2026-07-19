@@ -1136,7 +1136,8 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     func shellRun(_ cmd: String) -> Int32 {
         let t = Process()
         t.executableURL = URL(fileURLWithPath: "/bin/zsh")
-        t.arguments = ["-c", cmd]
+        let fullCmd = "export PATH='/usr/local/bin:/opt/homebrew/bin':$PATH && " + cmd
+        t.arguments = ["-c", fullCmd]
         try? t.run(); t.waitUntilExit()
         return t.terminationStatus
     }
@@ -1144,7 +1145,8 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     func shellOutput(_ cmd: String) -> String {
         let t = Process(); let p = Pipe()
         t.executableURL = URL(fileURLWithPath: "/bin/zsh")
-        t.arguments = ["-c", cmd]
+        let fullCmd = "export PATH='/usr/local/bin:/opt/homebrew/bin':$PATH && " + cmd
+        t.arguments = ["-c", fullCmd]
         t.standardOutput = p; t.standardError = Pipe()
         try? t.run(); t.waitUntilExit()
         return String(data: p.fileHandleForReading.readDataToEndOfFile(), encoding: .utf8) ?? ""
@@ -1154,7 +1156,8 @@ class AppDelegate: NSObject, NSApplicationDelegate {
                      minPct: Double = 0, maxPct: Double = 100) -> Bool {
         let t = Process(); let pipe = Pipe()
         t.executableURL = URL(fileURLWithPath: "/bin/zsh")
-        t.arguments = ["-c", cmd]
+        let fullCmd = "export PATH='/usr/local/bin:/opt/homebrew/bin':$PATH && " + cmd
+        t.arguments = ["-c", fullCmd]
         t.standardOutput = pipe; t.standardError = pipe
         currentTask = t
 
