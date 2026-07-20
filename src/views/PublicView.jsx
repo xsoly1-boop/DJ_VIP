@@ -155,6 +155,7 @@ export default function PublicView() {
   const [customGenre, setCustomGenre] = useState('');
   const [isCustomGenre, setIsCustomGenre] = useState(false);
   const [dedication, setDedication] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Buscador Global
   const [searchQuery, setSearchQuery] = useState('');
@@ -765,6 +766,7 @@ export default function PublicView() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (isSubmitting) return;
 
     const cleanTitle = title.trim();
     const cleanArtist = artist.trim();
@@ -782,35 +784,40 @@ export default function PublicView() {
       return;
     }
 
-    // Pipeline de validaciones:
-    // 1. Canción vacía por elección
-    if (!cleanTitle && cleanArtist) {
-      setPendingValidationRequest({
-        title: 'Cualquiera', // El DJ elegirá la canción
-        artist: cleanArtist,
-        genre: finalGenre,
-        dedication: cleanDedication
-      });
-      setShowEmptySongModal(true);
-      return;
-    }
+    try {
+      setIsSubmitting(true);
+      // Pipeline de validaciones:
+      // 1. Canción vacía por elección
+      if (!cleanTitle && cleanArtist) {
+        setPendingValidationRequest({
+          title: 'Cualquiera',
+          artist: cleanArtist,
+          genre: finalGenre,
+          dedication: cleanDedication
+        });
+        setShowEmptySongModal(true);
+        return;
+      }
 
-    // 2. Validación de coherencia
-    const isTitleCoherent = !cleanTitle || checkCoherence(cleanTitle);
-    const isArtistCoherent = !cleanArtist || checkCoherence(cleanArtist);
-    if (!isTitleCoherent || !isArtistCoherent) {
-      setPendingValidationRequest({
-        title: cleanTitle || 'Tema no especificado',
-        artist: cleanArtist || 'Artista no especificado',
-        genre: finalGenre,
-        dedication: cleanDedication
-      });
-      setShowIncoherentTextModal(true);
-      return;
-    }
+      // 2. Validación de coherencia
+      const isTitleCoherent = !cleanTitle || checkCoherence(cleanTitle);
+      const isArtistCoherent = !cleanArtist || checkCoherence(cleanArtist);
+      if (!isTitleCoherent || !isArtistCoherent) {
+        setPendingValidationRequest({
+          title: cleanTitle || 'Tema no especificado',
+          artist: cleanArtist || 'Artista no especificado',
+          genre: finalGenre,
+          dedication: cleanDedication
+        });
+        setShowIncoherentTextModal(true);
+        return;
+      }
 
-    // 3. Comprobar ortografía, duplicado y enviar
-    await checkSpellingAndSubmit(cleanTitle, cleanArtist, finalGenre, cleanDedication);
+      // 3. Comprobar ortografía, duplicado y enviar
+      await checkSpellingAndSubmit(cleanTitle, cleanArtist, finalGenre, cleanDedication);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   // Convertir peticiones en array y ordenar por popularidad (votos) o fecha
@@ -1428,22 +1435,24 @@ export default function PublicView() {
               {/* Botón de Enviar con Anti-Spam */}
               <button
                 type="submit"
-                className={`btn btn-primary ${cooldownTimeLeft > 0 ? 'disabled' : ''}`}
-                disabled={cooldownTimeLeft > 0}
+                className={`btn btn-primary ${(cooldownTimeLeft > 0 || isSubmitting) ? 'disabled' : ''}`}
+                disabled={cooldownTimeLeft > 0 || isSubmitting}
                 style={{
                   width: '100%',
                   padding: '14px',
                   fontSize: '1rem',
                   gap: '10px',
                   marginTop: '8px',
-                  background: cooldownTimeLeft > 0 ? 'rgba(255, 255, 255, 0.05)' : undefined,
-                  color: cooldownTimeLeft > 0 ? 'var(--text-muted)' : undefined,
-                  cursor: cooldownTimeLeft > 0 ? 'not-allowed' : 'pointer',
-                  boxShadow: cooldownTimeLeft > 0 ? 'none' : undefined,
-                  border: cooldownTimeLeft > 0 ? '1px solid rgba(255, 255, 255, 0.05)' : undefined
+                  background: (cooldownTimeLeft > 0 || isSubmitting) ? 'rgba(255, 255, 255, 0.05)' : undefined,
+                  color: (cooldownTimeLeft > 0 || isSubmitting) ? 'var(--text-muted)' : undefined,
+                  cursor: (cooldownTimeLeft > 0 || isSubmitting) ? 'not-allowed' : 'pointer',
+                  boxShadow: (cooldownTimeLeft > 0 || isSubmitting) ? 'none' : undefined,
+                  border: (cooldownTimeLeft > 0 || isSubmitting) ? '1px solid rgba(255, 255, 255, 0.05)' : undefined
                 }}
               >
-                {cooldownTimeLeft > 0 ? (
+                {isSubmitting ? (
+                  <span>Enviando petición...</span>
+                ) : cooldownTimeLeft > 0 ? (
                   <>
                     <Clock size={18} />
                     <span>Espera {formatTimeLeft(cooldownTimeLeft)}</span>
