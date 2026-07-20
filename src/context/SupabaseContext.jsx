@@ -1964,21 +1964,24 @@ export const SupabaseProvider = ({ children }) => {
 
     if (hasVoted) {
       // Quitar voto
-      await supabase
+      const { error } = await supabase
         .from('request_voters')
         .delete()
         .eq('request_id', requestId)
         .eq('session_id', sessionId);
       
-      // Decrementar contador
-      await supabase.rpc('decrement_votes', { row_id: requestId });
+      if (!error) {
+        await supabase.rpc('decrement_votes', { row_id: requestId });
+      }
     } else {
       // Sumar voto
-      await supabase
+      const { error } = await supabase
         .from('request_voters')
         .insert({ request_id: requestId, session_id: sessionId });
       
-      await supabase.rpc('increment_votes', { row_id: requestId });
+      if (!error) {
+        await supabase.rpc('increment_votes', { row_id: requestId });
+      }
     }
   };
 
