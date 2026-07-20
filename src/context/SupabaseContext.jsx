@@ -1824,30 +1824,8 @@ export const SupabaseProvider = ({ children }) => {
     }) : null;
 
     if (existingReq) {
-      // Registrar el voto para el usuario en la petición existente
-      const { error: voteError } = await supabase
-        .from('request_voters')
-        .insert({
-          request_id: existingReq.id,
-          session_id: sessionId
-        });
-
-      if (voteError) {
-        // Ya votó para esta misma petición, retornar duplicado sin sumar de nuevo
-        return { key: existingReq.id, isDuplicateMerge: true, alreadyVoted: true };
-      }
-
-      // Si no había votado, sumarle el voto atómicamente
-      await supabase.rpc('increment_votes', { row_id: existingReq.id });
-      
-      // Auto-alimentar de forma segura en segundo plano
-      try {
-        await checkAndAddToAutocomplete(cleanTitle, cleanArtist, genre);
-      } catch (e) {
-        console.warn("No se pudo agregar a autocompletado:", e);
-      }
-
-      return { key: existingReq.id, isDuplicateMerge: true };
+      // La canción ya está en la lista activa. Retornar notificación de duplicado sin inflar votos.
+      return { key: existingReq.id, isDuplicateMerge: true, alreadyVoted: true };
     }
 
     // 2. Si no es duplicado, comprobar límites del plan contratado por el DJ
