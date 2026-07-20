@@ -1806,18 +1806,22 @@ export const SupabaseProvider = ({ children }) => {
     const cleanTitleNorm = normalize(cleanTitle);
     const cleanArtistNorm = normalize(cleanArtist);
 
-    const existingReq = (activeReqs || []).find(r => {
+    // Ignorar títulos genéricos o vacíos para la fusión de duplicados
+    const isGenericTitle = !cleanTitleNorm || ['temanoespecificado', 'cualquiera', 'sinnombre'].includes(cleanTitleNorm);
+
+    const existingReq = !isGenericTitle ? (activeReqs || []).find(r => {
       const rTitleNorm = normalize(r.title);
       const rArtistNorm = normalize(r.artist);
+      if (!rTitleNorm || ['temanoespecificado', 'cualquiera', 'sinnombre'].includes(rTitleNorm)) return false;
       
       const isReqArtistEmpty = rArtistNorm === '' || rArtistNorm === 'artista no especificado';
       const isUserArtistEmpty = cleanArtistNorm === '' || cleanArtistNorm === 'artista no especificado';
 
       const matchTitle = rTitleNorm === cleanTitleNorm;
-      const matchArtist = isUserArtistEmpty || isReqArtistEmpty || (rArtistNorm === cleanArtistNorm);
+      const matchArtist = (isUserArtistEmpty && isReqArtistEmpty) || (rArtistNorm === cleanArtistNorm);
 
       return matchTitle && matchArtist;
-    });
+    }) : null;
 
     if (existingReq) {
       // Registrar el voto para el usuario en la petición existente
